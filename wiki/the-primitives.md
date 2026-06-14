@@ -19,7 +19,7 @@ confidence:
 
 # The Primitives (Derivation Ladder: 20 → 44 → 200)
 
-**The irreducible-concept ontology at the root of the whole arc.** Across two posts published the same day (**2026-02-28**) and revisited under external scrutiny on **2026-03-01**, Matt Searles (working with Claude) records a three-rung ladder: **20** primitives from a late-night failure-tracing question, expanded to **44** foundation primitives (11 groups) by the [[hive-governance]]'s ~70 autonomous agents, then derived by Claude Opus into **200** primitives across **14 layers** (Layer 0 Foundation through Layer 13 Existence). This article is the spine of the arc; the rungs each have (or will have) their own entries — [[the-20-primitives]], [[44-primitives]], [[200-primitives]], [[fourteen-layers]].
+**The irreducible-concept ontology at the root of the whole arc.** Across two posts published the same day (**2026-02-28**) and revisited under external scrutiny on **2026-03-01**, Matt Searles (working with Claude) records a three-rung ladder: **20** primitives from a late-night failure-tracing question, expanded to **44** foundation primitives (11 groups) by the [[hive-governance]]'s ~70 autonomous agents, then derived by Claude Opus into **200** primitives across **14 layers** (Layer 0 Foundation through Layer 13 Existence). This article is the spine of the arc; the rungs each have (or will have) their own entries — [[the-20-primitives]], [[the-44-primitives]], [[the-200-primitives]], [[fourteen-layers]].
 
 The ladder predates the first fork and the [[dark-factory]]. [[dark-factory-motive-goal-approach]] adopts every rung as **research input and philosophical basis only**, never as implementation authority — and is explicit that the 44- and 200-primitive rungs are "important, but not independently proven."
 
@@ -33,13 +33,13 @@ The accompanying claim — these 20 are *"sufficient to model … company struct
 
 ## The first jump: 20 → 44 (the hive0 accident)
 
-Searles built the first [[hive-governance]] ([[hive0]]) on those 20 primitives: specialised agents collaborating through an [[event-graph]]. The agent count grew on its own — *"the hive had decided it needed them"* — past the obvious software roles (PM, implementer, QA, DevOps, reviewer) into Philosopher, Critic, Harmony, Mediator, Gap-detector, Failure-analyst, Politician, Philanthropy. By the time he counted, *"there were roughly seventy agents. I hadn't designed most of them."*
+Searles built the first [[hive-governance]] ([[the-lovyou-ai-fork|hive0]]) on those 20 primitives: specialised agents collaborating through an [[event-graph]]. The agent count grew on its own — *"the hive had decided it needed them"* — past the obvious software roles (PM, implementer, QA, DevOps, reviewer) into Philosopher, Critic, Harmony, Mediator, Gap-detector, Failure-analyst, Politician, Philanthropy. By the time he counted, *"there were roughly seventy agents. I hadn't designed most of them."*
 
 The jump came from an accident: Searles *"accidentally left the hive running autonomously. For two days,"* discovering it only when his weekly API limit was *"completely burned through."* Asking Claude Opus what hive0 had done, he reports it had derived **44 foundation primitives** organised into **11 groups**:
 
 > Foundation (Event, EventStore, Clock, Hash, Self) · Causality · Identity · Expectations · Trust · Confidence · Instrumentation · Query · Integrity · Deception · Health
 
-Post 2 lists all 44 by group. The narrative emphasis is that *no human designed the additional 24* — that a society of agents *"decided it needed concepts for self, trust, uncertainty, blind spots, deception, and health … because it couldn't function without them."* See [[44-primitives]] for the per-group breakdown.
+Post 2 lists all 44 by group. The narrative emphasis is that *no human designed the additional 24* — that a society of agents *"decided it needed concepts for self, trust, uncertainty, blind spots, deception, and health … because it couldn't function without them."* See [[the-44-primitives]] for the per-group breakdown.
 
 > ⚠ **Fail-legible note (44 provenance).** That ~70 autonomous agents *discovered* the 44 as a necessity is the **source's own narrative**, told retrospectively. The author later concedes the limit of this evidence in [[the-audit]]: the hive0 derivation and the later Claude derivation *"both used LLMs trained on overlapping corpora … 'two AI systems converged' is weaker evidence than it appears."* Treat the 44 as a recorded research output, not as an independently verified emergence. [[dark-factory-motive-goal-approach]] files it under "Research input … not independently proven."
 
@@ -66,7 +66,7 @@ The 14 layers (post 2 names primitives for each; post 6 attaches a real-world pr
 | 12 | Emergence | content → architecture | Self-improving systems |
 | 13 | Existence | everything → the fact of everything | Living constitutions |
 
-See [[200-primitives]] and [[fourteen-layers]] for the per-layer primitive lists.
+See [[the-200-primitives]] and [[fourteen-layers]] for the per-layer primitive lists.
 
 ### The strange loop and the three irreducibles
 

@@ -7,7 +7,6 @@ last_compiled: "2026-06-14"
 sources:
   - docs/docs/roles-catalog.md  # DF-ROLES-CATALOG v3.0.0, status:active, canonical:true — exhaustive per-role tables sourced from agentdef.go (Layer 1) and v3.9 authority doctrine (Layer 2)
   - docs/dark-factory/reunification/2026-06-12-arc-state.md  # G-1.2 round-6 close state; v16-F2 oscillation defect; catalog deliverable branch history
-  - wiki/civic-roles.md  # compiled sibling — covers the 9-role Layer A runtime view; used to bound scope of this article
 confidence:
   sources: primary
   claims: grounded
@@ -15,7 +14,7 @@ confidence:
   layer_2_fifteen_roles: high — sourced from v3.9 authority doctrine ## Roles block (line 247) and ## MVP Role Permissions table (line 308); not independently read this run but cited verbatim in the canonical catalog
   canonical_promotion: grounded — roles-catalog.md carries status:active, canonical:true, version:3.0.0 in the read copy (docs#126, 2026-06-14); prior captures show status:draft/canonical:false through 2026-06-12
   society_produced_claim: asserted — "produced by the society and reviewed (not authored) by the shepherds" (catalog Provenance section); whether the cooperative loop produced it fully autonomously is thin (see fail-legible note)
-  oscillation_defect: grounded — arc-state records six oscillation commits on codex/fo-roles-catalog-v16; 24-role reading at b638a44, 9-role reading at HEAD 002bcf8; attributed to v16-F2 planner scope-narrowing
+  oscillation_defect: asserted — arc-state records six oscillation commits on codex/fo-roles-catalog-v16; 24-role reading at b638a44, 9-role reading at HEAD 002bcf8; attributed to v16-F2 planner scope-narrowing (root cause inferred, not code-traced this run)
 ---
 
 # The Roles Catalog

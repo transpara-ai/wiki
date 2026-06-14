@@ -72,7 +72,7 @@ The gates article ([[gates]]) flags a potential lettering collision: v3.9 uses l
 ## Related entities
 
 - [[gates]] — the full gate system; Gates A–J are the v3.9 arc this article extends.
-- [[gate-l]] — Gate L: the companion v4.0 gate for v3.9-to-v4.0 reconciliation (Event 2). ⚠ Forward reference — not yet compiled as of 2026-06-14.
+- Gate L — the companion v4.0 gate for v3.9-to-v4.0 reconciliation (Event 2). Not yet compiled as of 2026-06-14.
 - [[v4-0]] — the v4.0 doctrine and integration arc context. ⚠ Forward reference.
 - [[dark-factory]] — the governed production system whose development loop Gate K hardens.
 - [[the-reunification]] — the broader reunification of the development process into the Civilization. ⚠ Forward reference.

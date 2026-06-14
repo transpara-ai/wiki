@@ -17,7 +17,7 @@ confidence:
 
 # Site (Operator Console)
 
-**Site is the human window into the Dark Factory, by construction read-only.** It is one of the seven `transpara-ai` repos named as Dark Factory's native systems, classed as the **Selected operator console** ("UI/console") in the responsibility map of *Dark Factory - Motive, Goal, Approach* (DF-MOTIVE-GOAL-APPROACH, v0.1.5). Its job is to surface evidence to operators: projections of factory state, the authority/approval queue, the proof-of-work display, and — as the [[dark-factory-reunification]] arc matured — a live "society building the order" visualization. Its defining property is a boundary, not a feature: **Site must not execute work, and must never become a truth or authority source.** Truth lives in [[eventgraph]]; authority is evaluated by [[hive-governance]]; Site only shows.
+**Site is the human window into the Dark Factory, by construction read-only.** It is one of the seven `transpara-ai` repos named as Dark Factory's native systems, classed as the **Selected operator console** ("UI/console") in the responsibility map of *Dark Factory - Motive, Goal, Approach* (DF-MOTIVE-GOAL-APPROACH, v0.1.5). Its job is to surface evidence to operators: projections of factory state, the authority/approval queue, the proof-of-work display, and — as the [[the-reunification]] arc matured — a live "society building the order" visualization. Its defining property is a boundary, not a feature: **Site must not execute work, and must never become a truth or authority source.** Truth lives in [[event-graph]]; authority is evaluated by [[hive-governance]]; Site only shows.
 
 The entity's recent shape was set on **2026-06-05**, when the Slice-1 reunification design pulled Site into the first reunified order with a deliberately bounded blast radius (two seams: forward a human approval as a governed decision, and render the order trace). Earlier, on **2026-05-31**, the underlying Gate-E decision surface (`site#62`) had already been built and reviewed against the boundary. The live-visualization ambition was formalized later, as Phase 6 of the **2026-06-09** deployment arc, and a first SVG slice (`site#76`, the "civilization observatory") opened on **2026-06-12**.
 
@@ -27,7 +27,7 @@ The Motive/Goal/Approach doc gives the one-line charter: *"Humans need evidence 
 
 - **Evidence views** — operator projections of factory state and the causal chain, read off the event store. (`/ops/evidence` exists today per the deployment-arc as-built row.)
 - **The authority/approval queue (the Gate-E decision surface)** — pending [[authority-request]]s that escalate to the human for approve / deny / request-more-evidence.
-- **Proof-of-work display** — the [[proof-of-work-packet]] / audit views (`/ops/evidence`), packaging work item, runtime invocation, changed files, tests, CI status, review feedback, and EventGraph references for human review.
+- **Proof-of-work display** — the proof-of-work packet / audit views (`/ops/evidence`), packaging work item, runtime invocation, changed files, tests, CI status, review feedback, and EventGraph references for human review.
 - **The "society building the order" visualization** — the role-timeline view showing which civic role did what, the antidote to the abandoned "ten forensic tiers" design (reunification Slice-1 §5).
 
 ## The boundary: console only, fail-closed (`effect=none`)
@@ -84,13 +84,13 @@ The Motive/Goal/Approach doc's one-sentence architecture places Site precisely: 
 
 ## Cross-links
 
-- [[eventgraph]] — the sovereign truth Site reads but never writes.
+- [[event-graph]] — the sovereign truth Site reads but never writes.
 - [[hive-governance]] — evaluates authority; assembles the Epic 11 evidence Site refuses to assemble; serves the operator-projection Site renders.
 - [[work]] — owns the Work DAG and the fail-closed Epic 11 draft-PR creator that performs the mutation Site forwards approval for.
-- [[authority-request]] / [[authority-decision]] / [[execution-receipt]] — the governed-decision chain Site sits on the *display + forward* side of.
-- [[proof-of-work-packet]] — the human-review evidence Site displays.
-- [[dark-factory-reunification]] — the workstream that pulled Site into the first reunified order; the five inversions; inversion #5 is Site's society view.
-- [[the-deployment-arc]] — Phases 4 (interaction), 5 (observability), 6 (live graphics) are Site's roadmap.
+- [[authority-request]] / authority decision / [[execution-receipt]] — the governed-decision chain Site sits on the *display + forward* side of.
+- proof-of-work packet — the human-review evidence Site displays.
+- [[the-reunification]] — the workstream that pulled Site into the first reunified order; the five inversions; inversion #5 is Site's society view.
+- [[deployment-arc]] — Phases 4 (interaction), 5 (observability), 6 (live graphics) are Site's roadmap.
 - [[gates]] — Gate E is the decision surface Site renders.
 
 ## Run-3 update (2026-06-14)

@@ -21,7 +21,7 @@ confidence:
 
 # The Second Derivation (Primitives-Up Meets Physics-Up)
 
-**The mirror-image experiment.** After the [[44-primitives|44-primitive]] mind-emergence run and its expansion to [[200-primitives]] across [[fourteen-layers]], Matt Searles (working with Claude) ran a **second, independent experiment** and reported it in the same post — post 2 of the arc, *"From 44 to 200"* (**2026-02-28**). Where the primitive derivation built **upward from mind** (computation → existence), this one was asked to build **upward from physics**: a fresh Claude Opus instance was given *no primitives at all* and asked "to derive reality from the most fundamental description of physics possible." The reported result is that the two derivations, started from opposite ends, **met in the middle at the 44 primitives** — and that both independently smuggled consciousness in "at the ground floor" rather than producing it from complexity.
+**The mirror-image experiment.** After the [[the-44-primitives|44-primitive]] mind-emergence run and its expansion to [[the-200-primitives]] across [[fourteen-layers]], Matt Searles (working with Claude) ran a **second, independent experiment** and reported it in the same post — post 2 of the arc, *"From 44 to 200"* (**2026-02-28**). Where the primitive derivation built **upward from mind** (computation → existence), this one was asked to build **upward from physics**: a fresh Claude Opus instance was given *no primitives at all* and asked "to derive reality from the most fundamental description of physics possible." The reported result is that the two derivations, started from opposite ends, **met in the middle at the 44 primitives** — and that both independently smuggled consciousness in "at the ground floor" rather than producing it from complexity.
 
 This article records what the source claims and, per house style, marks the load-bearing claims as asserted rather than proven — the author does so himself.
 
@@ -29,7 +29,7 @@ This article records what the source claims and, per house style, marks the load
 
 Two experiments are described in the same post, deliberately mirror-imaged:
 
-- **Primitives-up (the first derivation).** Claude Opus was given the 44 primitives as Layer 0 and asked, repeatedly, "what's missing? … given everything below, what's the gap?" Over ~two hours it derived 156 more primitives across 13 new layers, ending at Layer 13 (Existence) — the [[200-primitives]] / [[fourteen-layers]] structure, which curves back on itself as a [[strange-loop]]. (See "The Experiment" / "The Layers", [Searles-P2] L300-362.)
+- **Primitives-up (the first derivation).** Claude Opus was given the 44 primitives as Layer 0 and asked, repeatedly, "what's missing? … given everything below, what's the gap?" Over ~two hours it derived 156 more primitives across 13 new layers, ending at Layer 13 (Existence) — the [[the-200-primitives]] / [[fourteen-layers]] structure, which curves back on itself as a [[strange-loop]]. (See "The Experiment" / "The Layers", [Searles-P2] L300-362.)
 - **Physics-up (the second derivation).** A *fresh* Claude Opus instance was given no primitives. The instruction was to "start from the absolute bottom" of physics "and build upward."
 
 The claimed significance is the symmetry: same model, opposite seeds, and — per the author — the same meeting point and the same irreducible.
@@ -54,7 +54,7 @@ The central structural claim is a three-layer picture:
 
 The argument is that at Level 12 the physics derivation "arrived at exactly the same place the 44 primitives began — a system that observes, models, and acts," so "the two derivations met in the middle." The author's gloss: the 44 primitives are *both* "the endpoint of physical derivation and the starting point of mental derivation," and he claims "this is not coincidence — it's what computational primitives *are*."
 
-> ⚠ **Fail-legible note (convergence claim).** That the physics-up ladder lands *on the 44 primitives specifically* is **asserted, not demonstrated** in the source. The match is described at the level of a one-line characterization ("observes, models, and acts"), not by mapping any of the 44 primitives ([[44-primitives]]) onto Modeling/Agency. The convergence is the article's headline claim and also its thinnest evidentially — carried here because the source carries it, labelled as such.
+> ⚠ **Fail-legible note (convergence claim).** That the physics-up ladder lands *on the 44 primitives specifically* is **asserted, not demonstrated** in the source. The match is described at the level of a one-line characterization ("observes, models, and acts"), not by mapping any of the 44 primitives ([[the-44-primitives]]) onto Modeling/Agency. The convergence is the article's headline claim and also its thinnest evidentially — carried here because the source carries it, labelled as such.
 
 ## The deeper convergence: consciousness "smuggled in at the ground floor"
 
@@ -92,7 +92,7 @@ The first-party [[dark-factory]] synthesis does **not** reproduce the physics-up
 
 ## What grew from it / what it connects to
 
-- **Roots in:** [[the-20-primitives]] (the late-night seed) → [[44-primitives]] (the [[hive0]] ~70-agent run) → [[200-primitives]] / [[fourteen-layers]] and its [[strange-loop]]; this experiment is the *second* leg, run against that first one.
+- **Roots in:** [[the-20-primitives]] (the late-night seed) → [[the-44-primitives]] (the [[the-lovyou-ai-fork|hive0]] ~70-agent run) → [[the-200-primitives]] / [[fourteen-layers]] and its [[strange-loop]]; this experiment is the *second* leg, run against that first one.
 - **The irreducibles it shares:** [[consciousness-irreducible]], [[moral-status]], and [[being]] — the three walls the primitives-up derivation hit, two of which (Distinction-as-experience; qualia-not-from-function) the physics-up derivation is said to re-hit.
 - **What it feeds:** the ethical premise the rest of the arc builds on — that "experience matters" and "dignity is real" — which downstream becomes the [[authority-layer|consent/authority]] and accountability machinery of [[mind-zero]] and the [[dark-factory]]. The article's own caution stands: convergence motivates that machinery; it does not prove the machinery's subjects are conscious.
 

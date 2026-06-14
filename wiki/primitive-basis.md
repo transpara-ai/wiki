@@ -58,7 +58,7 @@ Full article: [[the-20-primitives]]. The corpus also records **seven insights** 
 
 Searles built the first LovYou, **hive0** — a multi-agent system on the 20 primitives. By the time he counted, there were *"roughly seventy agents,"* most of which he says he did not design — the hive *"had decided it needed them"* (PM, QA, DevOps, but also Philosopher, Critic, Gap-detector, Mediator, etc.). [Searles-P1]
 
-He then reports leaving the hive *"running autonomously. For two days,"* discovered only when his API limit was exhausted, and on review found the system had derived **44 foundation primitives organised into 11 groups**: Foundation (Event, EventStore, Clock, Hash, Self), Causality, Identity, Expectations, Trust, Confidence, Instrumentation, Query, Integrity, Deception, Health. [Searles-P1] [Searles-P2] The full 44 are enumerated by group in [Searles-P2]. Full article: [[44-primitives]].
+He then reports leaving the hive *"running autonomously. For two days,"* discovered only when his API limit was exhausted, and on review found the system had derived **44 foundation primitives organised into 11 groups**: Foundation (Event, EventStore, Clock, Hash, Self), Causality, Identity, Expectations, Trust, Confidence, Instrumentation, Query, Integrity, Deception, Health. [Searles-P1] [Searles-P2] The full 44 are enumerated by group in [Searles-P2]. Full article: [[the-44-primitives]].
 
 The significance the corpus draws: an AI hive, unprompted, decided it needed concepts for *self*, *trust*, *uncertainty*, *blind spots*, *deception*, and *health* — *"the irreducible concepts any system needs to operate in a world it can't fully trust or fully see."* [Searles-P2]
 
@@ -66,7 +66,7 @@ The significance the corpus draws: an AI hive, unprompted, decided it needed con
 
 ### Rung 3 — 200 primitives across 14 layers (the product horizon)
 
-Feeding the 44 to a Claude Opus instance as "Layer 0" and repeatedly asking *"what's the gap?"*, the corpus reports **156 additional primitives across 13 new layers** derived over a ~two-hour session — **200 total across 14 layers (0–13)**, Layer 0 Foundation up through Layer 13 Existence, *"each layer … exactly 12 primitives in 3 groups of 4 — a structure the model arrived at on its own."* [Searles-P2] Full article: [[200-primitives]] / [[fourteen-layers]].
+Feeding the 44 to a Claude Opus instance as "Layer 0" and repeatedly asking *"what's the gap?"*, the corpus reports **156 additional primitives across 13 new layers** derived over a ~two-hour session — **200 total across 14 layers (0–13)**, Layer 0 Foundation up through Layer 13 Existence, *"each layer … exactly 12 primitives in 3 groups of 4 — a structure the model arrived at on its own."* [Searles-P2] Full article: [[the-200-primitives]] / [[fourteen-layers]].
 
 Two structural features of the 200 matter downstream and are **explicitly hedged by the source itself**:
 

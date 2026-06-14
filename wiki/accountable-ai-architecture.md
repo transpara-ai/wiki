@@ -23,7 +23,7 @@ confidence:
 
 # The architecture of accountable AI (mind-zero-five)
 
-On **2026-02-28**, in the post *"The Architecture of Accountable AI,"* Matt Searles (working with Claude) turned the philosophy of the preceding posts into running code. Where [[the-20-primitives]] gave the seed and [[44-primitives]] / [[200-primitives]] gave the conceptual ladder, this post is — in its own words — "about the code. Not the philosophy. Not the theory. The actual working software." The author's framing for why this post exists: *"principles you can't implement aren't principles — they're wishes."*
+On **2026-02-28**, in the post *"The Architecture of Accountable AI,"* Matt Searles (working with Claude) turned the philosophy of the preceding posts into running code. Where [[the-20-primitives]] gave the seed and [[the-44-primitives]] / [[the-200-primitives]] gave the conceptual ladder, this post is — in its own words — "about the code. Not the philosophy. Not the theory. The actual working software." The author's framing for why this post exists: *"principles you can't implement aren't principles — they're wishes."*
 
 The system is called **mind-zero-five** (open source, written in Go, at `github.com/mattxo/mind-zero-five`). It has three core components — an **event graph**, an **authority layer**, and an **autonomous mind loop** — plus two design choices the post treats as load-bearing: a **self-improvement circuit breaker** and **crash-recovery-as-ethics**. Together they are the author's answer to one question: *"How do you build an AI system that cannot act without leaving a verifiable trail, and cannot exceed its authority without human consent?"*
 
@@ -130,7 +130,7 @@ The internal numbering (code = Post 3, ledger = Post 5) is self-consistent. To a
 ## What grew from it
 
 - **Into the first-party stack:** the accountability spine (event graph + authority + trace, intelligence-as-operation) is the philosophical input to [[dark-factory]] ([[dark-factory-motive-goal-approach]]), which reimplements rather than imports it.
-- **Into philosophy:** the same event graph is reread as [[the-moral-ledger]]; the layered framework it sits on is [[200-primitives]] / [[fourteen-layers]], with [[strange-loop]] and [[three-irreducibles]] as its philosophical edges.
+- **Into philosophy:** the same event graph is reread as [[the-moral-ledger]]; the layered framework it sits on is [[the-200-primitives]] / [[fourteen-layers]], with [[strange-loop]] and [[three-irreducibles]] as its philosophical edges.
 - **Component entities:** [[event-graph]], [[authority-layer]], [[consent-layer]], [[the-mind-loop]], [[bounded-runtime]].
 
 ## Sources & provenance

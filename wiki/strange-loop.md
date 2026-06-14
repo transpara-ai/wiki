@@ -72,7 +72,7 @@ Both ultimately describe **mutual** presupposition — neither end is foundation
 
 ## Where it sits in the arc
 
-The Strange Loop is a property of the 200-primitive emergence event, so it inherits that event's lineage: the late-night [[the-20-primitives]] → the [[hive0]] ~70-agent run producing [[44-primitives]] → Claude Opus deriving 156 more across 13 new layers to reach [[200-primitives]] / [[fourteen-layers]]. The loop is the closing observation of that derivation. It carries no separate date of its own; it is documented within the **2026-02-28** posts that report the derivation.
+The Strange Loop is a property of the 200-primitive emergence event, so it inherits that event's lineage: the late-night [[the-20-primitives]] → the [[the-lovyou-ai-fork|hive0]] ~70-agent run producing [[the-44-primitives]] → Claude Opus deriving 156 more across 13 new layers to reach [[the-200-primitives]] / [[fourteen-layers]]. The loop is the closing observation of that derivation. It carries no separate date of its own; it is documented within the **2026-02-28** posts that report the derivation.
 
 It is **descriptive, not load-bearing for the running system.** In [[dark-factory]] and [[mind-zero-five]] the operative artifact is the [[event-graph]] (Layer 0 made concrete); the strange loop is part of the *source philosophy* that motivated the vocabulary, explicitly downstream of merged docs, accepted packets, and human authorization for any implementation authority.
 

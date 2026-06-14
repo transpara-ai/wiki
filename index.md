@@ -22,7 +22,7 @@ downstream view (Mission Control, the spine/story view) is a read lens onto it.
 |---|---|
 | **last_compiled** | **2026-06-14** |
 | **run** | **Run-3 (thirteen-graphs completion + arc advancement + runtime objects)** |
-| **articles compiled** | **89** (25 foundational · 25 architecture · 10 arc · 16 investigation · 12 concept · 1 meta) |
+| **articles compiled** | **89** (25 foundational · 24 architecture · 10 arc · 16 investigation · 13 concept · 1 meta) |
 | **completeness** | **PARTIAL — arc spine, philosophy, runtime objects, and thirteen-graphs complete; full corpus sweep still deferred** |
 
 **This is Run-3, not the finished wiki.** Run-1 compiled the core spine. Run-2
@@ -310,7 +310,7 @@ metaphysics or implementation authority).
 | `[[the-meta-graph]]` | The Meta Graph — Layer 12 (Scheme A); system watching itself, emergence detection |
 | `[[the-existence-graph]]` | The Existence Graph — Layer 13; the thing you deploy the other graphs inside |
 
-### Architecture — the entities the system is built from (25)
+### Architecture — the entities the system is built from (24)
 
 The standing components and design objects of the platform/runtime, including the
 basis and north-star entities.
@@ -341,7 +341,6 @@ basis and north-star entities.
 | `[[observability]]` | Observability — the T1–T7 transparency contract; fail-legible by construction |
 | `[[open-weight-llm-routing]]` | Open-Weight LLM Routing — v3.9 `df-model-broker` + Pi selector harness (design phase) |
 | `[[upstream-fork-sync]]` | Upstream Fork Sync — institutional one-way fork sync controller |
-| `[[thirteen-graphs]]` | Thirteen Graphs, One Infrastructure — one event graph, thirteen lenses (overview) |
 
 ### Arc — the dark-factory chronology and turning points (10)
 
@@ -390,7 +389,7 @@ role (v3.9 Decision 15).
 | `[[claw-code]]` | claw-code — agent-execution reference |
 | `[[bitsandpieces]]` | bitsandpieces — landscape reference |
 
-### Concept — recurring ideas, lenses, and proposals (12)
+### Concept — recurring ideas, lenses, and proposals (13)
 
 Cross-cutting philosophical and architectural concepts that recur across the arc
 without being a single standing component — including the Searles thirteen-graphs
@@ -398,6 +397,7 @@ product horizon concepts and the node's-eye readings of the framework.
 
 | Article | Entity |
 |---|---|
+| `[[thirteen-graphs]]` | Thirteen Graphs, One Infrastructure — one event graph, thirteen lenses (overview) |
 | `[[the-market-graph]]` | The Market Graph — Layer 2, the exchange lens |
 | `[[the-social-graph]]` | The Social Graph — Layer 3, the relationship-and-governance lens |
 | `[[the-moral-ledger]]` | The Moral Ledger — the event graph reread as ethics at scale |

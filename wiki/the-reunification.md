@@ -128,7 +128,7 @@ The README routes to follow-on planning artifacts (read this run only as titles/
 
 ## What it connects to
 
-- **Re-centers:** [[dark-factory]] on the [[mission]] ("one civilization, one business").
+- **Re-centers:** [[dark-factory]] on the mission ("one civilization, one business").
 - **Re-joins:** the [[hive-governance]] civilization and its [[civic-roles]] to the accountability machinery.
 - **On the substrate:** everything runs over one [[event-graph]]; gates reuse the darkfactory v39 evidence records.
 - **Lineage:** the membrane discipline (gates as fail-closed role-checks, fail-safe by default) descends from the [[authority-layer]] and the broader [[fourteen-layers]]; the order-as-cooperation framing rests on the [[the-20-primitives]] (`Node`/`Edge`/`Event`/`Criteria`).

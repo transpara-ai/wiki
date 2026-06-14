@@ -43,7 +43,7 @@ Twenty irreducible concepts, claimed sufficient to model company structure, agen
 ## What grew from it
 
 - **Into architecture:** traceability → [[event-graph]]; explicit criteria → [[acceptance-criteria]] and [[gates]]; agent action → [[bounded-runtime]]; authority → [[authority-layer]].
-- **Into scale:** → [[44-primitives]] (the [[hive0]] ~70-agent run) → [[200-primitives]] / [[fourteen-layers]] → the [[thirteen-graphs]].
+- **Into scale:** → [[the-44-primitives]] (the [[the-lovyou-ai-fork|hive0]] ~70-agent run) → [[the-200-primitives]] / [[fourteen-layers]] → the [[thirteen-graphs]].
 
 ## Sources & provenance
 

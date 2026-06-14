@@ -94,7 +94,7 @@ This is the property the entity's one-line description calls *"as code that the 
 
 The post is explicit about provenance: **"This is the Consent primitive from Layer 3 (Society), implemented as code. Legitimate action requires consent. Consent is explicit, traceable, and revocable."** The companion Pentagon post widens that mapping: the authority layer "implements **Consent, Due Process, and Legitimacy** from the 200-primitive framework."
 
-So the lineage runs: [[the-20-primitives]] (the late-night seed already treated authority and node-action as ordinary operations) → the Consent / Due Process / Legitimacy primitives in the [[200-primitives]] / [[fourteen-layers]] expansion → this Go authority layer that turns those primitives into a gate. Both mappings above are the **author's own** placement of the primitives, internal to the source corpus, not an external verification.
+So the lineage runs: [[the-20-primitives]] (the late-night seed already treated authority and node-action as ordinary operations) → the Consent / Due Process / Legitimacy primitives in the [[the-200-primitives]] / [[fourteen-layers]] expansion → this Go authority layer that turns those primitives into a gate. Both mappings above are the **author's own** placement of the primitives, internal to the source corpus, not an external verification.
 
 ## The motive: trust vs. structure (the Pentagon case)
 
@@ -141,4 +141,4 @@ Primary: `raw/searles/all-posts-1.md` —
 
 First-party divergence source: `Dark Factory - Motive, Goal, Approach.md` — the four canonical authority outcomes (`Autonomous`, `Notify`, `ApprovalRequired`, `Forbidden`; line ~173) and the standing position that the Searles corpus is source philosophy, not implementation authority (lines ~377, ~382). Repo reference `github.com/mattxo/mind-zero-five` ([Searles-MindZeroRepo]) is cited as the code's location, not read this run.
 
-Durable Searles URLs are taken from the citation table inside `Dark Factory - Motive, Goal, Approach.md`. `[[wikilinks]]` are forward references; some targets (e.g. [[200-primitives]], [[fourteen-layers]]) may not yet be compiled. The numbered "Post N" ordinals in the source file are omitted here to avoid the numbering ambiguity noted in [[accountable-ai-architecture]]; sources are cited by title.
+Durable Searles URLs are taken from the citation table inside `Dark Factory - Motive, Goal, Approach.md`. `[[wikilinks]]` are forward references; some targets (e.g. [[the-200-primitives]], [[fourteen-layers]]) may not yet be compiled. The numbered "Post N" ordinals in the source file are omitted here to avoid the numbering ambiguity noted in [[accountable-ai-architecture]]; sources are cited by title.

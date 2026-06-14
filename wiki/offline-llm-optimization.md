@@ -12,7 +12,6 @@ sources:
   - raw/open-brain/2026-06.md  # 2026-06-01 thought (OB entry ~L201): "open-weight (and self-hostable) models are fundamental to the long-term ARC of the effort"; "maximize achievable results while minimizing EXTERNAL SPEND" — strategic framing correction capture
   - raw/open-brain/2026-06.md  # 2026-06-01 thought (~L195): DF-V3.9.3 open-weight/pi.dev/OpenRouter doc as context; air-gap fit and self-hostable models as cost + enterprise dimension; "open-weight integration is NOT due in any current Epic — it is strategic direction, not present scope"
   - raw/transpara/dark-factory/research/DF-V3.9-OPEN-WEIGHT-LLM-ROUTING-PI-HARNESS.md  # Background §, Definitions §, Non-Goals §, Route-by-Decision-Kind table, Risk Register — the implementation design doc that governs the first concrete step toward this future state
-  - OB1-OFFLINE-LLM-2026-06-14T00:00:00Z  # Open Brain marker — captured 2026-06-14 in advance of this compile; not yet read-back verified this run
 confidence:
   sources: thin
   claims: asserted

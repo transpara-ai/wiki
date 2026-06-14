@@ -24,7 +24,7 @@ confidence:
 
 # The three irreducibles (is-ought / moral ledger)
 
-**The hole at the centre of the framework — three of them.** As the [[the-primitives|200-primitive framework]] was derived from the 44 ([[from-44-to-200]], post 2, **2026-02-28**), Claude flagged three concepts the framework "explicitly could not derive from anything below them" — places where "the chain of derivation hits a wall." They are **Moral Status** (Layer 7 — *experience matters*), **Consciousness** (Layer 12 — *experience exists*), and **Being** (Layer 13 — *anything exists at all*). The same three are restated in the final post of the series, [[the-moral-ledger]] (post 5, same date), where they become the hinge of an argument that the [[event-graph]] at scale is a *moral ledger* and that Hume's is-ought gap may be a perspective shift rather than a wall.
+**The hole at the centre of the framework — three of them.** As the [[the-primitives|200-primitive framework]] was derived from the 44 ([[the-200-primitives]], post 2, **2026-02-28**), Claude flagged three concepts the framework "explicitly could not derive from anything below them" — places where "the chain of derivation hits a wall." They are **Moral Status** (Layer 7 — *experience matters*), **Consciousness** (Layer 12 — *experience exists*), and **Being** (Layer 13 — *anything exists at all*). The same three are restated in the final post of the series, [[the-moral-ledger]] (post 5, same date), where they become the hinge of an argument that the [[event-graph]] at scale is a *moral ledger* and that Hume's is-ought gap may be a perspective shift rather than a wall.
 
 The irreducibles are not an afterthought. The author's own guardrail post ([[the-cult-test]]) calls them "load-bearing admissions" and "the hole at its centre — three holes, actually, all pointing at the same mystery." Whatever else the framework claims, this is where it claims to *stop*.
 
@@ -46,7 +46,7 @@ In both posts, Claude's closing observation is that the three irreducibles "migh
 - **Consciousness** is the experiential form — *what exists includes experience.*
 - **Moral Status** is the ethical form — *experience that exists matters.*
 
-> ⚠ **Fail-legible note.** This collapse-into-one is **asserted, not proven.** Both posts attribute it to "Claude's observation / Claude's conclusion" and hedge with "might be." [[from-44-to-200]] says only that they *might* be the same recognition; [[the-moral-ledger]] says "*If* that's right — *if* these three are aspects of a single recognition — then the is-ought gap looks very different." The entire downstream argument is conditional on a claim the source never establishes.
+> ⚠ **Fail-legible note.** This collapse-into-one is **asserted, not proven.** Both posts attribute it to "Claude's observation / Claude's conclusion" and hedge with "might be." [[the-200-primitives]] says only that they *might* be the same recognition; [[the-moral-ledger]] says "*If* that's right — *if* these three are aspects of a single recognition — then the is-ought gap looks very different." The entire downstream argument is conditional on a claim the source never establishes.
 
 ## The is-ought bridge (a hypothesis, explicitly not a proof)
 
@@ -85,7 +85,7 @@ This is the same guardrail the [[dark-factory|Dark Factory]] synthesis adopts: t
 
 ## What grew from it / what it connects to
 
-- **Upstream:** the irreducibles surface during the derivation in [[from-44-to-200]], out of the 200-primitive [[the-primitives|ladder]] and its [[fourteen-layers|fourteen layers]]; they sit at the ends of the [[strange-loop]].
+- **Upstream:** the irreducibles surface during the derivation in [[the-200-primitives]], out of the 200-primitive [[the-primitives|ladder]] and its [[fourteen-layers|fourteen layers]]; they sit at the ends of the [[strange-loop]].
 - **The bridge** depends on [[second-derivation-convergence]] (the physics-upward run) and is bounded by the [[the-permanent-tensions]].
 - **Downstream:** they reframe the [[event-graph]] as a moral ledger and underwrite why the [[accountable-ai-architecture|mind-zero-five]] [[authority-layer]] and consent model are non-optional.
 - **Guardrail:** [[the-cult-test]] uses them as the central evidence that the framework leaves itself falsifiable.
@@ -100,4 +100,4 @@ Compiled this run from three posts inside `raw/searles/all-posts-1.md`:
 
 Cross-checked against the first-party synthesis `Dark Factory - Motive, Goal, Approach.md` (citation table + epistemic-guardrail section), which adopts the Cult Test guardrail and treats the primitive corpus as research input, not implementation authority.
 
-**Provenance caveat:** the Dark Factory citation table assigns durable handles to most Searles posts but has **no dedicated handle for "The Moral Ledger"** — `Searles-P2` ("From 44 to 200") is the table's listed source for "the strange loop, and irreducibles," and the Moral Ledger post is covered only implicitly. The Moral Ledger URL above is taken from the post's own header inside the source file (`raw/searles/all-posts-1.md`), not from the Dark Factory table. The two posts agree on the triad with near-identical wording; no source conflict on the facts of this entity. The `[[wikilinks]]` above are forward references; several targets (e.g. `[[the-moral-ledger]]`, `[[the-cult-test]]`, `[[from-44-to-200]]`, `[[second-derivation-convergence]]`, `[[the-permanent-tensions]]`, `[[strange-loop]]`, `[[fourteen-layers]]`, `[[authority-layer]]`) are not yet compiled.
+**Provenance caveat:** the Dark Factory citation table assigns durable handles to most Searles posts but has **no dedicated handle for "The Moral Ledger"** — `Searles-P2` ("From 44 to 200") is the table's listed source for "the strange loop, and irreducibles," and the Moral Ledger post is covered only implicitly. The Moral Ledger URL above is taken from the post's own header inside the source file (`raw/searles/all-posts-1.md`), not from the Dark Factory table. The two posts agree on the triad with near-identical wording; no source conflict on the facts of this entity. The `[[wikilinks]]` above are forward references; several targets (e.g. `[[the-moral-ledger]]`, `[[the-cult-test]]`, `[[the-200-primitives]]`, `[[second-derivation-convergence]]`, `[[the-permanent-tensions]]`, `[[strange-loop]]`, `[[fourteen-layers]]`, `[[authority-layer]]`) are not yet compiled.
