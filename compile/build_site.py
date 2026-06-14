@@ -22,6 +22,18 @@ STATUS = ROOT / "compile" / "refresh-status.json"
 INDEX = ROOT / "index.md"
 CSS_VER = ""
 
+THEME_JS = (
+    '<script>(function(){'
+    'var b=document.getElementById("theme-toggle");if(!b)return;'
+    'function cur(){return document.documentElement.getAttribute("data-theme")==="light"?"light":"dark";}'
+    'function lbl(){b.textContent=cur()==="light"?"☾ dark":"☀ light";}'
+    'function setT(t){if(t==="light"){document.documentElement.setAttribute("data-theme","light");}'
+    'else{document.documentElement.removeAttribute("data-theme");}'
+    'try{localStorage.setItem("civwiki-theme",t);}catch(e){}lbl();}'
+    'lbl();b.addEventListener("click",function(){setT(cur()==="light"?"dark":"light");});'
+    '})();</script>'
+)
+
 TIER_ORDER = ["foundational", "architecture", "arc", "investigation", "concept"]
 TIER_LABEL = {
     "foundational": "Foundational — source philosophy",
@@ -216,16 +228,22 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         '<title>%s — Civilization Wiki</title>' % html.escape(title) +
-        '<link rel="stylesheet" href="style.css?v=%s"></head><body>' % CSS_VER +
+        '<link rel="stylesheet" href="style.css?v=%s">' % CSS_VER +
+        '<script>(function(){try{if(localStorage.getItem("civwiki-theme")==="light")'
+        'document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
+        '</head><body>' +
         '<header class="topbar"><a class="brand" href="index.html">Civilization Wiki</a>'
-        '<div class="top-meta">%s</div></header>' % freshness(status) +
+        '<div class="top-meta">%s'
+        '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☀ light</button>'
+        '</div></header>' % freshness(status) +
         '<div class="layout">%s' % sidebar +
         '<main class="content"><h1 class="page-title">%s</h1>%s' % (h1, tagline) +
         '%s%s' % (infobox, toc) +
         '<article class="body">%s</article>%s%s' % (body_html, seealso, navbox) +
         '<footer class="page-foot">Generated from <code>wiki/</code> + <code>index.md</code> · '
         'a Karpathy-style LLM wiki · fail-legible: gaps are TBD, conflicts are stated.</footer>'
-        '</main></div></body></html>'
+        '</main></div>' + THEME_JS +
+        '</body></html>'
     )
 
 
