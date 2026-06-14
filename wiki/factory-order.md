@@ -17,7 +17,7 @@ confidence:
 
 # FactoryOrder (Durable Unit of Work)
 
-The **FactoryOrder** is the durable starting object for product work in the [[dark-factory]]. It is the first thing created when a human goal enters the factory: it captures and preserves the human's intent, then decomposes into Requirements, AcceptanceCriteria, and Tasks that the rest of the system fulfils. In the [[Dark Factory - Motive, Goal, Approach|dark-factory-motive-goal-approach]] orientation, every successful run begins `human intent -> FactoryOrder -> Requirements and AcceptanceCriteria -> Work tasks -> ...` — the order is the root of the causal chain that the [[event-graph]] makes inspectable.
+The **FactoryOrder** is the durable starting object for product work in the [[dark-factory]]. It is the first thing created when a human goal enters the factory: it captures and preserves the human's intent, then decomposes into Requirements, AcceptanceCriteria, and Tasks that the rest of the system fulfils. In the *Dark Factory - Motive, Goal, Approach* orientation, every successful run begins `human intent -> FactoryOrder -> Requirements and AcceptanceCriteria -> Work tasks -> ...` — the order is the root of the causal chain that the [[event-graph]] makes inspectable.
 
 It appears in two registers that this article keeps separate, because they are at different levels of authority:
 

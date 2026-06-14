@@ -3,7 +3,7 @@ title: Civilization Wiki — index
 last_compiled: "2026-06-14"
 run: "Run-3 (thirteen-graphs completion + arc advancement + runtime objects)"
 status: partial — approaching corpus coverage
-article_count: 89
+article_count: 92
 ---
 
 # Civilization Wiki — index
@@ -22,7 +22,7 @@ downstream view (Mission Control, the spine/story view) is a read lens onto it.
 |---|---|
 | **last_compiled** | **2026-06-14** |
 | **run** | **Run-3 (thirteen-graphs completion + arc advancement + runtime objects)** |
-| **articles compiled** | **89** (25 foundational · 24 architecture · 10 arc · 16 investigation · 13 concept · 1 meta) |
+| **articles compiled** | **92** (27 foundational · 25 architecture · 10 arc · 16 investigation · 13 concept · 1 meta) |
 | **completeness** | **PARTIAL — arc spine, philosophy, runtime objects, and thirteen-graphs complete; full corpus sweep still deferred** |
 
 **This is Run-3, not the finished wiki.** Run-1 compiled the core spine. Run-2
@@ -74,7 +74,7 @@ silently resolved):
   numbering for the tier names. See `[[thirteen-graphs]]`.
 - **Gate K and Gate L.** Defined in v4.0 but unsatisfied as of 2026-06-14. They
   extend the Gate A–J lettering with a different scope (development-loop hardening
-  and v3.9-to-v4.0 reconciliation). See `[[gate-k]]`; Gate L article deferred.
+  and v3.9-to-v4.0 reconciliation). See `[[gate-k]]` and `[[gate-l]]`.
 
 ---
 
@@ -135,11 +135,12 @@ quoted excerpts, not the repo). → `[[accountable-ai-architecture]]`,
 The product horizon Searles sketches on top of the same substrate — one event
 graph, thirteen lenses — is `[[thirteen-graphs]]`. The first three graphs have
 full deep-dive articles: `[[the-work-graph]]` (Layer 1, the one being deployed),
-`[[the-market-graph]]` (Layer 2), `[[the-social-graph]]` (Layer 3). Nine more
+`[[the-market-graph]]` (Layer 2), `[[the-social-graph]]` (Layer 3). Eleven more
 are now compiled through Layer 13: `[[the-justice-graph]]`, `[[the-research-graph]]`,
 `[[the-knowledge-graph-searles]]`, `[[the-ethics-graph]]`, `[[the-identity-graph]]`,
-`[[the-population-graph]]`, `[[the-culture-graph]]`, `[[the-meta-graph]]`,
-`[[the-existence-graph]]`. Two proposal extensions are also compiled:
+`[[the-population-graph]]`, `[[the-relationship-graph]]`, `[[the-community-graph]]`,
+`[[the-culture-graph]]`, `[[the-meta-graph]]`, `[[the-existence-graph]]`. Two
+proposal extensions are also compiled:
 `[[edge-weights-as-personality]]` and `[[the-four-strategies]]`. The corpus is
 taken into the Transpara work as the **Searles primitive basis** — **motive,
 vocabulary, and accountability premise only**, never as proven metaphysics or
@@ -270,16 +271,16 @@ accepted 2026-06-12). Within it:
 - **Gate-E decision is pending.** Grant-2 is exhausted. Gate-E (or a new grant)
   is Michael Saucier's decision exclusively. The v16 daemon remains alive and
   frozen by design pending that decision. → **`[[slice-1-completion]]`**,
-  **`[[gate-k]]`** (Gate K: defined and unsatisfied; Gate L: deferred).
+  **`[[gate-k]]`**, **`[[gate-l]]`** (Gates K and L: defined and unsatisfied).
 
 ---
 
 ## Article index
 
-89 articles compiled, grouped by tier. Tier is taken verbatim from each article's
+92 articles compiled, grouped by tier. Tier is taken verbatim from each article's
 frontmatter.
 
-### Foundational — the Searles source philosophy (25)
+### Foundational — the Searles source philosophy (27)
 
 The accepted philosophical basis (motive and vocabulary only, never proven
 metaphysics or implementation authority).
@@ -308,11 +309,13 @@ metaphysics or implementation authority).
 | `[[the-ethics-graph]]` | The Ethics Graph — Layer 7 (Civilisational); harm detection, is-to-ought |
 | `[[the-governance-graph]]` | The Governance Graph — Layer 10/11 (Civilisational); governance decisions on the chain |
 | `[[the-population-graph]]` | The Population Graph — Layer 9 (Scheme A); demographic scale, aggregate patterns |
+| `[[the-relationship-graph]]` | The Relationship Graph — Layer 9 (Scheme B); intimate dyadic bonds; the layer LovYou was built for |
+| `[[the-community-graph]]` | The Community Graph — Layer 10 (Scheme B); belonging, shared meaning, living practice |
 | `[[the-culture-graph]]` | The Culture Graph — Layer 12 (Scheme A); provenance of meaning |
 | `[[the-meta-graph]]` | The Meta Graph — Layer 12 (Scheme A); system watching itself, emergence detection |
 | `[[the-existence-graph]]` | The Existence Graph — Layer 13; the thing you deploy the other graphs inside |
 
-### Architecture — the entities the system is built from (24)
+### Architecture — the entities the system is built from (25)
 
 The standing components and design objects of the platform/runtime, including the
 basis and north-star entities.
@@ -329,6 +332,7 @@ basis and north-star entities.
 | `[[work]]` | Work — the production DAG and task lifecycle (`transpara-ai/work`) |
 | `[[gates]]` | Gates — verification, trace, and release gates (A–J; K/L are v4.0) |
 | `[[gate-k]]` | Gate K — interim loop hardening gate (v4.0, defined and unsatisfied) |
+| `[[gate-l]]` | Gate L — v4.0 reconciliation gate (v3.9→v4.0 certification; defined and unsatisfied) |
 | `[[runtime-broker]]` | RuntimeBroker — the bounded execution envelope |
 | `[[bounded-runtime]]` | Bounded Runtime — execution envelope (`CanOperate`, `BudgetConfig`, containment tripwire) |
 | `[[authority-request]]` | AuthorityRequest — gated consent object; the protected-action ask |
@@ -430,26 +434,19 @@ these has an article yet; do not read their absence as absence from the project.
   from ~8,783 markdown files across ~73 repos + ~1,175 Open Brain thoughts.
   Run-3 covered the arc spine, Searles philosophy, architecture entities, landscape
   survey, and the deferred long-tail — not the whole corpus.
-- **Two `raw/` source tiers remain unmirrored** (`PROVENANCE.md`): `open_brain`
-  (`raw/open-brain/` partially exported — 2026-06.md present; full dump not
-  committed) and `upstream_context` (`raw/investigations/<project>/` is empty by
-  design, Phase 2). Investigation-tier articles exist *despite* this — compiled
-  from first-party survey, not from upstream mirrors.
-- **Gate L.** The v4.0 companion gate to Gate K — defined as Event 2 (v3.9-to-v4.0
-  reconciliation) in the Integration Arc — has no standalone article yet.
-- **The Relationship Graph, Community Graph.** Deep-dive articles exist in the
-  Searles corpus (Post 22 for Relationship, named in the series) but were not
-  compiled in Run-3. The Population Graph article (compiled) covers Scheme A Layer
-  9; the Relationship Graph article (Scheme B Layer 9) remains a legitimate
-  forward-ref.
+- **`raw/` source tiers only partially mirrored** (`PROVENANCE.md`): `open_brain`
+  (`raw/open-brain/` holds monthly exports for **Mar–Jun 2026**; the full
+  per-thought dump is not committed) and `upstream_context`
+  (`raw/investigations/<project>/` is empty by design, Phase 2). Investigation-tier
+  articles exist *despite* this — compiled from first-party survey, not upstream mirrors.
 - **The `mind-zero` / `mind-zero-five` repo entity and the `eventgraph` repo.**
   The `[[mind-zero-five]]` article is now compiled but the repo-identity tension
   (mind-zero-five at `github.com/mattxo/mind-zero-five` vs.
   `transpara-ai/eventgraph` vs. `lovyou-ai/eventgraph`) remains unresolved. See
   `[[event-graph]]` and `[[the-lovyou-ai-fork]]`.
-- **Remaining Open Brain history.** The 2026-06.md export covers June; prior
-  months (Mar–May) are not in `raw/open-brain/`. A future run mirroring those
-  months can deepen the operational record.
+- **Open Brain depth.** The `raw/open-brain/` monthly exports cover **Mar–Jun 2026**
+  (Open Brain began 2026-03-03); deepening from monthly summaries to finer
+  per-thought granularity is a future run.
 - **v16 fix-set implementation.** F1 (Reason-phase cwd), F2 (spec-diff gate at
   subtask creation), F3 (quiescence detector + `hive.run.completed`) are named in
   `[[slice-1-completion]]` as the candidate scope for the next fix set pending

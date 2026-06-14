@@ -29,7 +29,7 @@ The source specifies twelve primitives for this layer ([Searles-CultureGraph], ~
 
 The source glosses the most load-bearing ones:
 
-- **Story** — the mechanism by which experience becomes transmissible. Not facts (those belong to the [[the-knowledge-graph|Knowledge Graph]], Layer 6) — stories carry meaning that facts cannot. "The unemployment rate is 4.2%" is a fact. "My father lost his job and we lost our house" is a story. Both describe the same economic reality. Only one changes how you feel about it.
+- **Story** — the mechanism by which experience becomes transmissible. Not facts (those belong to the [[the-knowledge-graph-searles|Knowledge Graph]], Layer 6) — stories carry meaning that facts cannot. "The unemployment rate is 4.2%" is a fact. "My father lost his job and we lost our house" is a story. Both describe the same economic reality. Only one changes how you feel about it.
 - **Myth** — deep civilisational narratives, not false stories. The myth of progress, the myth of the frontier, the myth of the fall. These aren't true or false; they're the lenses through which a culture interprets everything else.
 - **Sacred and Taboo** — the boundaries of meaning. What a culture treats as sacred is what it considers beyond instrumental value. What it treats as taboo is what it considers harmful even to articulate. These boundaries define a culture's identity more precisely than its explicit values.
 
@@ -103,7 +103,7 @@ The immediate urgency identified is narrower than the full layer: **creative att
 
 ## Relationship to adjacent graphs
 
-- **Below:** the [[the-knowledge-graph|Knowledge Graph]] (Layer 6) carries verified information; Culture carries meaning. The compression the layer identifies is exactly the reduction of Layer 12 into Layer 6. Knowledge is facts; Culture is what facts mean.
+- **Below:** the [[the-knowledge-graph-searles|Knowledge Graph]] (Layer 6) carries verified information; Culture carries meaning. The compression the layer identifies is exactly the reduction of Layer 12 into Layer 6. Knowledge is facts; Culture is what facts mean.
 - **Above:** the [[the-existence-graph|Existence Graph]] (Layer 13) is what the Culture Graph makes possible — "The Culture Graph preserves meaning. The Existence Graph maintains the ecology." Post 29's vision of a post-scarcity society explicitly requires Culture to preserve meaning after work is automated.
 - **Sacred primitive interaction:** the sacred primitive explicitly exempts certain events from the optimisation logic that governs all lower layers, including the [[the-market-graph|Market Graph]] and [[the-work-graph|Work Graph]].
 - **Substrate:** all cultural events are views over the single [[event-graph]].

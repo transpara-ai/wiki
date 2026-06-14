@@ -42,7 +42,7 @@ The buildout is recorded in Open Brain over **2026-04-04 → 2026-04-06**: in th
 
 The defining negative claims in the one-liner are well supported:
 
-- **No direct execution authority.** The dark-factory responsibility map states it ("Does not own direct execution authority"), and the code corroborates: the package has no runtime-broker, no command-execution, no file/network surface. It emits *events about* work; bounded execution belongs to RuntimeBroker under a declared envelope ([[dark-factory-motive-goal-approach]], approach step 6).
+- **No direct execution authority.** The dark-factory responsibility map states it ("Does not own direct execution authority"), and the code corroborates: the package has no runtime-broker, no command-execution, no file/network surface. It emits *events about* work; bounded execution belongs to RuntimeBroker under a declared envelope (*Dark Factory - Motive, Goal, Approach*, approach step 6).
 - **Does not govern.** Authority decisions are consumed by Agent (as inputs to the identity lifecycle), not produced by it. Governance/protected-action decisioning is [[hive-governance]]'s job, and authority records must map back to [[event-graph]] ([[authority-layer]]).
 - **Load-bearing but not in command.** [[hive-governance]] depends on the package directly — `hive/go.mod` carries `github.com/transpara-ai/agent => ../agent`, and the slice-1 design lists it imported across `pkg/hive/{identity,bridge,runtime}.go` and `pkg/loop/loop.go`. Removing it would break the runtime; it still holds no execution or governance authority.
 
@@ -67,7 +67,7 @@ Agent is the substrate the [[hive-governance]]'s self-evolution loop runs on. Op
 
 ## Related entities
 
-[[hive-governance]] · [[event-graph]] · [[authority-layer]] · [[dark-factory]] · [[dark-factory-motive-goal-approach]] · [[work]] · [[the-20-primitives]] (the `Agent` primitive — "intelligence as an operation type" — is the conceptual ancestor of this package) · [[intelligence-is-an-operation-type]]
+[[hive-governance]] · [[event-graph]] · [[authority-layer]] · [[dark-factory]] · [[work]] · [[the-20-primitives]] (the `Agent` primitive — "intelligence as an operation type" — is the conceptual ancestor of this package) · [[intelligence-is-an-operation-type]]
 
 ## Sources & provenance
 

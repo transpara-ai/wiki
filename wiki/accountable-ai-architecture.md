@@ -35,7 +35,7 @@ The thesis is structural, not aspirational: accountability is encoded in data st
 
 The single architectural commitment the rest of the design rests on: **the AI stays inside the graph.** In the post's words, "intelligence is just another operation type. Claude is invoked as a node in the system — it receives inputs, produces outputs, and is subject to the same success/failure criteria and authority requirements as everything else. It is not elevated above the accountability structure. It lives within it."
 
-This is the same move recorded in [[the-20-primitives]] (the late-night seed already treated "node action" and "LLM-defined expansion" as ordinary operations) and it is independently restated in the first-party [[dark-factory-motive-goal-approach]]: *"Dark Factory treats intelligence as one operation type inside a larger accountability system."* Two sources, no conflict — this is the through-line from the philosophy to both the mind-zero code and the later dark-factory work.
+This is the same move recorded in [[the-20-primitives]] (the late-night seed already treated "node action" and "LLM-defined expansion" as ordinary operations) and it is independently restated in the first-party *Dark Factory - Motive, Goal, Approach*: *"Dark Factory treats intelligence as one operation type inside a larger accountability system."* Two sources, no conflict — this is the through-line from the philosophy to both the mind-zero code and the later dark-factory work.
 
 > Confidence: this is a claim about **design intent**, well-attested across two independent sources. Whether the running binary perfectly upholds "no special-casing for the model" is not something this article verified.
 
@@ -63,7 +63,7 @@ There are exactly three levels (a Go `Level` string), modelling three relationsh
 | `Recommended` | Auto-approves after a 15-minute timeout (`RecommendedTimeout = 15 * time.Minute`) unless a human objects — "silence means consent" | A trusted colleague — proceeds unless you object |
 | `Notification` | Auto-approves immediately; the AI acts and tells you | A senior partner — just keeps you informed |
 
-A separate `Policy` struct maps an `Action` (exact match or `"*"` wildcard) to an `ApproverID` and a default `Level`. The mind may self-approve an action **only if an explicit policy grants it that right** — the trust model is configurable, auditable, and itself recorded in the event graph. The post calls this "the Consent primitive from Layer 3 (Society), implemented as code": legitimate action requires consent; consent is explicit, traceable, and revocable. See [[authority-layer]] and [[consent-layer]].
+A separate `Policy` struct maps an `Action` (exact match or `"*"` wildcard) to an `ApproverID` and a default `Level`. The mind may self-approve an action **only if an explicit policy grants it that right** — the trust model is configurable, auditable, and itself recorded in the event graph. The post calls this "the Consent primitive from Layer 3 (Society), implemented as code": legitimate action requires consent; consent is explicit, traceable, and revocable. See [[authority-layer]] and [[authority-layer|consent layer]].
 
 The graduated `Required`/`Recommended`/`Notification` design is what the post means by **"trust is graduated, not binary"** — tighten or relax oversight as competence is demonstrated.
 
@@ -115,7 +115,7 @@ That post also hangs a larger philosophical claim on the architecture — that i
 
 ## Relationship to dark-factory
 
-The first-party [[dark-factory-motive-goal-approach]] names mind-zero-five as a **"prior implementation pattern"**: "open-source Go code with event graph, authority layer, and mind loop; **not imported into Dark Factory as a dependency**." It is "used as evidence that accountability architecture is implementable; informs but does not govern." So the two sources agree on what mind-zero-five *is* and explicitly agree on what it is *not* — an upstream dependency. The shared DNA is the load-bearing principle (intelligence as one operation type) and the event-graph + authority + trace spine, not shared code.
+The first-party *Dark Factory - Motive, Goal, Approach* names mind-zero-five as a **"prior implementation pattern"**: "open-source Go code with event graph, authority layer, and mind loop; **not imported into Dark Factory as a dependency**." It is "used as evidence that accountability architecture is implementable; informs but does not govern." So the two sources agree on what mind-zero-five *is* and explicitly agree on what it is *not* — an upstream dependency. The shared DNA is the load-bearing principle (intelligence as one operation type) and the event-graph + authority + trace spine, not shared code.
 
 ## A note on the numbering (source conflict, surfaced not resolved)
 
@@ -129,9 +129,9 @@ The internal numbering (code = Post 3, ledger = Post 5) is self-consistent. To a
 
 ## What grew from it
 
-- **Into the first-party stack:** the accountability spine (event graph + authority + trace, intelligence-as-operation) is the philosophical input to [[dark-factory]] ([[dark-factory-motive-goal-approach]]), which reimplements rather than imports it.
+- **Into the first-party stack:** the accountability spine (event graph + authority + trace, intelligence-as-operation) is the philosophical input to [[dark-factory]] (*Dark Factory - Motive, Goal, Approach*), which reimplements rather than imports it.
 - **Into philosophy:** the same event graph is reread as [[the-moral-ledger]]; the layered framework it sits on is [[the-200-primitives]] / [[fourteen-layers]], with [[strange-loop]] and [[three-irreducibles]] as its philosophical edges.
-- **Component entities:** [[event-graph]], [[authority-layer]], [[consent-layer]], [[the-mind-loop]], [[bounded-runtime]].
+- **Component entities:** [[event-graph]], [[authority-layer]], [[authority-layer|consent layer]], [[the-mind-loop]], [[bounded-runtime]].
 
 ## Sources & provenance
 
