@@ -32,7 +32,7 @@ TIER_LABEL = {
 }
 
 WL = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)(?:\|([^\]]+))?\]\]")
-TOK = re.compile(r"@@WL\|([a-z0-9\-]+)\|([^@]*)@@")
+RUNTOK = re.compile(r"@@WL(\d+)@@")
 
 
 def split_fm(raw):
@@ -84,28 +84,27 @@ def title_of(slug):
     return META.get(slug, {}).get("title", slug.replace("-", " "))
 
 
-def tokenize(t):
-    return WL.sub(lambda m: "@@WL|%s|%s@@" % (m.group(1), m.group(2) or ""), t)
+MD = markdown.Markdown(extensions=["extra", "sane_lists", "toc"])
 
 
-def detok(h, link_acc=None):
-    def repl(m):
-        slug, alias = m.group(1), m.group(2)
+def to_html(body, link_acc=None):
+    MD.reset()
+    store = []
+
+    def grab(m):
+        store.append((m.group(1), m.group(2)))
+        return "@@WL%d@@" % (len(store) - 1)
+
+    def emit(m):
+        slug, alias = store[int(m.group(1))]
         label = html.escape(alias or title_of(slug))
         if slug in SLUGS:
             if link_acc is not None and slug != "index":
                 link_acc.add(slug)
             return '<a class="wl" href="%s.html">%s</a>' % (slug, label)
         return '<a class="wl tbd" title="not yet written (TBD)">%s</a>' % label
-    return TOK.sub(repl, h)
 
-
-MD = markdown.Markdown(extensions=["extra", "sane_lists", "toc"])
-
-
-def to_html(body, link_acc=None):
-    MD.reset()
-    out = detok(MD.convert(tokenize(body)), link_acc)
+    out = RUNTOK.sub(emit, MD.convert(WL.sub(grab, body)))
     return out, list(getattr(MD, "toc_tokens", []) or [])
 
 
