@@ -21,7 +21,7 @@ confidence:
 
 **The irreducible-concept ontology at the root of the whole arc.** Across two posts published the same day (**2026-02-28**) and revisited under external scrutiny on **2026-03-01**, Matt Searles (working with Claude) records a three-rung ladder: **20** primitives from a late-night failure-tracing question, expanded to **44** foundation primitives (11 groups) by the [[hive-governance]]'s ~70 autonomous agents, then derived by Claude Opus into **200** primitives across **14 layers** (Layer 0 Foundation through Layer 13 Existence). This article is the spine of the arc; the rungs each have (or will have) their own entries — [[the-20-primitives]], [[the-44-primitives]], [[the-200-primitives]], [[fourteen-layers]].
 
-The ladder predates the first fork and the [[dark-factory]]. [[dark-factory-motive-goal-approach]] adopts every rung as **research input and philosophical basis only**, never as implementation authority — and is explicit that the 44- and 200-primitive rungs are "important, but not independently proven."
+The ladder predates the first fork and the [[dark-factory]]. *Dark Factory - Motive, Goal, Approach* adopts every rung as **research input and philosophical basis only**, never as implementation authority — and is explicit that the 44- and 200-primitive rungs are "important, but not independently proven."
 
 ## The seed: 20 primitives from failure-tracing
 
@@ -41,7 +41,7 @@ The jump came from an accident: Searles *"accidentally left the hive running aut
 
 Post 2 lists all 44 by group. The narrative emphasis is that *no human designed the additional 24* — that a society of agents *"decided it needed concepts for self, trust, uncertainty, blind spots, deception, and health … because it couldn't function without them."* See [[the-44-primitives]] for the per-group breakdown.
 
-> ⚠ **Fail-legible note (44 provenance).** That ~70 autonomous agents *discovered* the 44 as a necessity is the **source's own narrative**, told retrospectively. The author later concedes the limit of this evidence in [[the-audit]]: the hive0 derivation and the later Claude derivation *"both used LLMs trained on overlapping corpora … 'two AI systems converged' is weaker evidence than it appears."* Treat the 44 as a recorded research output, not as an independently verified emergence. [[dark-factory-motive-goal-approach]] files it under "Research input … not independently proven."
+> ⚠ **Fail-legible note (44 provenance).** That ~70 autonomous agents *discovered* the 44 as a necessity is the **source's own narrative**, told retrospectively. The author later concedes the limit of this evidence in [[the-audit]]: the hive0 derivation and the later Claude derivation *"both used LLMs trained on overlapping corpora … 'two AI systems converged' is weaker evidence than it appears."* Treat the 44 as a recorded research output, not as an independently verified emergence. *Dark Factory - Motive, Goal, Approach* files it under "Research input … not independently proven."
 
 ## The second jump: 44 → 200 across 14 layers
 
@@ -81,7 +81,7 @@ Post 2 also records a **second, independent derivation** — a fresh Claude inst
 
 The same 200 primitives reappear, *weighted differently*, throughout the corpus and the first-party synthesis:
 
-- **Into architecture:** the 20-primitive traceability seed → [[event-graph]]; explicit criteria → [[acceptance-criteria]] and [[gates]]; agent action → [[bounded-runtime]]; authority → [[authority-layer]]. ([[dark-factory-motive-goal-approach]] maps these explicitly.)
+- **Into architecture:** the 20-primitive traceability seed → [[event-graph]]; explicit criteria → [[acceptance-criteria]] and [[gates]]; agent action → [[bounded-runtime]]; authority → [[authority-layer]]. (*Dark Factory - Motive, Goal, Approach* maps these explicitly.)
 - **Into the 44:** the trust/deception/confidence/instrumentation/health groups motivate [[dark-factory]]'s adversarial review, contradiction handling, blind-spot tracking, and invariant/health checks.
 - **Into views:** the 14 layers map onto the [[thirteen-graphs]] (Work / Market / Social / Justice / Research / Knowledge / Ethics / Identity / Population / Governance / Culture / Meta / Existence) as views over one event graph.
 
@@ -101,7 +101,7 @@ The post catalogues the weaknesses the author accepts as real and unresolved, se
 > - **Why 14 layers?** *"The 14 layers emerged from the derivation — they weren't designed … The specific number is an artefact of the derivation process, not a claim about ontological necessity."*
 > - **The author is inside the loop.** The series is written by the framework's builder with one of the AIs that derived it; the [[the-cult-test]] in post 9 was self-administered. The audit is presented as the *first* external stress test, and its own verdict is *"structurally valid, needs validation."*
 
-The framework's own guardrail, [[the-cult-test]], makes the same move from the inside: *framework as tool, not truth; the scientific method is the authority layer; the framework must not become sacred.* [[dark-factory-motive-goal-approach]] inherits this stance — it treats every rung of the ladder as conceptual input and lists *"whether the 200 primitives are a true ontology or useful map"* as an explicitly **open** question.
+The framework's own guardrail, [[the-cult-test]], makes the same move from the inside: *framework as tool, not truth; the scientific method is the authority layer; the framework must not become sacred.* *Dark Factory - Motive, Goal, Approach* inherits this stance — it treats every rung of the ladder as conceptual input and lists *"whether the 200 primitives are a true ontology or useful map"* as an explicitly **open** question.
 
 ## Sources & provenance
 

@@ -60,7 +60,7 @@ Each prohibition removes a source of non-determinism or unaccountable power so t
 - **No LLM planning** — planning is deterministic, so a failed trace is a control-plane bug, not a model's bad day.
 - **No real SaaS generation** — the worker produces a trivial artifact, not a real product, so the slice tests provenance and gates, not code quality.
 - **No external runtime** — execution runs only through the **local deterministic worker**. External runtimes (Hermes, OpenManus, Codex, CI, etc.) are deferred until this worker proves traceability, policy, and audit. The spec is explicit: "No external runtime adapter is eligible until the local deterministic worker passes Base Slice 0" (`v3.9/04`, L196; the local-deterministic-first rule also at orientation L167).
-- **No production deploy** — deployment is a protected action requiring authority; it is excluded by default ([[protected-actions]]).
+- **No production deploy** — deployment is a protected action requiring authority; it is excluded by default ([[authority-request|protected action]]).
 - **No multi-agent orchestration** — a single bounded actor, so coordination cannot mask a broken trace.
 - **No memory recall / knowledge reuse** — [[memory-knowledge-advisory]] is advisory-only and is kept out entirely, so nothing influences the run without leaving evidence.
 - **No capability evolution** — the factory does not self-modify during the proof of its own floor ([[capability-evolution]]).
@@ -100,7 +100,7 @@ Base Slice 0 is the gate to everything downstream. Only after it passes do the d
 
 - **Real generation** → the constrained SaaS Template v1 (Next.js + FastAPI + Postgres via Docker Compose, dry-run/preview only; production deploy and payments excluded) — see [[saas-template-v1]].
 - **External execution** → RuntimeBroker adapters, each of which must pass its own conformance checklist (file/command/network/secret boundaries, artifact capture, receipt emission, replayability) before use ([[runtime-broker]]).
-- **Higher autonomy** → multi-agent orchestration, advisory [[memory-knowledge-advisory]], and governed [[capability-evolution]] — and ultimately the v4.0 doctrine of the factory building the factory ([[dark-factory-v4]]).
+- **Higher autonomy** → multi-agent orchestration, advisory [[memory-knowledge-advisory]], and governed [[capability-evolution]] — and ultimately the v4.0 doctrine of the factory building the factory ([[v4-0|v4.0]]).
 
 The asymmetry is deliberate: a stalled Base Slice 0 costs one recoverable unit of work; a Base Slice 0 waved through would let every higher, riskier layer run ungated. The arc pays the safe side.
 

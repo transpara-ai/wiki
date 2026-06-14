@@ -82,7 +82,7 @@ Unusually, the source is explicit about its own limits, and the wiki preserves t
 **What the author claims it does show:**
 - **Convergence as evidence of non-arbitrariness.** "Two independent derivations from opposite starting points converge. This is the strongest evidence available that the findings reflect something real rather than arbitrary." *(Asserted; "strongest evidence available" is the author's framing, not an external assessment.)*
 - **The primitives sit at the bridge.** The 44 are "both the endpoint of physical derivation and the starting point of mental derivation."
-- **Ethical robustness to direction.** "Whether you build upward from primitives or upward from physics, you arrive at the same place: experience matters, dignity is real, beings with integrated experience deserve moral consideration. The normative conclusion is robust to the direction of derivation." *(Asserted; this is the [[moral-status]] / dignity claim from [[fourteen-layers|Layer 7]] reached from a second direction — the same is–ought move flagged as contested elsewhere in the arc, e.g. the moral-ledger hypothesis in [[event-graph]].)*
+- **Ethical robustness to direction.** "Whether you build upward from primitives or upward from physics, you arrive at the same place: experience matters, dignity is real, beings with integrated experience deserve moral consideration. The normative conclusion is robust to the direction of derivation." *(Asserted; this is the [[three-irreducibles|moral status]] / dignity claim from [[fourteen-layers|Layer 7]] reached from a second direction — the same is–ought move flagged as contested elsewhere in the arc, e.g. the moral-ledger hypothesis in [[event-graph]].)*
 
 ## How this corroborates (and is bounded by) the rest of the arc
 
@@ -93,7 +93,7 @@ The first-party [[dark-factory]] synthesis does **not** reproduce the physics-up
 ## What grew from it / what it connects to
 
 - **Roots in:** [[the-20-primitives]] (the late-night seed) → [[the-44-primitives]] (the hive0 ~70-agent run) → [[the-200-primitives]] / [[fourteen-layers]] and its [[strange-loop]]; this experiment is the *second* leg, run against that first one.
-- **The irreducibles it shares:** [[consciousness-irreducible]], [[moral-status]], and [[being]] — the three walls the primitives-up derivation hit, two of which (Distinction-as-experience; qualia-not-from-function) the physics-up derivation is said to re-hit.
+- **The irreducibles it shares:** [[three-irreducibles|consciousness]], [[three-irreducibles|moral status]], and [[three-irreducibles|being]] — the three walls the primitives-up derivation hit, two of which (Distinction-as-experience; qualia-not-from-function) the physics-up derivation is said to re-hit.
 - **What it feeds:** the ethical premise the rest of the arc builds on — that "experience matters" and "dignity is real" — which downstream becomes the [[authority-layer|consent/authority]] and accountability machinery of [[mind-zero]] and the [[dark-factory]]. The article's own caution stands: convergence motivates that machinery; it does not prove the machinery's subjects are conscious.
 
 ## Sources & provenance
