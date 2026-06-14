@@ -24,7 +24,7 @@ confidence:
 
 **A forked public project the [[civilization-landscape-investigation]] evaluated and declined to adopt.** Paperclip is an open-source control plane for running "zero-human companies" — agents arranged into org charts with goals, budgets, approvals, and heartbeat-driven execution. Transpara forked it into the `transpara-ai` org on **2026-03-17** (`transpara-ai/paperclip`, forked from the public upstream `paperclipai/paperclip`) so it could be read as ground-truth source rather than from marketing pages. During the [[dark-factory]] landscape investigation (Phase 4, Batch D, **2026-05-13**) it was assessed against the canonical design and recorded in the v3.9.1 technology-decision crosswalk as **pattern-only** — specifically a **UX-only pattern**: its organization, budgeting, and approval surfaces may *inform* operator UX, but it must never become a control plane "without an ADR and EventGraph authority records."
 
-This article is about **our investigation and decision**, not a mirror of the upstream's documentation. The upstream is public, lovyou-ai-adjacent code; it is cited here only as context, never re-published.
+This article is about **our investigation and decision**, not a mirror of the upstream's documentation. The upstream is public OSS; it is cited here only as context, never re-published.
 
 ## Where it sits in the decision crosswalk
 
@@ -87,7 +87,7 @@ The one place the investigation pointed Paperclip's surfaces is **Gap G6 — Sit
 - **Thin internal evidence.** The investigation inspected **only the README** ("actual implementation not inspected beyond README"). Every claim about Paperclip's internals — data model, heartbeat semantics, plugin boundaries, governance behaviour — is README-grounded, not code-verified. Mark the repo-internals confidence **thin**.
 - **Source nuance on default branch.** The Batch D note records the fork's default branch as `master` (2026-05-13). This is a low-stakes detail and not re-verified live this run; flagged for completeness, not as a contradiction.
 - **Traction figures are context, not evidence.** Star counts appear in our notes (a landscape writeup cites ~38k stars in under four weeks; the live upstream shows ~70k on 2026-06-13). These are upstream-marketing signals carried as context only; they played no part in the decision, which turned on architecture and boundary risk.
-- **Upstream is cited, never re-published.** Per org rule, `paperclipai/paperclip` is public, lovyou-ai-adjacent code. Its README headline ("the app people use to manage AI agents for work") and MIT license are corroborated live as context for *why we forked it to read it*, not as content to mirror. The wiki subject is our investigation and our decision.
+- **Upstream is cited, never re-published.** Per org rule, `paperclipai/paperclip` is public OSS. Its README headline ("the app people use to manage AI agents for work") and MIT license are corroborated live as context for *why we forked it to read it*, not as content to mirror. The wiki subject is our investigation and our decision.
 - **Asserted, not proven.** The framing that Paperclip's org/budget/approval model "implies control-plane authority" is the investigation's risk assessment, not a demonstrated failure — it is the reason the decision is fenced to UX-only, not a record of harm observed.
 
 ## Sources & provenance

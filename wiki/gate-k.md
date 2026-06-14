@@ -21,7 +21,7 @@ confidence:
 
 ## Context: where Gate K fits
 
-The [[dark-factory]] v3.9 verification arc ends at Gate J. After the 2026-06-01 adversarial review of the development loop (DF-V4.0-CKPT-2026-06-01-01), the [[v4-0|v4.0]] doctrine established that the development process is itself a governed Civilization function (DF-V4.0-ADR-001), and that the loop's Tier-0 controls must fail closed before any autonomy can increase. The v4.0 Integration Arc (DF-V4.0-INTEGRATION-ARC) operationalizes this with two sequential program gates: Gate K for loop hardening (Event 1) and [[gate-l|Gate L]] for reconciliation (Event 2).
+The [[dark-factory]] v3.9 verification arc ends at Gate J. After the 2026-06-01 adversarial review of the development loop (DF-V4.0-CKPT-2026-06-01-01), the [[v4-0|v4.0]] doctrine established that the development process is itself a governed Civilization function (DF-V4.0-ADR-001), and that the loop's Tier-0 controls must fail closed before any autonomy can increase. The v4.0 Integration Arc (DF-V4.0-INTEGRATION-ARC) operationalizes this with two sequential program gates: Gate K for loop hardening (Event 1) and Gate L for reconciliation (Event 2).
 
 > ⚠ v4.0, including the Integration Arc and Gate K, has `canonical: false`. [[v3-9|v3.9]] remains the operative baseline for all current gates and implementation work. Gate K is a candidate predicate, not an operative one.
 

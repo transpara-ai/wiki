@@ -30,7 +30,7 @@ confidence:
 
 **A forked public project the [[civilization-landscape-investigation]] surveyed, and decided to learn from rather than depend on.** OB1 — branded **Open Brain** — is an external open-source project by Nate B. Jones that describes itself as "the infrastructure layer for your thinking. One database, one AI gateway, one chat channel" (`OB1/README.md`). Transpara maintains a fork at `transpara-ai/OB1`, tracking upstream `NateBJones-Projects/OB1`; the fork was taken into the org on **2026-04-08** (see the fork-date caveat below). When the 2026-05-13 landscape investigation drew its boundary around the [[dark-factory]] architecture, OB1 was one of the ~22 external candidates it evaluated, and the verdict recorded in the v3.9 doctrine is **pattern-only**: an optional pattern to borrow, never a dependency, kernel, truth source, or authority (`02-technology-decision-crosswalk-v3.9.md`; `01-unified-architecture-decisions-v3.9.md`, Decision 12).
 
-This article is about **Transpara's investigation and decision**, not a re-publication of OB1's own documentation. OB1 is upstream public code (the same `lovyou-ai`-adjacent boundary the org applies elsewhere); it is cited here as context only. The lasting Transpara artifact is the decision row, not the upstream's recipe catalog.
+This article is about **Transpara's investigation and decision**, not a re-publication of OB1's own documentation. OB1 is upstream public code (the same don't-republish boundary the org applies to any forked public upstream); it is cited here as context only. The lasting Transpara artifact is the decision row, not the upstream's recipe catalog.
 
 ## What OB1 is (upstream, as context)
 

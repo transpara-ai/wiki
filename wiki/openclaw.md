@@ -28,7 +28,7 @@ confidence:
 
 **A forked public project the [[civilization-landscape-investigation]] evaluated and recorded as deferred.** OpenClaw is a local-first, channel-first *personal AI assistant* — a long-lived gateway you run on your own devices that fronts many messaging surfaces (WhatsApp, Telegram, Slack, Signal, iMessage, and others) and companion apps, routing inbound messages to agent sessions that can execute tools on the host. Transpara forked it into the `transpara-ai` org on **2026-05-13** (`transpara-ai/openclaw`, forked from the public upstream `openclaw/openclaw`) so it could be read as ground-truth source rather than from a project page. That fork happened on the **same day** as the [[dark-factory]] landscape investigation's 2026-05-13 sweep, where it was assessed (Phase 4, Batch C) against the canonical design and recorded in the v3.9.1 technology-decision crosswalk as **deferred** — a *possible* future [[runtime-broker|RuntimeBroker]] adapter or operator-UX reference, but never a runtime, control plane, or truth/authority layer the factory may depend on today.
 
-This article is about **our investigation and decision**, not a mirror of the upstream's documentation. The upstream is public, lovyou-ai-adjacent code; it is cited here only as context, never re-published.
+This article is about **our investigation and decision**, not a mirror of the upstream's documentation. The upstream is public OSS; it is cited here only as context, never re-published.
 
 ## Where it sits in the decision crosswalk
 
@@ -111,7 +111,7 @@ There is a much deeper local artifact on OpenClaw — *"OpenClaw — A Skeptical
 - **"Hidden controller" is a risk, not an observed failure.** The crosswalk's main risk ("local gateway could become hidden controller") and the closeout rejection ("must not become the control plane or truth source") are forward-looking judgments — the reason the decision is fenced to deferred-adapter/pattern — not records of harm observed in the factory.
 - **Deferred ≠ pattern-only.** OpenClaw is *deferred* (with an adapter path gated on RuntimeBroker conformance), which is a stricter status than the plain *pattern-only* given to, e.g., [[gstack|gStack]] or [[symphony|Symphony]]. The adapter route cannot open until Base Slice 0 + the adapter conformance checklist exist; the pattern route (UX ideas) follows the ordinary freeze policy. Both are recorded; neither is active.
 - **License is MIT (confirmed live).** The Batch C note recorded "README badge states MIT." The live fork metadata confirms `license=MIT`, closing that as fact rather than badge-claim.
-- **Upstream is cited, never re-published.** Per org rule, `openclaw/openclaw` is public, lovyou-ai-adjacent code. Its existence and description ("Your own personal AI assistant. Any OS. Any Platform. The lobster way.") are confirmed live as context for *why we forked it to read it*, not as content to mirror. The wiki subject is our investigation and our decision.
+- **Upstream is cited, never re-published.** Per org rule, `openclaw/openclaw` is public OSS. Its existence and description ("Your own personal AI assistant. Any OS. Any Platform. The lobster way.") are confirmed live as context for *why we forked it to read it*, not as content to mirror. The wiki subject is our investigation and our decision.
 
 ## Where it sits relative to the rest of the survey
 

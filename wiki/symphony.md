@@ -119,6 +119,6 @@ First-party, all read this run:
 - **`...research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md`** (L215–216) — candidate-list entry 22, `transpara-ai/symphony`.
 - **Open Brain** — compiler note on `civilization-landscape-investigation.md` (2026-06-13): the U9 gap chain (U9 ← Paperclip/Multica/Symphony/gStack) and the three-layer category-vocabulary drift across Phase 5 matrix / closeout / Motive doc.
 
-Context only, not re-published: **`https://github.com/openai/symphony`** — the upstream the fork derives from, per the task seed. Per org policy (upstream is public/`lovyou-ai`-adjacent code), it is cited as origin, never mirrored.
+Context only, not re-published: **`https://github.com/openai/symphony`** — the upstream the fork derives from, per the task seed. Per org policy (upstream is public OSS), it is cited as origin, never mirrored.
 
 **Open conflicts / thin spots, stated:** (1) closeout dual-classifies Symphony (pattern-only **and** deferred) while the crosswalk records a single "pattern-only" — both stated above, crosswalk followed as current. (2) Upstream identity (`openai/symphony`) and fork date (2026-05-05) come from the task seed and were not confirmed against any source read this run. (3) Symphony's "preview maturity / agent spawning" risk, architecture, language, and license are not characterized in any source read this run — marked thin. `[[wikilinks]]` are forward references; some targets (e.g. [[civilization-landscape-investigation]], [[paperclip]]) are already compiled, others are not.

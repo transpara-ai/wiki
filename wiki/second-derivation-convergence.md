@@ -92,7 +92,7 @@ The first-party [[dark-factory]] synthesis does **not** reproduce the physics-up
 
 ## What grew from it / what it connects to
 
-- **Roots in:** [[the-20-primitives]] (the late-night seed) → [[the-44-primitives]] (the [[the-lovyou-ai-fork|hive0]] ~70-agent run) → [[the-200-primitives]] / [[fourteen-layers]] and its [[strange-loop]]; this experiment is the *second* leg, run against that first one.
+- **Roots in:** [[the-20-primitives]] (the late-night seed) → [[the-44-primitives]] (the hive0 ~70-agent run) → [[the-200-primitives]] / [[fourteen-layers]] and its [[strange-loop]]; this experiment is the *second* leg, run against that first one.
 - **The irreducibles it shares:** [[consciousness-irreducible]], [[moral-status]], and [[being]] — the three walls the primitives-up derivation hit, two of which (Distinction-as-experience; qualia-not-from-function) the physics-up derivation is said to re-hit.
 - **What it feeds:** the ethical premise the rest of the arc builds on — that "experience matters" and "dignity is real" — which downstream becomes the [[authority-layer|consent/authority]] and accountability machinery of [[mind-zero]] and the [[dark-factory]]. The article's own caution stands: convergence motivates that machinery; it does not prove the machinery's subjects are conscious.
 
