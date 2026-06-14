@@ -34,9 +34,10 @@ the-existence-graph), the runtime objects (authority-request, execution-receipt,
 bounded-runtime), the observatory surface and its transparency contract, the first
 fully-completed slice-1 run, the deployment arc plan, the roles catalog, gate-k,
 mind-zero-five, open-weight LLM routing, upstream-fork-sync, hermes-self-evolution,
-offline-llm-optimization, and the civilization-wiki meta article. **The full corpus
-is still not swept** — the ~8,783-file / ~73-repo / ~1,175-thought substrate named
-in `DESIGN.md` has not been exhausted. Treat any concept not in the article index
+offline-llm-optimization, and the civilization-wiki meta article. **The in-scope
+corpus is still not swept** — the Civilization corpus allowlisted in `DESIGN.md`
+§Corpus scope (the dark-factory doc set + runtime repos + the ~1,175-thought Open
+Brain export + the Searles posts) has not been exhausted. Treat any concept not in the article index
 below as **not-yet-compiled**, not as absent from the project.
 
 **Fail-legible by construction.** Where this index would otherwise emit a link to
@@ -430,10 +431,14 @@ product horizon concepts and the node's-eye readings of the framework.
 Stated so the gaps are legible, per `DESIGN.md` and `PROVENANCE.md`. None of
 these has an article yet; do not read their absence as absence from the project.
 
-- **The full corpus sweep.** Per `DESIGN.md`, the substrate is meant to compile
-  from ~8,783 markdown files across ~73 repos + ~1,175 Open Brain thoughts.
-  Run-3 covered the arc spine, Searles philosophy, architecture entities, landscape
-  survey, and the deferred long-tail — not the whole corpus.
+- **The full corpus sweep.** The in-scope corpus (`DESIGN.md` §Corpus scope) — the
+  dark-factory doc set (~322 md), the runtime repos' own docs (~696 md), the
+  `df-impl-v11..16` iterations, and the ~1,175-thought Open Brain export — has not
+  been exhausted. Run-3 compiled the arc spine, Searles philosophy, architecture
+  entities, and landscape survey from the doc-side view, not the underlying repo
+  source. (The earlier "~8,783 files / 73 repos" figure was a raw count of the whole
+  nucbuntu clone dir — ~45 repos of which are Transpara's unrelated product line;
+  corrected 2026-06-14.)
 - **`raw/` source tiers only partially mirrored** (`PROVENANCE.md`): `open_brain`
   (`raw/open-brain/` holds monthly exports for **Mar–Jun 2026**; the full
   per-thought dump is not committed) and `upstream_context`
