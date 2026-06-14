@@ -75,7 +75,7 @@ The runtime side of Hive is a society of cooperating agent roles that "coordinat
 Two role facts are corroborated by code-grounded Open Brain captures (2026-06-05 .. 2026-06-13, sourced from `pkg/hive/agentdef.go` `StarterRoleDefinitions`/`StarterAgents`):
 
 - **The implementer is the only role with `CanOperate=true`** — i.e. the only role permitted to take real, effecting action; the rest are governance/coordination roles. Spawned (emergent) roles "remain `CanOperate=false`, trust-gated" (deployment-arc, Phase 7).
-- **The guardian sits outside the role hierarchy** and approves role proposals by default unless a policy is violated — an earlier gap where the Guardian's prompt lacked the `/approve`/`/reject` instructions it was supposed to use was fixed by adding a ROLE GOVERNANCE section (Open Brain, 2026-04-09, then on the `lovyou-ai`/upstream hive).
+- **The guardian sits outside the role hierarchy** and approves role proposals by default unless a policy is violated — an earlier gap where the Guardian's prompt lacked the `/approve`/`/reject` instructions it was supposed to use was fixed by adding a ROLE GOVERNANCE section (Open Brain, 2026-04-09, then on the upstream hive, pre-rebrand).
 
 > ⚠ **Fail-legible — source status.** `civic-roles.md` is marked **`status: superseded`**; it points to `docs/roles-catalog.md` as a "strict superset covering both runtime civic roles and governance policy roles." That successor catalog is itself **`status: draft, canonical: false`** across every Open Brain capture of it (2026-06-08 .. 2026-06-13), pending Gate-E approval. So: the *nine runtime civic roles* are stable and well-attested, but the canonical catalog adds **15 governance policy roles** (Operator, Product, Architect, Planner, Engineer, QA, Security, Release, Auditor, MemoryCurator, KnowledgeCurator, EvalOwner, CapabilityOptimizer, CapabilityReviewer, CapabilityRelease) for **24 total**, with only the `planner`/`Planner` name matching exactly across layers. The 9 runtime roles are the ones Hive *runs*; the 15 governance roles are an authority-doctrine taxonomy, not separate running agents.
 
@@ -124,7 +124,7 @@ Two changes shipped on 2026-06-14 that bear directly on model-policy correctness
 
 **hive#159 — page role policy lookups fixed.** `pkg/hive/operator_model_policy_api.go`'s `latestModelRolePolicyUpdates` was using `readProjectionEvents` (a single-page helper) and could miss policy events that fell outside the first page of results. The fix replaces the single-page call with a paginated loop over `store.ByType(EventTypeModelRolePolicyUpdated, …)` that walks pages newest-first (chain order, not wall-clock), short-circuits once every starter role has a policy, and guards the `nil`-store and `limit ≤ 0` edge cases. A companion test covers malformed policy events. The fix closes a silent fail-open: an operator who set a model policy but had more than `defaultOperatorProjectionLimit` events in the store could see their policy silently ignored on the next projection load.
 
-> **Fail-legible.** Both PRs are in the `transpara-ai/hive` fork (origin); the upstream `lovyou-ai/hive` equivalent is managed separately and is not referenced here.
+> **Fail-legible.** Both PRs are in the `transpara-ai/hive` repo (origin); any upstream equivalent is separate and is not referenced here.
 
 ## Sources & provenance
 

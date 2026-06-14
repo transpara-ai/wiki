@@ -153,10 +153,12 @@ design ("the hive had decided it needed them"). That LovYou / `lovyou-ai` lineag
 is the upstream the Transpara runtime was **forked** from: the earliest captured
 spawn-lifecycle thoughts name the repo `lovyou-ai-hive` before the `transpara-ai`
 fork convention took hold, and an early guardian-governance fix landed on the
-`lovyou-ai`/upstream hive. Under `transpara-ai` ownership the forked repos
+upstream hive. Under `transpara-ai` ownership the forked repos
 (`agent`, `eventgraph`, `hive`, `site`, `work`, plus `docs`) became the substrate
 the live `[[hive-governance]]` runtime and the whole `[[dark-factory]]` arc are
-built on. → **`[[the-lovyou-ai-fork]]`**
+built on. The `lovyou-ai` upstream is now dormant and the codebase has diverged by
+hundreds of commits, so `[[the-lovyou-ai-fork]]` is a historical-provenance
+record, not a live dependency or sync target. → **`[[the-lovyou-ai-fork]]`**
 
 > Fail-legible: the **2026-03-30 fork date** of those five repos is asserted by
 > the task framing, not corroborated by a capture (earliest captured repo work is
@@ -351,7 +353,7 @@ the program plan.
 
 | Article | Entity |
 |---|---|
-| `[[the-lovyou-ai-fork]]` | The lovyou.ai Fork — upstream → `transpara-ai` (Feb–Mar 2026) |
+| `[[the-lovyou-ai-fork]]` | The lovyou.ai Fork — historical origin-fork provenance; upstream now dormant, codebase diverged (Feb–Mar 2026) |
 | `[[civilization-landscape-investigation]]` | The Civilization Landscape Investigation — the 22-item survey (2026-05-13) |
 | `[[dark-factory]]` | Dark Factory — the umbrella over the governed-production effort |
 | `[[v3-9]]` | Dark Factory v3.9 — operative baseline (accepted 2026-06-05) |

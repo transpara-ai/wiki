@@ -33,7 +33,7 @@ The accompanying claim — these 20 are *"sufficient to model … company struct
 
 ## The first jump: 20 → 44 (the hive0 accident)
 
-Searles built the first [[hive-governance]] ([[the-lovyou-ai-fork|hive0]]) on those 20 primitives: specialised agents collaborating through an [[event-graph]]. The agent count grew on its own — *"the hive had decided it needed them"* — past the obvious software roles (PM, implementer, QA, DevOps, reviewer) into Philosopher, Critic, Harmony, Mediator, Gap-detector, Failure-analyst, Politician, Philanthropy. By the time he counted, *"there were roughly seventy agents. I hadn't designed most of them."*
+Searles built the first [[hive-governance]] (hive0) on those 20 primitives: specialised agents collaborating through an [[event-graph]]. The agent count grew on its own — *"the hive had decided it needed them"* — past the obvious software roles (PM, implementer, QA, DevOps, reviewer) into Philosopher, Critic, Harmony, Mediator, Gap-detector, Failure-analyst, Politician, Philanthropy. By the time he counted, *"there were roughly seventy agents. I hadn't designed most of them."*
 
 The jump came from an accident: Searles *"accidentally left the hive running autonomously. For two days,"* discovering it only when his weekly API limit was *"completely burned through."* Asking Claude Opus what hive0 had done, he reports it had derived **44 foundation primitives** organised into **11 groups**:
 

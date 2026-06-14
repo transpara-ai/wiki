@@ -44,7 +44,7 @@ So the membrane inversion is the whole point: accountability was *meant* to be t
 
 The slice-1 design states the destination as five inversions ([DF-REUNIFY-2026-06-05-SLICE-1-DESIGN], §"Destination"):
 
-1. **The order is the unit of cooperation.** A `FactoryOrder` enters as [[work-graph|Work]]; the civic roles fulfill it by emitting events on the shared graph, instead of an epic running as a closed fixture.
+1. **The order is the unit of cooperation.** A `FactoryOrder` enters as [[the-work-graph|Work]]; the civic roles fulfill it by emitting events on the shared graph, instead of an epic running as a closed fixture.
 2. **Gates become role-enforced checks**, applied inside the cooperative flow by Reviewer and Guardian. Evidence is a *byproduct* of roles working, not a separately-assembled product.
 3. **The Hive Mind governs.** Guardian + council are the governance; the human is the **top authority tier** (Required actions escalate to a human), not the terminal doer.
 4. **The growth loop runs in production.** A capability gap during an order triggers `CTO → Spawner → Guardian → Allocator → spawnDynamicAgent`.

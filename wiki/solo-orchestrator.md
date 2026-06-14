@@ -26,7 +26,7 @@ confidence:
 
 **A forked public project the [[civilization-landscape-investigation]] evaluated and recorded as pattern-only.** Solo Orchestrator is an AI-assisted software-development *methodology* — a phase-gated, test-driven, documentation-mandatory process for a single technically literate person who builds applications with an AI coding agent as the execution layer. Transpara forked it into the `transpara-ai` org on **2026-05-01** (`transpara-ai/solo-orchestrator`, forked from the public upstream `kraulerson/solo-orchestrator`) so it could be read as ground-truth source rather than from a project page. During the [[dark-factory]] landscape investigation (Phase 4, Batch C, **2026-05-13**) it was assessed against the canonical design and folded into the ratified v3.9 doctrine as a **workflow / methodology pattern only** — its phase gates, security scans, and approval logs may *inform* implementation discipline, but it must never become a runtime, control plane, or truth/authority layer, and its Markdown/JSON process state is "not EventGraph."
 
-This article is about **our investigation and decision**, not a mirror of the upstream's documentation. The upstream is public, lovyou-ai-adjacent code; it is cited here only as context, never re-published.
+This article is about **our investigation and decision**, not a mirror of the upstream's documentation. The upstream is public OSS; it is cited here only as context, never re-published.
 
 ## Fail-legible up front: there is no crosswalk row for it
 
@@ -96,7 +96,7 @@ As of this compile, no epic has explicitly reopened it; under the freeze policy 
 - **License is MIT, confirmed; the Batch C note said it wasn't inspected.** The Phase 4 analysis recorded *"License not inspected."* This run did inspect it: the fork's `LICENSE` is **MIT, "Copyright (c) 2026 Karl Raulerson,"** corroborated by the live GitHub fork metadata (`license=mit`). Stated to close the investigation's own open item, not as a contradiction.
 - **Upstream versioning is inconsistent — and it is upstream's, not ours.** The local fork's git history labels the initial commit "Solo Orchestrator Framework v4.1" while a sibling commit says "v1.0 release." This is the upstream author's own numbering; it is carried as context only and plays no part in the decision.
 - **Author / org-handle mismatch is cosmetic.** The fork parent is the GitHub handle `kraulerson`; the LICENSE copyright reads "Karl Raulerson." Same person; noted for completeness.
-- **Upstream is cited, never re-published.** Per org rule, `kraulerson/solo-orchestrator` is public, lovyou-ai-adjacent code. Its existence and description ("AI-assisted software development methodology for solo builders") are confirmed live as context for *why we forked it to read it*, not as content to mirror. The wiki subject is our investigation and our decision.
+- **Upstream is cited, never re-published.** Per org rule, `kraulerson/solo-orchestrator` is public OSS. Its existence and description ("AI-assisted software development methodology for solo builders") are confirmed live as context for *why we forked it to read it*, not as content to mirror. The wiki subject is our investigation and our decision.
 - **"Duplicates the checklist" is a risk assessment, not an observed failure.** The objection that adopting it wholesale "can duplicate v3.8 implementation checklist" is the investigation's forward-looking judgment — the reason it was fenced to pattern-only — not a record of harm.
 
 ## Where it sits relative to the rest of the survey
