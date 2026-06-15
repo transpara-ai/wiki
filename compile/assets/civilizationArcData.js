@@ -269,7 +269,7 @@
       { id: "v39", code: "v3.9", label: "v3.9 operative baseline accepted", x: 7.18, swimlane: "gate", status: "closed", href: "v3-9.html" },
       { id: "v40", code: "v4.0", label: "v4.0 doctrine seed accepted; folder remains candidate", x: 7.92, swimlane: "gate", status: "candidate", href: "v4-0.html" },
       { id: "slice1", code: "G-1.2", label: "First society to finish a catalog FactoryOrder", x: 11.9, swimlane: "gate", status: "closed", href: "slice-1-completion.html" },
-      { id: "gate-e", code: "Gate-E", label: "Event-1 / Gate-E authority granted (decision: Notify, docs#132)", x: 12.75, swimlane: "gate", status: "closed", href: "gate-k.html" },
+      { id: "gate-e", code: "Gate-E", label: "Event-1 / Gate-E authority granted (decision: Notify, docs#132)", x: 12.75, swimlane: "gate", status: "closed", href: "https://github.com/transpara-ai/docs/pull/132" },
       { id: "gate-k", code: "Gate-K", label: "Loop-hardening gate unsatisfied — blocked on AC-K5 data-handling attestation", x: 13.9, swimlane: "gate", status: "pending", href: "gate-k.html" },
     ],
     risks: [
@@ -357,12 +357,12 @@
         },
         {
           order: "N4",
-          status: "active",
+          status: "done",
           work: "Merge or reissue the Gate-K meta-loop artifacts",
           surface: "transpara-ai/docs",
           gate: "Gate-K review convention and data policy",
           href: "gate-k.html",
-          finish: "Meta-loop artifacts (stage-1/stage-3 prompt templates, data-handling policy, review convention) are merged and canonical via #115; evidence-reconciliation, guardrail, and AC-K5 posture/attestation packets followed via #133-#137. Gate-K remains blocked / not satisfied, held open on AC-K5 data-handling attestation evidence plus AC-K2/AC-K4 negative-test evidence.",
+          finish: "Done: meta-loop artifacts (stage-1/stage-3 prompt templates, data-handling policy, review convention) are merged and canonical via #115. Satisfying Gate-K itself is the separate, still-open gate (see the current-gate summary) — held open on AC-K5 data-handling attestation plus AC-K2/AC-K4 negative-test evidence, tracked via #133-#137.",
         },
         {
           order: "N5",
