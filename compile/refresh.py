@@ -14,11 +14,14 @@ What it does NOT do (by design — honors the standing rules):
   * Open Brain deltas are NOT auto-detected here (that needs an LLM/MCP run); flagged in the status note.
 """
 import json
+import sys
 import hashlib
 import subprocess
 import pathlib
 import datetime
 import re
+
+import stats
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 RAW = ROOT / "raw"
@@ -81,20 +84,40 @@ def main():
                     stale.append(slug)
                     break
     stale = sorted(set(stale))
+
+    # Single source of stats compute (pure, ground-truth from wiki/ frontmatter).
+    counts = stats.compute_counts(ROOT)
+    try:
+        stats.ensure_nonzero(counts)
+    except ValueError as e:
+        print("refresh: %s" % e)
+        sys.exit(1)
+
     status = {
         "synced": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "article_count": len(list(WIKI.glob("*.md"))),
+        "article_count": counts["article_count"],
         "sources_total": len(cur),
         "sources_changed": (len(changed) if prev else 0),
         "stale_articles": stale,
         "note": "deterministic refresh; LLM re-compile is manual (see compile/REBUILD.md); Open Brain deltas not auto-detected",
     }
     STATUS.write_text(json.dumps(status, indent=2))
+
+    # Durable, idempotent stats block in the committed index.md (you commit the diff).
+    try:
+        index_changed = stats.write_index_block(ROOT / "index.md", counts)
+    except ValueError as e:
+        print("refresh: index.md stats block FAILED — %s" % e)
+        sys.exit(1)
+
+    # Advance the source-diff baseline only AFTER the durable write succeeds, so a
+    # marker failure never silently consumes a source change (fail-safe ordering).
     SNAP.write_text(json.dumps(cur, indent=2))
     out = sh("python3", str(ROOT / "compile" / "build_site.py"))
     print(out.stdout.strip() or out.stderr.strip())
-    print("refresh: %d articles, %d sources changed, %d stale" %
-          (status["article_count"], status["sources_changed"], len(stale)))
+    print("refresh: %d articles, %d sources changed, %d stale; index.md %s" %
+          (counts["article_count"], status["sources_changed"], len(stale),
+           "updated" if index_changed else "unchanged"))
 
 
 if __name__ == "__main__":
