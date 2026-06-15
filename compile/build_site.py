@@ -21,6 +21,8 @@ ASSETS = ROOT / "compile" / "assets"
 STATUS = ROOT / "compile" / "refresh-status.json"
 INDEX = ROOT / "index.md"
 CSS_VER = ""
+ARC_DATA_VER = ""
+ARC_NAV_VER = ""
 
 THEME_JS = (
     '<script>(function(){'
@@ -220,6 +222,15 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
     toc = "" if is_home else build_toc(toc_tokens)
     seealso = "" if is_home else build_seealso(links, slug)
     navbox = build_navbox()
+    arc_scripts = ""
+    arc_mount = ""
+    if is_home:
+        arc_scripts = (
+            '<script defer src="civilizationArcData.js?v=%s"></script>'
+            '<script defer src="civilizationArcNav.js?v=%s"></script>'
+            % (ARC_DATA_VER, ARC_NAV_VER)
+        )
+        arc_mount = '<div data-civilization-arc-nav></div>'
     tagline = "" if is_home else '<div class="tagline">%s%s</div>' % (
         ('<span class="tier %s">%s</span> · ' % (html.escape(meta["tier"]), html.escape(meta["tier"]))),
         "an article in the Civilization Wiki")
@@ -229,6 +240,7 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         '<title>%s — Civilization Wiki</title>' % html.escape(title) +
         '<link rel="stylesheet" href="style.css?v=%s">' % CSS_VER +
+        arc_scripts +
         '<script>(function(){try{if(localStorage.getItem("civwiki-theme")==="light")'
         'document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body>' +
@@ -236,6 +248,7 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
         '<div class="top-meta">%s'
         '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☀ light</button>'
         '</div></header>' % freshness(status) +
+        arc_mount +
         '<div class="layout">%s' % sidebar +
         '<main class="content"><h1 class="page-title">%s</h1>%s' % (h1, tagline) +
         '%s%s' % (infobox, toc) +
@@ -247,13 +260,37 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
     )
 
 
+def arc_page(status):
+    return (
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        '<title>Arc of Transpara-AI Civilization Development — Civilization Wiki</title>'
+        '<link rel="stylesheet" href="style.css?v=%s">' % CSS_VER +
+        '<script defer src="civilizationArcData.js?v=%s"></script>'
+        '<script defer src="civilizationArcNav.js?v=%s"></script>'
+        % (ARC_DATA_VER, ARC_NAV_VER) +
+        '<script>(function(){try{if(localStorage.getItem("civwiki-theme")==="light")'
+        'document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
+        '</head><body class="arc-full-page">'
+        '<main class="arc-standalone-shell">'
+        '<div data-civilization-arc-nav data-arc-standalone="true" data-arc-expanded="true"></div>'
+        '</main></body></html>'
+    )
+
+
 def build():
-    global CSS_VER
+    global CSS_VER, ARC_DATA_VER, ARC_NAV_VER
     DIST.mkdir(exist_ok=True)
     status = load_status()
-    css = (ASSETS / "style.css").read_text()
-    (DIST / "style.css").write_text(css)
-    CSS_VER = hashlib.md5(css.encode()).hexdigest()[:8]
+
+    def copy_asset(name):
+        asset = (ASSETS / name).read_text()
+        (DIST / name).write_text(asset)
+        return hashlib.md5(asset.encode()).hexdigest()[:8]
+
+    CSS_VER = copy_asset("style.css")
+    ARC_DATA_VER = copy_asset("civilizationArcData.js")
+    ARC_NAV_VER = copy_asset("civilizationArcNav.js")
     count = 0
     for p in sorted(WIKI.glob("*.md")):
         fm, body = split_fm(p.read_text())
@@ -269,7 +306,10 @@ def build():
     body_html, _ = to_html(body, set())
     (DIST / "index.html").write_text(
         page("index", "The arc", {}, "", body_html, [], set(), status, is_home=True))
-    print("built %d articles + index -> %s" % (count, DIST))
+    arc_html = arc_page(status)
+    (DIST / "civilization-arc.html").write_text(arc_html)
+    (DIST / "civilization_arc.html").write_text(arc_html)
+    print("built %d articles + index + arc -> %s" % (count, DIST))
 
 
 if __name__ == "__main__":

@@ -4,3 +4,11 @@
 /compile/source-snapshot.json
 /compile/refresh-status.json
 /compile/refresh.log
+__pycache__/
+
+# local Node/browser verification environment
+/node_modules/
+/test-results/
+/playwright-report/
+/.cache/
+/.adversarial-review/
