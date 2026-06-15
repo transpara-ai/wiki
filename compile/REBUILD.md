@@ -9,13 +9,16 @@ Installed as a cron job (runs ~03:00). It:
 2. hashes all `raw/` sources and diffs against the last snapshot,
 3. flags which articles have **stale sources** (their `sources:` cite a changed file),
 4. writes `compile/refresh-status.json` — the fail-loud freshness banner the served site shows,
-5. regenerates the served site (`dist/`) via `compile/build_site.py`.
+5. **rewrites the generated stats block in `index.md`** (article count + per-tier breakdown, between the `stats:begin`/`stats:end` markers) and its frontmatter `article_count` — the durable, committed stat surface,
+6. regenerates the served site (`dist/`) via `compile/build_site.py`.
 
 It does **not** call an LLM, **not** commit, **not** push. Run it by hand anytime ("rebuild now"):
 
 ```
 python3 compile/refresh.py
 ```
+
+**On-demand "update the table now" is the same command.** `refresh.py` is both the nightly cron job and the on-demand path: it recomputes the stats from `wiki/` ground truth and rewrites the `index.md` block idempotently — running it twice with no corpus change leaves no diff. It never commits; review the `index.md` diff and commit it yourself.
 
 ## Tier 2 — article re-compile, manual (LLM, on demand)
 
