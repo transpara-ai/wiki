@@ -3,7 +3,7 @@ entity: The Reunification Workstream
 aliases: [reunification, df-reunification, the reunification slice, one civilization one business]
 tier: arc
 status: compiled
-last_compiled: 2026-06-14
+last_compiled: 2026-06-15
 sources:
   - raw/transpara/dark-factory/reunification/README.md  # DF-REUNIFY-README v0.6.0, status review, authority: planning
   - raw/transpara/dark-factory/reunification/2026-06-05-slice-1-first-reunified-order-design.md  # DF-REUNIFY-2026-06-05-SLICE-1-DESIGN v0.1.2
@@ -193,7 +193,7 @@ The v15 meta-finding (the sentinel dying at session boundaries had caused two un
 
 ### Grant accounting and Gate-E
 
-Grant-2 (rounds 4–6) is **exhausted**. The hard stop is reached. Gate-E — continue with the v16 fix-set scope or stop — is Michael's decision. The v16 fix-set candidate: F1 WorkDir threading (hive `pkg/loop` + eventgraph provider), F2 spec-diff gate at subtask creation, F3 quiescence detector emitting `hive.run.completed` plus a human-decision channel. The v16 daemon (PID 821925/821927, ~0% CPU) is alive and frozen by design pending the Gate-E decision.
+Grant-2 (rounds 4–6) is **exhausted**. The hard stop was reached and **resolved on 2026-06-15**: the External Committee granted **Event-1 / Gate-K** (v4.0 interim loop hardening; decision *Notify*, `transpara-ai/docs#132`) rather than a new slice-1 grant for the v16 fix-set scope (F1 WorkDir threading (hive `pkg/loop` + eventgraph provider), F2 spec-diff gate at subtask creation, F3 quiescence detector emitting `hive.run.completed` plus a human-decision channel). Gate-K itself remains defined and unsatisfied (AC-K5 data-handling attestation pending — docs#137); the v16 daemon (PID 821925/821927) had been held frozen by design pending that decision.
 
 ### Deliverable state
 

@@ -272,9 +272,7 @@ accepted 2026-06-12). Within it:
 - **`[[deployment-arc]]` is the program plan** (authority: planning, canonical:
   false) that takes the civilization from local scratch-space runs to a
   continuously-operated production factory in eight phases.
-- **Gate-E decision is pending.** Grant-2 is exhausted. Gate-E (or a new grant)
-  is Michael Saucier's decision exclusively. The v16 daemon remains alive and
-  frozen by design pending that decision. → **`[[slice-1-completion]]`**,
+- **Gate-E hard stop resolved (2026-06-15).** Grant-2 was exhausted after round 6; the External Committee resolved the hard stop by granting **Event-1** (v4.0 Gate-K interim loop hardening; decision *Notify*, `transpara-ai/docs#132`), not a new slice-1 grant. Gate-K itself remains defined and unsatisfied (AC-K5 data-handling attestation pending — docs#137). → **`[[slice-1-completion]]`**,
   **`[[gate-k]]`**, **`[[gate-l]]`** (Gates K and L: defined and unsatisfied).
 
 ---

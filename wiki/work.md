@@ -3,7 +3,7 @@ entity: Work (Production DAG and Task Lifecycle)
 aliases: [work, the work repo, transpara-ai/work, the flow system, Work DAG, the production DAG]
 tier: architecture
 status: compiled
-last_compiled: 2026-06-14
+last_compiled: 2026-06-15
 sources:
   - raw/transpara/dark-factory/Dark Factory - Motive, Goal, Approach.md  # §5 "Use Work for Flow, not Truth"; responsibility map; register entry B/Work
   - raw/transpara/dark-factory/reunification/2026-06-09-deployment-arc.md  # as-built review of the work repo, 2026-06-09
@@ -112,6 +112,6 @@ The practical consequence is significant: throughout slice-1 round 6, every revi
 
 **Fix candidate (not yet implemented):** thread `WorkDir` into the `Reason` call through both the hive `pkg/loop` layer and the eventgraph provider, mirroring the behavior that `Operate` already enforces. The fix scope also includes an F2 spec-diff gate at subtask creation and an F3 quiescence detector, but the WorkDir threading is the load-bearing correctness fix.
 
-**Architectural implication:** this defect means Work's task assignability and the review→fix loop — the convergence mechanism identified as the binding constraint for the reunification effort — operated without the correct source context for an entire arc round. Readiness gates and repair cycles that depended on reviewer output in round 6 must be treated as unverified. The v16-F1 fix set is at Gate-E pending Michael's authorization.
+**Architectural implication:** this defect means Work's task assignability and the review→fix loop — the convergence mechanism identified as the binding constraint for the reunification effort — operated without the correct source context for an entire arc round. Readiness gates and repair cycles that depended on reviewer output in round 6 must be treated as unverified. The v16-F1 fix set was at Gate-E pending Michael's authorization; that hard stop resolved on 2026-06-15 toward **Event-1 / Gate-K** (`transpara-ai/docs#132`), and absent a separate new slice-1 grant the v16-F1 fix set remains unauthorized.
 
 **Source:** `dark-factory/reunification/2026-06-12-arc-state.md` (DF-REUNIFY-2026-06-12-ARC-STATE, v0.3.0) — v16 findings table (F1 entry); "Catalog deliverable" row ("Still unreviewed in the FO's sense — all six reviews were premised on the wrong repo (v16-F1)"); v16 fix-set scope ("F1 WorkDir threading (hive `pkg/loop` + eventgraph provider)").

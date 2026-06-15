@@ -3,7 +3,7 @@ entity: Base Slice 0 (Control-Plane Proof)
 aliases: [base-slice-0, base slice 0, the control-plane proof, v3.9 base slice 0]
 tier: arc
 status: compiled
-last_compiled: 2026-06-14
+last_compiled: 2026-06-15
 sources:
   - raw/transpara/dark-factory/Dark Factory - Motive, Goal, Approach.md  # "Base Slice 0 Flow", L232-253; orientation
   - raw/transpara/dark-factory/v3.9/README.md  # "Current First Implementation Target", L87-108; Base Rule, L66-85
@@ -114,7 +114,7 @@ However, the gate requirement (zero-blocker delivery) is **not yet satisfied.** 
 
 Additional findings from v16: F2 — planner decomposition silently narrowed FO scope, causing a 24→9 role ping-pong across 6 completions; F3 — terminal quiescence has no exit/signal/run-completion, and escalations demand "Human/CTO judgment" with no channel to receive one.
 
-**Gate-E decision pending.** After round 6, the arc reached its hard stop: Gate-E (or a new grant) is live and awaits Michael's review as of 2026-06-14. The v16 daemon (PID 821925/821927) is alive and frozen by design pending that decision.
+**Gate-E hard stop resolved (2026-06-15).** After round 6 the arc reached its hard stop: Gate-E (or a new grant) awaited Michael's review. On 2026-06-15 the External Committee resolved it by granting **Event-1** (v4.0 Gate-K interim loop hardening; decision *Notify*, `transpara-ai/docs#132`), not a new slice-1 grant. Gate-K itself remains defined and unsatisfied (AC-K5 data-handling attestation pending — docs#137).
 
 The v16 fix-set scope (candidate): F1 WorkDir threading (`hive pkg/loop` + eventgraph provider), F2 spec-diff gate at subtask creation, F3 quiescence detector → `hive.run.completed` + human-decision channel.
 

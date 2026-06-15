@@ -3,7 +3,7 @@ entity: Gate L
 aliases: [gate-l, Gate L, v4.0 reconciliation certified, v3.9-to-v4.0 reconciliation]
 tier: architecture
 status: compiled
-last_compiled: "2026-06-14"
+last_compiled: "2026-06-15"
 sources:
   - raw/open-brain/2026-06.md  # L76 (Integration Arc summary: Gate K + Gate L each with a "satisfied only when" predicate), L697, L817 (Gate L = documentation coverage matrix; ADR-0007 Civilization re-anchor deferred), L947/L969 (Gate L = epic-02 v3.9->v4.0 reconciliation; proposal-only; carries v3.9 into v4.0; completing it RETIRES v3.9 as active baseline; needs human authorization not a run)
   - wiki/gate-k.md  # compiled sibling (Gate K) — Integration Arc framing, sequencing rule, gate-failure rule, lettering note, house style
@@ -14,7 +14,7 @@ confidence:
 
 # Gate L
 
-**The second v4.0 program gate: certification that the v3.9-to-v4.0 reconciliation is complete.** Gate L is defined in the v4.0 Integration Arc (`DF-V4.0-INTEGRATION-ARC`, 00-integration-arc-v4.0.md) as **Event 2 — v4.0 Reconciliation Certified**, the companion to [[gate-k|Gate K]]. Where Gate K hardens the interim development loop, Gate L certifies that the accepted [[v3-9|v3.9]] baseline has been carried forward and reconciled into the [[v4-0|v4.0]] doctrine. As of **2026-06-14, Gate L is defined and unsatisfied.** It continues the [[gates|Gates A–J]] lettering as the second of the two v4.0 program gates (K and L), without altering any v3.9 gate.
+**The second v4.0 program gate: certification that the v3.9-to-v4.0 reconciliation is complete.** Gate L is defined in the v4.0 Integration Arc (`DF-V4.0-INTEGRATION-ARC`, 00-integration-arc-v4.0.md) as **Event 2 — v4.0 Reconciliation Certified**, the companion to [[gate-k|Gate K]]. Where Gate K hardens the interim development loop, Gate L certifies that the accepted [[v3-9|v3.9]] baseline has been carried forward and reconciled into the [[v4-0|v4.0]] doctrine. As of **2026-06-15, Gate L is defined and unsatisfied.** It continues the [[gates|Gates A–J]] lettering as the second of the two v4.0 program gates (K and L), without altering any v3.9 gate.
 
 > ⚠ v4.0, including the Integration Arc and Gate L, has `canonical: false`. [[v3-9|v3.9]] remains the operative baseline. Gate L is a candidate predicate, not an operative one — and uniquely among the gates, **satisfying it is what would retire v3.9 as the active baseline**, not what closes it out.
 
@@ -30,7 +30,7 @@ The defining consequence, recorded plainly in Open Brain: *"completing it RETIRE
 
 ## Current status
 
-The v4.0 doctrine-acceptance checkpoint (`DF-V4.0-CKPT-2026-06-12-ACCEPTANCE`, 2026-06-12) states in its "What This Acceptance Does Not Do" section: *"Gates K and L remain defined and unsatisfied. No gate advances."* (quoted via the compiled [[gate-k]] article). Gate L's epic (epic-02) is **proposal-only**; like Gate K it is scoped by a packet whose AuthorityDecision is pending. Crucially, Gate L *"needs human authorization, not a run"* — it is reconciliation work for the human External Committee to authorize and accept, not an autonomous build the Civilization executes.
+The v4.0 doctrine-acceptance checkpoint (`DF-V4.0-CKPT-2026-06-12-ACCEPTANCE`, 2026-06-12) states in its "What This Acceptance Does Not Do" section: *"Gates K and L remain defined and unsatisfied. No gate advances."* (quoted via the compiled [[gate-k]] article). Gate L's epic (epic-02) is **proposal-only**, scoped by a packet whose AuthorityDecision is still pending — unlike Gate K (Event 1), whose authorization was granted on 2026-06-15 (`transpara-ai/docs#132`); Event 2 / Gate L carries no such grant yet. Crucially, Gate L *"needs human authorization, not a run"* — it is reconciliation work for the human External Committee to authorize and accept, not an autonomous build the Civilization executes.
 
 ## Sequencing and the no-autonomy property
 

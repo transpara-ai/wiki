@@ -9,7 +9,7 @@ aliases:
   - DF
 tier: arc
 status: compiled
-last_compiled: 2026-06-14
+last_compiled: 2026-06-15
 sources:
   - raw/transpara/dark-factory/Dark Factory - Motive, Goal, Approach.md  # DF-MOTIVE-GOAL-APPROACH v0.1.5, status draft, updated 2026-06-12 — first-read orientation: motive, goal, approach, flows, responsibility map, decision register, citation handles
   - raw/transpara/dark-factory/README.md  # folder index: start-here pointer, current revision (v3.9 accepted 2026-06-05), archived baselines v3.2–v3.8, v3.0, v3.1, v2, phase record, reorganization + reunification workstreams
@@ -222,7 +222,7 @@ The arc ladder, in order: v13 silent 5 min → v14 visible 27 min → v15 produc
 
 The catalog deliverable (`codex/fo-roles-catalog-v16`, HEAD `002bcf8`, 9-role v2.0.0 with subtask reading) is pushed to `transpara-ai`. Six oscillation commits are preserved in history; the FO's 24-role reading survives at `b638a44`. The deliverable remains **unreviewed in the FO's sense** — all six reviews in v16 were premised on the wrong repo (v16-F1, below).
 
-**Grant-2 is exhausted** (rounds 4–6 consumed). The hard stop has been reached. The live decision pending is **Gate-E or new-grant**; the v16 daemon (PID 821925/821927) is alive and frozen by design at ~0% CPU pending disposition with the Gate-E decision.
+**Grant-2 is exhausted** (rounds 4–6 consumed). The hard stop was reached and then **resolved on 2026-06-15**: the External Committee granted **Event-1** (v4.0 Gate-K interim loop hardening; decision *Notify*, `transpara-ai/docs#132`), not a new slice-1 grant. Gate-K itself remains defined and unsatisfied (AC-K5 data-handling attestation pending — docs#137).
 
 ### v16 open findings
 
@@ -232,7 +232,7 @@ Three findings emerged from Round 6 and remain open:
 - **F2 — Dual-spec oscillation.** The planner decomposition silently narrowed the FactoryOrder scope, causing a dual-spec oscillation: 6 completions across 24→9 role ping-pong. Candidate fix: a spec-diff gate at subtask creation that detects when a child task's spec diverges from the parent FactoryOrder.
 - **F3 — Quiescence has no exit.** Terminal quiescence has no exit signal, no run-completion event, and no escalation channel. Escalations during v16 demanded "Human/CTO judgment" with no channel to receive one. Candidate fix: a quiescence detector emitting `hive.run.completed` plus a human-decision channel.
 
-The v16 fix-set scope (F1 WorkDir threading, F2 spec-diff gate, F3 quiescence detector) has been identified and has a GO gate from the human operator. Implementation is unauthorized until Gate-E or a new-grant decision authorizes it.
+The v16 fix-set scope (F1 WorkDir threading, F2 spec-diff gate, F3 quiescence detector) has been identified. The Gate-E hard stop resolved on 2026-06-15 toward **Event-1 / Gate-K** (`transpara-ai/docs#132`); absent a separate new slice-1 grant, this v16 fix-set remains unauthorized.
 
 A society escalation during v16 also produced an evidence-backed ruling: the catalog workspace IS `transpara-ai/docs`; the FO's 24-role scope governs (`b638a44`); the subtask was mis-scoped.
 

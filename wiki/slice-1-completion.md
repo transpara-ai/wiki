@@ -3,7 +3,7 @@ entity: Slice 1 Completion
 aliases: [round 6, v16, finished-unsignalled, first society to finish, grant-2 close]
 tier: arc
 status: compiled
-last_compiled: "2026-06-14"
+last_compiled: "2026-06-15"
 sources:
   - raw/transpara/dark-factory/reunification/2026-06-12-arc-state.md  # DF-REUNIFY-2026-06-12-ARC-STATE v0.3.0 — post-round-6 state table, v16 findings, Grant-2 accounting
   - raw/transpara/dark-factory/reunification/2026-06-11-slice-1-take-4-round-log.md  # DF-REUNIFY-2026-06-11-SLICE-1-TAKE-4-ROUND-LOG v0.5.0 — round 6 timeline, fix-set proofs, findings F1/F2/F3
@@ -98,13 +98,13 @@ The arc's close-class ladder:
 | Grant-1 (rounds 1–3) | v11, v12, v13 | Consumed; all closed stalled-by-machinery |
 | Grant-2 (rounds 4–6) | v14, v15, v16 | **Consumed; round 6 closed finished-unsignalled** |
 
-Grant-2 is exhausted. The hard stop is reached. **Gate-E or a new grant** is Michael's decision.
+Grant-2 is exhausted. The hard stop was reached and **resolved on 2026-06-15**: the External Committee granted **Event-1** (v4.0 Gate-K interim loop hardening; decision *Notify*, `transpara-ai/docs#132`), not a new slice-1 grant. Gate-K itself remains defined and unsatisfied (AC-K5 data-handling attestation pending — docs#137).
 
-The v16 daemon remains alive and frozen by design (PID 821925/821927, ~0% CPU) pending that decision.
+The v16 daemon (PID 821925/821927, ~0% CPU) had been held frozen by design pending that decision.
 
 ## Pending decisions (escalated by the society itself)
 
-1. **Gate-E or new grant** — the hard stop Michael set; his decision exclusively.
+1. **Gate-E or new grant — RESOLVED 2026-06-15:** the External Committee granted Event-1 / Gate-K (decision *Notify*, `transpara-ai/docs#132`), not a new slice-1 grant.
 2. **Catalog ruling** — the society itself escalated: workspace IS `transpara-ai/docs`; the FO's 24-role scope governs (`b638a44`'s content); the planner subtask was mis-scoped.
 3. **v16 fix-set scope** — candidate: F1 WorkDir threading (hive `pkg/loop` + eventgraph provider), F2 spec-diff gate at subtask creation, F3 quiescence detector → `hive.run.completed` + human-decision channel.
 4. **v16 daemon disposition** — kill or keep with the Gate-E decision.

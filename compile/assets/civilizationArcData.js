@@ -270,7 +270,7 @@
       { id: "v40", code: "v4.0", label: "v4.0 doctrine seed accepted; folder remains candidate", x: 7.92, swimlane: "gate", status: "candidate", href: "v4-0.html" },
       { id: "slice1", code: "G-1.2", label: "First society to finish a catalog FactoryOrder", x: 11.9, swimlane: "gate", status: "closed", href: "slice-1-completion.html" },
       { id: "gate-e", code: "Gate-E", label: "Event-1 / Gate-E authority granted (decision: Notify, docs#132)", x: 12.75, swimlane: "gate", status: "closed", href: "gate-k.html" },
-      { id: "gate-k", code: "Gate-K", label: "Loop-hardening gate unsatisfied — blocked on AC-K5 data-handling attestation", x: 13.9, swimlane: "gate", status: "pending", href: "gate-k.html" },
+      { id: "gate-k", code: "Gate-K", label: "Loop-hardening gate unsatisfied — AC-K5 data-handling attestation + AC-K2/AC-K4 negative-test evidence pending", x: 13.9, swimlane: "gate", status: "pending", href: "gate-k.html" },
     ],
     risks: [
       { id: "genesis-gap", code: "GAP", label: "Feb genesis is reconstructed, not commit-derived", x: 0.55, severity: "medium", href: "the-20-primitives.html" },
@@ -323,7 +323,7 @@
       endGoal:
         "Reach a steady-state Transpara-AI civilization that can accept new or issue-scanned work, store durable artifacts in the correct repository, open governed PRs, iterate through cross-family adversarial review, surface bulletproof work for human approval, and keep the whole run observable.",
       summary: [
-        { label: "Current gate", value: "Gate-K loop-hardening (AC-K5 data-handling attestation pending)", status: "blocked" },
+        { label: "Current gate", value: "Gate-K loop-hardening (AC-K5 attestation + AC-K2/AC-K4 evidence pending)", status: "blocked" },
         { label: "Merge gate", value: "Seven repos protected with cross-family review", status: "done" },
         { label: "Storage posture", value: "Artifacts and PRs stay repo-native", status: "active" },
         { label: "Final mode", value: "Always-on governed factory", status: "planned" },
