@@ -26,7 +26,7 @@ confidence:
 
 # The 44 Primitives
 
-**The cognitive bedrock of the arc.** The 44 primitives are 44 irreducible concepts organised into 11 groups that form [[fourteen-layers|Layer 0]] of the 14-layer ontology. They are the foundation that every later layer is derived from and the bridge that the [[second-derivation-convergence|second derivation]] (physics-up) arrived at independently from below. Their origin is unusual: rather than being designed by Matt Searles, they are reported to have been discovered autonomously — by the first version of [[the-lovyou-ai-fork|LovYou]], called **hive0**, during an accidental two-day unattended run.
+**The cognitive bedrock of the arc.** The 44 primitives are 44 irreducible concepts organised into 11 groups that form [[fourteen-layers|Layer 0]] of the 14-layer ontology. They are the foundation that every later layer is derived from and the bridge that the [[second-derivation-convergence|second derivation]] (physics-up) arrived at independently from below. Their origin is unusual: rather than being designed by Matt Searles, they are reported to have been discovered autonomously — by the first version of Searles' LovYou system, called **hive0**, during an accidental two-day unattended run.
 
 The dark-factory influence register labels both the hive0 run and the 44-primitive set as **"Research input — not independently proven."** Every claim about the autonomous derivation is carried in this article as **asserted**, not grounded.
 

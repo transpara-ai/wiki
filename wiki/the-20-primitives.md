@@ -38,12 +38,12 @@ Twenty irreducible concepts, claimed sufficient to model company structure, agen
 
 `Node` · `Edge` · `Input` · `Output` · `Operation` · `Event` · `Success Criteria` · `Failure Criteria` · `State` · `Predicate` · `Graph Definition` · `Execution Engine` · `Diagnostic Traversal` · `Correlation` · `Test Harness` · `Agent` · `Criteria` · `Trace` · `Source` · `Type System`
 
-> ⚠ **Fail-legible note.** The claim that 20 primitives are *sufficient to model everything* is **asserted, not proven.** Searles himself later builds a guardrail against treating it as truth ([[the-cult-test]]: *framework as tool, not sacred; the scientific method is the authority layer*). [[dark-factory]] adopts the primitives as **philosophical basis only**, never as implementation authority ([[dark-factory-motive-goal-approach]]).
+> ⚠ **Fail-legible note.** The claim that 20 primitives are *sufficient to model everything* is **asserted, not proven.** Searles himself later builds a guardrail against treating it as truth ([[the-cult-test]]: *framework as tool, not sacred; the scientific method is the authority layer*). [[dark-factory]] adopts the primitives as **philosophical basis only**, never as implementation authority (*Dark Factory - Motive, Goal, Approach*).
 
 ## What grew from it
 
 - **Into architecture:** traceability → [[event-graph]]; explicit criteria → [[acceptance-criteria]] and [[gates]]; agent action → [[bounded-runtime]]; authority → [[authority-layer]].
-- **Into scale:** → [[the-44-primitives]] (the [[the-lovyou-ai-fork|hive0]] ~70-agent run) → [[the-200-primitives]] / [[fourteen-layers]] → the [[thirteen-graphs]].
+- **Into scale:** → [[the-44-primitives]] (the hive0 ~70-agent run) → [[the-200-primitives]] / [[fourteen-layers]] → the [[thirteen-graphs]].
 
 ## Sources & provenance
 

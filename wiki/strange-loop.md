@@ -19,11 +19,11 @@ confidence:
 
 **The shape of the whole framework, stated as a closed curve.** On **2026-02-28**, in the post *"From 44 to 200,"* Matt Searles (working with Claude) gave a name to a structural feature of the 200-primitive / [[fourteen-layers]] stack: it is **not a tower but a circle.** The same claim, under the same section heading *"The Strange Loop,"* reappears in the series' philosophical capstone, *"The Moral Ledger."* It is the entity that turns a 14-level ladder into a self-supporting ontology.
 
-This is not a separate artifact from the layers — it *is* a reading of the layers. The Strange Loop is the observation that the top of the stack ([[layer-13-existence]]) and the bottom ([[layer-0-foundation]]) presuppose each other, so the structure has no conventional foundation and instead rests on itself.
+This is not a separate artifact from the layers — it *is* a reading of the layers. The Strange Loop is the observation that the top of the stack ([[the-existence-graph|Layer 13]]) and the bottom ([[the-44-primitives|Layer 0]]) presuppose each other, so the structure has no conventional foundation and instead rests on itself.
 
 ## The closing of the circle
 
-The 14 layers run from [[layer-0-foundation]] (Event, EventStore, Clock, Hash, Self) up through Agency, Exchange, Society, Legal, Technology, Information, Ethics, Identity, Relationship, Community, Culture, Emergence, and finally [[layer-13-existence]] (Being, Nothingness, Finitude, Contingency; Wonder, Acceptance, Presence, Gratitude; Mystery, Transcendence, Groundlessness, **Return**).
+The 14 layers run from [[the-44-primitives|Layer 0]] (Event, EventStore, Clock, Hash, Self) up through Agency, Exchange, Society, Legal, Technology, Information, Ethics, Identity, Relationship, Community, Culture, Emergence, and finally [[the-existence-graph|Layer 13]] (Being, Nothingness, Finitude, Contingency; Wonder, Acceptance, Presence, Gratitude; Mystery, Transcendence, Groundlessness, **Return**).
 
 The loop is the relationship between the first and last primitives:
 
@@ -49,7 +49,7 @@ The posts treat the loop as the single most important structural feature of the 
 
 ## Ethics at the hinge
 
-*The Moral Ledger* adds a detail the other post does not: the loop is read together with the **placement of Layer 7 (Ethics) in the middle.** Below Layer 7 are the "structural" layers (computation through information) describable "entirely from the outside"; above it are the "experiential" layers (identity through existence) describable "only from the inside." Ethics is positioned as "exactly where structure meets experience." The post pairs this with the strange loop to argue that the framework's circularity and its is-from-the-outside / ought-from-the-inside duality are aspects of the same insight — feeding its larger (and explicitly unproven) is-ought "bridge" argument. The loop's role there is structural scaffolding, not proof. See [[the-moral-ledger]] and [[is-ought-bridge]] for that argument; this entity covers only the loop itself.
+*The Moral Ledger* adds a detail the other post does not: the loop is read together with the **placement of Layer 7 (Ethics) in the middle.** Below Layer 7 are the "structural" layers (computation through information) describable "entirely from the outside"; above it are the "experiential" layers (identity through existence) describable "only from the inside." Ethics is positioned as "exactly where structure meets experience." The post pairs this with the strange loop to argue that the framework's circularity and its is-from-the-outside / ought-from-the-inside duality are aspects of the same insight — feeding its larger (and explicitly unproven) is-ought "bridge" argument. The loop's role there is structural scaffolding, not proof. See [[the-moral-ledger]] and [[three-irreducibles|is-ought bridge]] for that argument; this entity covers only the loop itself.
 
 ## The three irreducibles the loop frames
 
@@ -72,7 +72,7 @@ Both ultimately describe **mutual** presupposition — neither end is foundation
 
 ## Where it sits in the arc
 
-The Strange Loop is a property of the 200-primitive emergence event, so it inherits that event's lineage: the late-night [[the-20-primitives]] → the [[the-lovyou-ai-fork|hive0]] ~70-agent run producing [[the-44-primitives]] → Claude Opus deriving 156 more across 13 new layers to reach [[the-200-primitives]] / [[fourteen-layers]]. The loop is the closing observation of that derivation. It carries no separate date of its own; it is documented within the **2026-02-28** posts that report the derivation.
+The Strange Loop is a property of the 200-primitive emergence event, so it inherits that event's lineage: the late-night [[the-20-primitives]] → the hive0 ~70-agent run producing [[the-44-primitives]] → Claude Opus deriving 156 more across 13 new layers to reach [[the-200-primitives]] / [[fourteen-layers]]. The loop is the closing observation of that derivation. It carries no separate date of its own; it is documented within the **2026-02-28** posts that report the derivation.
 
 It is **descriptive, not load-bearing for the running system.** In [[dark-factory]] and [[mind-zero-five]] the operative artifact is the [[event-graph]] (Layer 0 made concrete); the strange loop is part of the *source philosophy* that motivated the vocabulary, explicitly downstream of merged docs, accepted packets, and human authorization for any implementation authority.
 

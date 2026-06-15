@@ -16,11 +16,11 @@ confidence:
 
 The **institutional one-way upstream-to-fork branch synchronization controller** that keeps transpara-ai forks current with their upstream projects without manual intervention. Lives at `transpara-ai/upstream-fork-sync`. Last updated **2026-06-12**.
 
-It is a deliberate, conservative automation: upstream branches are the authoritative source; the controller writes only to configured mirror branches in downstream forks; human review remains the promotion boundary for any change flowing back upstream. It does not replace [[the-lovyou-ai-fork]] topology — it automates the pull direction of that topology at institutional scale.
+It is a deliberate, conservative automation: upstream branches are the authoritative source; the controller writes only to configured mirror branches in downstream forks; human review remains the promotion boundary for any change flowing back upstream. It does not replace a fork relationship — it automates the pull direction of a generic fork-and-mirror topology at institutional scale, for any configured upstream→fork mapping.
 
 ## What problem it solves
 
-[[the-civilization]] maintains a set of transpara-ai forks of upstream projects (most notably the lovyou-ai family; see [[the-lovyou-ai-fork]]). Without automation, keeping those forks current requires a human to periodically run `git fetch upstream && git merge upstream/main` per repo — a maintenance burden that grows linearly with the number of forks and compounds when fork-local branches diverge silently. `upstream-fork-sync` replaces that manual loop with a scheduled reconciliation workflow backed by a validated configuration map.
+[[the-civilization]] maintains a set of transpara-ai forks of upstream OSS projects. (The original such fork — the runtime codebase, now diverged hundreds of commits from a dormant upstream — is documented historically in [[the-lovyou-ai-fork]].) Without automation, keeping any forks current requires a human to periodically run `git fetch upstream && git merge upstream/main` per repo — a maintenance burden that grows linearly with the number of forks and compounds when fork-local branches diverge silently. `upstream-fork-sync` replaces that manual loop with a scheduled reconciliation workflow backed by a validated configuration map.
 
 ## Architecture
 
@@ -80,7 +80,7 @@ The burst of dashboard commits on the last recorded day suggests the dashboard U
 
 ## Relationship to the fork topology
 
-`upstream-fork-sync` is the **operational automation layer** over the fork topology described in [[the-lovyou-ai-fork]]. That article covers the conceptual and governance relationship between transpara-ai forks and their lovyou-ai or other upstream sources. This tool is what makes that relationship self-maintaining at scale — mirror branches under `upstream/` stay synchronized on a schedule, while fork-local branches and the human promotion gate (PRs back upstream) remain untouched.
+`upstream-fork-sync` is the **operational automation layer** over a generic fork-and-mirror topology. [[the-lovyou-ai-fork]] documents the *original* origin-fork relationship that the pattern grew around (now historical — that upstream is dormant and the codebase has long since diverged); this tool generalizes the pull-direction automation to any configured upstream source. Mirror branches under `upstream/` stay synchronized on a schedule, while fork-local branches and the human promotion gate (PRs back upstream) remain untouched.
 
 It is a transpara-ai-native tool: it pulls from upstream into the fork; it never pushes from the fork to upstream. This is the correct directionality for [[the-civilization]]'s institutional boundary.
 

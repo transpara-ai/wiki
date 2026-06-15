@@ -18,7 +18,7 @@ confidence:
 
 # Gates (Verification, Trace, and Release Gates)
 
-In the [[dark-factory]] architecture, **gates** are the verification checks that must produce passing evidence before a `ReleaseCandidate` can be **certified**. They are the operational form of one of the platform's invariants — *"No release without verification"* ([[dark-factory-motive-goal-approach]], L100). A gate is not an opinion: a release "cannot be certified merely because a model, worker, or human says it is good. Certification requires trace completeness, product gates, security gates, runtime BOM evidence, and audit evidence" (L177).
+In the [[dark-factory]] architecture, **gates** are the verification checks that must produce passing evidence before a `ReleaseCandidate` can be **certified**. They are the operational form of one of the platform's invariants — *"No release without verification"* (*Dark Factory - Motive, Goal, Approach*, L100). A gate is not an opinion: a release "cannot be certified merely because a model, worker, or human says it is good. Certification requires trace completeness, product gates, security gates, runtime BOM evidence, and audit evidence" (L177).
 
 Gates are the architectural descendant of the late-night seed: when the [[the-20-primitives|20 primitives]] were converted into a governed production architecture, *"explicit criteria become AcceptanceCriteria and gates"* (L127). They are the point where the abstract demand for traceability becomes a concrete pass/fail with recorded evidence.
 

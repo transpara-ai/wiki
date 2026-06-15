@@ -28,7 +28,7 @@ It is introduced in overview form in Post 11 (*"Thirteen Graphs, One Infrastruct
 
 ## The gap Ethics fills
 
-The layer spec frames each graph around what the previous layer *cannot* do. Layer 6 ([[the-knowledge-graph]]) can model information, data, and computation but cannot distinguish *is* from *ought*:
+The layer spec frames each graph around what the previous layer *cannot* do. Layer 6 ([[the-knowledge-graph-searles|the Knowledge Graph]]) can model information, data, and computation but cannot distinguish *is* from *ought*:
 
 > "A system can process data about an action and compute its effects, but it cannot reason about whether the action itself is right."
 
@@ -147,7 +147,7 @@ The Identity Graph (Layer 8) inherits this: a person's trustworthiness on the Id
 ## Relationship to the arc
 
 - **Substrate:** the Ethics Graph is a *view* over [[event-graph]] — every ethical event, harm detection, and accountability record is an append-only, hash-chained entry on the same shared store.
-- **Below it:** [[the-knowledge-graph]] (Layer 6) supplies the information that Ethics evaluates; without provenance-tracked claims, ethical evaluation runs on unverifiable inputs.
+- **Below it:** [[the-knowledge-graph-searles|the Knowledge Graph]] (Layer 6) supplies the information that Ethics evaluates; without provenance-tracked claims, ethical evaluation runs on unverifiable inputs.
 - **Adjacent:** [[the-justice-graph]] (Layer 4) handles adjudication of disputes once harm is detected; the Ethics Graph is the monitoring layer that surfaces patterns *before* (and beyond) individual disputes reach adjudication.
 - **Above it:** [[the-identity-graph]] (Layer 8) inherits ethical track record as a component of portable identity; [[the-governance-graph]] uses the Ethics Graph as the pattern-monitoring partner for governance accountability.
 - **Overview:** [[thirteen-graphs]] for the full schema and naming-scheme conflicts.

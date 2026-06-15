@@ -21,7 +21,7 @@ confidence:
 
 ## Context: where Gate K fits
 
-The [[dark-factory]] v3.9 verification arc ends at Gate J. After the 2026-06-01 adversarial review of the development loop (DF-V4.0-CKPT-2026-06-01-01), the [[v4-0|v4.0]] doctrine established that the development process is itself a governed Civilization function (DF-V4.0-ADR-001), and that the loop's Tier-0 controls must fail closed before any autonomy can increase. The v4.0 Integration Arc (DF-V4.0-INTEGRATION-ARC) operationalizes this with two sequential program gates: Gate K for loop hardening (Event 1) and [[gate-l|Gate L]] for reconciliation (Event 2).
+The [[dark-factory]] v3.9 verification arc ends at Gate J. After the 2026-06-01 adversarial review of the development loop (DF-V4.0-CKPT-2026-06-01-01), the [[v4-0|v4.0]] doctrine established that the development process is itself a governed Civilization function (DF-V4.0-ADR-001), and that the loop's Tier-0 controls must fail closed before any autonomy can increase. The v4.0 Integration Arc (DF-V4.0-INTEGRATION-ARC) operationalizes this with two sequential program gates: Gate K for loop hardening (Event 1) and Gate L for reconciliation (Event 2).
 
 > ⚠ v4.0, including the Integration Arc and Gate K, has `canonical: false`. [[v3-9|v3.9]] remains the operative baseline for all current gates and implementation work. Gate K is a candidate predicate, not an operative one.
 
@@ -72,7 +72,7 @@ The gates article ([[gates]]) flags a potential lettering collision: v3.9 uses l
 ## Related entities
 
 - [[gates]] — the full gate system; Gates A–J are the v3.9 arc this article extends.
-- Gate L — the companion v4.0 gate for v3.9-to-v4.0 reconciliation (Event 2). Not yet compiled as of 2026-06-14.
+- [[gate-l|Gate L]] — the companion v4.0 gate for v3.9-to-v4.0 reconciliation (Event 2).
 - [[v4-0]] — the v4.0 doctrine and integration arc context. ⚠ Forward reference.
 - [[dark-factory]] — the governed production system whose development loop Gate K hardens.
 - [[the-reunification]] — the broader reunification of the development process into the Civilization. ⚠ Forward reference.

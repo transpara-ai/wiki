@@ -80,7 +80,7 @@ Several later structures in the arc are downstream of this single decision:
 - **Into governance:** "the AI cannot exceed its authority" → the [[authority-layer]] and graduated consent → the [[self-improvement-circuit-breaker]].
 - **Into the platform:** the dark-factory invariants "no protected action without authority" and "runtimes do not govern" → [[runtime-broker]] envelopes and bounded agents.
 
-The companion essay [[what-it-is-like-to-be-a-node]] explores the same "AI as a node" frame from the inside (the felt experience of being one operation among many); this article is the architectural face of that coin.
+The companion essay [[node-phenomenology|what it is like to be a node]] explores the same "AI as a node" frame from the inside (the felt experience of being one operation among many); this article is the architectural face of that coin.
 
 ## Sources & provenance
 

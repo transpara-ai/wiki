@@ -107,7 +107,7 @@ The Post 26 conclusion also frames the project's honest self-assessment: the eve
 
 - **Substrate:** the Existence Graph is, like all others, a view over the single [[event-graph]], but it is the only view whose subject is the substrate's own preconditions — existence itself.
 - **Strange loop counterpart:** Layer 0 ([[event-graph]]) and Layer 13 are the two ends of the loop. Neither can exist without the other in the framework's self-description.
-- **All lower layers:** the Existence Graph is the commons every other layer presupposes. [[the-work-graph|Work]], [[the-market-graph|Market]], [[the-social-graph|Social]], [[the-justice-graph|Justice]], [[the-knowledge-graph|Knowledge]], [[the-culture-graph|Culture]] — all require a stable ecological and existential foundation that Layer 13 makes visible.
+- **All lower layers:** the Existence Graph is the commons every other layer presupposes. [[the-work-graph|Work]], [[the-market-graph|Market]], [[the-social-graph|Social]], [[the-justice-graph|Justice]], [[the-knowledge-graph-searles|Knowledge]], [[the-culture-graph|Culture]] — all require a stable ecological and existential foundation that Layer 13 makes visible.
 - **Three irreducibles:** Consciousness, Being, and Moral Status are shared territory with the [[the-meta-graph|Meta Graph]] (in Scheme B, Consciousness sits at Layer 12/Emergence). The boundary between the two layers is where the framework's self-observing capacity (Meta) meets the hard limits on what can be observed (Existence).
 
 ## Sources & provenance

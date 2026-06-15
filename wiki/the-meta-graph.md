@@ -47,7 +47,7 @@ Three concrete examples the source gives for how this works across the other gra
 
 1. **Market Graph → Meta Graph:** when the [[the-market-graph|Market Graph]] shows correlated behaviour across apparently independent transactions, the Meta Graph flags a potential systemic risk.
 2. **Social Graph → Meta Graph:** when the [[the-social-graph|Social Graph]] shows a cascade pattern forming, the Meta Graph can alert governance structures before it becomes a mob.
-3. **Knowledge Graph → Meta Graph:** when the [[the-knowledge-graph|Knowledge Graph]] shows a misinformation pattern propagating, the Meta Graph traces the amplification chain.
+3. **Knowledge Graph → Meta Graph:** when the [[the-knowledge-graph-searles|Knowledge Graph]] shows a misinformation pattern propagating, the Meta Graph traces the amplification chain.
 
 The source's explanation for why the [[event-graph]] substrate is uniquely suited to this function (~line 2423): "The event graph is uniquely suited for this because it already records causal links. Emergent behaviour detection is fundamentally about finding *unexpected causal connections*. The data structure is the detection mechanism."
 

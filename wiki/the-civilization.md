@@ -44,7 +44,7 @@ So the membrane inversion is the whole point: accountability was *meant* to be t
 
 The slice-1 design states the destination as five inversions ([DF-REUNIFY-2026-06-05-SLICE-1-DESIGN], §"Destination"):
 
-1. **The order is the unit of cooperation.** A `FactoryOrder` enters as [[work-graph|Work]]; the civic roles fulfill it by emitting events on the shared graph, instead of an epic running as a closed fixture.
+1. **The order is the unit of cooperation.** A `FactoryOrder` enters as [[the-work-graph|Work]]; the civic roles fulfill it by emitting events on the shared graph, instead of an epic running as a closed fixture.
 2. **Gates become role-enforced checks**, applied inside the cooperative flow by Reviewer and Guardian. Evidence is a *byproduct* of roles working, not a separately-assembled product.
 3. **The Hive Mind governs.** Guardian + council are the governance; the human is the **top authority tier** (Required actions escalate to a human), not the terminal doer.
 4. **The growth loop runs in production.** A capability gap during an order triggers `CTO → Spawner → Guardian → Allocator → spawnDynamicAgent`.
@@ -88,7 +88,7 @@ The defining structural claim — what makes this *one* civilization rather than
 - **Trace-completeness** — the Reviewer verifies every material step left an event, reusing the darkfactory `TraceCompleteness` record concept (`eventgraph/go/pkg/darkfactory/v39`).
 - **Authority gate** — a protected action (creating a real draft PR) makes the **Guardian raise an `AuthorityRequest` that escalates to the human via the Site Gate-E decision surface**. Site stays a pure console: it forwards the approval as a governed decision with `effect=none` preserved and supplies *no* policy evidence; the **Hive orchestrator** assembles the Epic 11 evidence and **Work's fail-closed creator** performs the single GitHub mutation, re-validating the policy-bundle hash and `head_exists_on_origin` before the call.
 
-This membrane reuses, rather than retires, the v3.9 evidence model. It is the same accountability substrate Dark Factory always required — [[event-graph]] as sovereign truth, explicit acceptance criteria and gates, bounded runtime, authority records — described in the orientation doc as the conversion of a failure-tracing philosophy into governed production ([[dark-factory-motive-goal-approach]]; [[the-20-primitives]]). The Civilization model does not replace that machinery; it puts the inhabitants inside it.
+This membrane reuses, rather than retires, the v3.9 evidence model. It is the same accountability substrate Dark Factory always required — [[event-graph]] as sovereign truth, explicit acceptance criteria and gates, bounded runtime, authority records — described in the orientation doc as the conversion of a failure-tracing philosophy into governed production (*Dark Factory - Motive, Goal, Approach*; [[the-20-primitives]]). The Civilization model does not replace that machinery; it puts the inhabitants inside it.
 
 ## Governance: the constitution and the human authority tier
 
@@ -134,4 +134,4 @@ Compiled this run from:
 
 Durable external reference for the underlying philosophy (via the citation table in *Dark Factory - Motive, Goal, Approach.md*): Matt Searles, *"20 Primitives and a Late Night"* — `https://mattsearles2.substack.com/p/20-primitives-and-a-late-night` [Searles-P1]; *"The Cult Test"* — `https://mattsearles2.substack.com/p/the-cult-test` [Searles-Cult-Test] (the guardrail that the framework is a tool, not truth — relevant to reading "one civilization" as a model, not a metaphysics).
 
-Conflicts surfaced rather than resolved: the **Invariants count** (Fourteen vs Ten — see the governance note) and the **role-roster scope** (nine runtime roles in `civic-roles.md` vs 24 in the superseding catalog). `[[wikilinks]]` are forward references; several targets ([[hive-governance]], [[roles-catalog]], [[the-work-graph]], [[event-graph]], [[dark-factory-motive-goal-approach]]) may not yet be compiled.
+Conflicts surfaced rather than resolved: the **Invariants count** (Fourteen vs Ten — see the governance note) and the **role-roster scope** (nine runtime roles in `civic-roles.md` vs 24 in the superseding catalog). `[[wikilinks]]` are forward references; several targets ([[hive-governance]], [[roles-catalog]], [[the-work-graph]], [[event-graph]]) may not yet be compiled.
