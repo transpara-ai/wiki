@@ -324,19 +324,19 @@
         "Reach a steady-state Transpara-AI civilization that can accept new or issue-scanned work, store durable artifacts in the correct repository, open governed PRs, iterate through cross-family adversarial review, surface bulletproof work for human approval, and keep the whole run observable.",
       summary: [
         { label: "Current gate", value: "Gate-E / Event-1 authority", status: "blocked" },
-        { label: "Merge gate", value: "Six repos protected; wiki protection is plan-blocked", status: "blocked" },
+        { label: "Merge gate", value: "Seven repos protected with cross-family review", status: "done" },
         { label: "Storage posture", value: "Artifacts and PRs stay repo-native", status: "active" },
         { label: "Final mode", value: "Always-on governed factory", status: "planned" },
       ],
       nearTerm: [
         {
           order: "N1",
-          status: "blocked",
+          status: "done",
           work: "Extend cross-family protection to Civilization Wiki",
           surface: "docs, agent, eventgraph, hive, site, work, civilization-wiki",
-          gate: "GitHub branch protection or rulesets",
-          href: "https://github.com/transpara-ai/docs/pull/131",
-          finish: "Six repos already require the review gate; civilization-wiki is private and GitHub returned a plan/visibility blocker for branch protection and rulesets.",
+          gate: "GitHub branch protection (Build & Test + cross-family-adversarial-review)",
+          href: "https://github.com/transpara-ai/civilization-wiki/pull/8",
+          finish: "Unblocked: civilization-wiki is now public, and main has branch protection requiring the cross-family-adversarial-review status plus a Build & Test check (strict, zero required human reviews). All seven repos now carry the gate; PR #8 wires the Build & Test workflow onto main.",
         },
         {
           order: "N2",
