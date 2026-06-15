@@ -269,7 +269,7 @@
       { id: "v39", code: "v3.9", label: "v3.9 operative baseline accepted", x: 7.18, swimlane: "gate", status: "closed", href: "v3-9.html" },
       { id: "v40", code: "v4.0", label: "v4.0 doctrine seed accepted; folder remains candidate", x: 7.92, swimlane: "gate", status: "candidate", href: "v4-0.html" },
       { id: "slice1", code: "G-1.2", label: "First society to finish a catalog FactoryOrder", x: 11.9, swimlane: "gate", status: "closed", href: "slice-1-completion.html" },
-      { id: "gate-e", code: "Gate-E", label: "Event-1 / Gate-E authority granted (decision: Notify, docs#132)", x: 12.75, swimlane: "gate", status: "closed", href: "gate-k.html" },
+      { id: "gate-e", code: "Gate-E", label: "Gate-E hard stop resolved — Event-1 / Gate-K granted (decision: Notify, docs#132), not a new slice-1 grant", x: 12.75, swimlane: "gate", status: "closed", href: "gate-k.html" },
       { id: "gate-k", code: "Gate-K", label: "Loop-hardening gate unsatisfied — AC-K5 attestation, AC-K1–K4 evidence, and the cross-family status-poster residual pending", x: 13.9, swimlane: "gate", status: "pending", href: "gate-k.html" },
     ],
     risks: [
