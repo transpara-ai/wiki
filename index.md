@@ -455,8 +455,9 @@ these has an article yet; do not read their absence as absence from the project.
   per-thought granularity is a future run.
 - **v16 fix-set implementation.** F1 (Reason-phase cwd), F2 (spec-diff gate at
   subtask creation), F3 (quiescence detector + `hive.run.completed`) are named in
-  `[[slice-1-completion]]` as the candidate scope for the next fix set pending
-  Gate-E or a new grant. Their articles are deferred until implementation.
+  `[[slice-1-completion]]` as the candidate scope for a future fix set. The 2026-06-15 Gate-E hard stop
+  resolved to Event-1 (docs#132), not a new slice-1 grant, so this fix-set
+  remains unauthorized; its articles are deferred until implementation.
 
 ---
 

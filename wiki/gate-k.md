@@ -11,6 +11,8 @@ sources:
   - raw/open-brain/2026-06.md  # L76, L111, L124, L134 — Gate K design and review process, AC-K lettering, cross-family review disposition
   - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/01-interim-loop-hardening-design-v4.0.md  # DF-V4.0-EPIC-001-DESIGN — requirements R-K1..K4, acceptance criteria AC-K1..K6 with verification_method, risk_class, required_evidence
   - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/02-interim-loop-hardening-authorization-v4.0.md  # DF-V4.0-EPIC-001 authorization — Event-1 AuthorityDecision granted (Notify) 2026-06-15, recorded via transpara-ai/docs#132
+  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/03-gate-k-evidence-reconciliation-v4.0.md  # Gate-K evidence reconciliation — AC-K1/AC-K3 predicate reconciliation still open, transpara-ai/docs#133
+  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/04-gate-k-disposition-v4.0.md  # Gate-K guardrail disposition — AC-K2/AC-K4 negative-test evidence + cross-family status-poster/app-pinning residual open, transpara-ai/docs#134
   - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/06-ac-k5-attestation-disposition-v4.0.md  # AC-K5 attestation disposition — keeps AC-K5 and Gate K not satisfied, transpara-ai/docs#137
 confidence:
   sources: primary
@@ -89,5 +91,7 @@ The gates article ([[gates]]) flags a potential lettering collision: v3.9 uses l
 - **Primary:** `raw/transpara/dark-factory/v4.0/checkpoint-2026-06-12-v4.0-doctrine-acceptance.md` (DF-V4.0-CKPT-2026-06-12-ACCEPTANCE) — "Gates K and L remain defined and unsatisfied" (§ "What This Acceptance Does Not Do"). Read in full this compilation.
 - **Secondary:** `raw/open-brain/2026-06.md` — L76 (arc doc summary, Gate K definition quote), L111 (lettering collision concern raised in same-family review), L124 (Codex found no lettering-collision finding, item closed), L134 (merged PRs #79 and #80 with Gates K/L arc). Read lines 60–143 this compilation.
 - **Context:** `wiki/gates.md` — existing Gates A–J article (tier: architecture, compiled 2026-06-13) read in full for cross-linking and house style.
+
+- **Live state (2026-06-15):** `transpara-ai/docs#132` (Event-1 / Gate-K authority grant, decision *Notify*), `#133` (Gate-K evidence reconciliation — AC-K1/AC-K3), `#134` (Gate-K guardrail disposition — AC-K2/AC-K4 plus the cross-family status-poster / app-pinning residual), and `#137` (AC-K5 attestation disposition). These merged docs PRs post-date the cited raw checkpoint sources and ground the Current-status grant and open-blocker claims; the matching epic-01 packets (02/03/04/06) are listed in frontmatter `sources:`.
 
 No Searles-post URL applies to Gate K; it is a v4.0 Dark Factory engineering construct with no upstream post provenance. `[[wikilinks]]` marked ⚠ are forward references to articles not yet compiled.
