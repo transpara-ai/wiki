@@ -102,12 +102,12 @@ Grant-2 is exhausted. The hard stop was reached and **resolved on 2026-06-15**: 
 
 The v16 daemon (PID 821925/821927, ~0% CPU) had been held frozen by design pending that decision.
 
-## Pending decisions (escalated by the society itself)
+## Decisions escalated by the society (disposition)
 
 1. **Gate-E or new grant — RESOLVED 2026-06-15:** the External Committee granted Event-1 / Gate-K (decision *Notify*, `transpara-ai/docs#132`), not a new slice-1 grant.
 2. **Catalog ruling** — the society itself escalated: workspace IS `transpara-ai/docs`; the FO's 24-role scope governs (`b638a44`'s content); the planner subtask was mis-scoped.
 3. **v16 fix-set scope** — candidate: F1 WorkDir threading (hive `pkg/loop` + eventgraph provider), F2 spec-diff gate at subtask creation, F3 quiescence detector → `hive.run.completed` + human-decision channel.
-4. **v16 daemon disposition** — kill or keep with the Gate-E decision.
+4. **v16 daemon disposition** — with the Gate-E hard stop now resolved to Event-1 (not a slice-1 continuation), the daemon's frozen-pending state is moot; final kill/keep is an operational follow-up.
 
 ## Relationship to the arc
 
