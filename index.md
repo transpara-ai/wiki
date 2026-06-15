@@ -1,6 +1,6 @@
 ---
 title: Civilization Wiki — index
-last_compiled: "2026-06-14"
+last_compiled: "2026-06-15"
 run: "Run-3 (thirteen-graphs completion + arc advancement + runtime objects)"
 status: partial — approaching corpus coverage
 article_count: 92
@@ -20,7 +20,7 @@ downstream view (Mission Control, the spine/story view) is a read lens onto it.
 
 | Field | Value |
 |---|---|
-| **last_compiled** | **2026-06-14** |
+| **last_compiled** | **2026-06-15** |
 | **run** | **Run-3 (thirteen-graphs completion + arc advancement + runtime objects)** |
 | **completeness** | **PARTIAL — arc spine, philosophy, runtime objects, and thirteen-graphs complete; full corpus sweep still deferred** |
 
@@ -76,7 +76,7 @@ silently resolved):
   synthesis) and Scheme B (Post 6 / layer specs) name some layers differently.
   Both schemes are reproduced in the affected articles; this index uses Scheme A
   numbering for the tier names. See `[[thirteen-graphs]]`.
-- **Gate K and Gate L.** Defined in v4.0 but unsatisfied as of 2026-06-14. They
+- **Gate K and Gate L.** Defined in v4.0 but unsatisfied as of 2026-06-15 (Event-1 authority was granted; the gates themselves are not satisfied). They
   extend the Gate A–J lettering with a different scope (development-loop hardening
   and v3.9-to-v4.0 reconciliation). See `[[gate-k]]` and `[[gate-l]]`.
 
@@ -239,7 +239,7 @@ doctrine. The civilization's **first reunified act was to document its own
 society** (it wrote `civic-roles.md`). → **`[[the-reunification]]`**,
 **`[[the-civilization]]`**
 
-### 7 — The present (as of 2026-06-14)
+### 7 — The present (as of 2026-06-15)
 
 The governed-production effort now has a single umbrella article,
 **`[[dark-factory]]`**, synthesizing the orientation doc and the version lineage
@@ -460,7 +460,7 @@ these has an article yet; do not read their absence as absence from the project.
 
 ---
 
-*Compiled by Run-3 on 2026-06-14. Fail-legible: gaps are marked TBD, conflicts
+*Compiled by Run-3 on 2026-06-14; reconciled 2026-06-15 for the Event-1/Gate-K grant. Fail-legible: gaps are marked TBD, conflicts
 are stated rather than resolved, and every `[[...]]` link above resolves to a real
 file in `wiki/`. Re-run the compiler to refresh `last_compiled` and fold in the
 deferred entities.*

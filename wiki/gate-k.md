@@ -10,6 +10,8 @@ sources:
   - raw/transpara/dark-factory/v4.0/checkpoint-2026-06-12-v4.0-doctrine-acceptance.md  # DF-V4.0-CKPT-2026-06-12-ACCEPTANCE — acceptance scope; "What This Acceptance Does Not Do" confirms K unsatisfied
   - raw/open-brain/2026-06.md  # L76, L111, L124, L134 — Gate K design and review process, AC-K lettering, cross-family review disposition
   - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/01-interim-loop-hardening-design-v4.0.md  # DF-V4.0-EPIC-001-DESIGN — requirements R-K1..K4, acceptance criteria AC-K1..K6 with verification_method, risk_class, required_evidence
+  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/02-interim-loop-hardening-authorization-v4.0.md  # DF-V4.0-EPIC-001 authorization — Event-1 AuthorityDecision granted (Notify) 2026-06-15, recorded via transpara-ai/docs#132
+  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/06-ac-k5-attestation-disposition-v4.0.md  # AC-K5 attestation disposition — keeps AC-K5 and Gate K not satisfied, transpara-ai/docs#137
 confidence:
   sources: primary
   claims: grounded
