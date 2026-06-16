@@ -63,6 +63,7 @@
       // ── North-star Goal ──────────────────────────────────────────────
       {
         id: "goal-north-star",
+        code: "NS",
         type: "goal",
         label: "One civilization, one business",
         status: "active",
@@ -90,6 +91,7 @@
 
       {
         id: "origin-signal",
+        code: "ORIGIN",
         type: "work",
         label: "Initial project signal and 20 primitives",
         status: "done",
@@ -107,6 +109,7 @@
       },
       {
         id: "primitive-frame",
+        code: "TRANSPARA",
         type: "work",
         label: "Searles primitive basis enters Transpara-AI",
         status: "done",
@@ -124,6 +127,7 @@
       },
       {
         id: "civic-ai",
+        code: "CIVIC",
         type: "work",
         label: "Civic AI and graduated authority frame",
         status: "done",
@@ -141,6 +145,7 @@
       },
       {
         id: "hive-runtime",
+        code: "HIVE",
         type: "work",
         label: "Hive governance runtime and event-only coordination",
         status: "done",
@@ -158,6 +163,7 @@
       },
       {
         id: "civilization-north-star",
+        code: "CIV",
         type: "work",
         label: "One civilization, one business",
         status: "done",
@@ -175,6 +181,7 @@
       },
       {
         id: "architecture",
+        code: "ARCH",
         type: "work",
         label: "FactoryOrder, Work, EventGraph, Site membrane",
         status: "done",
@@ -192,6 +199,7 @@
       },
       {
         id: "agent-model",
+        code: "AGENT",
         type: "work",
         label: "Nine runtime civic roles",
         status: "done",
@@ -209,6 +217,7 @@
       },
       {
         id: "role-catalog",
+        code: "ROLE",
         type: "work",
         label: "Canonical 24-role catalog",
         status: "done",
@@ -226,6 +235,7 @@
       },
       {
         id: "memory-layer",
+        code: "MEM",
         type: "work",
         label: "Memory and knowledge remain advisory",
         status: "done",
@@ -243,6 +253,7 @@
       },
       {
         id: "prompt-canon",
+        code: "PROMPT",
         type: "work",
         label: "Prompt canon and source-grounded handoffs",
         status: "done",
@@ -260,6 +271,7 @@
       },
       {
         id: "rituals",
+        code: "RITUAL",
         type: "work",
         label: "Operating rituals and review loops",
         status: "done",
@@ -277,6 +289,7 @@
       },
       {
         id: "governance",
+        code: "GOV",
         type: "work",
         label: "Authority and policy structures",
         status: "done",
@@ -294,6 +307,7 @@
       },
       {
         id: "decisions",
+        code: "DECIDE",
         type: "work",
         label: "Gate decisions and protected actions",
         status: "done",
@@ -311,6 +325,7 @@
       },
       {
         id: "artifacts",
+        code: "ART",
         type: "work",
         label: "Factory artifacts and evidence records",
         status: "done",
@@ -328,6 +343,7 @@
       },
       {
         id: "dashboards",
+        code: "DASH",
         type: "work",
         label: "Read-only observatory dashboards",
         status: "done",
@@ -345,6 +361,7 @@
       },
       {
         id: "wiki-layer",
+        code: "WIKI",
         type: "work",
         label: "Karpathy-style Civilization Wiki",
         status: "done",
@@ -362,6 +379,7 @@
       },
       {
         id: "visualization",
+        code: "VIS",
         type: "work",
         label: "Visualization as a read lens onto the wiki",
         status: "done",
@@ -379,6 +397,7 @@
       },
       {
         id: "human-layer",
+        code: "HUMAN",
         type: "work",
         label: "Human explanation and operator comprehension",
         status: "done",
@@ -396,6 +415,7 @@
       },
       {
         id: "repo-layer",
+        code: "REPO",
         type: "work",
         label: "Implementation repositories and governed surfaces",
         status: "done",
@@ -413,6 +433,7 @@
       },
       {
         id: "prototype",
+        code: "PROTO",
         type: "work",
         label: "Prototype and packetized implementation work",
         status: "done",
@@ -430,6 +451,7 @@
       },
       {
         id: "tests",
+        code: "TEST",
         type: "work",
         label: "Verification gates and review evidence",
         status: "done",
@@ -447,6 +469,7 @@
       },
       {
         id: "demo-validation",
+        code: "DEMO",
         type: "work",
         label: "Slice 1 society-completion evidence",
         status: "done",
@@ -465,6 +488,7 @@
       // Deployment phase (planned) — markers are not yet historical beats
       {
         id: "deployment",
+        code: "DEPLOY",
         type: "work",
         label: "Deployment arc planning path",
         status: "planned",
@@ -482,6 +506,7 @@
       },
       {
         id: "operations",
+        code: "OPS",
         type: "work",
         label: "Always-on operated factory target",
         status: "planned",
@@ -500,6 +525,7 @@
       // Stewardship phase (future) — markers are aspirational
       {
         id: "feedback",
+        code: "FEEDBACK",
         type: "work",
         label: "Evidence feedback into the next packet",
         status: "future",
@@ -517,6 +543,7 @@
       },
       {
         id: "iteration",
+        code: "ITER",
         type: "work",
         label: "Iteration loop and capability evolution",
         status: "future",
@@ -534,6 +561,7 @@
       },
       {
         id: "scale",
+        code: "SCALE",
         type: "work",
         label: "Scaling under expanded audit",
         status: "future",
@@ -551,6 +579,7 @@
       },
       {
         id: "stewardship",
+        code: "STEWARD",
         type: "work",
         label: "Stewardship and guarded autonomy graduation",
         status: "future",
@@ -570,6 +599,7 @@
       // ── Gates ────────────────────────────────────────────────────────
       {
         id: "v39",
+        code: "v3.9",
         type: "gate",
         label: "v3.9 operative baseline accepted",
         status: "done",
@@ -587,6 +617,7 @@
       },
       {
         id: "v40",
+        code: "v4.0",
         type: "gate",
         label: "v4.0 doctrine seed accepted; folder remains candidate",
         status: "active",
@@ -604,6 +635,7 @@
       },
       {
         id: "slice1",
+        code: "G-1.2",
         type: "gate",
         label: "First society to finish a catalog FactoryOrder",
         status: "done",
@@ -621,6 +653,7 @@
       },
       {
         id: "gate-e",
+        code: "Gate-E",
         type: "gate",
         label: "Gate-E hard stop resolved — Event-1 / Gate-K granted (decision: Notify, docs#132), not a new slice-1 grant",
         status: "done",
@@ -638,6 +671,7 @@
       },
       {
         id: "gate-k",
+        code: "Gate-K",
         type: "gate",
         label: "Loop-hardening gate unsatisfied — AC-K5 attestation, AC-K1–K4 evidence, and the cross-family status-poster residual pending",
         status: "active",
@@ -657,6 +691,7 @@
       // ── Decisions ────────────────────────────────────────────────────
       {
         id: "external-frameworks",
+        code: "D15",
         type: "decision",
         label: "External frameworks stay outside control roles",
         status: "done",
@@ -674,6 +709,7 @@
       },
       {
         id: "one-civilization",
+        code: "1C1B",
         type: "decision",
         label: "One civilization, one business",
         status: "done",
@@ -691,6 +727,7 @@
       },
       {
         id: "read-lens",
+        code: "LENS",
         type: "decision",
         label: "Visualization is a read lens onto the wiki",
         status: "done",
@@ -708,6 +745,7 @@
       },
       {
         id: "site-readonly",
+        code: "RO",
         type: "decision",
         label: "Site and Observatory remain read-only surfaces",
         status: "done",
@@ -732,6 +770,7 @@
       // N7 planned observability (seq 14.15).
       {
         id: "n1",
+        code: "N1",
         type: "work",
         label: "Extend cross-family protection to Civilization Wiki",
         status: "done",
@@ -749,6 +788,7 @@
       },
       {
         id: "n2",
+        code: "N2",
         type: "work",
         label: "Keep the ordered arc plan visible",
         status: "active",
@@ -766,6 +806,7 @@
       },
       {
         id: "n3",
+        code: "N3",
         type: "work",
         label: "Resolve Event-1 / Gate-E authority",
         status: "done",
@@ -783,6 +824,7 @@
       },
       {
         id: "n4",
+        code: "N4",
         type: "work",
         label: "Merge or reissue the Gate-K meta-loop artifacts",
         status: "done",
@@ -800,6 +842,7 @@
       },
       {
         id: "n5",
+        code: "N5",
         type: "work",
         label: "Close out Gate-K: supply the remaining AC-K evidence (AC-K5 attestation, AC-K2/AC-K4 negative tests, AC-K1/AC-K3 reconciliation) and accept the status-poster residual — or record a waiver",
         status: "active",
@@ -817,6 +860,7 @@
       },
       {
         id: "n6",
+        code: "N6",
         type: "work",
         label: "Put v3.9 to bed and promote v4.0 to canonical",
         status: "planned",
@@ -834,6 +878,7 @@
       },
       {
         id: "n7",
+        code: "N7",
         type: "work",
         label: "Wire live observability into task state",
         status: "planned",
@@ -856,6 +901,7 @@
       // Active items: seq ≤ 13.89. Planned/future: seq > 13.9.
       {
         id: "c1",
+        code: "C1",
         type: "work",
         label: "Normalize intake into FactoryOrder",
         status: "active",
@@ -873,6 +919,7 @@
       },
       {
         id: "c2",
+        code: "C2",
         type: "work",
         label: "Scaffold new repositories for never-attempted work",
         status: "planned",
@@ -890,6 +937,7 @@
       },
       {
         id: "c3",
+        code: "C3",
         type: "work",
         label: "Acquire existing work by scanning source-repo issues",
         status: "planned",
@@ -907,6 +955,7 @@
       },
       {
         id: "c4",
+        code: "C4",
         type: "work",
         label: "Save generated artifacts in the source repository",
         status: "active",
@@ -924,6 +973,7 @@
       },
       {
         id: "c5",
+        code: "C5",
         type: "work",
         label: "Create governed PRs in the source repository",
         status: "active",
@@ -941,6 +991,7 @@
       },
       {
         id: "c6",
+        code: "C6",
         type: "work",
         label: "Run the cross-family adversarial loop",
         status: "active",
@@ -958,6 +1009,7 @@
       },
       {
         id: "c7",
+        code: "C7",
         type: "work",
         label: "Promote reviewed PRs to bulletproof",
         status: "planned",
@@ -975,6 +1027,7 @@
       },
       {
         id: "c8",
+        code: "C8",
         type: "work",
         label: "Surface human approval through the UI",
         status: "active",
@@ -992,6 +1045,7 @@
       },
       {
         id: "c9",
+        code: "C9",
         type: "work",
         label: "Expose full observability while work runs",
         status: "planned",
@@ -1009,6 +1063,7 @@
       },
       {
         id: "c10",
+        code: "C10",
         type: "work",
         label: "Operate the dark factory on software and non-software tasks",
         status: "future",

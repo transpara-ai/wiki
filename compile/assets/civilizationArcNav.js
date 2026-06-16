@@ -18,7 +18,9 @@
     dragLast: null,
     dragMoved: false,
     keyHandler: null,
-    denseLabels: true,
+    // Default OFF: nodes show their short code (item.code) so the clean view is
+    // readable without overlap. Toggling "full labels" on shows the fuller label.
+    denseLabels: false,
     viewDomain: null,
     detailsOpen: true,
     // Dimension the swimlanes are grouped by. Foundation pass ships "status";
@@ -753,10 +755,14 @@
         });
         drawItemShape(itemGroup, item, x, y);
         if (item.blocked) drawBlockerOverlay(itemGroup, item, x, y);
-        if (state.denseLabels || isSelected(item, "item")) {
-          // Short label inside/under the node; full label lives in the tooltip + panel.
-          addLabel(itemGroup, shortLabel(item.label, 14), x, y + 4, "arc-marker-label arc-item-label", 1);
-        }
+        // Node text depends on the labels toggle:
+        //   default (denseLabels false): the short code (item.code) — readable, no overlap.
+        //   denseLabels true: the fuller (truncated) label — the dense view.
+        // The full label always lives in the tooltip + selected panel.
+        var txt = state.denseLabels
+          ? shortLabel(item.label, 22)
+          : (item.code || shortLabel(item.label, 6));
+        addLabel(itemGroup, txt, x, y + 4, "arc-marker-label arc-item-label", 1);
         bindInteractive(root, svg, data, itemGroup, item, "item");
         group.appendChild(itemGroup);
       });
@@ -853,6 +859,98 @@
       list.appendChild(li);
     });
     return list;
+  }
+
+  // ------------------------------------------------------------------
+  // Code KEY — maps each in-chart short code (item.code) to its full name.
+  // This is the legend the default (code) view needs so the codes are
+  // decodable. Grouped by category for scannability; compact (small mono
+  // font, multi-column grid, truncated labels) so it does not blow out the
+  // layout. Built from data.items and appended to the nav root (NOT inside
+  // .arc-expanded, which is display:none in the compact default view), so it
+  // is visible in the default render.
+  // ------------------------------------------------------------------
+  function codeKeyGroups(data) {
+    var byId = {};
+    (data.items || []).forEach(function (it) {
+      if (it && it.id) byId[it.id] = it;
+    });
+    function pick(ids) {
+      return ids
+        .map(function (id) { return byId[id]; })
+        .filter(function (it) { return it && it.code; });
+    }
+    return [
+      { title: "Goal", items: pick(["goal-north-star"]) },
+      { title: "Near-term worklist", items: pick(["n1", "n2", "n3", "n4", "n5", "n6", "n7"]) },
+      { title: "Delivery route", items: pick(["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10"]) },
+      { title: "Gates", items: pick(["v39", "v40", "slice1", "gate-e", "gate-k"]) },
+      { title: "Decisions", items: pick(["external-frameworks", "one-civilization", "read-lens", "site-readonly"]) },
+      {
+        title: "Narrative beats",
+        items: pick([
+          "origin-signal", "primitive-frame", "civic-ai", "hive-runtime", "civilization-north-star",
+          "architecture", "agent-model", "role-catalog", "memory-layer", "prompt-canon",
+          "rituals", "governance", "decisions", "artifacts", "dashboards",
+          "wiki-layer", "visualization", "human-layer", "repo-layer", "prototype",
+          "tests", "demo-validation", "deployment", "operations", "feedback",
+          "iteration", "scale", "stewardship",
+        ]),
+      },
+    ];
+  }
+
+  function buildCodeKey(data) {
+    var key = htmlEl("section", "arc-code-key");
+    key.setAttribute("data-arc-code-key", "");
+    key.setAttribute("aria-label", "Code key");
+    // Inline styling only (no dedicated CSS exists for this element). Uses the
+    // arc theme variables so it tracks light/dark and stays compact.
+    key.style.cssText =
+      "margin-top:12px;padding:12px 14px;border:1px solid rgba(122,142,160,.42);" +
+      "border-radius:6px;background:rgba(255,255,255,.035);font:11px/1.4 var(--mono,monospace);";
+    key.appendChild(
+      (function () {
+        var h = htmlEl("h3", "", "Key — code → name");
+        h.style.cssText = "margin:0 0 8px;font-size:13px;line-height:1.25;";
+        return h;
+      })()
+    );
+
+    var grid = htmlEl("div", "arc-code-key-grid");
+    grid.style.cssText =
+      "display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 16px;";
+
+    codeKeyGroups(data).forEach(function (group) {
+      if (!group.items.length) return;
+      var col = htmlEl("div", "arc-code-key-group");
+      col.style.cssText = "min-width:0;";
+      var gt = htmlEl("div", "arc-code-key-group-title", group.title);
+      gt.style.cssText =
+        "color:var(--arc-cyan,#69d2d4);font-weight:700;text-transform:uppercase;" +
+        "letter-spacing:.06em;font-size:10px;margin:4px 0 3px;";
+      col.appendChild(gt);
+      var ul = htmlEl("ul", "arc-code-key-list");
+      ul.style.cssText = "list-style:none;margin:0;padding:0;";
+      group.items.forEach(function (item) {
+        var li = htmlEl("li", "arc-code-key-item");
+        li.style.cssText = "display:flex;gap:6px;align-items:baseline;margin:0 0 1px;";
+        var code = htmlEl("span", "arc-code-key-code", item.code);
+        code.style.cssText =
+          "flex:0 0 auto;font-weight:700;color:var(--arc-text,inherit);min-width:54px;";
+        var name = htmlEl("span", "arc-code-key-name", shortLabel(item.label, 40));
+        name.style.cssText =
+          "min-width:0;color:var(--arc-muted,#9aa7b4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+        name.title = item.label;
+        li.append(code, name);
+        ul.appendChild(li);
+      });
+      col.appendChild(ul);
+      grid.appendChild(col);
+    });
+
+    key.appendChild(grid);
+    return key;
   }
 
   function statusClass(status) {
@@ -1220,7 +1318,8 @@
     labelsToggle.type = "checkbox";
     labelsToggle.checked = state.denseLabels;
     labelsToggle.setAttribute("data-arc-labels-toggle", "");
-    labelsLabel.append(labelsToggle, document.createTextNode("dense labels"));
+    // Checked = full labels (state.denseLabels true); unchecked = short codes (default).
+    labelsLabel.append(labelsToggle, document.createTextNode("full labels"));
 
     var zoomReadout = htmlEl("span", "arc-zoom-readout", zoomLabel());
     zoomReadout.setAttribute("data-arc-zoom-readout", "");
@@ -1252,6 +1351,12 @@
     var main = htmlEl("div", "arc-main");
     main.append(frame, selected);
     root.appendChild(main);
+
+    // Code KEY directly under the chart — visible in the DEFAULT (compact)
+    // view, since it is appended to root rather than the .arc-expanded block
+    // (which is display:none while collapsed). This is the legend that makes
+    // the default code labels decodable.
+    root.appendChild(buildCodeKey(data));
 
     var expanded = htmlEl("div", "arc-expanded");
     var copy = htmlEl("p", "arc-copy", data.subtitle + " " + data.explanation);

@@ -27,6 +27,18 @@ function assertData(data) {
   const r = O.validateItems(data.items);
   assert.strictEqual(r.ok, true, `validateItems failed:\n${(r.errors || []).join("\n")}`);
 
+  // ── Code facet: every item carries a non-empty string short code ──
+  // The default (clean) chart view renders item.code as the node text, so a
+  // missing/empty code would leave a node unreadable.
+  data.items.forEach((it) => {
+    assert.strictEqual(
+      typeof it.code,
+      "string",
+      `item '${it.id}' code must be a string, got ${typeof it.code}`
+    );
+    assert(it.code.trim().length > 0, `item '${it.id}' code must be non-empty`);
+  });
+
   // Derived "now" must be a finite, positive frontier.
   const now = O.deriveNow(data.items);
   assert(Number.isFinite(now), `deriveNow must be finite, got ${now}`);
@@ -66,8 +78,39 @@ function assertRenderedDom() {
   // Now-line exists.
   assert(nav.querySelector(".arc-current-line"), "now-line element missing");
 
-  // Blocker overlay: the data has at least one blocked item, so an overlay must render.
   const data = dom.window.CIVILIZATION_ARC_DATA;
+
+  // ── Code labels: the DEFAULT render (denseLabels false) shows node codes ──
+  // At least one node's visible text must equal a known short code. "Gate-K"
+  // is deterministic: gate-k is the active/blocked frontier item, always drawn.
+  const labelTexts = Array.prototype.slice
+    .call(nav.querySelectorAll(".arc-item-label"))
+    .map((el) => (el.textContent || "").trim());
+  const knownCodes = ["N5", "HIVE", "Gate-K"];
+  assert(
+    knownCodes.some((c) => labelTexts.includes(c)),
+    `default view should render at least one node code (looked for ${knownCodes.join(", ")}); saw: ${labelTexts.join(" | ")}`
+  );
+  assert(
+    labelTexts.includes("Gate-K"),
+    `expected a node labelled with the code 'Gate-K' in the default view; saw: ${labelTexts.join(" | ")}`
+  );
+
+  // ── Code KEY: a visible key maps codes → names in the default view ──
+  const codeKey = nav.querySelector("[data-arc-code-key]");
+  assert(codeKey, "code key element missing");
+  const keyText = codeKey.textContent || "";
+  // The N5 worklist code and its label, plus the Gate-K code, must be in the key.
+  const n5 = data.items.find((it) => it.id === "n5");
+  assert(n5 && n5.code === "N5", "fixture: n5 should carry code N5");
+  assert(keyText.includes("N5"), "code key must include the 'N5' code");
+  assert(
+    keyText.includes(n5.label.slice(0, 24)),
+    "code key must include the N5 worklist label"
+  );
+  assert(keyText.includes("Gate-K"), "code key must include the 'Gate-K' code");
+
+  // Blocker overlay: the data has at least one blocked item, so an overlay must render.
   if (data.items.some((it) => it.blocked)) {
     assert(nav.querySelector(".arc-item-blocked"), "blocked items present but no blocker overlay rendered");
   }
