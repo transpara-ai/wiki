@@ -12,3 +12,4 @@ __pycache__/
 /playwright-report/
 /.cache/
 /.adversarial-review/
+/.superpowers/
