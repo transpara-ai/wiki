@@ -19,9 +19,34 @@
     return now === -Infinity ? 0 : now;
   }
 
+  function validateItems(items) {
+    var errors = [];
+    if (!Array.isArray(items)) return { ok: false, errors: ["items is not an array"] };
+    var now = deriveNow(items);
+    var seen = {};
+    items.forEach(function (it, idx) {
+      var where = "item[" + idx + "] " + ((it && it.id) ? it.id : "(no id)");
+      if (!it || typeof it !== "object") { errors.push(where + ": not an object"); return; }
+      if (!it.id) errors.push(where + ": missing id");
+      else if (seen[it.id]) errors.push(where + ": duplicate id");
+      else seen[it.id] = true;
+      if (NODE_TYPES.indexOf(it.type) === -1) errors.push(where + ": invalid type '" + it.type + "'");
+      if (STATUS_ORDER.indexOf(it.status) === -1) errors.push(where + ": invalid status '" + it.status + "'");
+      if (PROVENANCE.indexOf(it.provenance) === -1) errors.push(where + ": invalid provenance '" + it.provenance + "'");
+      if (typeof it.seq !== "number" || isNaN(it.seq)) errors.push(where + ": seq must be a number");
+      if (!it.sprint) errors.push(where + ": missing sprint");
+      if (!Array.isArray(it.repo)) errors.push(where + ": repo must be an array");
+      if (typeof it.seq === "number" && !isNaN(it.seq) && it.seq < now && !SETTLED[it.status]) {
+        errors.push(where + ": status '" + it.status + "' at seq " + it.seq +
+          " is left of now (" + now + ") — past items must be done/active");
+      }
+    });
+    return { ok: errors.length === 0, errors: errors };
+  }
+
   var api = {
     STATUS_ORDER: STATUS_ORDER, NODE_TYPES: NODE_TYPES, PROVENANCE: PROVENANCE,
-    SETTLED: SETTLED, deriveNow: deriveNow,
+    SETTLED: SETTLED, deriveNow: deriveNow, validateItems: validateItems,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (root) root.CivOntology = api;
