@@ -54,9 +54,14 @@ const G = [
   { id: 'a', type: 'work', status: 'done',    blocked: false, seq: 1, sprint: 'hive',   gate: 'v3.9',  repo: ['hive'] },
   { id: 'b', type: 'work', status: 'active',  blocked: true,  seq: 2, sprint: 'gov',    gate: 'gate-k', repo: ['docs'] },
   { id: 'c', type: 'work', status: 'planned', blocked: false, seq: 3, sprint: 'deploy',                 repo: ['site'] },
+  { id: 'd', type: 'work', status: 'active',  blocked: false, seq: 4, sprint: 'wiki',   gate: 'gate-k', repo: ['site'] },
 ];
-test('groupBy status uses fixed band order, blocked overrides', () => {
+test('groupBy status: fixed band order; each item in exactly one lane (blocked overrides)', () => {
   assert.deepStrictEqual(O.groupBy(G, 'status').map(l => l.lane), ['done', 'active', 'blocked', 'planned']);
+  const active = O.groupBy(G, 'status').find(l => l.lane === 'active');
+  assert.deepStrictEqual(active.items.map(i => i.id), ['d']); // b is blocked → only in 'blocked'
+  const blocked = O.groupBy(G, 'status').find(l => l.lane === 'blocked');
+  assert.deepStrictEqual(blocked.items.map(i => i.id), ['b']);
 });
 test('groupBy repo uses repo[0]', () => {
   assert.deepStrictEqual(O.groupBy(G, 'repo').map(l => l.lane), ['docs', 'hive', 'site']);
