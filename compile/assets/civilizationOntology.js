@@ -9,11 +9,13 @@
     "actor", "phase", "event", "decision", "conflict",
     "policy", "invariant", "resource", "capability"];
   var PROVENANCE = ["reconstructed", "derived"];
+  var STATUS_LANES = ["done", "active", "blocked", "planned", "future"];
 
   // "now" on the sequence axis = the frontier: the largest seq among settled (done/active) items.
   function deriveNow(items) {
     var now = -Infinity;
     for (var i = 0; i < items.length; i++) {
+      if (!items[i]) continue;
       if (SETTLED[items[i].status] && items[i].seq > now) now = items[i].seq;
     }
     return now === -Infinity ? 0 : now;
@@ -25,8 +27,8 @@
     var now = deriveNow(items);
     var seen = {};
     items.forEach(function (it, idx) {
-      var where = "item[" + idx + "] " + ((it && it.id) ? it.id : "(no id)");
-      if (!it || typeof it !== "object") { errors.push(where + ": not an object"); return; }
+      if (!it || typeof it !== "object") { errors.push("item[" + idx + "]: not an object"); return; }
+      var where = "item[" + idx + "] " + (it.id ? it.id : "(no id)");
       if (!it.id) errors.push(where + ": missing id");
       else if (seen[it.id]) errors.push(where + ": duplicate id");
       else seen[it.id] = true;
@@ -44,7 +46,6 @@
     return { ok: errors.length === 0, errors: errors };
   }
 
-  var STATUS_LANES = ["done", "active", "blocked", "planned", "future"];
   function laneOf(it, dim) {
     if (dim === "status") return it.blocked ? "blocked" : it.status;
     if (dim === "repo") return (it.repo && it.repo[0]) || "(none)";

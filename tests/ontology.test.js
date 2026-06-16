@@ -48,6 +48,8 @@ test('validateItems rejects invalid enum + duplicate id + missing fields', () =>
   assert.ok(r.errors.some(e => /invalid status/.test(e)));
   assert.ok(r.errors.some(e => /duplicate id/.test(e)));
   assert.ok(r.errors.some(e => /seq must be a number/.test(e)));
+  assert.ok(r.errors.some(e => /invalid provenance/.test(e)));
+  assert.ok(r.errors.some(e => /missing sprint/.test(e)));
 });
 
 const G = [
@@ -78,4 +80,18 @@ test('visibleDeps returns only edges touching the selection', () => {
   const e = O.visibleDeps(items, 'b');
   assert.deepStrictEqual(e.sort((p, q) => (p.from + p.to).localeCompare(q.from + q.to)),
     [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }]);
+});
+
+test('validateItems rejects a non-array', () => {
+  const r = O.validateItems(null);
+  assert.strictEqual(r.ok, false);
+  assert.ok(r.errors.some(e => /not an array/.test(e)));
+});
+
+test('deriveNow on empty array is 0', () => {
+  assert.strictEqual(O.deriveNow([]), 0);
+});
+
+test('deriveNow skips null items without throwing', () => {
+  assert.strictEqual(O.deriveNow([null, { id: 'x', seq: 2, status: 'done' }]), 2);
 });
