@@ -49,3 +49,18 @@ test('validateItems rejects invalid enum + duplicate id + missing fields', () =>
   assert.ok(r.errors.some(e => /duplicate id/.test(e)));
   assert.ok(r.errors.some(e => /seq must be a number/.test(e)));
 });
+
+const G = [
+  { id: 'a', type: 'work', status: 'done',    blocked: false, seq: 1, sprint: 'hive',   gate: 'v3.9',  repo: ['hive'] },
+  { id: 'b', type: 'work', status: 'active',  blocked: true,  seq: 2, sprint: 'gov',    gate: 'gate-k', repo: ['docs'] },
+  { id: 'c', type: 'work', status: 'planned', blocked: false, seq: 3, sprint: 'deploy',                 repo: ['site'] },
+];
+test('groupBy status uses fixed band order, blocked overrides', () => {
+  assert.deepStrictEqual(O.groupBy(G, 'status').map(l => l.lane), ['done', 'active', 'blocked', 'planned']);
+});
+test('groupBy repo uses repo[0]', () => {
+  assert.deepStrictEqual(O.groupBy(G, 'repo').map(l => l.lane), ['docs', 'hive', 'site']);
+});
+test('groupBy gate puts gateless items in (ungated)', () => {
+  assert.ok(O.groupBy(G, 'gate').map(l => l.lane).includes('(ungated)'));
+});

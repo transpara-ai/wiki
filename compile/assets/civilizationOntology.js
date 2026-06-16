@@ -44,9 +44,43 @@
     return { ok: errors.length === 0, errors: errors };
   }
 
+  var STATUS_LANES = ["done", "active", "blocked", "planned", "future"];
+  function laneOf(it, dim) {
+    if (dim === "repo") return (it.repo && it.repo[0]) || "(none)";
+    if (dim === "sprint") return it.sprint || "(none)";
+    if (dim === "gate") return it.gate || "(ungated)";
+    return "(none)";
+  }
+  function groupBy(items, dim) {
+    var map = {}, order = [];
+    if (dim === "status") {
+      items.forEach(function (it) {
+        // status lane: always add to its status bucket
+        var sl = it.status;
+        if (!map[sl]) { map[sl] = []; }
+        map[sl].push(it);
+        // blocked overlay: also add to "blocked" bucket if flagged
+        if (it.blocked) {
+          if (!map["blocked"]) { map["blocked"] = []; }
+          map["blocked"].push(it);
+        }
+      });
+      order = STATUS_LANES.filter(function (l) { return map[l]; });
+    } else {
+      items.forEach(function (it) {
+        var lane = laneOf(it, dim);
+        if (!map[lane]) { map[lane] = []; order.push(lane); }
+        map[lane].push(it);
+      });
+      order.sort();
+    }
+    return order.map(function (l) { return { lane: l, items: map[l] }; });
+  }
+
   var api = {
     STATUS_ORDER: STATUS_ORDER, NODE_TYPES: NODE_TYPES, PROVENANCE: PROVENANCE,
     SETTLED: SETTLED, deriveNow: deriveNow, validateItems: validateItems,
+    groupBy: groupBy,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (root) root.CivOntology = api;
