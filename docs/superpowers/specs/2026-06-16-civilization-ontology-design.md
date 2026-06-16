@@ -84,6 +84,24 @@ Every element traces to corpus precedent + an external formal precedent. Corpus 
 
 > **Provenance TODO (code-is-truth):** the "14 invariants" is unstable in prose (civic-roles.md says 14; a 2026-06-05 capture said 10). The enumerated list lives in **code**: `hive/pkg/hive/agentdef.go` and `docs/roles-catalog.md`. Recover and pin it before Policy/Invariant instances are authored: `grep -rniE "invariant" /Transpara/transpara-ai/data/repos/{hive,docs}`.
 
+### 2.1 External frameworks — canonical sources & per-change mapping
+
+The abbreviations in the §2 ledger resolve here. Each is an accepted precedent with a canonical published source; each maps to the specific ontology changes it grounds.
+
+**REA — Resource–Event–Agent.** McCarthy, W.E. (1982), "The REA Accounting Model: A Generalized Framework for Accounting Systems in a Shared Data Environment," *The Accounting Review* 57(3): 554–578; standardized in ISO/IEC 15944-4 (Open-edi business transaction ontology). Core: economic reality decomposes into **Resources**, **Events** that increment/decrement them, and **Agents**, linked by *duality*, with *Commitments* preceding events.
+→ **Derives:** Resource/Budget node (the "R" the draft lacked) · Event-as-core · Actor/Role ("A") · Goal/Order ≈ *Commitment* · deferred Customer/Economy ≈ external agent + economic exchange.
+
+**Ostrom's design principles for the commons.** Ostrom, E. (1990), *Governing the Commons: The Evolution of Institutions for Collective Action*, Cambridge University Press (Nobel Prize in Economics, 2009). Eight principles for durable self-governed collectives: (1) clearly defined boundaries; (2) congruent rules; (3) collective-choice arrangements; (4) monitoring; (5) graduated sanctions; (6) conflict-resolution mechanisms; (7) recognized right to organize; (8) nested enterprises (polycentricity).
+→ **Derives:** #1 → Boundary/Membership (deferred) · #2 → Policy/Invariant · #3 → Decision · #4 → Signal/Monitoring (deferred) · #5 → Sanction/Enforcement (deferred) · #6 → Conflict (incl. the trichotomy) · #8 → Phase/Epoch + nested Work.
+
+**Normative multi-agent systems (deontic).** Boella, van der Torre & Verhagen (eds.), "Normative Multi-Agent Systems" (Dagstuhl Seminar, 2006–2008); Castelfranchi & Conte, *Trust Theory* (on trust/reputation); deontic logic (obligation / permission / prohibition). Core: agent collectives are governed by **norms** carrying **sanctions**, mediated by **trust/reputation**.
+→ **Derives:** Policy/Invariant (norms) · **Decision modes map to deontic operators** — `Autonomous` = permission, `Notify`/`ApprovalRequired` = obligation, **`Forbidden` = prohibition** · deferred Sanction and Reputation/Trust.
+
+**Speech-act / commitment theory.** Austin, J.L. (1962), *How to Do Things with Words*; Searle, J.R. (1969), *Speech Acts* — illocutionary acts (directives, commissives, declarations); Winograd & Flores (1986), *Understanding Computers and Cognition* — the commitment / "conversation-for-action" loop; Singh's commitment-based agent communication.
+→ **Derives:** Decision as a *directive/declaration* · Goal/Order as a *commissive* (a commitment) · the AuthorityRequest → Decision → ExecutionReceipt triple as the commitment lifecycle (propose → commit → discharge).
+
+> **Name-collision guard:** "Searle" (John R. Searle, the speech-act philosopher) is **not** "Searles" (Matt Searles, the lovyou.ai corpus author). Every citation to `raw/searles/` or "Searles philosophy" in this spec means the latter.
+
 ---
 
 ## 3. Forward-Compatibility Contract & Guarantee (requirement d)
