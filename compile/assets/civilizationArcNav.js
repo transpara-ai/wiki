@@ -18,7 +18,6 @@
     dragLast: null,
     dragMoved: false,
     keyHandler: null,
-    showDependencies: true,
     denseLabels: true,
     viewDomain: null,
     detailsOpen: true,
@@ -591,10 +590,46 @@
     svg.appendChild(group);
   }
 
-  // Dependencies are deferred to the next pass (it will wire CivOntology.visibleDeps).
-  // Kept as a guarded no-op so nothing breaks if the toggle flips it on.
+  // Dependency edges, scoped to the current selection. Hidden by default:
+  // when nothing is selected, visibleDeps([]) returns no edges and we draw
+  // nothing. When an item is selected, draw only its in/out edges, positioning
+  // each endpoint with the SAME mapX(seq) / lane-center used by the item nodes
+  // for the current grouping, so arrows track the chart as lanes regroup.
   function drawDependencies(svg, data) {
-    return;
+    var selId =
+      state.selected && state.selected.kind === "item" && state.selected.item
+        ? state.selected.item.id
+        : null;
+    if (!selId) return;
+    var O = window.CivOntology;
+    if (!O || !O.visibleDeps) return;
+    var edges = O.visibleDeps(data.items || [], selId);
+    if (!edges.length) return;
+
+    var byId = {};
+    (data.items || []).forEach(function (it) {
+      if (it && it.id) byId[it.id] = it;
+    });
+
+    var group = svgEl("g", { class: "arc-dependencies" });
+    edges.forEach(function (edge) {
+      var from = byId[edge.from];
+      var to = byId[edge.to];
+      if (!from || !to) return;
+      var sx = mapX(data, from.seq);
+      var sy = laneCenterFor(itemLaneName(from));
+      var ex = mapX(data, to.seq);
+      var ey = laneCenterFor(itemLaneName(to));
+      var mid = sx + (ex - sx) / 2;
+      group.appendChild(
+        svgEl("path", {
+          d: ["M", sx, sy, "C", mid, sy, mid, ey, ex, ey].join(" "),
+          class: "arc-dependency",
+          "marker-end": "url(#arc-arrow)",
+        })
+      );
+    });
+    svg.appendChild(group);
   }
 
   // Fill/opacity per status, layered over the shared .arc-marker stroke + the
@@ -786,7 +821,6 @@
 
   function drawSvg(root, svg, data) {
     root.setAttribute("data-has-selection", state.selected ? "true" : "false");
-    root.setAttribute("data-dependencies", state.showDependencies ? "true" : "false");
     root.setAttribute("data-dense-labels", state.denseLabels ? "true" : "false");
     root.setAttribute("data-details-open", state.detailsOpen ? "true" : "false");
     svg.replaceChildren();
@@ -804,8 +838,9 @@
     drawLanes(svg, data, groups);
     drawCurrent(svg, data);
     drawAxis(svg, data);
-    drawDependencies(svg, data);
     drawItems(root, svg, data, groups);
+    // Dependency edges overlay the item nodes; selection-scoped (see drawDependencies).
+    drawDependencies(svg, data);
     setViewBox(svg);
   }
 
@@ -1056,9 +1091,8 @@
       }
       event.target.value = "";
     });
-    // Dependencies are deferred to the next pass; keep the toggle harmless.
-    root.querySelector("[data-arc-deps-toggle]").addEventListener("change", function (event) {
-      state.showDependencies = event.target.checked;
+    root.querySelector("[data-arc-grouping]").addEventListener("change", function (event) {
+      state.grouping = event.target.value;
       drawSvg(root, svg, data);
       updateSelectedPanel(root, svg, data);
     });
@@ -1096,7 +1130,6 @@
     root.setAttribute("data-standalone", state.standalone ? "true" : "false");
     root.setAttribute("data-has-selection", state.selected ? "true" : "false");
     root.setAttribute("data-details-open", state.detailsOpen ? "true" : "false");
-    root.setAttribute("data-dependencies", state.showDependencies ? "true" : "false");
     root.setAttribute("data-dense-labels", state.denseLabels ? "true" : "false");
     root.setAttribute("role", "navigation");
     root.setAttribute("aria-label", data.title);
@@ -1162,12 +1195,25 @@
       phaseSelect.appendChild(option);
     });
 
-    var depsLabel = htmlEl("label", "arc-check");
-    var depsToggle = htmlEl("input");
-    depsToggle.type = "checkbox";
-    depsToggle.checked = state.showDependencies;
-    depsToggle.setAttribute("data-arc-deps-toggle", "");
-    depsLabel.append(depsToggle, document.createTextNode("dependencies"));
+    // Swimlane grouping dimension. computeLanes() reads state.grouping, so
+    // changing this + redrawing regroups the chart. Default stays "status".
+    var groupingLabel = htmlEl("label", "arc-check");
+    groupingLabel.appendChild(document.createTextNode("group by "));
+    var groupingSelect = htmlEl("select", "arc-grouping-select");
+    groupingSelect.setAttribute("aria-label", "Group swimlanes by");
+    groupingSelect.setAttribute("data-arc-grouping", "");
+    [
+      { value: "status", label: "Status" },
+      { value: "repo", label: "Repo" },
+      { value: "sprint", label: "Sprint" },
+      { value: "gate", label: "Gate" },
+    ].forEach(function (opt) {
+      var option = htmlEl("option", "", opt.label);
+      option.value = opt.value;
+      if (opt.value === state.grouping) option.selected = true;
+      groupingSelect.appendChild(option);
+    });
+    groupingLabel.appendChild(groupingSelect);
 
     var labelsLabel = htmlEl("label", "arc-check");
     var labelsToggle = htmlEl("input");
@@ -1185,7 +1231,7 @@
     full.target = "_blank";
     full.rel = "noopener";
     full.setAttribute("aria-label", "Open full arc in a new tab");
-    controls.append(fit, zoomIn, zoomOut, exportButton, phaseSelect, depsLabel, labelsLabel, zoomReadout, full);
+    controls.append(fit, zoomIn, zoomOut, exportButton, phaseSelect, groupingLabel, labelsLabel, zoomReadout, full);
 
     top.append(titleWrap, controls);
     root.appendChild(top);

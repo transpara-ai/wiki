@@ -83,6 +83,42 @@ function assertRenderedDom() {
   assert(nav.querySelector("[data-arc-phase-select]"), "sprint selector missing");
   assert(nav.querySelector("[data-arc-close-details]"), "details close control missing");
   assert(nav.textContent.includes("Click an item for drill-down details"), "drill-down instruction missing");
+
+  // ── T8: swimlane grouping toggle present ──
+  assert(nav.querySelector("[data-arc-grouping]"), "grouping control missing");
+
+  // ── T9: dependency edges are selection-scoped ──
+  // Global deps-toggle was removed; no dependencies render until an item is selected.
+  assert(!nav.querySelector("[data-arc-deps-toggle]"), "deps toggle should be removed");
+  assert.strictEqual(
+    nav.querySelectorAll(".arc-dependency").length,
+    0,
+    "no dependency edges should render without a selection"
+  );
+
+  // Pick a deterministic item that HAS dependencies, and confirm the contract
+  // agrees the ontology would surface ≥1 edge for it.
+  const withDeps = data.items.find((it) => Array.isArray(it.deps) && it.deps.length > 0);
+  assert(withDeps, "expected at least one item with non-empty deps in the fixture");
+  assert(
+    O.visibleDeps(data.items, withDeps.id).length >= 1,
+    "visibleDeps must return >=1 edge for an item with deps"
+  );
+
+  // Drive the SAME selection mechanism the click handler uses: each item node
+  // is an [data-arc-item] element labelled by itemTitle(item). Find it by its
+  // accessible name and dispatch a click, then assert its edges appear.
+  const itemTitle = withDeps.label || withDeps.title || withDeps.code || withDeps.id;
+  const nodes = Array.prototype.slice.call(nav.querySelectorAll("[data-arc-item]"));
+  const node = nodes.find((el) => el.getAttribute("aria-label") === itemTitle);
+  assert(node, `could not find rendered node for item '${withDeps.id}'`);
+  node.dispatchEvent(
+    new dom.window.MouseEvent("click", { bubbles: true, clientX: 24, clientY: 24 })
+  );
+  assert(
+    nav.querySelectorAll(".arc-dependency").length >= 1,
+    "selecting an item with deps must render at least one dependency edge"
+  );
 }
 
 const data = loadArcData();
