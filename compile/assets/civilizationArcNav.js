@@ -22,7 +22,19 @@
     denseLabels: true,
     viewDomain: null,
     detailsOpen: true,
+    // Dimension the swimlanes are grouped by. Foundation pass ships "status";
+    // a later pass adds a grouping toggle (repo|sprint|gate) — the seam is here.
+    grouping: "status",
   };
+
+  // Vertical band where item lanes live (between the top margin and the axis).
+  // Mirrors the area the old fixed swimlanes[] occupied.
+  var LANE_AREA_TOP = 70;
+  var LANE_AREA_BOTTOM = 300;
+
+  // Lane geometry for the current draw, keyed by lane name → {y, height, top}.
+  // Rebuilt every drawSvg() by drawLanes(); read by laneCenterFor().
+  var laneGeom = {};
 
   function ready(fn) {
     if (document.readyState === "loading") {
@@ -68,52 +80,32 @@
     return MARGIN_X + ((x - domain.start) / span) * (WIDTH - MARGIN_X * 2);
   }
 
-  function laneById(data, id) {
-    return (data.swimlanes || []).find(function (lane) {
-      return lane.id === id;
-    });
+  // Human label for a lane name under the current grouping dimension.
+  function laneLabelFor(data, laneName) {
+    if (state.grouping === "sprint") {
+      var sprint = (data.sprints || []).find(function (s) {
+        return s.id === laneName;
+      });
+      if (sprint) return sprint.label;
+    }
+    return String(laneName);
   }
 
-  function laneIdForItem(item, fallback) {
-    if (item.swimlane) return item.swimlane;
-    if (item.lane === 0) return "gate";
-    if (item.lane === 2) return "stage";
-    return fallback || "epic";
+  // Center Y of a lane, by lane name. Falls back to the middle of the lane area
+  // when geometry has not been built (defensive — should not happen at draw time).
+  function laneCenterFor(laneName) {
+    var g = laneGeom[laneName];
+    return g ? g.y : (LANE_AREA_TOP + LANE_AREA_BOTTOM) / 2;
   }
 
-  function laneCenter(data, id) {
-    var lane = laneById(data, id);
-    return lane ? lane.y : 224;
+  // Bottom Y of the lane band — where the axis sits.
+  function laneAreaBottom() {
+    return LANE_AREA_BOTTOM;
   }
 
-  function laneTop(data, id) {
-    var lane = laneById(data, id);
-    return lane ? lane.y - lane.height / 2 : 112;
-  }
-
-  function laneHeight(data, id) {
-    var lane = laneById(data, id);
-    return lane ? lane.height : 68;
-  }
-
-  function laneBottom(data, id) {
-    return laneTop(data, id) + laneHeight(data, id);
-  }
-
-  function markerY(data, marker) {
-    return laneCenter(data, laneIdForItem(marker, "epic"));
-  }
-
-  function riskY(data, item) {
-    return laneCenter(data, laneIdForItem(item, "close"));
-  }
-
-  function decisionY(data, item) {
-    return laneCenter(data, laneIdForItem(item, "close"));
-  }
-
-  function criticalY(data) {
-    return laneTop(data, "phase") - 18;
+  // Top Y of the lane band — where the "now" line / first band begins.
+  function laneAreaTop() {
+    return LANE_AREA_TOP;
   }
 
   function currentViewHeight() {
@@ -180,22 +172,20 @@
     setDomainView(root, svg, data, center - paddedSpan / 2, center + paddedSpan / 2);
   }
 
-  function focusPhase(root, svg, data, phase) {
-    focusRange(root, svg, data, phase.start, phase.end, Math.min(1.05, Math.max(0.72, phase.end - phase.start)));
-  }
-
   function focusPoint(root, svg, data, x) {
     focusRange(root, svg, data, x - 0.08, x + 0.08, 0.9);
   }
 
-  function findMarker(data, id) {
-    return data.markers.find(function (marker) {
-      return marker.id === id;
-    });
-  }
-
   function itemTitle(item) {
     return item.label || item.title || item.code || item.id;
+  }
+
+  // Short label for an in-chart node so text stays inside its shape.
+  function shortLabel(text, maxChars) {
+    var s = String(text == null ? "" : text);
+    var limit = maxChars || 14;
+    if (s.length <= limit) return s;
+    return s.slice(0, Math.max(1, limit - 1)).replace(/[\s.,;:]+$/, "") + "…";
   }
 
   function zoomLabel() {
@@ -225,17 +215,27 @@
   }
 
   function itemMeta(item, kind) {
-    if (kind === "phase") return "phase / " + item.status;
-    if (kind === "risk") return "risk / " + item.severity;
-    if (kind === "gate") return "gate / " + item.status;
-    if (kind === "decision") return "decision";
-    return item.type || kind;
+    // Items carry their own type + status; describe them uniformly.
+    var type = item.type || kind || "item";
+    var bits = [type];
+    if (item.status) bits.push(item.status);
+    if (item.blocked) bits.push("blocked");
+    return bits.join(" / ");
   }
 
-  function itemSwimlane(data, item, kind) {
-    var fallback = kind === "gate" ? "gate" : kind === "risk" || kind === "decision" ? "close" : "epic";
-    var lane = laneById(data, laneIdForItem(item, fallback));
-    return lane ? lane.label : fallback;
+  // Which lane the item lands in, for the active grouping dimension.
+  // Mirrors CivOntology.laneOf so the panel agrees with the chart.
+  function itemLaneName(item) {
+    var dim = state.grouping;
+    if (dim === "status") return item.blocked ? "blocked" : item.status;
+    if (dim === "repo") return (item.repo && item.repo[0]) || "(none)";
+    if (dim === "sprint") return item.sprint || "(none)";
+    if (dim === "gate") return item.gate || "(ungated)";
+    return "(none)";
+  }
+
+  function itemSwimlane(data, item) {
+    return laneLabelFor(data, itemLaneName(item));
   }
 
   function isSelected(item, kind) {
@@ -253,12 +253,6 @@
     forceHideTooltip(root);
     drawSvg(root, svg, data);
     updateSelectedPanel(root, svg, data);
-  }
-
-  function findPhase(data, id) {
-    return (data.phases || []).find(function (phase) {
-      return phase.id === id;
-    });
   }
 
   function collectExportCss() {
@@ -331,25 +325,6 @@
     }, 0);
   }
 
-  function itemsInsidePhase(data, phase) {
-    if (!phase || typeof phase.start !== "number" || typeof phase.end !== "number") return [];
-    var collections = [
-      ["marker", data.markers || []],
-      ["gate", data.gates || []],
-      ["risk", data.risks || []],
-      ["decision", data.decisions || []],
-    ];
-    var items = [];
-    collections.forEach(function (entry) {
-      entry[1].forEach(function (item) {
-        if (typeof item.x === "number" && item.x >= phase.start && item.x <= phase.end) {
-          items.push({ kind: entry[0], item: item });
-        }
-      });
-    });
-    return items;
-  }
-
   function wrapText(text, maxChars, maxLines) {
     var words = String(text).split(/\s+/).filter(Boolean);
     var lines = [];
@@ -383,8 +358,11 @@
     var title = htmlEl("strong", "", itemTitle(item));
     tip.append(eyebrow, title);
 
-    if (item.code || item.shortLabel) {
-      tip.appendChild(htmlEl("span", "arc-tooltip-code", item.code || item.shortLabel));
+    if (item.blocked && item.blocked_reason) {
+      tip.appendChild(htmlEl("span", "arc-tooltip-code", "blocked: " + item.blocked_reason));
+    }
+    if (item.note) {
+      tip.appendChild(htmlEl("span", "arc-tooltip-note", item.note));
     }
 
     if (item.href) {
@@ -446,8 +424,7 @@
       state.selected = { kind: kind, item: item };
       state.detailsOpen = true;
       forceHideTooltip(root);
-      if (kind === "phase") focusPhase(root, svg, data, item);
-      else if (typeof item.x === "number") focusPoint(root, svg, data, item.x);
+      if (typeof item.seq === "number") focusPoint(root, svg, data, item.seq);
       else drawSvg(root, svg, data);
       updateSelectedPanel(root, svg, data);
       forceHideTooltip(root);
@@ -551,21 +528,44 @@
     parent.appendChild(label);
   }
 
-  function phaseClass(status) {
-    return "arc-phase arc-phase-" + status;
+  // ------------------------------------------------------------------
+  // Lanes — dynamic swimlanes built from CivOntology.groupBy(items, grouping).
+  // Replaces the old fixed swimlanes[] + phases-as-blocks. Band geometry is
+  // computed by dividing the lane area by the lane count; each lane gets a
+  // center y + height recorded in laneGeom for the item-draw step to read.
+  // ------------------------------------------------------------------
+  function computeLanes(data) {
+    var O = window.CivOntology;
+    var groups = O && O.groupBy ? O.groupBy(data.items || [], state.grouping) : [];
+    laneGeom = {};
+    var top = laneAreaTop();
+    var bottom = laneAreaBottom();
+    var count = Math.max(1, groups.length);
+    var band = (bottom - top) / count;
+    groups.forEach(function (g, index) {
+      var bandTop = top + index * band;
+      laneGeom[g.lane] = {
+        top: bandTop,
+        height: band,
+        y: bandTop + band / 2,
+        index: index,
+      };
+    });
+    return groups;
   }
 
-  function drawSwimlanes(svg, data) {
+  function drawLanes(svg, data, groups) {
     var group = svgEl("g", { class: "arc-swimlanes" });
-    (data.swimlanes || []).forEach(function (lane, index) {
-      var top = laneTop(data, lane.id);
-      var laneGroup = svgEl("g", { class: "arc-swimlane arc-swimlane-" + lane.id });
+    groups.forEach(function (g, index) {
+      var geom = laneGeom[g.lane];
+      if (!geom) return;
+      var laneGroup = svgEl("g", { class: "arc-swimlane arc-swimlane-" + statusClass(g.lane) });
       laneGroup.appendChild(
         svgEl("rect", {
           x: 16,
-          y: top,
+          y: geom.top + 2,
           width: WIDTH - 32,
-          height: lane.height,
+          height: Math.max(1, geom.height - 4),
           rx: 6,
           class: "arc-swimlane-band arc-swimlane-band-" + (index % 2 === 0 ? "even" : "odd"),
         })
@@ -573,337 +573,182 @@
       laneGroup.appendChild(
         svgEl("line", {
           x1: MARGIN_X - 16,
-          y1: lane.y,
+          y1: geom.y,
           x2: WIDTH - MARGIN_X,
-          y2: lane.y,
+          y2: geom.y,
           class: "arc-swimlane-axis",
         })
       );
       var label = svgEl("text", {
         x: 34,
-        y: lane.y + 5,
+        y: geom.y + 5,
         class: "arc-swimlane-label",
       });
-      label.textContent = lane.label;
+      label.textContent = laneLabelFor(data, g.lane);
       laneGroup.appendChild(label);
       group.appendChild(laneGroup);
     });
     svg.appendChild(group);
   }
 
-  function drawPhases(root, svg, data) {
-    var group = svgEl("g", { class: "arc-phases" });
-    var phaseY = laneTop(data, "phase");
-    var phaseH = laneHeight(data, "phase");
-
-    data.phases.forEach(function (phase) {
-      var x = mapX(data, phase.start);
-      var w = mapX(data, phase.end) - x;
-      var phaseGroup = svgEl("g", { class: "arc-phase-group" + (isSelected(phase, "phase") ? " arc-is-selected" : "") });
-      var rect = svgEl("rect", {
-        x: x,
-        y: phaseY,
-        width: Math.max(1, w - 3),
-        height: phaseH,
-        rx: 4,
-        class: phaseClass(phase.status),
-      });
-      phaseGroup.appendChild(rect);
-
-      if (phase.status === "unresolved" || phase.status === "planned") {
-        phaseGroup.appendChild(
-          svgEl("rect", {
-            x: x,
-            y: phaseY,
-            width: Math.max(1, w - 3),
-            height: phaseH,
-            rx: 4,
-            class: "arc-phase-pattern",
-            fill: "url(#arc-hatch)",
-          })
-        );
-      }
-      if (phase.status === "conceptual") {
-        phaseGroup.appendChild(
-          svgEl("rect", {
-            x: x + 4,
-            y: phaseY + 5,
-            width: Math.max(1, w - 11),
-            height: phaseH - 10,
-            rx: 3,
-            class: "arc-phase-pattern",
-            fill: "url(#arc-dots)",
-          })
-        );
-      }
-
-      var visibleDomain = currentDomain(data);
-      var domainZoom = fullDomainSpan(data) / (visibleDomain.end - visibleDomain.start);
-      var densePhase = state.expanded && state.denseLabels && (domainZoom > 1.45 || w > 132);
-      var phaseText = densePhase ? phase.label : phase.shortLabel;
-      var maxChars = densePhase ? Math.floor(w / 7.5) : Math.floor(w / 9);
-      addWrappedLabel(phaseGroup, phaseText, x + w / 2, phaseY + 32, "arc-phase-label", maxChars, densePhase ? 3 : 1, 14);
-      if (state.denseLabels) {
-        var statusText = phase.status.toUpperCase();
-        if (!densePhase) {
-          statusText = {
-            canonical: "CANON",
-            reconstructed: "RECON",
-          }[phase.status] || statusText;
-        }
-        var status = svgEl("text", {
-          x: x + w / 2,
-          y: phaseY + phaseH - 10,
-          class: "arc-phase-status-label",
-          "text-anchor": "middle",
-        });
-        status.textContent = statusText;
-        phaseGroup.appendChild(status);
-      }
-
-      bindInteractive(root, svg, data, phaseGroup, phase, "phase");
-      group.appendChild(phaseGroup);
-    });
-
-    svg.appendChild(group);
-  }
-
+  // Dependencies are deferred to the next pass (it will wire CivOntology.visibleDeps).
+  // Kept as a guarded no-op so nothing breaks if the toggle flips it on.
   function drawDependencies(svg, data) {
-    if (!state.expanded || !state.showDependencies) return;
-    var group = svgEl("g", { class: "arc-dependencies" });
-    data.dependencies.forEach(function (dep) {
-      var from = findMarker(data, dep.from);
-      var to = findMarker(data, dep.to);
-      if (!from || !to) return;
-      var sx = mapX(data, from.x);
-      var sy = markerY(data, from) + 12;
-      var ex = mapX(data, to.x);
-      var ey = markerY(data, to) + 12;
-      var mid = sx + (ex - sx) / 2;
-      var path = svgEl("path", {
-        d: ["M", sx, sy, "C", mid, sy, mid, ey, ex, ey].join(" "),
-        class: "arc-dependency",
-        "marker-end": "url(#arc-arrow)",
-      });
-      group.appendChild(path);
-    });
-    svg.appendChild(group);
+    return;
   }
 
-  function drawCompactSummaryRail(root, svg, data) {
-    if (state.expanded) return;
-    var ids = data.summaryRail || data.criticalPath || [];
-    var markers = ids.map(function (id) { return findMarker(data, id); }).filter(Boolean);
-    if (!markers.length) return;
-
-    var axisY = laneBottom(data, "phase") + 22;
-    var railY = axisY + 18;
-    var group = svgEl("g", { class: "arc-compact-rail" });
-    group.appendChild(
-      svgEl("line", {
-        x1: MARGIN_X,
-        y1: railY,
-        x2: WIDTH - MARGIN_X,
-        y2: railY,
-        class: "arc-compact-rail-line",
-      })
-    );
-    markers.forEach(function (marker, index) {
-      var x = mapX(data, marker.x);
-      var y = railY + (index % 2 === 0 ? -8 : 10);
-      var railGroup = svgEl("g", {
-        class: "arc-compact-rail-item" + (isSelected(marker, "marker") ? " arc-is-selected" : ""),
-      });
-      railGroup.appendChild(svgEl("line", { x1: x, y1: railY - 10, x2: x, y2: railY + 10, class: "arc-compact-rail-tick" }));
-      railGroup.appendChild(svgEl("circle", { cx: x, cy: railY, r: 4, class: "arc-compact-rail-point" }));
-      if (state.denseLabels) {
-        var label = svgEl("text", {
-          x: x,
-          y: y,
-          class: "arc-compact-rail-label",
-          "text-anchor": "middle",
-        });
-        label.textContent = marker.code;
-        railGroup.appendChild(label);
-      }
-      bindInteractive(root, svg, data, railGroup, marker, "marker");
-      group.appendChild(railGroup);
-    });
-    svg.appendChild(group);
+  // Fill/opacity per status, layered over the shared .arc-marker stroke + the
+  // group's focus/selection treatment. Inline because the new node classes have
+  // no CSS yet (styling is deferred — spec §4 is correctness-only).
+  function statusFill(status) {
+    switch (status) {
+      case "done":
+        return { fill: "rgba(123,216,143,.55)", stroke: "var(--arc-green)", opacity: 1 };
+      case "active":
+        return { fill: "rgba(231,191,100,.6)", stroke: "var(--arc-gold)", opacity: 1 };
+      case "planned":
+        return { fill: "rgba(108,182,255,.32)", stroke: "var(--arc-blue)", opacity: 0.95 };
+      case "future":
+        return { fill: "rgba(155,167,180,.2)", stroke: "rgba(155,167,180,.6)", opacity: 0.7 };
+      default:
+        return { fill: "rgba(108,182,255,.32)", stroke: "var(--arc-blue)", opacity: 0.95 };
+    }
   }
 
-  function drawCriticalPath(svg, data) {
-    var pathPoints = data.criticalPath
-      .map(function (id) {
-        return findMarker(data, id);
-      })
-      .filter(Boolean)
-      .map(function (marker) {
-        return [mapX(data, marker.x), criticalY(data)];
-      });
-
-    if (pathPoints.length < 2) return;
-    var d = pathPoints
-      .map(function (point, index) {
-        return (index === 0 ? "M " : "L ") + point[0] + " " + point[1];
-      })
-      .join(" ");
-    svg.appendChild(
-      svgEl("path", {
-        d: d,
-        class: "arc-critical-path",
-        "marker-end": "url(#arc-critical-arrow)",
-      })
-    );
-    pathPoints.forEach(function (point) {
-      svg.appendChild(svgEl("circle", { cx: point[0], cy: point[1], r: 5, class: "arc-critical-node" }));
-    });
-  }
-
-  function drawMarkerShape(group, marker, x, y) {
-    var type = marker.type;
+  // Shape by item.type: gate→diamond, decision→circle, goal→larger circle,
+  // everything else (incl. work)→rounded rect. Returns the primary shape el.
+  function drawItemShape(group, item, x, y) {
+    var style = statusFill(item.status);
+    var common = {
+      class: "arc-marker arc-item arc-item-" + statusClass(item.status),
+      fill: style.fill,
+      stroke: style.stroke,
+      opacity: style.opacity,
+    };
+    var type = item.type;
     if (type === "gate") {
+      var d = ["M", x, y - 12, "L", x + 12, y, "L", x, y + 12, "L", x - 12, y, "Z"].join(" ");
+      var diamond = svgEl("path", Object.assign({ d: d }, common));
+      group.appendChild(diamond);
+      return diamond;
+    }
+    if (type === "decision") {
+      var circle = svgEl("circle", Object.assign({ cx: x, cy: y, r: 11 }, common));
+      group.appendChild(circle);
+      return circle;
+    }
+    if (type === "goal") {
+      // Distinct, slightly larger node so the north-star reads differently.
+      var goal = svgEl("circle", Object.assign({ cx: x, cy: y, r: 15 }, common, {
+        class: "arc-marker arc-item arc-item-goal arc-item-" + statusClass(item.status),
+        "stroke-width": 2.4,
+      }));
+      group.appendChild(goal);
+      return goal;
+    }
+    var rect = svgEl("rect", Object.assign(
+      { x: x - 20, y: y - 11, width: 40, height: 22, rx: 4 },
+      common
+    ));
+    group.appendChild(rect);
+    return rect;
+  }
+
+  // Red ring overlay for blocked items. Sized to sit just outside the node.
+  function drawBlockerOverlay(group, item, x, y) {
+    if (item.type === "gate") {
       group.appendChild(
         svgEl("path", {
-          d: ["M", x, y - 13, "L", x + 13, y, "L", x, y + 13, "L", x - 13, y, "Z"].join(" "),
-          class: "arc-marker arc-marker-gate",
+          d: ["M", x, y - 16, "L", x + 16, y, "L", x, y + 16, "L", x - 16, y, "Z"].join(" "),
+          class: "arc-item-blocked",
+          fill: "none",
+          stroke: "var(--arc-red)",
+          "stroke-width": 2.4,
+          "vector-effect": "non-scaling-stroke",
         })
       );
       return;
     }
-    if (type === "deliverable") {
-      group.appendChild(svgEl("line", { x1: x, y1: y - 22, x2: x, y2: y + 22, class: "arc-marker arc-marker-tick" }));
-      return;
-    }
-    if (type === "ritual" || type === "governance" || type === "decision") {
-      group.appendChild(svgEl("circle", { cx: x, cy: y, r: type === "decision" ? 12 : 14, class: "arc-marker arc-marker-circle" }));
-      return;
-    }
-    group.appendChild(
-      svgEl("rect", {
-        x: x - 22,
-        y: y - 12,
-        width: 44,
-        height: 24,
-        rx: 3,
-        class: "arc-marker arc-marker-module",
-      })
-    );
-  }
-
-  function drawMarkers(root, svg, data) {
-    var group = svgEl("g", { class: "arc-markers" });
-    data.markers.forEach(function (marker) {
-      var x = mapX(data, marker.x);
-      var y = markerY(data, marker);
-      var markerGroup = svgEl("g", {
-        class: "arc-marker-group arc-marker-type-" + marker.type + (isSelected(marker, "marker") ? " arc-is-selected" : ""),
-      });
-      drawMarkerShape(markerGroup, marker, x, y);
-      if (state.denseLabels || isSelected(marker, "marker")) {
-        addLabel(markerGroup, marker.code, x, y + 5, "arc-marker-label", 1);
-      }
-      bindInteractive(root, svg, data, markerGroup, marker, "marker");
-      group.appendChild(markerGroup);
-    });
-    svg.appendChild(group);
-  }
-
-  function drawGates(root, svg, data) {
-    var group = svgEl("g", { class: "arc-gates" });
-    data.gates.forEach(function (gate) {
-      var x = mapX(data, gate.x);
-      var y = laneCenter(data, laneIdForItem(gate, "gate"));
-      var gateGroup = svgEl("g", {
-        class: "arc-gate-group arc-gate-" + gate.status + (isSelected(gate, "gate") ? " arc-is-selected" : ""),
-      });
-      gateGroup.appendChild(
-        svgEl("path", {
-          d: ["M", x, y - 15, "L", x + 15, y, "L", x, y + 15, "L", x - 15, y, "Z"].join(" "),
-          class: "arc-gate",
+    if (item.type === "decision" || item.type === "goal") {
+      group.appendChild(
+        svgEl("circle", {
+          cx: x,
+          cy: y,
+          r: item.type === "goal" ? 19 : 15,
+          class: "arc-item-blocked",
+          fill: "none",
+          stroke: "var(--arc-red)",
+          "stroke-width": 2.4,
+          "vector-effect": "non-scaling-stroke",
         })
       );
-      if (state.denseLabels || isSelected(gate, "gate")) {
-        addLabel(gateGroup, gate.code, x, y + 35, "arc-gate-label", 1);
-      }
-      bindInteractive(root, svg, data, gateGroup, gate, "gate");
-      group.appendChild(gateGroup);
-    });
-    svg.appendChild(group);
-  }
-
-  function closeChipLabel(kind, item) {
-    if (kind === "decision") return "DEC " + item.code;
-    return (item.severity === "high" ? "BLOCK " : "WATCH ") + item.code;
-  }
-
-  function closeChipWidth(label) {
-    return Math.max(64, Math.min(118, String(label).length * 7.8 + 24));
-  }
-
-  function drawCloseChip(group, label, x, y, chipClass, labelClass) {
-    var width = closeChipWidth(label);
+      return;
+    }
     group.appendChild(
       svgEl("rect", {
-        x: x - width / 2,
-        y: y - 14,
-        width: width,
-        height: 28,
-        rx: 5,
-        class: chipClass,
+        x: x - 24,
+        y: y - 15,
+        width: 48,
+        height: 30,
+        rx: 6,
+        class: "arc-item-blocked",
+        fill: "none",
+        stroke: "var(--arc-red)",
+        "stroke-width": 2.4,
+        "vector-effect": "non-scaling-stroke",
       })
     );
-    var text = svgEl("text", {
-      x: x,
-      y: y + 4,
-      class: labelClass,
-      "text-anchor": "middle",
-    });
-    text.textContent = label;
-    group.appendChild(text);
   }
 
-  function closeChipY(data, item, index) {
-    var baseY = laneCenter(data, laneIdForItem(item, "close"));
-    return baseY + (index % 2 === 0 ? -10 : 10);
-  }
-
-  function drawRisks(root, svg, data) {
-    var group = svgEl("g", { class: "arc-risks" });
-    data.risks.forEach(function (risk, index) {
-      var x = mapX(data, risk.x);
-      var y = closeChipY(data, risk, index);
-      var riskGroup = svgEl("g", {
-        class: "arc-close-group arc-risk-group arc-risk-" + risk.severity + (isSelected(risk, "risk") ? " arc-is-selected" : ""),
+  // Single item-draw step (replaces drawMarkers/drawGates/drawDecisions).
+  // Iterates the groupBy result so each item lands at its own lane's center —
+  // guaranteeing lane/geometry consistency with drawLanes.
+  function drawItems(root, svg, data, groups) {
+    var group = svgEl("g", { class: "arc-items" });
+    groups.forEach(function (g) {
+      var y = laneCenterFor(g.lane);
+      g.items.forEach(function (item) {
+        var x = mapX(data, item.seq);
+        var itemGroup = svgEl("g", {
+          class:
+            "arc-marker-group arc-item-group arc-item-type-" +
+            statusClass(item.type) +
+            (item.blocked ? " arc-item-is-blocked" : "") +
+            (isSelected(item, "item") ? " arc-is-selected" : ""),
+        });
+        drawItemShape(itemGroup, item, x, y);
+        if (item.blocked) drawBlockerOverlay(itemGroup, item, x, y);
+        if (state.denseLabels || isSelected(item, "item")) {
+          // Short label inside/under the node; full label lives in the tooltip + panel.
+          addLabel(itemGroup, shortLabel(item.label, 14), x, y + 4, "arc-marker-label arc-item-label", 1);
+        }
+        bindInteractive(root, svg, data, itemGroup, item, "item");
+        group.appendChild(itemGroup);
       });
-      drawCloseChip(riskGroup, closeChipLabel("risk", risk), x, y, "arc-close-chip arc-risk", "arc-close-label arc-risk-label");
-      bindInteractive(root, svg, data, riskGroup, risk, "risk");
-      group.appendChild(riskGroup);
     });
     svg.appendChild(group);
   }
 
-  function drawDecisions(root, svg, data) {
-    var group = svgEl("g", { class: "arc-decisions" });
-    data.decisions.forEach(function (decision, index) {
-      var x = mapX(data, decision.x);
-      var y = closeChipY(data, decision, index);
-      var decisionGroup = svgEl("g", {
-        class: "arc-close-group arc-decision-group" + (isSelected(decision, "decision") ? " arc-is-selected" : ""),
-      });
-      drawCloseChip(decisionGroup, closeChipLabel("decision", decision), x, y, "arc-close-chip arc-decision", "arc-close-label arc-decision-label");
-      bindInteractive(root, svg, data, decisionGroup, decision, "decision");
-      group.appendChild(decisionGroup);
-    });
-    svg.appendChild(group);
-  }
-
+  // Vertical "now" line at the derived frontier, labelled by the frontier item.
   function drawCurrent(svg, data) {
-    if (!data.currentFocus) return;
-    var x = mapX(data, data.currentFocus.x);
+    var O = window.CivOntology;
+    if (!O || !O.deriveNow) return;
+    var items = data.items || [];
+    var nowSeq = O.deriveNow(items);
+    if (typeof nowSeq !== "number" || !isFinite(nowSeq)) return;
+    var x = mapX(data, nowSeq);
+
+    // Frontier item: the done/active item sitting exactly at nowSeq.
+    var frontier = null;
+    items.forEach(function (it) {
+      if (!it) return;
+      if ((it.status === "done" || it.status === "active") && it.seq === nowSeq) frontier = it;
+    });
+    var labelText = frontier ? "Now · " + shortLabel(frontier.label, 22) : "Now";
+
     var group = svgEl("g", { class: "arc-current-focus" });
-    var top = laneTop(data, "gate") - 16;
-    var bottom = laneBottom(data, "close") + 14;
+    var top = laneAreaTop() - 14;
+    var bottom = laneAreaBottom() + 12;
     group.appendChild(svgEl("line", { x1: x, y1: top, x2: x, y2: bottom, class: "arc-current-line" }));
     group.appendChild(svgEl("circle", { cx: x, cy: top, r: 7, class: "arc-current-dot" }));
     var labelAttrs = { x: x + 13, y: top + 3, class: "arc-current-label" };
@@ -912,20 +757,22 @@
       labelAttrs["text-anchor"] = "end";
     }
     var label = svgEl("text", labelAttrs);
-    label.textContent = data.currentFocus.label;
+    label.textContent = labelText;
     group.appendChild(label);
     svg.appendChild(group);
   }
 
+  // Axis ticks derived from data.domain (integer steps), replacing phases[].start.
   function drawAxis(svg, data) {
     var group = svgEl("g", { class: "arc-axis" });
-    var y = laneBottom(data, "phase") + 22;
+    var y = laneAreaBottom() + 16;
     group.appendChild(svgEl("line", { x1: MARGIN_X, y1: y, x2: WIDTH - MARGIN_X, y2: y }));
-    data.phases.forEach(function (phase) {
-      var x = mapX(data, phase.start);
+    var start = Math.ceil(data.domain.start);
+    var end = Math.floor(data.domain.end);
+    for (var tick = start; tick <= end; tick++) {
+      var x = mapX(data, tick);
       group.appendChild(svgEl("line", { x1: x, y1: y - 10, x2: x, y2: y + 10 }));
-    });
-    group.appendChild(svgEl("line", { x1: WIDTH - MARGIN_X, y1: y - 10, x2: WIDTH - MARGIN_X, y2: y + 10 }));
+    }
     var label = svgEl("text", {
       x: WIDTH - MARGIN_X,
       y: y - 15,
@@ -947,23 +794,18 @@
     svgTitle.textContent = data.title;
     var svgDesc = svgEl("desc", { id: "civilization-arc-desc" });
     svgDesc.textContent =
-      "Interactive SVG timeline with phases, markers, gates, risks, dependencies, and a highlighted critical path.";
+      "Interactive SVG timeline of civilization arc items on status swimlanes, with a derived now line and blocker overlays.";
     svg.append(svgTitle, svgDesc);
     addDefs(svg);
     svg.appendChild(svgEl("rect", { x: 8, y: 14, width: WIDTH - 16, height: HEIGHT - 28, rx: 12, class: "arc-map-bg" }));
-    drawSwimlanes(svg, data);
+    // Build lane geometry once, then draw lanes → now-line → items → axis.
+    // Collapsed and expanded views render the same item lanes (reduced is fine).
+    var groups = computeLanes(data);
+    drawLanes(svg, data, groups);
     drawCurrent(svg, data);
-    drawPhases(root, svg, data);
     drawAxis(svg, data);
-    drawCompactSummaryRail(root, svg, data);
     drawDependencies(svg, data);
-    drawCriticalPath(svg, data);
-    drawGates(root, svg, data);
-    drawMarkers(root, svg, data);
-    if (state.expanded) {
-      drawDecisions(root, svg, data);
-      drawRisks(root, svg, data);
-    }
+    drawItems(root, svg, data, groups);
     setViewBox(svg);
   }
 
@@ -1081,8 +923,8 @@
     panel.replaceChildren();
     var data = dataArg || window.CIVILIZATION_ARC_DATA;
     var selected = state.selected && state.selected.item ? state.selected : null;
-    var item = selected ? selected.item : data.currentFocus;
-    var kind = selected ? selected.kind : "focus";
+    var item = selected ? selected.item : null;
+    var kind = selected ? selected.kind : "item";
 
     var header = htmlEl("div", "arc-selected-header");
     var titleWrap = htmlEl("div", "arc-selected-title-wrap");
@@ -1104,51 +946,36 @@
         htmlEl(
           "p",
           "arc-selected-help",
-          "Click any phase block, marker, gate, risk, or decision in the arc to focus it here. The map will zoom to that item and this panel will show its status, lane, code, and article link."
+          "Click any item node in the arc to focus it here. The map zooms to that item and this panel shows its type, status, lane, sequence, and article link."
         )
       );
+      return;
     }
-    if (item.code || item.shortLabel) {
-      panel.appendChild(htmlEl("p", "arc-selected-code", item.code || item.shortLabel));
+
+    var facts = htmlEl("dl", "arc-selected-facts");
+    var factRows = [
+      ["Type", item.type || kind],
+      ["Status", item.blocked ? item.status + " (blocked)" : item.status],
+      ["Swimlane", itemSwimlane(data, item)],
+    ];
+    if (Array.isArray(item.repo) && item.repo.length) factRows.push(["Repo", item.repo.join(", ")]);
+    if (item.sprint) factRows.push(["Sprint", laneLabelFor(data, item.sprint)]);
+    if (item.gate) factRows.push(["Gate", item.gate]);
+    if (typeof item.seq === "number") factRows.push(["Sequence", String(item.seq)]);
+    if (item.blocked && item.blocked_reason) factRows.push(["Blocked by", item.blocked_reason]);
+    factRows.forEach(function (row) {
+      facts.appendChild(htmlEl("dt", "", row[0]));
+      facts.appendChild(htmlEl("dd", "", row[1]));
+    });
+    panel.appendChild(facts);
+
+    if (item.note) {
+      var noteBlock = htmlEl("div", "arc-selected-related");
+      noteBlock.appendChild(htmlEl("h4", "", "Note"));
+      noteBlock.appendChild(htmlEl("p", "arc-selected-help", item.note));
+      panel.appendChild(noteBlock);
     }
-    if (selected) {
-      var facts = htmlEl("dl", "arc-selected-facts");
-      var factRows = [
-        ["Kind", itemMeta(item, kind)],
-        ["Swimlane", itemSwimlane(data, item, kind)],
-      ];
-      if (item.status) factRows.push(["Status", item.status]);
-      if (item.severity) factRows.push(["Severity", item.severity]);
-      if (typeof item.start === "number" && typeof item.end === "number") {
-        factRows.push(["Span", item.start + " to " + item.end]);
-      } else if (typeof item.x === "number") {
-        factRows.push(["Arc position", String(item.x)]);
-      }
-      factRows.forEach(function (row) {
-        facts.appendChild(htmlEl("dt", "", row[0]));
-        facts.appendChild(htmlEl("dd", "", row[1]));
-      });
-      panel.appendChild(facts);
-      if (kind === "phase") {
-        var related = itemsInsidePhase(data, item);
-        var relatedBlock = htmlEl("div", "arc-selected-related");
-        relatedBlock.appendChild(htmlEl("h4", "", "Inside phase"));
-        if (related.length) {
-          var list = htmlEl("ul", "");
-          related.slice(0, 8).forEach(function (entry) {
-            var li = htmlEl("li", "");
-            var code = htmlEl("span", "arc-selected-related-code", entry.item.code || entry.item.shortLabel || entry.kind);
-            var label = htmlEl("span", "", itemTitle(entry.item));
-            li.append(code, label);
-            list.appendChild(li);
-          });
-          relatedBlock.appendChild(list);
-        } else {
-          relatedBlock.appendChild(htmlEl("p", "arc-selected-help", "No internal marker is mapped to this phase yet."));
-        }
-        panel.appendChild(relatedBlock);
-      }
-    }
+
     if (item.href) {
       var link = htmlEl("a", "arc-selected-link", "Open article");
       link.href = item.href;
@@ -1217,16 +1044,19 @@
       exportSvg(svg);
     });
     root.querySelector("[data-arc-phase-select]").addEventListener("change", function (event) {
-      var phase = findPhase(data, event.target.value);
-      if (!phase) return;
-      state.selected = { kind: "phase", item: phase };
-      state.detailsOpen = true;
-      root.setAttribute("data-has-selection", "true");
-      root.setAttribute("data-details-open", "true");
-      focusPhase(root, svg, data, phase);
-      updateSelectedPanel(root, svg, data);
+      var sprintId = event.target.value;
+      if (!sprintId) return;
+      // Zoom to the seq extent of the chosen sprint's items.
+      var seqs = (data.items || [])
+        .filter(function (it) { return it.sprint === sprintId; })
+        .map(function (it) { return it.seq; })
+        .filter(function (n) { return typeof n === "number"; });
+      if (seqs.length) {
+        focusRange(root, svg, data, Math.min.apply(null, seqs), Math.max.apply(null, seqs), 0.9);
+      }
       event.target.value = "";
     });
+    // Dependencies are deferred to the next pass; keep the toggle harmless.
     root.querySelector("[data-arc-deps-toggle]").addEventListener("change", function (event) {
       state.showDependencies = event.target.checked;
       drawSvg(root, svg, data);
@@ -1321,14 +1151,14 @@
     exportButton.setAttribute("data-arc-export", "");
 
     var phaseSelect = htmlEl("select", "arc-phase-select");
-    phaseSelect.setAttribute("aria-label", "Zoom to phase");
+    phaseSelect.setAttribute("aria-label", "Zoom to sprint");
     phaseSelect.setAttribute("data-arc-phase-select", "");
-    var emptyOption = htmlEl("option", "", "Zoom to phase...");
+    var emptyOption = htmlEl("option", "", "Zoom to sprint...");
     emptyOption.value = "";
     phaseSelect.appendChild(emptyOption);
-    data.phases.forEach(function (phase) {
-      var option = htmlEl("option", "", phase.shortLabel + " - " + phase.label);
-      option.value = phase.id;
+    (data.sprints || []).forEach(function (sprint) {
+      var option = htmlEl("option", "", sprint.label);
+      option.value = sprint.id;
       phaseSelect.appendChild(option);
     });
 
