@@ -770,27 +770,32 @@ code,pre,.mono{font-family:var(--mono)}
 }
 
 .arc-map-bg{fill:rgba(255,255,255,.025);stroke:rgba(122,142,160,.24);stroke-width:1}
+/* Swimlane bands: clean alternating stripes (no hard outline) give the lanes a
+   readable vertical rhythm. Lanes have variable height (sub-row packing), so the
+   stripe + a thin bottom separator are what delineate them. */
 .arc-swimlane-band{
-  fill:rgba(255,255,255,.025);
-  stroke:rgba(136,158,180,.16);
+  fill:rgba(255,255,255,.022);
+  stroke:none;
+  vector-effect:non-scaling-stroke;
+}
+.arc-swimlane-band-odd{fill:rgba(255,255,255,.055)}
+:root[data-theme="light"] .arc-swimlane-band{fill:rgba(24,32,42,.028)}
+:root[data-theme="light"] .arc-swimlane-band-odd{fill:rgba(24,32,42,.06)}
+/* Thin separator at each lane's bottom edge — vertical rhythm between lanes. */
+.arc-swimlane-sep{
+  stroke:rgba(136,158,180,.2);
   stroke-width:1;
   vector-effect:non-scaling-stroke;
 }
-.arc-swimlane-band-odd{fill:rgba(255,255,255,.045)}
-:root[data-theme="light"] .arc-swimlane-band{fill:rgba(24,32,42,.035)}
-:root[data-theme="light"] .arc-swimlane-band-odd{fill:rgba(24,32,42,.055)}
-.arc-swimlane-axis{
-  stroke:rgba(136,158,180,.28);
-  stroke-width:1;
-  vector-effect:non-scaling-stroke;
-}
+/* Lane label, right-aligned in the left gutter (vertically centred inline via
+   dominant-baseline). Sized to sit inside the gutter; truncated text carries a
+   <title> for the full name. Readable mono, out of the plot area. */
 .arc-swimlane-label{
-  fill:var(--arc-muted);
+  fill:var(--arc-text);
   font-family:var(--mono);
-  font-size:13px;
-  font-weight:900;
-  letter-spacing:.05em;
-  text-transform:uppercase;
+  font-size:11.5px;
+  font-weight:800;
+  letter-spacing:.02em;
   pointer-events:none;
 }
 .arc-axis line{stroke:rgba(136,158,180,.34);stroke-width:1;vector-effect:non-scaling-stroke}

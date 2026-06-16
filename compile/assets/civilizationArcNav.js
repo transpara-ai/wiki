@@ -5,8 +5,29 @@
   var BASE_WIDTH = 1680;
   var WIDTH = BASE_WIDTH;
   var HEIGHT = 420;
-  var MARGIN_X = 118;
+  // Left gutter reserved for lane labels — the plot (nodes/now-line/axis) starts
+  // after it. Right margin keeps the last tick + axis label off the edge.
+  var LANE_GUTTER = 162;
+  var MARGIN_RIGHT = 40;
   var FULL_PAGE = "civilization-arc.html";
+
+  // ── Within-lane sub-row packing geometry ──────────────────────────────────
+  // Each lane stacks its items into as many horizontal sub-rows as collision
+  // avoidance needs. A node occupies a footprint = max(shapeWidth, textWidth)+GAP
+  // centred on its mapX(seq); greedy interval packing assigns sub-rows.
+  var ROW_H = 28;        // vertical pitch of one sub-row
+  var LANE_PAD = 9;      // padding top+bottom inside a lane band
+  var LANE_GAP = 6;      // gap between adjacent lane bands
+  var NODE_GAP = 8;      // horizontal breathing room added to each footprint
+  var CHAR_PX = 6.6;     // approx px per char of the small mono node font
+  var CHART_TOP = 60;    // y where the first lane band begins
+  var AXIS_PAD = 26;     // gap between last lane and the axis line
+  var BOTTOM_PAD = 30;   // margin below the axis label
+
+  // Total content height of the current draw (lanes + axis + margins). Computed
+  // by computeLanes() from the packed sub-rows; drives the SVG height/viewBox so
+  // variable-height lanes always fit and the page scrolls when tall.
+  var contentHeight = HEIGHT;
 
   var state = {
     expanded: false,
@@ -28,14 +49,17 @@
     grouping: "status",
   };
 
-  // Vertical band where item lanes live (between the top margin and the axis).
-  // Mirrors the area the old fixed swimlanes[] occupied.
-  var LANE_AREA_TOP = 70;
-  var LANE_AREA_BOTTOM = 300;
-
-  // Lane geometry for the current draw, keyed by lane name → {y, height, top}.
-  // Rebuilt every drawSvg() by drawLanes(); read by laneCenterFor().
+  // Lane geometry for the current draw, keyed by lane name →
+  //   {top, height, bottom, center, subRows}. Variable height per lane (depends
+  // on how many sub-rows its items pack into). Rebuilt every drawSvg() by
+  // computeLanes(); read by drawLanes()/laneCenterFor().
   var laneGeom = {};
+  // Per-item y position for the current draw, keyed by item id. Items in the
+  // same lane sit on different sub-rows, so the y is item-specific (not just the
+  // lane center). Read by drawItems()/drawDependencies().
+  var itemY = {};
+  // Bottom y of the last lane band for the current draw (axis sits below it).
+  var lanesBottom = CHART_TOP;
 
   function ready(fn) {
     if (document.readyState === "loading") {
@@ -75,10 +99,26 @@
     return data.domain.end - data.domain.start;
   }
 
+  // Left/right edges of the plot area (after the lane-label gutter). The axis +
+  // lane bands span this; lane labels live left of plotLeft().
+  function plotLeft() {
+    return LANE_GUTTER;
+  }
+  function plotRight() {
+    return WIDTH - MARGIN_RIGHT;
+  }
+  // Inset where the FIRST/LAST nodes are centred, so a node at the domain edge
+  // (its shape + text extends ~half its footprint each side) clears the gutter
+  // on the left and the SVG edge on the right instead of bleeding into them.
+  var PLOT_INSET_L = 34;
+  var PLOT_INSET_R = 30;
+
   function mapX(data, x) {
     var domain = currentDomain(data);
     var span = domain.end - domain.start;
-    return MARGIN_X + ((x - domain.start) / span) * (WIDTH - MARGIN_X * 2);
+    var left = plotLeft() + PLOT_INSET_L;
+    var right = plotRight() - PLOT_INSET_R;
+    return left + ((x - domain.start) / span) * (right - left);
   }
 
   // Human label for a lane name under the current grouping dimension.
@@ -92,54 +132,70 @@
     return String(laneName);
   }
 
-  // Center Y of a lane, by lane name. Falls back to the middle of the lane area
-  // when geometry has not been built (defensive — should not happen at draw time).
+  // Center Y of a lane, by lane name. Falls back to the chart top when geometry
+  // has not been built (defensive — should not happen at draw time).
   function laneCenterFor(laneName) {
     var g = laneGeom[laneName];
-    return g ? g.y : (LANE_AREA_TOP + LANE_AREA_BOTTOM) / 2;
+    return g ? g.center : CHART_TOP;
   }
 
-  // Bottom Y of the lane band — where the axis sits.
+  // Y of a specific item (its sub-row center). Falls back to its lane center,
+  // then the chart top, when not yet placed.
+  function itemYFor(item) {
+    if (item && item.id && typeof itemY[item.id] === "number") return itemY[item.id];
+    return laneCenterFor(itemLaneName(item || {}));
+  }
+
+  // Bottom Y of the lane stack — where the axis sits below.
   function laneAreaBottom() {
-    return LANE_AREA_BOTTOM;
+    return lanesBottom;
   }
 
-  // Top Y of the lane band — where the "now" line / first band begins.
+  // Top Y of the lane stack — where the "now" line / first band begins.
   function laneAreaTop() {
-    return LANE_AREA_TOP;
+    return CHART_TOP;
   }
 
+  // Vertical extent of the drawn content. Lanes now have variable height, so the
+  // view always spans the full computed content (no vertical clipping/zoom); the
+  // SVG element grows to fit and the page scrolls when tall. Horizontal zoom/pan
+  // still works via the domain in mapX (the viewBox stays full-width).
   function currentViewHeight() {
-    return state.expanded ? HEIGHT : 190;
+    return Math.max(HEIGHT, Math.round(contentHeight));
   }
 
   function currentViewY() {
-    return state.expanded ? 0 : 42;
+    return 0;
   }
 
   function defaultViewBox() {
-    return { x: 0, y: currentViewY(), w: WIDTH, h: currentViewHeight() };
+    return { x: 0, y: 0, w: WIDTH, h: currentViewHeight() };
   }
 
+  // Virtual x-units track CSS px 1:1 so node footprints used by the packer are
+  // pixel-faithful. WIDTH = the SVG element's rendered width. In jsdom there is
+  // no layout (rect is 0), so WIDTH stays BASE_WIDTH — deterministic for tests.
   function syncVirtualWidth(svg) {
     var rect = svg.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    var nextWidth = Math.max(900, Math.round(currentViewHeight() * (rect.width / rect.height)));
+    if (!rect.width) return;
+    var nextWidth = Math.max(900, Math.round(rect.width));
     if (Math.abs(nextWidth - WIDTH) > 4) {
       WIDTH = nextWidth;
       state.viewBox = defaultViewBox();
     }
   }
 
+  // Size the SVG to its content. viewBox spans 0..WIDTH × 0..contentHeight; the
+  // element height is set to contentHeight px so the drawing renders 1:1 (WIDTH
+  // == element px width) without squashing, and the page scrolls when tall.
   function setViewBox(svg) {
+    var h = currentViewHeight();
     state.viewBox.x = 0;
-    state.viewBox.y = currentViewY();
+    state.viewBox.y = 0;
     state.viewBox.w = WIDTH;
-    state.viewBox.h = currentViewHeight();
-    svg.setAttribute(
-      "viewBox",
-      [state.viewBox.x, state.viewBox.y, state.viewBox.w, state.viewBox.h].join(" ")
-    );
+    state.viewBox.h = h;
+    svg.setAttribute("viewBox", [0, 0, WIDTH, h].join(" "));
+    svg.style.height = h + "px";
     updateZoomReadout(svg);
   }
 
@@ -535,57 +591,141 @@
   // computed by dividing the lane area by the lane count; each lane gets a
   // center y + height recorded in laneGeom for the item-draw step to read.
   // ------------------------------------------------------------------
+  // Horizontal footprint (px) of an item's drawn node at its mapX, including the
+  // node shape, its visible text (code or truncated label per the labels toggle),
+  // any blocker-overlay bulge, and a small gap. Used by the sub-row packer.
+  function nodeShapeHalfWidth(item) {
+    // Half-widths mirror drawItemShape/drawBlockerOverlay.
+    if (item.type === "gate") return item.blocked ? 16 : 12;
+    if (item.type === "goal") return item.blocked ? 19 : 15;
+    if (item.type === "decision") return item.blocked ? 15 : 11;
+    return item.blocked ? 24 : 20; // rounded rect (work/order/etc.)
+  }
+  function itemNodeText(item) {
+    return state.denseLabels
+      ? shortLabel(item.label, 22)
+      : (item.code || shortLabel(item.label, 6));
+  }
+  function itemFootprint(item) {
+    var textW = String(itemNodeText(item)).length * CHAR_PX;
+    var shapeW = nodeShapeHalfWidth(item) * 2;
+    return Math.max(shapeW, textW) + NODE_GAP;
+  }
+
+  // Greedy interval packing within a lane: sort items by seq, then place each in
+  // the FIRST sub-row whose last placed item's right edge is at/left of this
+  // item's left edge; otherwise start a new sub-row. Returns the assignment and
+  // sub-row count. Pure (no DOM, no geometry) so it is unit-testable in jsdom.
+  function packLane(data, laneItems) {
+    var sorted = laneItems.slice().sort(function (a, b) {
+      return a.seq - b.seq;
+    });
+    var rowRight = []; // right-edge x of the last item placed in each sub-row
+    var assign = [];   // { item, subRow, x, left, right }
+    sorted.forEach(function (item) {
+      var x = mapX(data, item.seq);
+      var half = itemFootprint(item) / 2;
+      var left = x - half;
+      var right = x + half;
+      var row = -1;
+      for (var i = 0; i < rowRight.length; i++) {
+        if (rowRight[i] <= left + 0.01) {
+          row = i;
+          break;
+        }
+      }
+      if (row === -1) {
+        row = rowRight.length;
+        rowRight.push(right);
+      } else {
+        rowRight[row] = right;
+      }
+      assign.push({ item: item, subRow: row, x: x, left: left, right: right });
+    });
+    return { assignments: assign, subRows: Math.max(1, rowRight.length) };
+  }
+
+  // Build per-lane geometry by stacking lanes top-to-bottom, each tall enough for
+  // its packed sub-rows. Records each item's y (sub-row center) in itemY, the
+  // lane bands in laneGeom, the stack bottom in lanesBottom, and the total
+  // content height (lanes + axis + margins) in contentHeight.
   function computeLanes(data) {
     var O = window.CivOntology;
     var groups = O && O.groupBy ? O.groupBy(data.items || [], state.grouping) : [];
     laneGeom = {};
-    var top = laneAreaTop();
-    var bottom = laneAreaBottom();
-    var count = Math.max(1, groups.length);
-    var band = (bottom - top) / count;
+    itemY = {};
+    var cursor = laneAreaTop();
     groups.forEach(function (g, index) {
-      var bandTop = top + index * band;
+      var packed = packLane(data, g.items);
+      var height = packed.subRows * ROW_H + LANE_PAD * 2;
+      var top = cursor;
       laneGeom[g.lane] = {
-        top: bandTop,
-        height: band,
-        y: bandTop + band / 2,
+        top: top,
+        height: height,
+        bottom: top + height,
+        center: top + height / 2,
+        subRows: packed.subRows,
         index: index,
       };
+      packed.assignments.forEach(function (a) {
+        itemY[a.item.id] = top + LANE_PAD + a.subRow * ROW_H + ROW_H / 2;
+      });
+      cursor = top + height + LANE_GAP;
     });
+    lanesBottom = groups.length ? cursor - LANE_GAP : laneAreaTop();
+    // Axis line + label sit below the lane stack; pad the bottom for scroll room.
+    contentHeight = lanesBottom + AXIS_PAD + BOTTOM_PAD;
     return groups;
+  }
+
+  // Approximate how many gutter chars fit, so labels truncate with … instead of
+  // spilling into the plot. Conservative (the gutter label font is ~11px mono).
+  function gutterMaxChars() {
+    return Math.max(6, Math.floor((LANE_GUTTER - 24) / 7));
   }
 
   function drawLanes(svg, data, groups) {
     var group = svgEl("g", { class: "arc-swimlanes" });
+    var labelRight = plotLeft() - 12; // right-align labels just inside the gutter
     groups.forEach(function (g, index) {
       var geom = laneGeom[g.lane];
       if (!geom) return;
       var laneGroup = svgEl("g", { class: "arc-swimlane arc-swimlane-" + statusClass(g.lane) });
+      // Striped full-width band spanning the whole (variable-height) lane.
       laneGroup.appendChild(
         svgEl("rect", {
-          x: 16,
-          y: geom.top + 2,
-          width: WIDTH - 32,
-          height: Math.max(1, geom.height - 4),
-          rx: 6,
+          x: 12,
+          y: geom.top,
+          width: WIDTH - 24,
+          height: Math.max(1, geom.height),
+          rx: 7,
           class: "arc-swimlane-band arc-swimlane-band-" + (index % 2 === 0 ? "even" : "odd"),
         })
       );
+      // Thin separator at the lane's bottom edge for vertical rhythm.
       laneGroup.appendChild(
         svgEl("line", {
-          x1: MARGIN_X - 16,
-          y1: geom.y,
-          x2: WIDTH - MARGIN_X,
-          y2: geom.y,
-          class: "arc-swimlane-axis",
+          x1: 12,
+          y1: geom.bottom,
+          x2: WIDTH - 12,
+          y2: geom.bottom,
+          class: "arc-swimlane-sep",
         })
       );
+      // Lane label in the gutter: right-aligned, vertically centred, truncated
+      // with … + a <title> for the full text. Lives left of the plot edge.
+      var full = laneLabelFor(data, g.lane);
       var label = svgEl("text", {
-        x: 34,
-        y: geom.y + 5,
+        x: labelRight,
+        y: geom.center,
+        "text-anchor": "end",
+        "dominant-baseline": "middle",
         class: "arc-swimlane-label",
       });
-      label.textContent = laneLabelFor(data, g.lane);
+      label.textContent = shortLabel(full, gutterMaxChars());
+      var title = svgEl("title");
+      title.textContent = full;
+      label.appendChild(title);
       laneGroup.appendChild(label);
       group.appendChild(laneGroup);
     });
@@ -619,9 +759,9 @@
       var to = byId[edge.to];
       if (!from || !to) return;
       var sx = mapX(data, from.seq);
-      var sy = laneCenterFor(itemLaneName(from));
+      var sy = itemYFor(from);
       var ex = mapX(data, to.seq);
-      var ey = laneCenterFor(itemLaneName(to));
+      var ey = itemYFor(to);
       var mid = sx + (ex - sx) / 2;
       group.appendChild(
         svgEl("path", {
@@ -743,9 +883,11 @@
   function drawItems(root, svg, data, groups) {
     var group = svgEl("g", { class: "arc-items" });
     groups.forEach(function (g) {
-      var y = laneCenterFor(g.lane);
       g.items.forEach(function (item) {
         var x = mapX(data, item.seq);
+        // y is the item's packed sub-row center (collision-avoided), not just the
+        // lane center — items in the same lane stack onto separate sub-rows.
+        var y = itemYFor(item);
         var itemGroup = svgEl("g", {
           class:
             "arc-marker-group arc-item-group arc-item-type-" +
@@ -759,10 +901,7 @@
         //   default (denseLabels false): the short code (item.code) — readable, no overlap.
         //   denseLabels true: the fuller (truncated) label — the dense view.
         // The full label always lives in the tooltip + selected panel.
-        var txt = state.denseLabels
-          ? shortLabel(item.label, 22)
-          : (item.code || shortLabel(item.label, 6));
-        addLabel(itemGroup, txt, x, y + 4, "arc-marker-label arc-item-label", 1);
+        addLabel(itemGroup, itemNodeText(item), x, y + 4, "arc-marker-label arc-item-label", 1);
         bindInteractive(root, svg, data, itemGroup, item, "item");
         group.appendChild(itemGroup);
       });
@@ -793,7 +932,9 @@
     group.appendChild(svgEl("line", { x1: x, y1: top, x2: x, y2: bottom, class: "arc-current-line" }));
     group.appendChild(svgEl("circle", { cx: x, cy: top, r: 7, class: "arc-current-dot" }));
     var labelAttrs = { x: x + 13, y: top + 3, class: "arc-current-label" };
-    if (x > WIDTH * 0.68) {
+    // Flip the label to the left when the now-line is in the right third of the
+    // plot (gutter-aware) so it never runs off the edge.
+    if (x > plotLeft() + (plotRight() - plotLeft()) * 0.68) {
       labelAttrs.x = x - 13;
       labelAttrs["text-anchor"] = "end";
     }
@@ -806,8 +947,8 @@
   // Axis ticks derived from data.domain (integer steps), replacing phases[].start.
   function drawAxis(svg, data) {
     var group = svgEl("g", { class: "arc-axis" });
-    var y = laneAreaBottom() + 16;
-    group.appendChild(svgEl("line", { x1: MARGIN_X, y1: y, x2: WIDTH - MARGIN_X, y2: y }));
+    var y = laneAreaBottom() + AXIS_PAD;
+    group.appendChild(svgEl("line", { x1: plotLeft(), y1: y, x2: plotRight(), y2: y }));
     var start = Math.ceil(data.domain.start);
     var end = Math.floor(data.domain.end);
     for (var tick = start; tick <= end; tick++) {
@@ -815,7 +956,7 @@
       group.appendChild(svgEl("line", { x1: x, y1: y - 10, x2: x, y2: y + 10 }));
     }
     var label = svgEl("text", {
-      x: WIDTH - MARGIN_X,
+      x: plotRight(),
       y: y - 15,
       class: "arc-axis-label",
       "text-anchor": "end",
@@ -837,10 +978,20 @@
       "Interactive SVG timeline of civilization arc items on status swimlanes, with a derived now line and blocker overlays.";
     svg.append(svgTitle, svgDesc);
     addDefs(svg);
-    svg.appendChild(svgEl("rect", { x: 8, y: 14, width: WIDTH - 16, height: HEIGHT - 28, rx: 12, class: "arc-map-bg" }));
-    // Build lane geometry once, then draw lanes → now-line → items → axis.
-    // Collapsed and expanded views render the same item lanes (reduced is fine).
+    // Build lane geometry first so the map background + viewBox can size to the
+    // full (variable-height) content. Then draw map-bg → lanes → now-line →
+    // items → axis. Collapsed and expanded views render the same packed lanes.
     var groups = computeLanes(data);
+    svg.appendChild(
+      svgEl("rect", {
+        x: 8,
+        y: 8,
+        width: WIDTH - 16,
+        height: Math.max(HEIGHT, Math.round(contentHeight)) - 16,
+        rx: 12,
+        class: "arc-map-bg",
+      })
+    );
     drawLanes(svg, data, groups);
     drawCurrent(svg, data);
     drawAxis(svg, data);

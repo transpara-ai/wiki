@@ -49,6 +49,129 @@ function assertData(data) {
   assert(/^\d{4}-\d{2}-\d{2}$/.test(data.executionPlan.updated), "execution plan date must be ISO");
 }
 
+// Parse the drawn horizontal extent + sub-row y of one item-group's primary
+// shape (rect | circle | gate diamond path), deterministically from attributes.
+// Returns { cx, halfW, y } in viewBox units, or null if no shape is found.
+function shapeExtent(group) {
+  const rect = group.querySelector("rect.arc-item");
+  if (rect) {
+    const x = parseFloat(rect.getAttribute("x"));
+    const w = parseFloat(rect.getAttribute("width"));
+    const y = parseFloat(rect.getAttribute("y"));
+    const h = parseFloat(rect.getAttribute("height"));
+    return { cx: x + w / 2, halfW: w / 2, y: y + h / 2 };
+  }
+  const circle = group.querySelector("circle.arc-item");
+  if (circle) {
+    return {
+      cx: parseFloat(circle.getAttribute("cx")),
+      halfW: parseFloat(circle.getAttribute("r")),
+      y: parseFloat(circle.getAttribute("cy")),
+    };
+  }
+  const path = group.querySelector("path.arc-item");
+  if (path) {
+    const nums = (path.getAttribute("d") || "").match(/-?\d+(?:\.\d+)?/g);
+    if (nums && nums.length >= 4) {
+      const xs = [];
+      const ys = [];
+      for (let i = 0; i + 1 < nums.length; i += 2) {
+        xs.push(parseFloat(nums[i]));
+        ys.push(parseFloat(nums[i + 1]));
+      }
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+      return { cx: (minX + maxX) / 2, halfW: (maxX - minX) / 2, y: (minY + maxY) / 2 };
+    }
+  }
+  return null;
+}
+
+// ── Within-lane sub-row packing (collision avoidance) + lane-label gutter ──
+// Asserts the core invariant Michael asked for: nodes never overlap, because
+// each lane stacks its items into as many sub-rows as needed; and lane labels
+// live in the left gutter, left of the plot area, not overlapping the nodes.
+function assertPackingAndGutter(dom, nav) {
+  const svg = nav.querySelector("svg.arc-svg");
+  assert(svg, "SVG missing for packing assertions");
+
+  // The viewBox height grows to fit the (variable-height) lane stack. Capture it
+  // so we can assert packing made the chart taller than a single-row baseline.
+  const vb = (svg.getAttribute("viewBox") || "").split(/\s+/).map(Number);
+  assert.strictEqual(vb.length, 4, `viewBox must be 4 numbers, got '${svg.getAttribute("viewBox")}'`);
+  const contentHeight = vb[3];
+  assert(contentHeight > 0, `viewBox height must be positive, got ${contentHeight}`);
+
+  const groups = Array.prototype.slice.call(nav.querySelectorAll(".arc-item-group"));
+  const recs = groups.map((g) => shapeExtent(g)).filter(Boolean);
+  assert(recs.length > 0, "no item shapes parsed for packing check");
+
+  // Group items by their sub-row (quantised y) and assert NO two items on the
+  // same sub-row have overlapping horizontal extents — the no-overlap invariant.
+  const rows = new Map();
+  recs.forEach((r) => {
+    const key = r.y.toFixed(1);
+    if (!rows.has(key)) rows.set(key, []);
+    rows.get(key).push(r);
+  });
+  let lanesPacked = 0; // sub-rows holding more than one node
+  rows.forEach((arr, key) => {
+    if (arr.length > 1) lanesPacked += 1;
+    const sorted = arr.slice().sort((a, b) => a.cx - b.cx);
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = sorted[i - 1];
+      const cur = sorted[i];
+      const gap = cur.cx - cur.halfW - (prev.cx + prev.halfW);
+      assert(
+        gap >= -0.5,
+        `sub-row y=${key}: nodes overlap (right edge ${(prev.cx + prev.halfW).toFixed(1)} > left edge ${(cur.cx - cur.halfW).toFixed(1)})`
+      );
+    }
+  });
+
+  // Packing actually occurred: the dense default (status) data forces ≥1 lane to
+  // use multiple sub-rows, and the chart is taller than a flat single-row layout.
+  const distinctSubRows = rows.size;
+  assert(
+    distinctSubRows > nav.querySelectorAll(".arc-swimlane").length,
+    `expected more sub-rows (${distinctSubRows}) than lanes (${nav.querySelectorAll(".arc-swimlane").length}) — packing should split a dense lane`
+  );
+  assert(
+    contentHeight > 420,
+    `viewBox height should grow past the single-row baseline once packed, got ${contentHeight}`
+  );
+
+  // ── Lane-label gutter: a label per lane, all left of the plot's left edge ──
+  // The plot's left edge is the min x among item-node centers minus their width;
+  // every gutter label's x must be strictly left of every node's left extent.
+  const labels = Array.prototype.slice.call(nav.querySelectorAll(".arc-swimlane-label"));
+  const laneCount = nav.querySelectorAll(".arc-swimlane").length;
+  assert.strictEqual(
+    labels.length,
+    laneCount,
+    `expected one lane label per lane (${laneCount}), got ${labels.length}`
+  );
+  const plotLeftEdge = Math.min.apply(null, recs.map((r) => r.cx - r.halfW));
+  labels.forEach((label) => {
+    const lx = parseFloat(label.getAttribute("x"));
+    assert(Number.isFinite(lx), "lane label missing numeric x");
+    assert(
+      lx < plotLeftEdge,
+      `lane label x=${lx} must be left of the plot's left edge ${plotLeftEdge.toFixed(1)} (labels live in the gutter)`
+    );
+    // Each label is anchored to the right (so it hugs the gutter's inner edge)
+    // and carries a <title> with the full, untruncated lane name for hover.
+    assert.strictEqual(
+      label.getAttribute("text-anchor"),
+      "end",
+      "lane label should be right-anchored in the gutter"
+    );
+    assert(label.querySelector("title"), "lane label should carry a <title> tooltip with the full name");
+  });
+}
+
 // ── Rendered DOM: the new chart structure exists ──
 function assertRenderedDom() {
   const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav></div>', {
@@ -77,6 +200,10 @@ function assertRenderedDom() {
 
   // Now-line exists.
   assert(nav.querySelector(".arc-current-line"), "now-line element missing");
+
+  // ── Within-lane sub-row packing + lane-label gutter (run on the clean default
+  // render, before any selection/zoom below mutates the layout). ──
+  assertPackingAndGutter(dom, nav);
 
   const data = dom.window.CIVILIZATION_ARC_DATA;
 
