@@ -13,8 +13,8 @@ sources:
   - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/02-interim-loop-hardening-authorization-v4.0.md  # DF-V4.0-EPIC-001 authorization — Event-1 AuthorityDecision granted (Notify) 2026-06-15, recorded via transpara-ai/docs#132
   - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/03-gate-k-evidence-reconciliation-v4.0.md  # Gate-K evidence reconciliation — AC-K1/AC-K3 predicate reconciliation still open, transpara-ai/docs#133
   - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/04-gate-k-disposition-v4.0.md  # Gate-K guardrail disposition — AC-K2/AC-K4 negative-test evidence + cross-family status-poster/app-pinning residual open, transpara-ai/docs#134
-  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/06-ac-k5-attestation-disposition-v4.0.md  # AC-K5 attestation disposition — keeps AC-K5 and Gate K not satisfied, transpara-ai/docs#137
-  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/07-gate-k-pre-go-live-waiver-v4.0.md  # Gate K pre-go-live waiver and closeout disposition, transpara-ai/docs#138
+  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/06-ac-k5-attestation-disposition-v4.0.md  # Historical pre-waiver AC-K5 attestation disposition — keeps AC-K5 and Gate K not satisfied as vendor evidence, transpara-ai/docs#137
+  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-01-interim-loop-hardening/07-gate-k-pre-go-live-waiver-v4.0.md  # Gate K pre-go-live waiver and closeout disposition, transpara-ai/docs#138 (merge f8ed4a9dc4612d56959f9f8b5d398c4f58b3655d)
 confidence:
   sources: primary
   claims: grounded
@@ -22,7 +22,7 @@ confidence:
 
 # Gate K
 
-**The first v4.0 program gate.** Gate K is the evidence predicate that the interim development loop has been hardened — meaning the controls that govern the ChatGPT/Codex/Claude build loop have been made fail-closed on `transpara-ai/docs`. It is defined in `DF-V4.0-INTEGRATION-ARC` (00-integration-arc-v4.0.md) as "Event 1 (Gate K): Interim Development Loop Tier-0 Hardening." As of 2026-06-17, the Event-1 authorization has been **granted** (decision *Notify*, recorded on `transpara-ai/docs#132`) and Gate K is **closed for pre-live sequencing by human waiver** (`transpara-ai/docs#138`). That closure is not vendor-posture evidence, not production go-live clearance, and not an autonomy increase. It continues the [[gates|Gates A–J]] lettering, adding two v4.0 program gates (K and L) without altering any v3.9 gate.
+**The first v4.0 program gate.** Gate K is the evidence predicate that the interim development loop has been hardened — meaning the controls that govern the ChatGPT/Codex/Claude build loop have been made fail-closed on `transpara-ai/docs`. It is defined in `DF-V4.0-INTEGRATION-ARC` (00-integration-arc-v4.0.md) as "Event 1 (Gate K): Interim Development Loop Tier-0 Hardening." As of 2026-06-17, the Event-1 authorization has been **granted** (decision *Notify*, recorded on `transpara-ai/docs#132`) and Gate K is **closed for pre-live sequencing by human waiver** (`transpara-ai/docs#138`, merge `f8ed4a9dc4612d56959f9f8b5d398c4f58b3655d`). That closure is not vendor-posture evidence, not production go-live clearance, and not an autonomy increase. It continues the [[gates|Gates A–J]] lettering, adding two v4.0 program gates (K and L) without altering any v3.9 gate.
 
 ## Context: where Gate K fits
 
@@ -66,7 +66,7 @@ The acceptance checkpoint (DF-V4.0-CKPT-2026-06-12-ACCEPTANCE, 2026-06-12) conta
 
 The authorization packet for Event 1 (DF-V4.0-EPIC-001) originally carried a `PENDING` AuthorityDecision — merging the packet scoped the event, it did not grant it. On 2026-06-15 the human External Committee **granted** Event 1: the decision (`Notify`; Michael Saucier acting for the Committee, with the two-human approval waived for this bounded Level-0 grant) was recorded on `transpara-ai/docs` main via #132, and the Gate-K meta-loop proposal artifacts merged via #115.
 
-On 2026-06-17, docs#138 merged the explicit pre-live waiver. The current state is:
+On 2026-06-17, docs#138 merged the explicit pre-live waiver at merge commit `f8ed4a9dc4612d56959f9f8b5d398c4f58b3655d`. The current state is:
 
 | Boundary | State |
 |---|---|
@@ -103,6 +103,6 @@ The gates article ([[gates]]) flags a potential lettering collision: v3.9 uses l
 - **Secondary:** `raw/open-brain/2026-06.md` — L76 (arc doc summary, Gate K definition quote), L111 (lettering collision concern raised in same-family review), L124 (Codex found no lettering-collision finding, item closed), L134 (merged PRs #79 and #80 with Gates K/L arc). Read lines 60–143 this compilation.
 - **Context:** `wiki/gates.md` — existing Gates A–J article (tier: architecture, compiled 2026-06-13) read in full for cross-linking and house style.
 
-- **Live state (2026-06-17):** `transpara-ai/docs#132` (Event-1 / Gate-K authority grant, decision *Notify*), `#133` (Gate-K evidence reconciliation — AC-K1/AC-K3), `#134` (Gate-K guardrail disposition — AC-K2/AC-K4 plus the cross-family status-poster / app-pinning residual), `#137` (AC-K5 attestation disposition), and `#138` (Gate K pre-go-live waiver and closeout disposition). These merged docs PRs post-date the cited raw checkpoint sources and ground the current pre-live-closed / go-live-blocked split; the matching epic-01 packets (02/03/04/06/07) are listed in frontmatter `sources:`.
+- **Live state (2026-06-17):** `transpara-ai/docs#132` (Event-1 / Gate-K authority grant, decision *Notify*), `#133` (Gate-K evidence reconciliation — AC-K1/AC-K3), `#134` (Gate-K guardrail disposition — AC-K2/AC-K4 plus the cross-family status-poster / app-pinning residual), `#137` (AC-K5 attestation disposition), and `#138` (Gate K pre-go-live waiver and closeout disposition, merge `f8ed4a9dc4612d56959f9f8b5d398c4f58b3655d`). These merged docs PRs post-date the cited raw checkpoint sources and ground the current pre-live-closed / go-live-blocked split; the matching epic-01 packets (02/03/04/06/07) are listed in frontmatter `sources:`.
 
 No Searles-post URL applies to Gate K; it is a v4.0 Dark Factory engineering construct with no upstream post provenance. `[[wikilinks]]` marked ⚠ are forward references to articles not yet compiled.
