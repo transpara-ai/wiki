@@ -46,5 +46,35 @@ class PrToItem(unittest.TestCase):
         self.assertEqual(inflight.pr_to_item(pr, "work")["author"], "unknown")
 
 
+class CollectAndShape(unittest.TestCase):
+    def test_collect_items_records_repo_errors_without_dropping_good_repos(self):
+        def fake_gh_json(args):
+            if "broken" in " ".join(args):
+                raise RuntimeError("gh: not found")
+            return [{"number": 1, "title": "t", "author": {"login": "x"},
+                     "url": "https://github.com/transpara-ai/hive/pull/1",
+                     "state": "OPEN", "isDraft": False}]
+        orig = inflight.gh_json
+        inflight.gh_json = fake_gh_json
+        try:
+            items, errors = inflight.collect_items(["hive", "broken"])
+        finally:
+            inflight.gh_json = orig
+        self.assertTrue(any(i["id"] == "pr-hive-1" for i in items))
+        self.assertTrue(any("broken" in e for e in errors))
+
+    def test_items_dedup_by_id(self):
+        rows = [{"number": 2, "title": "t", "author": {"login": "x"},
+                 "url": "u", "state": "OPEN", "isDraft": False}]
+        orig = inflight.gh_json
+        inflight.gh_json = lambda args: rows
+        try:
+            items, _ = inflight.collect_items(["hive"])
+        finally:
+            inflight.gh_json = orig
+        ids = [i["id"] for i in items]
+        self.assertEqual(len(ids), len(set(ids)))
+
+
 if __name__ == "__main__":
     unittest.main()
