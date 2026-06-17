@@ -20,7 +20,7 @@ confidence:
 
 # Gate L
 
-**The second v4.0 program gate: certification that the v3.9-to-v4.0 reconciliation is complete.** Gate L is defined in the v4.0 Integration Arc (`DF-V4.0-INTEGRATION-ARC`, 00-integration-arc-v4.0.md) as **Event 2 — v4.0 Reconciliation Certified**, the companion to [[gate-k|Gate K]]. Where Gate K hardens the interim development loop, Gate L certifies that the accepted [[v3-9|v3.9]] baseline has been carried forward and reconciled into the [[v4-0|v4.0]] doctrine. As of **2026-06-17, Gate L is defined and unsatisfied**; Gate K is closed for pre-live sequencing only, with go-live revalidation still blocked. Gate L continues the [[gates|Gates A–J]] lettering as the second of the two v4.0 program gates (K and L), without altering any v3.9 gate.
+**The second v4.0 program gate: the certification predicate for v3.9-to-v4.0 reconciliation.** Gate L is defined in the v4.0 Integration Arc (`DF-V4.0-INTEGRATION-ARC`, 00-integration-arc-v4.0.md) as **Event 2 — v4.0 Reconciliation Certified**, the companion to [[gate-k|Gate K]]. Where Gate K hardens the interim development loop, Gate L is the predicate that would certify the accepted [[v3-9|v3.9]] baseline has been carried forward and reconciled into the [[v4-0|v4.0]] doctrine. As of **2026-06-17, Gate L is defined and unsatisfied**; Gate K is closed for pre-live sequencing only, with go-live revalidation still blocked. Gate L continues the [[gates|Gates A–J]] lettering as the second of the two v4.0 program gates (K and L), without altering any v3.9 gate.
 
 > ⚠ v4.0, including the Integration Arc and Gate L, has `canonical: false`. [[v3-9|v3.9]] remains the operative baseline. Gate L is a candidate predicate, not an operative one — and uniquely among the gates, **satisfying it is what would retire v3.9 as the active baseline**, not what closes it out.
 
@@ -44,7 +44,7 @@ Partial coverage does not satisfy Gate L. The stop condition is also explicit: i
 
 The v4.0 doctrine-acceptance checkpoint (`DF-V4.0-CKPT-2026-06-12-ACCEPTANCE`, 2026-06-12) accepts only the seed doctrine. It leaves folder acceptance criterion 2 — the reconciliation coverage matrix — open, records Event 2 as unauthorized, and keeps [[v3-9|v3.9]] as the operative baseline.
 
-The Event 2 authorization packet is still **PROPOSED - NOT YET GRANTED**. Its AuthorityDecision is `ApprovalRequired`, with Michael Saucier acting for the External Committee named as the pending decider. Reconciliation may begin only after that human authority decision changes to `Autonomous` or `Notify` for the bounded docs-only scope. Gate K later received Event-1 authorization on 2026-06-15 (`transpara-ai/docs#132`) and a pre-live waiver on 2026-06-17 (`transpara-ai/docs#138`), but those do not grant Event 2 or satisfy Gate L.
+The Event 2 authorization packet is still **PROPOSED - NOT YET GRANTED**. Its AuthorityDecision is `ApprovalRequired`, with the human External Committee still the pending decider. Reconciliation may begin only after that human authority decision changes to `Autonomous` or `Notify` for the bounded docs-only scope. Gate K later received Event-1 authorization on 2026-06-15 (`transpara-ai/docs#132`) and a pre-live waiver on 2026-06-17 (`transpara-ai/docs#138`), but those do not grant Event 2 or satisfy Gate L.
 
 ## Sequencing and the no-autonomy property
 
