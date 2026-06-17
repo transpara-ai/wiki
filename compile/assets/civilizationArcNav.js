@@ -243,6 +243,7 @@
     if (ord) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "step " + ord + " of " + s.itemCount));
     if (item.date) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "date · " + item.date)); // reserved for date-backfill follow-up
     if (item.provenance) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "provenance · " + item.provenance));
+    if (item.author) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "actor · @" + item.author));
     // No clickable link in the tooltip — pointer-events:none on .arc-tooltip makes
     // anchors unclickable and confusing. The detail panel (on click) shows the link.
     tip.hidden = false;
@@ -563,13 +564,57 @@
 
   // ---- bootstrap ------------------------------------------------------------
 
+  // Live-freshness chip in the frame ("live · updated …" or "live · unavailable").
+  function setLiveChip(root, text, ok) {
+    var s = root._arc;
+    if (!s) return;
+    var chip = s.liveChip;
+    if (!chip) {
+      chip = htmlEl("div", "arc-live-chip");
+      s.liveChip = chip;
+      (s.frame || root).appendChild(chip);
+    }
+    chip.classList.toggle("arc-live-chip-warn", !ok);
+    chip.textContent = text;
+  }
+
+  // Fetch dist/inflight.json, overlay the live derived items via the ontology's
+  // pure mergeInflight, and re-render. Fail-safe: missing fetch, a non-ok response,
+  // a rejected promise, or a rejected merge all keep the baked render.
+  function loadInflight(roots, data) {
+    if (typeof fetch !== "function") return;            // no fetch (SSR/jsdom default) → baked only
+    var O = lib("CivOntology");
+    if (!O || !O.mergeInflight) return;
+    fetch("inflight.json", { cache: "no-store" })
+      .then(function (resp) { if (!resp || !resp.ok) throw new Error("inflight HTTP"); return resp.json(); })
+      .then(function (inflight) {
+        var merged = O.mergeInflight(data, inflight);
+        if (!merged.ok) {
+          if (typeof console !== "undefined") console.warn("inflight: overlay rejected (fail-closed):", merged.errors);
+          Array.prototype.forEach.call(roots, function (root) { setLiveChip(root, "live · unavailable", false); });
+          return;
+        }
+        var liveData = {};
+        for (var key in data) { if (Object.prototype.hasOwnProperty.call(data, key)) liveData[key] = data[key]; }
+        liveData.items = merged.items;                  // new array — baked data untouched
+        Array.prototype.forEach.call(roots, function (root) {
+          if (root._arc) root._arc.ordinalById = null;  // recompute ordinals over the merged set
+          render(root, liveData);
+          setLiveChip(root, "live · updated " + (merged.generated || "?"), true);
+        });
+      })
+      .catch(function (e) {
+        if (typeof console !== "undefined") console.warn("inflight: fetch failed (keeping baked):", e && e.message);
+        Array.prototype.forEach.call(roots, function (root) { setLiveChip(root, "live · unavailable", false); });
+      });
+  }
+
   function boot() {
     var data = (typeof window !== "undefined") ? window.CIVILIZATION_ARC_DATA : null;
     if (!data) return;
     var roots = document.querySelectorAll("[data-civilization-arc-nav]");
-    Array.prototype.forEach.call(roots, function (root) {
-      render(root, data);
-    });
+    Array.prototype.forEach.call(roots, function (root) { render(root, data); }); // baked first — never blank
+    loadInflight(roots, data);                                                    // then overlay live
   }
 
   if (typeof document !== "undefined") {
