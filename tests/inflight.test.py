@@ -47,6 +47,21 @@ class PrToItem(unittest.TestCase):
 
 
 class CollectAndShape(unittest.TestCase):
+    def test_resolve_repos_uses_dark_factory_topic_plus_wiki(self):
+        rows = [
+            {"name": "agent", "repositoryTopics": [{"name": "dark-factory"}]},
+            {"name": "site", "repositoryTopics": [{"name": "dark-factory"}]},
+            {"name": "hive", "repositoryTopics": [{"name": "dark-factory"}]},
+            {"name": "tinstaller", "repositoryTopics": []},
+        ]
+        orig = inflight.gh_json
+        inflight.gh_json = lambda args: rows
+        try:
+            repos = inflight.resolve_repos()
+        finally:
+            inflight.gh_json = orig
+        self.assertEqual(repos, ["agent", "civilization-wiki", "hive", "site"])
+
     def test_collect_items_records_repo_errors_without_dropping_good_repos(self):
         def fake_gh_json(args):
             if "broken" in " ".join(args):
@@ -74,6 +89,18 @@ class CollectAndShape(unittest.TestCase):
             inflight.gh_json = orig
         ids = [i["id"] for i in items]
         self.assertEqual(len(ids), len(set(ids)))
+
+    def test_collect_items_skips_unsupported_pr_states(self):
+        rows = [{"number": 3, "title": "closed", "author": {"login": "x"},
+                 "url": "u", "state": "CLOSED", "isDraft": False}]
+        orig = inflight.gh_json
+        inflight.gh_json = lambda args: rows
+        try:
+            items, errors = inflight.collect_items(["hive"])
+        finally:
+            inflight.gh_json = orig
+        self.assertEqual(items, [])
+        self.assertEqual(errors, [])
 
 
 if __name__ == "__main__":

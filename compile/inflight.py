@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Pure transforms for the future Civilization Arc in-flight layer.
+"""Live in-flight overlay generator for the Civilization Arc.
 
-This module intentionally contains no gh/network/file-writing collector yet.
-Collector and browser-merge wiring will land separately; for now, keep the
-row-to-item mapping deterministic and unit-tested.
+Collects open and recently merged PRs across GitHub's dark-factory topic plus
+civilization-wiki, writes dist/inflight.json, and records repo-level errors
+fail-loudly in the payload. Uses gh auth but writes only derived PR metadata.
 """
 
 import datetime
@@ -86,6 +86,8 @@ def collect_items(repos):
             continue
         for pr in rows:
             it = pr_to_item(pr, repo)
+            if it is None:
+                continue
             items_by_id[it["id"]] = it
     return list(items_by_id.values()), errors
 
