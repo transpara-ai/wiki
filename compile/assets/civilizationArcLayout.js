@@ -18,9 +18,34 @@
     { seq: 9, label: "May" }, { seq: 13.9, label: "Jun · now" }, { seq: 15, label: "future" },
   ];
 
-  function scaleX(domain, plotLeft, plotRight) {
-    var span = (domain.end - domain.start) || 1;
-    return function (seq) { return plotLeft + ((seq - domain.start) / span) * (plotRight - plotLeft); };
+  // Ordinal rank scale: distinct seq values are placed at equidistant columns
+  // (NOT proportional to seq magnitude). Items sharing a seq share a column.
+  function buildRankScale(items, plotLeft, plotRight) {
+    var seqs = [];
+    for (var i = 0; i < items.length; i++) {
+      var s = items[i] && items[i].seq;
+      if (typeof s === "number" && !isNaN(s)) seqs.push(s);
+    }
+    seqs.sort(function (a, b) { return a - b; });
+    var distinct = [];
+    for (var j = 0; j < seqs.length; j++) {
+      if (j === 0 || seqs[j] !== seqs[j - 1]) distinct.push(seqs[j]);
+    }
+    var n = distinct.length;
+    var rankOf = {};
+    for (var k = 0; k < n; k++) rankOf[distinct[k]] = k;
+    var span = (n > 1) ? (n - 1) : 1;
+    function sx(seq) {
+      var r = rankOf[seq];
+      if (r === undefined) { // value not in the placed set: fall to nearest lower rank
+        r = 0;
+        for (var m = 0; m < n; m++) { if (distinct[m] <= seq) r = m; else break; }
+      }
+      return plotLeft + (r / span) * (plotRight - plotLeft);
+    }
+    sx.distinctCount = n;
+    sx.rankOf = function (seq) { return rankOf[seq]; };
+    return sx;
   }
   function bySeq(a, b) { return a.seq - b.seq; }
 
@@ -31,7 +56,7 @@
     var items = data.items || [];
     var domain = data.domain || { start: 0, end: 15 };
     var plotLeft = GEOM.gutter, plotRight = width - GEOM.marginRight;
-    var sx = scaleX(domain, plotLeft, plotRight);
+    var sx = buildRankScale(items, plotLeft, plotRight);
 
     var beats = items.filter(function (i) { return i.type === "work" && i.provenance === "reconstructed"; });
     var decisions = items.filter(function (i) { return i.type === "decision"; });
@@ -72,7 +97,7 @@
     };
   }
 
-  var api = { GEOM: GEOM, GATE_FAMILIES: GATE_FAMILIES, ERAS: ERAS, scaleX: scaleX, buildLayout: buildLayout };
+  var api = { GEOM: GEOM, GATE_FAMILIES: GATE_FAMILIES, ERAS: ERAS, buildRankScale: buildRankScale, buildLayout: buildLayout };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (root) root.CivArcLayout = api;
 })(typeof window !== "undefined" ? window : null);

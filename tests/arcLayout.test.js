@@ -9,10 +9,21 @@ function loadData() {
   const w = {}; new Function('window', code)(w); return w.CIVILIZATION_ARC_DATA;
 }
 
-test('scaleX maps domain endpoints to the plot edges', () => {
-  const sx = L.scaleX({ start: 0, end: 15 }, 100, 1000);
-  assert.strictEqual(sx(0), 100);
-  assert.strictEqual(sx(15), 1000);
+test('buildRankScale spaces distinct seqs equidistantly across the plot', () => {
+  const sx = L.buildRankScale(
+    [{ seq: 0 }, { seq: 5 }, { seq: 5 }, { seq: 99 }], // 3 distinct: 0,5,99
+    100, 400
+  );
+  assert.strictEqual(sx.distinctCount, 3);
+  assert.strictEqual(sx(0), 100);    // first column at plotLeft
+  assert.strictEqual(sx(99), 400);   // last column at plotRight
+  assert.strictEqual(sx(5), 250);    // middle column — equidistant, NOT proportional to value
+});
+
+test('items sharing a seq share an x-column', () => {
+  const sx = L.buildRankScale([{ seq: 1 }, { seq: 2 }, { seq: 2 }], 0, 200);
+  assert.strictEqual(sx(2), sx(2));
+  assert.strictEqual(sx.rankOf(2), 1);
 });
 
 test('buildLayout yields 3 tracks; gates expands into 4 family rows', () => {
