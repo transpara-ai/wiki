@@ -30,6 +30,74 @@
 
 ---
 
+### Task 0: Green the tracks test baseline (finish the un-done T9/T10)
+
+**Why:** The committed renderer is the tracks model, but `tests/arc-dom-smoke.test.js` is still the OLD swimlane test — it loads only ontology+data+nav (NOT the new `civilizationArcLayout.js`/`civilizationArcDraw.js`, so `render()` hits `if (!CivArcLayout || !CivArcDraw) return;` and nothing mounts) and asserts obsolete `.arc-swimlane`/`.arc-current-line` structure. `npm run verify` is therefore red at `test:dom` before any v0.2 change. Green the baseline against the CURRENT renderer first. (Validated: loading all 5 modules → nav mounts, 3 `.arc-track-band`, 3 `.arc-track-label`, 4 `.arc-subrow-label`, 109 `.arc-item-group`, `.arc-now-line` present.)
+
+**Files:**
+- Modify: `tests/arc-dom-smoke.test.js` (rewrite `assertRenderedDom`; delete swimlane sub-row/packing assertions; KEEP `assertData` contract checks)
+- Modify: `tests/arc-nav.spec.js` (update Playwright selectors for tracks)
+
+**Interfaces:** none (tests only).
+
+- [ ] **Step 1: Confirm the red baseline**
+
+Run: `npm run test:dom`
+Expected: FAIL — `arc nav did not mount`.
+
+- [ ] **Step 2: Fix module loading + rewrite DOM assertions.** Keep `assertData` (lines ~20-75) untouched. Delete the swimlane-packing assertion block (the code asserting `.arc-swimlane`, `.arc-swimlane-label`, sub-row overlap/packing). Replace `assertRenderedDom()` with:
+
+```js
+function assertRenderedDom() {
+  const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav></div>', {
+    pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
+  });
+  // Load order matters: ontology → data → layout → draw → nav.
+  // render() bails without CivArcLayout + CivArcDraw, so all five must load.
+  ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
+   "civilizationArcDraw.js", "civilizationArcNav.js"].forEach((f) =>
+    dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
+  dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
+
+  const nav = dom.window.document.querySelector(".civilization-arc-nav");
+  assert(nav, "arc nav did not mount");
+  assert.strictEqual(nav.getAttribute("data-expanded"), "false", "default nav should be compact");
+  assert(nav.querySelector("svg.arc-svg"), "SVG not rendered");
+  assert.strictEqual(nav.querySelectorAll(".arc-track-band").length, 3, "expected 3 track bands");
+  assert.strictEqual(nav.querySelectorAll(".arc-track-label").length, 3, "expected 3 track labels");
+  assert(nav.querySelectorAll(".arc-subrow-label").length >= 4, "expected >=4 gate-family sub-row labels");
+  assert(nav.querySelectorAll(".arc-item-group").length > 0, "no item node groups produced");
+  assert(nav.querySelectorAll(".arc-marker").length > 0, "no item shapes produced");
+  assert(nav.querySelector(".arc-now-line"), "now-line element missing");
+}
+```
+
+  Do NOT assert era labels here — v0.2 Task 4 removes them. Assert only structure stable across v0.2 (mount, tracks, markers, now-line) so later tasks don't fight this one.
+
+- [ ] **Step 3: Run to verify green**
+
+Run: `npm run test:dom`
+Expected: PASS.
+
+- [ ] **Step 4: Update the Playwright spec.** Read `tests/arc-nav.spec.js` (predates the tracks rewrite). Replace old selectors (`.arc-swimlane*`, `.arc-current-line`, era/month text) with tracks selectors (`.arc-track-band`, `.arc-now-line`, `.arc-item-group`). Keep assertions that still hold (page loads, `svg.arc-svg` present, marker click → `.arc-detail-panel` populates). Drop any assertion with no tracks equivalent.
+
+Run: `npm run test:browser`
+Expected: PASS.
+
+- [ ] **Step 5: Full verify**
+
+Run: `npm run verify`
+Expected: build → test:js → test:dom → test:browser all PASS.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add tests/arc-dom-smoke.test.js tests/arc-nav.spec.js
+git commit -m "test(arc): rewrite dom-smoke + playwright for tracks renderer (green verify)"
+```
+
+---
+
 ### Task 1: Layout — ordinal rank scale
 
 **Files:**
