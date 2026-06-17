@@ -5,12 +5,12 @@ tier: architecture
 status: compiled
 last_compiled: "2026-06-17"
 sources:
-  - raw/transpara/dark-factory/v4.0/implementation/epics/00-integration-arc-v4.0.md  # DF-V4.0-INTEGRATION-ARC — Event 2 / Gate L definition, sequencing rule, satisfied-only-when predicate, gate-failure rule, global guardrails
-  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/README.md  # Event 2 overview — dependent v3.9 set, proposal-only status, completion condition, validation guardrails
-  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/01-reconciliation-design-v4.0.md  # DF-V4.0-EPIC-002-DESIGN — AC-L1..AC-L5, TC-L1..TC-L5, Gate L predicate, stop condition
-  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/02-reconciliation-authorization-v4.0.md  # DF-V4.0-EPIC-002-AUTHORIZATION — PENDING AuthorityDecision, bounded scope, exclusions, validation requirements
-  - raw/transpara/dark-factory/v4.0/README.md  # v4.0 candidate status, relationship to v3.9, reconciliation plan, folder-acceptance criteria
-  - raw/transpara/dark-factory/v4.0/checkpoint-2026-06-12-v4.0-doctrine-acceptance.md  # doctrine accepted; folder not canonical; Event 2 unauthorized; v3.9 remains operative
+  - DF-V4.0-INTEGRATION-ARC  # Event 2 / Gate L definition, sequencing rule, satisfied-only-when predicate, gate-failure rule, global guardrails
+  - DF-V4.0-EPIC-002-OVERVIEW  # dependent v3.9 set, proposal-only status, completion condition, validation guardrails
+  - DF-V4.0-EPIC-002-DESIGN  # AC-L1..AC-L5, TC-L1..TC-L5, Gate L predicate, stop condition
+  - DF-V4.0-EPIC-002-AUTHORIZATION  # PENDING AuthorityDecision, bounded scope, exclusions, validation requirements
+  - DF-V4.0-README  # v4.0 candidate status, relationship to v3.9, reconciliation plan, folder-acceptance criteria
+  - DF-V4.0-CKPT-2026-06-12-ACCEPTANCE  # doctrine accepted; folder not canonical; Event 2 unauthorized; v3.9 remains operative
   - raw/open-brain/2026-06.md  # Secondary operational summary: Gate L = coverage matrix; ADR-0007 re-anchor deferred; may run in parallel with Gate K but needs human authorization
   - wiki/gate-k.md  # compiled sibling (Gate K) — Integration Arc framing, sequencing rule, gate-failure rule, lettering note, house style
 confidence:
@@ -82,13 +82,13 @@ As [[gates]] flags, v3.9 uses letters A–J for its accountability-pipeline mile
 
 ## Sources & provenance
 
-- **Primary:** `raw/transpara/dark-factory/v4.0/implementation/epics/00-integration-arc-v4.0.md` — Event 2 definition, Gate L satisfied-only-when predicate, sequencing rule, deferred backlog, gate-failure rule, and global guardrails. Read lines 1-202 this compilation.
-- **Primary:** `raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/README.md` — proposal-only Event 2 overview, dependent v3.9 set, success criteria, out-of-scope list, and completion condition. Read in full this compilation.
-- **Primary:** `raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/01-reconciliation-design-v4.0.md` — requirements R-L1..R-L3, acceptance criteria AC-L1..AC-L5, named test cases TC-L1..TC-L5, Gate L predicate, target autonomy level, stop condition, and boundary. Read in full this compilation.
-- **Primary:** `raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/02-reconciliation-authorization-v4.0.md` — proposed authorization packet, pending AuthorityDecision, bounded scope, exclusions, validation requirements, stop conditions, and post-grant handoff. Read in full this compilation.
-- **Primary:** `raw/transpara/dark-factory/v4.0/README.md` and `raw/transpara/dark-factory/v4.0/checkpoint-2026-06-12-v4.0-doctrine-acceptance.md` — v4.0 folder remains candidate, v3.9 remains operative, coverage matrix criterion open, and Event 2 unauthorized. Read relevant sections this compilation.
+- **Primary:** `DF-V4.0-INTEGRATION-ARC` (`00-integration-arc-v4.0.md`) — Event 2 definition, Gate L satisfied-only-when predicate, sequencing rule, deferred backlog, gate-failure rule, and global guardrails.
+- **Primary:** `DF-V4.0-EPIC-002-OVERVIEW` — proposal-only Event 2 overview, dependent v3.9 set, success criteria, out-of-scope list, and completion condition.
+- **Primary:** `DF-V4.0-EPIC-002-DESIGN` (`01-reconciliation-design-v4.0.md`) — requirements R-L1..R-L3, acceptance criteria AC-L1..AC-L5, named test cases TC-L1..TC-L5, Gate L predicate, target autonomy level, stop condition, and boundary.
+- **Primary:** `DF-V4.0-EPIC-002-AUTHORIZATION` (`02-reconciliation-authorization-v4.0.md`) — proposed authorization packet, pending AuthorityDecision, bounded scope, exclusions, validation requirements, stop conditions, and post-grant handoff.
+- **Primary:** `DF-V4.0-README` and `DF-V4.0-CKPT-2026-06-12-ACCEPTANCE` — v4.0 folder remains candidate, v3.9 remains operative, coverage matrix criterion open, and Event 2 unauthorized.
 - **Secondary:** `raw/open-brain/2026-06.md` — operational summary corroborating Gate L as epic-02 coverage-matrix reconciliation, proposal-only, human-authorized, and parallelizable with Gate K because it carries no autonomy implication.
 
 `[[wikilinks]]` to v4.0 remain forward/candidate references. This article describes Gate L's predicate and authorization boundary; it does not start Event 2, satisfy Gate L, mark v4.0 canonical, or retire v3.9 as the operative baseline.
 
-> ⚠ Source reproducibility note: the `raw/transpara/...` paths cited above are a local mirror of the `transpara-ai/docs` source tier and are gitignored in this public wiki repository. They were read directly during this compilation, but they are not themselves published here. The article summarizes Gate L's non-secret predicate and authorization boundary; it does not publish private repo links, full private SHAs, or the authority packet as a substitute for a future human grant.
+> ⚠ Source reproducibility note: the `DF-V4.0-*` primary source identifiers above refer to a local mirror of the `transpara-ai/docs` source tier that is gitignored in this public wiki repository. They were read directly during this compilation, but neither the mirror paths nor private repo URLs or full private SHAs are published here. The article summarizes Gate L's non-secret predicate and authorization boundary; it does not publish the authority packet as a substitute for a future human grant.
