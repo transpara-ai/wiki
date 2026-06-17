@@ -6,7 +6,7 @@ status: compiled
 last_compiled: "2026-06-17"
 sources:
   - DF-V4.0-INTEGRATION-ARC  # Event 2 / Gate L definition, sequencing rule, satisfied-only-when predicate, gate-failure rule, global guardrails
-  - DF-V4.0-EPIC-002-OVERVIEW  # dependent v3.9 set, proposal-only status, completion condition, validation guardrails
+  - DF-V4.0-EPIC-002-OVERVIEW  # carry-forward set, proposal-only status, completion condition, validation guardrails
   - DF-V4.0-EPIC-002-DESIGN  # AC-L1..AC-L5, TC-L1..TC-L5, Gate L predicate, stop condition
   - DF-V4.0-EPIC-002-AUTHORIZATION  # PENDING AuthorityDecision, bounded scope, exclusions, validation requirements
   - DF-V4.0-README  # v4.0 candidate status, relationship to v3.9, reconciliation plan, folder-acceptance criteria
@@ -30,15 +30,15 @@ After the 2026-06-01 adversarial review of the development loop, the [[v4-0|v4.0
 
 ## What Gate L requires
 
-The primary Event 2 design packet states that its criteria **are the Gate L predicate**. In short, Gate L requires a v4.0 coverage matrix and standalone v4.0 content that carry every binding v3.9 obligation forward without loss:
+The primary Event 2 design packet states that its criteria **are the Gate L predicate**. In short, Gate L requires a v4.0 coverage matrix and standalone v4.0 content that carry every binding carry-forward-set obligation forward without loss:
 
-1. **AC-L1 — coverage matrix per dependent v3.9 document.** For each document in the dependent v3.9 set, the matrix maps each binding obligation to the v4.0 location that states it standalone.
-2. **AC-L2 — obligation-class coverage.** Safety, authority, audit, runtime, schema, gate, risk, SOP, and capability obligations must exist as standalone v4.0 content; no v4.0 statement may require opening a v3.9 file.
+1. **AC-L1 — coverage matrix per dependent v3.9 document.** For each v3.9 document in the Event 2 carry-forward set, the matrix maps each binding obligation to the v4.0 location that states it standalone.
+2. **AC-L2 — obligation-class coverage.** Safety, authority, audit, runtime, schema, gate, risk, SOP, and capability obligations must exist as standalone v4.0 content; no v4.0 statement may require opening old source files such as v3.9 or archive/v2 files.
 3. **AC-L3 — v3.9 untouched.** No v3.9 file is archived, deleted, or mutated by Event 2.
-4. **AC-L4 — Civilization definition re-anchor.** The archive/v2 `ADR-0007` Civilization definition is re-anchored as standalone v4.0 content.
+4. **AC-L4 — Civilization definition re-anchor.** The archive/v2 `ADR-0007` Civilization definition is re-anchored as standalone v4.0 content; any binding ADR-0007 obligation beyond the definition must have coverage-matrix rows or an explicit no-further-binding-obligations attestation that enumerates the ADR-0007 clauses reviewed.
 5. **AC-L5 — human acceptance checkpoint.** v4.0 is not marked accepted canonical without a human acceptance checkpoint.
 
-Partial coverage does not satisfy Gate L. The stop condition is also explicit: if any binding v3.9 obligation cannot be represented in v4.0 without change or loss, the correct response is to stop and report a blocking design finding, not to alter the obligation or publish a partial workaround.
+Partial coverage does not satisfy Gate L. The stop condition is also explicit: if any binding carry-forward-set obligation cannot be represented in v4.0 without change or loss, the correct response is to stop and report a blocking design finding, not to alter the obligation or publish a partial workaround.
 
 ## Current status
 
@@ -50,9 +50,11 @@ The Event 2 authorization packet is still **PROPOSED - NOT YET GRANTED**. Its Au
 
 Per the integration arc's sequencing rule, **Event 2 may proceed in parallel with Event 1** because documentation reconciliation carries no autonomy implication. That sequencing rule does not override the authorization gate: Gate L work still requires the human AuthorityDecision above before implementation. Operating Principle #10 — *autonomy expands only after audit expands* — gates Gate K ahead of any autonomy-raising step; Gate L raises no autonomy, so it is sequencing-independent once authorized. The same gate-failure discipline applies: allowed responses to failure are fix-within-scope, raise a precise blocker, record accepted risk with owner and rationale, or ask the External Committee to re-sequence; forbidden are silently advancing, renaming a failure as non-blocking without rationale, or weakening guardrails to force the gate to pass.
 
-## Dependent v3.9 set
+## Dependent carry-forward set
 
-The Event 2 overview names the v3.9 materials that must be carried forward under the coverage matrix:
+The Event 2 overview now partitions the carry-forward set into the v3.9 documents that AC-L1 / TC-L1 cover under the coverage matrix, plus the archive/v2 ADR-0007 re-anchor governed by AC-L4 / TC-L4.
+
+The v3.9 documents are:
 
 - `04-production-workflow-and-runtime-v3.9.md` — FactoryOrder, Work DAG, production cells.
 - `03-authority-identity-and-sops-v3.9.md` — authority outcomes, protected actions, roles.
@@ -63,7 +65,7 @@ The Event 2 overview names the v3.9 materials that must be carried forward under
 - `implementation/as-built-stage-tracker-v3.9.md` — current-state record.
 - `implementation/state-of-the-system-proof-v3.9.md` — state proof.
 
-The Event 2 design names nine dependent v3.9 documents in `TC-L1`; the overview list above exposes eight path rows. That mismatch is not Gate L progress. Whether the ninth row is a distinct artifact or a counting/path-rollup difference is a source-level reconciliation question to resolve before any Event 2 implementation claim can pass AC-L1.
+The archive/v2 re-anchor is `ADR-0007-civilization-hive-governance.md`, the Civilization definition that must become standalone v4.0 content. The source packet no longer treats that ADR as a ninth v3.9 document. That clarifies the count; it is not Gate L progress, does not start reconciliation, and does not satisfy AC-L1 or AC-L4.
 
 ## Lettering note
 
@@ -83,10 +85,10 @@ As [[gates]] flags, v3.9 uses letters A–J for its accountability-pipeline mile
 ## Sources & provenance
 
 - **Primary:** `DF-V4.0-INTEGRATION-ARC` (`00-integration-arc-v4.0.md`) — Event 2 definition, Gate L satisfied-only-when predicate, sequencing rule, deferred backlog, gate-failure rule, and global guardrails.
-- **Primary:** `DF-V4.0-EPIC-002-OVERVIEW` — proposal-only Event 2 overview, dependent v3.9 set, success criteria, out-of-scope list, and completion condition.
-- **Primary:** `DF-V4.0-EPIC-002-DESIGN` (`01-reconciliation-design-v4.0.md`) — requirements R-L1..R-L3, acceptance criteria AC-L1..AC-L5, named test cases TC-L1..TC-L5, Gate L predicate, target autonomy level, stop condition, and boundary.
+- **Primary:** `DF-V4.0-EPIC-002-OVERVIEW` — proposal-only Event 2 overview, carry-forward set partition, success criteria, out-of-scope list, and completion condition.
+- **Primary:** `DF-V4.0-EPIC-002-DESIGN` (`01-reconciliation-design-v4.0.md`) — requirements R-L1..R-L3, acceptance criteria AC-L1..AC-L5, named test cases TC-L1..TC-L5, Gate L predicate, ADR-0007 evidence guardrail, target autonomy level, stop condition, and boundary.
 - **Primary:** `DF-V4.0-EPIC-002-AUTHORIZATION` (`02-reconciliation-authorization-v4.0.md`) — proposed authorization packet, pending AuthorityDecision, bounded scope, exclusions, validation requirements, stop conditions, and post-grant handoff.
-- **Primary:** `DF-V4.0-README` and `DF-V4.0-CKPT-2026-06-12-ACCEPTANCE` — v4.0 folder remains candidate, v3.9 remains operative, coverage matrix criterion open, and Event 2 unauthorized.
+- **Primary:** `DF-V4.0-README` and `DF-V4.0-CKPT-2026-06-12-ACCEPTANCE` — v4.0 folder remains candidate, v3.9 remains operative, carry-forward coverage criterion open, and Event 2 unauthorized.
 - **Secondary:** `raw/open-brain/2026-06.md` — operational summary corroborating Gate L as epic-02 coverage-matrix reconciliation, proposal-only, human-authorized, and parallelizable with Gate K because it carries no autonomy implication.
 
 `[[wikilinks]]` to v4.0 remain forward/candidate references. This article describes Gate L's predicate and authorization boundary; it does not start Event 2, satisfy Gate L, mark v4.0 canonical, or retire v3.9 as the operative baseline.
