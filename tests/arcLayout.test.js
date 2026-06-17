@@ -152,3 +152,33 @@ test('worklist chip footprint: adjacent worklist markers differ by at least chip
   // Sanity: minCol itself must be >=30.
   assert.ok(L.GEOM.minCol >= 30, 'GEOM.minCol must be >= 30 to cover chip footprint');
 });
+
+// --- group-by lanes (Task 4) ---
+test('buildLayout default groupBy stays the 3 type tracks (unchanged)', () => {
+  const lay = L.buildLayout(loadData(), { width: 1600, groupBy: 'tracks' });
+  assert.deepStrictEqual(lay.tracks.map(t => t.id), ['construction', 'gates', 'worklist']);
+});
+
+test('buildLayout groupBy="status" lanes follow band order and place every item once', () => {
+  const data = loadData();
+  const lay = L.buildLayout(data, { width: 1600, groupBy: 'status' });
+  const labels = lay.tracks.map(t => t.label);
+  assert.strictEqual(labels[0], 'done', 'done band leads; got ' + labels.join(' | '));
+  const placed = lay.tracks.reduce((n, t) => n + t.rows.reduce((m, r) => m + r.items.length, 0), 0);
+  assert.strictEqual(placed, data.items.length, 'every item placed exactly once across status lanes');
+});
+
+test('buildLayout groupBy="actor" splits authors into lanes sharing the seq axis', () => {
+  const data = loadData();
+  const live = [
+    { id: 'pr-a', code: 'PRA', type: 'work', status: 'active', blocked: false, provenance: 'derived', seq: 13.95, sprint: 'stewardship', repo: ['hive'], author: 'alice' },
+    { id: 'pr-b', code: 'PRB', type: 'work', status: 'active', blocked: false, provenance: 'derived', seq: 13.97, sprint: 'stewardship', repo: ['site'], author: 'bob' },
+  ];
+  const testData = Object.assign({}, data, { items: data.items.concat(live) });
+  const lay = L.buildLayout(testData, { width: 1600, groupBy: 'actor' });
+  const labels = lay.tracks.map(t => t.label);
+  assert.ok(labels.includes('alice') && labels.includes('bob'), 'author lanes present; got ' + labels.join(' | '));
+  assert.ok(labels.includes('(unknown)'), 'baked items (no author) collapse into (unknown)');
+  const base = L.buildLayout(testData, { width: 1600 });
+  assert.strictEqual(lay.nowX, base.nowX);
+});
