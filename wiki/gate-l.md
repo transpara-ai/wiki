@@ -52,7 +52,7 @@ Per the integration arc's sequencing rule, **Event 2 may proceed in parallel wit
 
 ## Dependent carry-forward set
 
-The Event 2 overview now partitions the carry-forward set into the v3.9 documents that AC-L1 / TC-L1 cover under the coverage matrix, plus the archive/v2 ADR-0007 re-anchor governed by AC-L4 / TC-L4.
+The source packet now partitions the carry-forward set into the v3.9 documents that AC-L1 / TC-L1 cover under the coverage matrix, plus the archive/v2 ADR-0007 re-anchor governed by AC-L4 / TC-L4.
 
 The v3.9 documents are:
 
