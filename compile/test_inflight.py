@@ -49,6 +49,38 @@ def test_missing_author_login_falls_back_to_unknown():
     print("ok test_missing_author_login_falls_back_to_unknown")
 
 
+def test_collect_items_records_repo_errors_without_dropping_good_repos():
+    def fake_gh_json(args):
+        if "broken" in " ".join(args):
+            raise RuntimeError("gh: not found")
+        return [{"number": 1, "title": "t", "author": {"login": "x"},
+                 "url": "https://github.com/transpara-ai/hive/pull/1",
+                 "state": "OPEN", "isDraft": False}]
+    orig = inflight.gh_json
+    inflight.gh_json = fake_gh_json
+    try:
+        items, errors = inflight.collect_items(["hive", "broken"])
+    finally:
+        inflight.gh_json = orig
+    assert any(i["id"] == "pr-hive-1" for i in items), items
+    assert any("broken" in e for e in errors), errors
+    print("ok test_collect_items_records_repo_errors_without_dropping_good_repos")
+
+
+def test_items_dedup_by_id():
+    rows = [{"number": 2, "title": "t", "author": {"login": "x"},
+             "url": "u", "state": "OPEN", "isDraft": False}]
+    orig = inflight.gh_json
+    inflight.gh_json = lambda args: rows
+    try:
+        items, _ = inflight.collect_items(["hive"])
+    finally:
+        inflight.gh_json = orig
+    ids = [i["id"] for i in items]
+    assert len(ids) == len(set(ids)), ids
+    print("ok test_items_dedup_by_id")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
