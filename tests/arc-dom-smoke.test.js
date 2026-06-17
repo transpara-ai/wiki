@@ -267,6 +267,20 @@ test('live overlay FAILS SAFE: a rejected fetch keeps the baked render, no live 
   assert(nav.querySelectorAll(".arc-item-group").length > 0, "baked render survives");
 });
 
+test('live overlay FAILS SAFE on invalid live data: merge rejected → baked kept + chip warns', async () => {
+  // Valid fetch, but a live item with an invalid status → mergeInflight returns ok:false.
+  const BAD = { generated: "g", window_days: 7, repos: ["hive"], errors: [],
+    items: [{ id: "pr-bad-1", code: "bad#1", type: "work", label: "x", status: "merged", // ∉ STATUS_ORDER
+      blocked: false, provenance: "derived", repo: ["hive"], sprint: "stewardship", author: "x", note: "x" }] };
+  const dom = mountWithFetch(BAD);
+  await new Promise((r) => setTimeout(r, 0));
+  const nav = dom.window.document.querySelector(".civilization-arc-nav");
+  assert(!nav.querySelector('[data-arc-item="pr-bad-1"]'), "invalid live item must not render");
+  assert(nav.querySelectorAll(".arc-item-group").length > 0, "baked render survives");
+  const chip = nav.querySelector(".arc-live-chip");
+  assert(chip && /unavailable/.test(chip.textContent), "chip warns unavailable on rejected merge");
+});
+
 const data = loadArcData();
 assertData(data);
 assertRenderedDom();
