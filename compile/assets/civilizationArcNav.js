@@ -43,6 +43,18 @@
     return (typeof window !== "undefined") ? window[name] : undefined;
   }
 
+  // ---- href safety helpers --------------------------------------------------
+
+  // Only http(s), root-relative, or anchor hrefs are safe to assign to a link;
+  // reject javascript:/data:/etc. (defense-in-depth even for authored data).
+  function safeHref(href) {
+    if (typeof href !== "string") return null;
+    if (/^https?:\/\//i.test(href)) return href;
+    if (href.charAt(0) === "/" || href.charAt(0) === "#") return href;
+    return null;
+  }
+  function isExternalHref(href) { return /^https?:\/\//i.test(href); }
+
   // ---- data lookups ---------------------------------------------------------
 
   function indexItems(data) {
@@ -185,10 +197,11 @@
     if (ord) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "step " + ord + " of " + s.itemCount));
     if (item.date) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "date · " + item.date)); // reserved for date-backfill follow-up
     if (item.provenance) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "provenance · " + item.provenance));
-    if (item.href) {
+    var tipSafe = safeHref(item.href);
+    if (tipSafe) {
       var a = htmlEl("a", "arc-tooltip-link", "open article →");
-      a.href = item.href;
-      if (/^https?:\/\//.test(item.href)) { a.target = "_blank"; a.rel = "noopener"; }
+      a.href = tipSafe;
+      if (isExternalHref(tipSafe)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
       tip.appendChild(a);
     }
     tip.hidden = false;
@@ -310,12 +323,13 @@
       panel.appendChild(htmlEl("p", "arc-detail-note", item.note));
     }
 
-    if (item.href) {
+    var detailSafe = safeHref(item.href);
+    if (detailSafe) {
       var link = htmlEl("a", "arc-detail-link", "open article →");
-      link.href = item.href;
-      if (/^https?:\/\//.test(item.href)) {
+      link.href = detailSafe;
+      if (isExternalHref(detailSafe)) {
         link.target = "_blank";
-        link.rel = "noopener";
+        link.rel = "noopener noreferrer";
       }
       panel.appendChild(link);
     }

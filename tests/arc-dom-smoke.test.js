@@ -135,6 +135,67 @@ test('tooltip shows sprint + ordinal step + provenance', () => {
   assert.match(tip.textContent, /sprint ·/);
 });
 
+// ── XSS hardening: javascript: hrefs must never be assigned to a rendered link ──
+test('javascript: href is never assigned to any rendered link (XSS hardening)', () => {
+  // Mount fresh DOM but patch the data before DOMContentLoaded fires.
+  const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav></div>', {
+    pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
+  });
+  // Eval all modules except the controller so we can poison data first.
+  ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
+   "civilizationArcDraw.js"].forEach((f) =>
+    dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
+
+  // Inject a malicious href on the first item and a safe http href on the second.
+  const items = dom.window.CIVILIZATION_ARC_DATA.items;
+  const maliciousItem = items[0];
+  const safeItem = items[1];
+  maliciousItem.href = "javascript:alert(1)";
+  safeItem.href = "https://example.com/safe";
+
+  // Now eval the controller — DOMContentLoaded will fire synchronously in jsdom
+  // after the next dispatchEvent call.
+  dom.window.eval(fs.readFileSync(path.join(root, "compile/assets/civilizationArcNav.js"), "utf8"));
+  dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
+
+  const nav = dom.window.document.querySelector(".civilization-arc-nav");
+  assert(nav, "nav did not mount");
+
+  // Simulate a click on the malicious item's marker to open the detail panel.
+  const maliciousId = String(maliciousItem.id);
+  const maliciousMarker = nav.querySelector('[data-arc-item="' + maliciousId + '"]');
+  if (maliciousMarker) {
+    maliciousMarker.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
+    maliciousMarker.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  }
+
+  // Simulate hovering the safe item to trigger the tooltip link.
+  const safeId = String(safeItem.id);
+  const safeMarker = nav.querySelector('[data-arc-item="' + safeId + '"]');
+  if (safeMarker) {
+    safeMarker.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
+  }
+
+  // Assert: no <a> anywhere in the nav has a javascript: href.
+  const allLinks = [...nav.querySelectorAll("a")];
+  const xssLinks = allLinks.filter((a) => /^javascript:/i.test(a.getAttribute("href") || ""));
+  assert.strictEqual(
+    xssLinks.length,
+    0,
+    `Found ${xssLinks.length} link(s) with javascript: href: ${xssLinks.map((a) => a.getAttribute("href")).join(", ")}`
+  );
+
+  // Assert happy path: the safe http item still renders its link (in tooltip or detail panel).
+  // Click the safe marker to ensure the detail panel link is rendered.
+  if (safeMarker) {
+    safeMarker.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  }
+  const safeLinks = [...nav.querySelectorAll("a")].filter(
+    (a) => (a.getAttribute("href") || "").startsWith("https://example.com/safe")
+  );
+  assert.ok(safeLinks.length >= 1, "Safe http href should still render a link");
+});
+
 const data = loadArcData();
 assertData(data);
 assertRenderedDom();
