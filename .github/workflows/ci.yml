@@ -14,5 +14,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Node deps (jsdom for the DOM smoke test)
+        run: npm ci
       - name: Stats unit tests (deterministic, stdlib only)
         run: python3 compile/test_stats.py
+      - name: Arc asset syntax check
+        run: npm run test:js
+      - name: Arc unit tests (layout + ontology)
+        run: npm run test:unit
+      - name: Arc DOM smoke test (jsdom)
+        run: npm run test:dom
+      # Browser E2E (npm run test:browser) stays local-only — it needs a chromium download.
