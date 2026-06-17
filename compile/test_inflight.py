@@ -21,7 +21,7 @@ def test_open_pr_maps_to_active_derived_work():
     assert it["sprint"] == "stewardship", it
     assert it["href"] == "https://github.com/transpara-ai/hive/pull/123", it
     assert it["author"] == "msaucier", it
-    assert it["note"] == "open · @msaucier", it   # note format is covered (Task-1 review)
+    assert it["note"] == "open · @msaucier", it   # note == "<state> · @<author>"
     assert "seq" not in it, it
     print("ok test_open_pr_maps_to_active_derived_work")
 
@@ -65,6 +65,24 @@ def test_collect_items_records_repo_errors_without_dropping_good_repos():
     assert any(i["id"] == "pr-hive-1" for i in items), items
     assert any("broken" in e for e in errors), errors
     print("ok test_collect_items_records_repo_errors_without_dropping_good_repos")
+
+
+def test_open_kept_when_merged_query_fails():
+    # Fail-safe: a merged-search failure must NOT discard the already-fetched open PRs.
+    def fake(args):
+        if "merged" in args:
+            raise RuntimeError("search index unavailable")
+        return [{"number": 7, "title": "open one", "author": {"login": "x"},
+                 "url": "u", "state": "OPEN", "isDraft": False}]
+    orig = inflight.gh_json
+    inflight.gh_json = fake
+    try:
+        items, errors = inflight.collect_items(["hive"])
+    finally:
+        inflight.gh_json = orig
+    assert any(i["id"] == "pr-hive-7" for i in items), items   # open PR survived
+    assert any("merged" in e for e in errors), errors          # merged failure logged
+    print("ok test_open_kept_when_merged_query_fails")
 
 
 def test_items_dedup_by_id():

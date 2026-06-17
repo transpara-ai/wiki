@@ -73,20 +73,24 @@ _FIELDS = "number,title,author,url,state,isDraft"
 def collect_items(repos):
     items_by_id, errors = {}, []
     since = (datetime.date.today() - datetime.timedelta(days=MERGED_WINDOW_DAYS)).isoformat()
+
+    def ingest(repo, label, args):
+        # Run one gh query and fold its PRs in. A failure is recorded per (repo, query)
+        # and never discards rows already collected from the repo's other query.
+        try:
+            for pr in gh_json(args):
+                it = pr_to_item(pr, repo)
+                items_by_id[it["id"]] = it
+        except Exception as e:  # one bad query never zeroes the whole overlay
+            errors.append("%s %s: %s" % (repo, label, e))
+
     for repo in repos:
         slug = "transpara-ai/%s" % repo
-        try:
-            rows = gh_json(["pr", "list", "--repo", slug, "--state", "open",
-                            "--json", _FIELDS, "--limit", "100"])
-            rows += gh_json(["pr", "list", "--repo", slug, "--state", "merged",
-                             "--search", "merged:>=%s" % since,
-                             "--json", _FIELDS, "--limit", "100"])
-        except Exception as e:  # one bad repo never zeroes the whole overlay
-            errors.append("%s: %s" % (repo, e))
-            continue
-        for pr in rows:
-            it = pr_to_item(pr, repo)
-            items_by_id[it["id"]] = it
+        ingest(repo, "open", ["pr", "list", "--repo", slug, "--state", "open",
+                              "--json", _FIELDS, "--limit", "100"])
+        ingest(repo, "merged", ["pr", "list", "--repo", slug, "--state", "merged",
+                                "--search", "merged:>=%s" % since,
+                                "--json", _FIELDS, "--limit", "100"])
     return list(items_by_id.values()), errors
 
 
