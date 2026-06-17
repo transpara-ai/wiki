@@ -57,3 +57,23 @@ test('markers within a row are placed in non-decreasing seq order', () => {
   const xs = L.buildLayout(loadData(), { width: 1600 }).tracks[0].rows[0].items.map(p => p.x);
   for (let i = 1; i < xs.length; i++) assert.ok(xs[i] >= xs[i - 1]);
 });
+
+test('sprintTicks: one ordered tick per sprint, first is origin at plotLeft', () => {
+  const data = loadData();
+  const lay = L.buildLayout(data, { width: 1600 });
+  assert.strictEqual(lay.sprintTicks.length, 15);
+  for (let i = 1; i < lay.sprintTicks.length; i++) {
+    assert.ok(lay.sprintTicks[i].x >= lay.sprintTicks[i - 1].x);
+  }
+  assert.strictEqual(lay.sprintTicks[0].id, 'origin');
+  assert.strictEqual(lay.sprintTicks[0].x, lay.plotLeft);
+  assert.strictEqual(lay.eras, undefined);
+});
+
+test('narrow width forces horizontal overflow via MIN_COL', () => {
+  const data = loadData();
+  const lay = L.buildLayout(data, { width: 300 });
+  const n = lay.scaleX.distinctCount;
+  assert.ok(lay.contentWidth >= lay.plotLeft + (n - 1) * 14 + L.GEOM.marginRight);
+  assert.ok(lay.contentWidth > 300);
+});

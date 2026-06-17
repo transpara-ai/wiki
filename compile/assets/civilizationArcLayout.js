@@ -11,12 +11,7 @@
     "Release & security gates (v3.9)",
   ];
 
-  var GEOM = { gutter: 168, marginRight: 28, rowH: 30, trackPad: 8, trackGap: 10, top: 64, axisH: 34 };
-
-  var ERAS = [
-    { seq: 0.3, label: "Feb" }, { seq: 3, label: "Mar" }, { seq: 6, label: "Apr" },
-    { seq: 9, label: "May" }, { seq: 13.9, label: "Jun · now" }, { seq: 15, label: "future" },
-  ];
+  var GEOM = { gutter: 190, marginRight: 28, rowH: 30, trackPad: 8, trackGap: 10, top: 64, axisH: 34, minCol: 14 };
 
   // Ordinal rank scale: distinct seq values are placed at equidistant columns
   // (NOT proportional to seq magnitude). Items sharing a seq share a column.
@@ -47,6 +42,23 @@
     sx.rankOf = function (seq) { return rankOf[seq]; };
     return sx;
   }
+  function buildSprintTicks(data, items, sx) {
+    var sprints = (data && data.sprints) || [];
+    var minSeq = {};
+    items.forEach(function (it) {
+      if (!it || it.sprint == null || typeof it.seq !== "number") return;
+      if (minSeq[it.sprint] === undefined || it.seq < minSeq[it.sprint]) minSeq[it.sprint] = it.seq;
+    });
+    var ticks = [];
+    sprints.forEach(function (sp) {
+      var ms = minSeq[sp.id];
+      if (ms === undefined) return; // sprint with no items → no tick
+      ticks.push({ id: sp.id, label: sp.label, x: sx(ms), startSeq: ms });
+    });
+    ticks.sort(function (a, b) { return a.x - b.x; });
+    return ticks;
+  }
+
   function bySeq(a, b) { return a.seq - b.seq; }
 
   function buildLayout(data, opts) {
@@ -55,7 +67,14 @@
     var collapsed = opts.collapsed || {};
     var items = data.items || [];
     var domain = data.domain || { start: 0, end: 15 };
-    var plotLeft = GEOM.gutter, plotRight = width - GEOM.marginRight;
+    var plotLeft = GEOM.gutter;
+    // distinct seq count drives the minimum content width (horizontal overflow).
+    var seqSet = {};
+    items.forEach(function (it) { if (it && typeof it.seq === "number") seqSet[it.seq] = 1; });
+    var distinctN = Object.keys(seqSet).length;
+    var minContent = plotLeft + Math.max(0, distinctN - 1) * GEOM.minCol + GEOM.marginRight;
+    var contentWidth = Math.max(width, minContent);
+    var plotRight = contentWidth - GEOM.marginRight;
     var sx = buildRankScale(items, plotLeft, plotRight);
 
     var beats = items.filter(function (i) { return i.type === "work" && i.provenance === "reconstructed"; });
@@ -92,12 +111,12 @@
     return {
       tracks: tracks, scaleX: sx, domain: domain, plotLeft: plotLeft, plotRight: plotRight,
       nowSeq: nowSeq, nowX: sx(nowSeq),
-      eras: ERAS.map(function (e) { return { x: sx(e.seq), label: e.label }; }),
-      width: width, contentWidth: width, contentHeight: y + GEOM.axisH,
+      sprintTicks: buildSprintTicks(data, items, sx),
+      width: width, contentWidth: contentWidth, contentHeight: y + GEOM.axisH,
     };
   }
 
-  var api = { GEOM: GEOM, GATE_FAMILIES: GATE_FAMILIES, ERAS: ERAS, buildRankScale: buildRankScale, buildLayout: buildLayout };
+  var api = { GEOM: GEOM, GATE_FAMILIES: GATE_FAMILIES, buildRankScale: buildRankScale, buildLayout: buildLayout };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (root) root.CivArcLayout = api;
 })(typeof window !== "undefined" ? window : null);
