@@ -101,14 +101,32 @@ test("narrow viewport: chart scrolls inside frame, not the page", async ({ page 
 
 test('reflows on resize without horizontal page scroll', async ({ page }) => {
   await page.goto('/civilization-arc.html');
+  const svg = page.locator('.arc-svg');
+  await expect(svg).toBeVisible();
+
   // minContent = plotLeft + (distinctSeqs-1)*minCol + marginRight = 190 + 101*34 + 28 = 3652px.
-  // Use a viewport wider than minContent so the SVG viewBox width is frame-driven (not overflow-driven).
+  // Below this floor the viewBox clamps to minContent; above it the viewBox is frame-driven.
+  const MIN_CONTENT = 3652;
+  const viewBoxWidth = async () => {
+    const vb = await svg.getAttribute('viewBox');
+    return vb ? parseFloat(vb.split(' ')[2]) : 0;
+  };
+
+  // Wide viewport (> minContent): poll until the reflow produces the frame-driven viewBox
+  // (width above the floor). Condition-based wait, not a fixed delay — the resize ->
+  // ResizeObserver -> requestAnimationFrame chain lands when it lands, never on a guessed clock.
   await page.setViewportSize({ width: 4000, height: 900 });
-  await page.waitForTimeout(60); // let initial render settle
-  const wide = await page.locator('.arc-svg').getAttribute('viewBox');
+  await expect.poll(viewBoxWidth, { timeout: 5000 }).toBeGreaterThan(MIN_CONTENT);
+  const wide = await svg.getAttribute('viewBox');
+  const wideWidth = await viewBoxWidth();
+
+  // Narrow viewport (< minContent): poll until the reflow shrinks the viewBox below the wide
+  // width (it clamps back to the minContent floor). Proves the resize recomputed the viewBox,
+  // and waiting for "shrank below wide" ignores any stale wide-era value.
   await page.setViewportSize({ width: 3000, height: 900 });
-  await page.waitForTimeout(120); // allow rAF reflow
-  const narrow = await page.locator('.arc-svg').getAttribute('viewBox');
+  await expect.poll(viewBoxWidth, { timeout: 5000 }).toBeLessThan(wideWidth);
+  const narrow = await svg.getAttribute('viewBox');
+
   expect(narrow).not.toBe(wide); // viewBox width recomputed for the new container
   // the chart frame scrolls horizontally, never the document body
   const bodyScrollsX = await page.evaluate(() => document.body.scrollWidth > window.innerWidth + 1);
