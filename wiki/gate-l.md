@@ -5,10 +5,16 @@ tier: architecture
 status: compiled
 last_compiled: "2026-06-17"
 sources:
-  - raw/open-brain/2026-06.md  # L76 (Integration Arc summary: Gate K + Gate L each with a "satisfied only when" predicate), L697, L817 (Gate L = documentation coverage matrix; ADR-0007 Civilization re-anchor deferred), L947/L969 (Gate L = epic-02 v3.9->v4.0 reconciliation; proposal-only; carries v3.9 into v4.0; completing it RETIRES v3.9 as active baseline; needs human authorization not a run)
+  - raw/transpara/dark-factory/v4.0/implementation/epics/00-integration-arc-v4.0.md  # DF-V4.0-INTEGRATION-ARC — Event 2 / Gate L definition, sequencing rule, satisfied-only-when predicate, gate-failure rule, global guardrails
+  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/README.md  # Event 2 overview — dependent v3.9 set, proposal-only status, completion condition, validation guardrails
+  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/01-reconciliation-design-v4.0.md  # DF-V4.0-EPIC-002-DESIGN — AC-L1..AC-L5, TC-L1..TC-L5, Gate L predicate, stop condition
+  - raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/02-reconciliation-authorization-v4.0.md  # DF-V4.0-EPIC-002-AUTHORIZATION — PENDING AuthorityDecision, bounded scope, exclusions, validation requirements
+  - raw/transpara/dark-factory/v4.0/README.md  # v4.0 candidate status, relationship to v3.9, reconciliation plan, folder-acceptance criteria
+  - raw/transpara/dark-factory/v4.0/checkpoint-2026-06-12-v4.0-doctrine-acceptance.md  # doctrine accepted; folder not canonical; Event 2 unauthorized; v3.9 remains operative
+  - raw/open-brain/2026-06.md  # Secondary operational summary: Gate L = coverage matrix; ADR-0007 re-anchor deferred; may run in parallel with Gate K but needs human authorization
   - wiki/gate-k.md  # compiled sibling (Gate K) — Integration Arc framing, sequencing rule, gate-failure rule, lettering note, house style
 confidence:
-  sources: secondary
+  sources: primary
   claims: grounded
 ---
 
@@ -24,17 +30,40 @@ After the 2026-06-01 adversarial review of the development loop, the [[v4-0|v4.0
 
 ## What Gate L requires
 
-Open Brain records the Gate L predicate as a **documentation-coverage matrix**: a structured demonstration that every load-bearing v3.9 artifact (specs, ADRs, gate definitions, the accepted baseline) has a reconciled place in the v4.0 doctrine, with no orphaned or contradicted coverage. The reconciliation is explicitly **additive, not destructive**: it *carries v3.9 into v4.0* rather than discarding it. A named piece of that scope is **`ADR-0007` (the Civilization definition to re-anchor)**, which the v4.0 acceptance checkpoint logs as **deferred reconciliation work** — the Civilization definition is something the arc carries forward to settle under Gate L, not something it re-runs now.
+The primary Event 2 design packet states that its criteria **are the Gate L predicate**. In short, Gate L requires a v4.0 coverage matrix and standalone v4.0 content that carry every binding v3.9 obligation forward without loss:
 
-The defining consequence, recorded plainly in Open Brain: *"completing it RETIRES v3.9 as active baseline — the opposite of closing v3.9."* Gate L is therefore the doctrinal hand-off point, not a capability milestone.
+1. **AC-L1 — coverage matrix per dependent v3.9 document.** For each document in the dependent v3.9 set, the matrix maps each binding obligation to the v4.0 location that states it standalone.
+2. **AC-L2 — obligation-class coverage.** Safety, authority, audit, runtime, schema, gate, risk, SOP, and capability obligations must exist as standalone v4.0 content; no v4.0 statement may require opening a v3.9 file.
+3. **AC-L3 — v3.9 untouched.** No v3.9 file is archived, deleted, or mutated by Event 2.
+4. **AC-L4 — Civilization definition re-anchor.** The archive/v2 `ADR-0007` Civilization definition is re-anchored as standalone v4.0 content.
+5. **AC-L5 — human acceptance checkpoint.** v4.0 is not marked accepted canonical without a human acceptance checkpoint.
+
+Partial coverage does not satisfy Gate L. The stop condition is also explicit: if any binding v3.9 obligation cannot be represented in v4.0 without change or loss, the correct response is to stop and report a blocking design finding, not to alter the obligation or publish a partial workaround.
 
 ## Current status
 
-The v4.0 doctrine-acceptance checkpoint (`DF-V4.0-CKPT-2026-06-12-ACCEPTANCE`, 2026-06-12) states in its "What This Acceptance Does Not Do" section: *"Gates K and L remain defined and unsatisfied. No gate advances."* (quoted via the compiled [[gate-k]] article). Gate K later received Event-1 authorization on 2026-06-15 (`transpara-ai/docs#132`) and a pre-live waiver on 2026-06-17 (`transpara-ai/docs#138`), but Event 2 / Gate L carries no such grant yet. Crucially, Gate L *"needs human authorization, not a run"* — it is reconciliation work for the human External Committee to authorize and accept, not an autonomous build the Civilization executes.
+The v4.0 doctrine-acceptance checkpoint (`DF-V4.0-CKPT-2026-06-12-ACCEPTANCE`, 2026-06-12) accepts only the seed doctrine. It leaves folder acceptance criterion 2 — the reconciliation coverage matrix — open, records Event 2 as unauthorized, and keeps [[v3-9|v3.9]] as the operative baseline.
+
+The Event 2 authorization packet is still **PROPOSED - NOT YET GRANTED**. Its AuthorityDecision is `ApprovalRequired`, with Michael Saucier acting for the External Committee named as the pending decider. Reconciliation may begin only after that human authority decision changes to `Autonomous` or `Notify` for the bounded docs-only scope. Gate K later received Event-1 authorization on 2026-06-15 (`transpara-ai/docs#132`) and a pre-live waiver on 2026-06-17 (`transpara-ai/docs#138`), but those do not grant Event 2 or satisfy Gate L.
 
 ## Sequencing and the no-autonomy property
 
-Per the arc's sequencing rule (recorded in [[gate-k]]), **Gate L may proceed in parallel with Gate K** because, unlike Gate K, it *"carries no autonomy implication."* Operating Principle #10 — *autonomy expands only after audit expands* — gates Gate K ahead of any autonomy-raising step; Gate L raises no autonomy, so it is sequencing-independent. The same gate-failure discipline applies: allowed responses to failure are fix-within-scope, raise a precise blocker, record accepted risk with owner and rationale, or ask the External Committee to re-sequence; forbidden are silently advancing, renaming a failure as non-blocking without rationale, or weakening guardrails to force the gate to pass.
+Per the integration arc's sequencing rule, **Event 2 may proceed in parallel with Event 1** because documentation reconciliation carries no autonomy implication. That sequencing rule does not override the authorization gate: Gate L work still requires the human AuthorityDecision above before implementation. Operating Principle #10 — *autonomy expands only after audit expands* — gates Gate K ahead of any autonomy-raising step; Gate L raises no autonomy, so it is sequencing-independent once authorized. The same gate-failure discipline applies: allowed responses to failure are fix-within-scope, raise a precise blocker, record accepted risk with owner and rationale, or ask the External Committee to re-sequence; forbidden are silently advancing, renaming a failure as non-blocking without rationale, or weakening guardrails to force the gate to pass.
+
+## Dependent v3.9 set
+
+The Event 2 overview names the v3.9 materials that must be carried forward under the coverage matrix:
+
+- `04-production-workflow-and-runtime-v3.9.md` — FactoryOrder, Work DAG, production cells.
+- `03-authority-identity-and-sops-v3.9.md` — authority outcomes, protected actions, roles.
+- `05-verification-audit-risk-eval-v3.9.md` — gates, risk register, audit, eval.
+- `implementation/epics/00-epic-arc-v3.9.md` — capability epic arc.
+- `implementation/epics/01-autonomy-levels-v3.9.md` — autonomy Level 0-5 vocabulary.
+- `implementation/epics/04-milestones-gates-and-review-questions-v3.9.md` — Gates A-J.
+- `implementation/as-built-stage-tracker-v3.9.md` — current-state record.
+- `implementation/state-of-the-system-proof-v3.9.md` — state proof.
+
+The Event 2 design names nine dependent v3.9 documents in `TC-L1`; the overview list above exposes eight path rows. That mismatch is not Gate L progress or a hidden ninth artifact. It is a source-level reconciliation question to resolve before any Event 2 implementation claim can pass AC-L1.
 
 ## Lettering note
 
@@ -53,7 +82,11 @@ As [[gates]] flags, v3.9 uses letters A–J for its accountability-pipeline mile
 
 ## Sources & provenance
 
-- **Secondary:** `raw/open-brain/2026-06.md` — the load-bearing source actually read this compilation. L76 (Integration Arc summary: Gate K and Gate L each carry a "satisfied only when" predicate); L817 (Gate L = a documentation coverage matrix; `ADR-0007` Civilization definition re-anchor logged as deferred reconciliation work); L947 / L969 (Gate L = epic-02 v3.9→v4.0 reconciliation, proposal-only, *"carries v3.9 INTO v4.0,"* *"completing it RETIRES v3.9 as active baseline,"* *"needs human authorization not a run,"* may run in parallel with Gate K).
-- **Context (named in source, not directly read this compilation):** `DF-V4.0-INTEGRATION-ARC` (00-integration-arc-v4.0.md, the Event-2 / Gate L definition) and its epic-02 design packet, and `DF-V4.0-CKPT-2026-06-12-ACCEPTANCE` ("Gates K and L remain defined and unsatisfied"). These v4.0 epic files are mirrored locally but not committed to this repo (`raw/transpara/` is gitignored); their content is reached here via the compiled [[gate-k]] sibling and the Open Brain summary above rather than read directly — flagged fail-legibly.
+- **Primary:** `raw/transpara/dark-factory/v4.0/implementation/epics/00-integration-arc-v4.0.md` — Event 2 definition, Gate L satisfied-only-when predicate, sequencing rule, deferred backlog, gate-failure rule, and global guardrails. Read lines 1-202 this compilation.
+- **Primary:** `raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/README.md` — proposal-only Event 2 overview, dependent v3.9 set, success criteria, out-of-scope list, and completion condition. Read in full this compilation.
+- **Primary:** `raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/01-reconciliation-design-v4.0.md` — requirements R-L1..R-L3, acceptance criteria AC-L1..AC-L5, named test cases TC-L1..TC-L5, Gate L predicate, target autonomy level, stop condition, and boundary. Read in full this compilation.
+- **Primary:** `raw/transpara/dark-factory/v4.0/implementation/epics/epic-02-v3.9-to-v4.0-reconciliation/02-reconciliation-authorization-v4.0.md` — proposed authorization packet, pending AuthorityDecision, bounded scope, exclusions, validation requirements, stop conditions, and post-grant handoff. Read in full this compilation.
+- **Primary:** `raw/transpara/dark-factory/v4.0/README.md` and `raw/transpara/dark-factory/v4.0/checkpoint-2026-06-12-v4.0-doctrine-acceptance.md` — v4.0 folder remains candidate, v3.9 remains operative, coverage matrix criterion open, and Event 2 unauthorized. Read relevant sections this compilation.
+- **Secondary:** `raw/open-brain/2026-06.md` — operational summary corroborating Gate L as epic-02 coverage-matrix reconciliation, proposal-only, human-authorized, and parallelizable with Gate K because it carries no autonomy implication.
 
-> ⚠ This article is built from the Open Brain operational record and the compiled [[gate-k]] sibling rather than from the v4.0 epic documents directly (those are not in the committed corpus). Claims are grounded in what those sources state; the precise wording of the Gate L coverage-matrix predicate should be re-verified against `00-integration-arc-v4.0.md` / epic-02 when the v4.0 source tier is mirrored. `[[wikilinks]]` to v4.0 are forward/candidate references.
+`[[wikilinks]]` to v4.0 remain forward/candidate references. This article describes Gate L's predicate and authorization boundary; it does not start Event 2, satisfy Gate L, mark v4.0 canonical, or retire v3.9 as the operative baseline.
