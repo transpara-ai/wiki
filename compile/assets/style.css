@@ -1022,3 +1022,241 @@ code,pre,.mono{font-family:var(--mono)}
   .arc-controls,.arc-tooltip{display:none}
   .civilization-arc-nav[data-expanded="false"] .arc-expanded{display:block}
 }
+
+/* ==================================================================== */
+/* Chronological-tracks arc (new controller: civilizationArcNav.js).    */
+/* The pure draw module (civilizationArcDraw.js) emits generic          */
+/* --color-* / --border-radius-* design tokens inline on the SVG.       */
+/* Define them here, scoped to the tracks root, aliased to the existing */
+/* --arc-* palette so the chart resolves in both light and dark.        */
+/* ==================================================================== */
+.arc-tracks-nav{
+  --color-text-primary:var(--arc-text);
+  --color-text-secondary:var(--arc-muted);
+  --color-text-tertiary:var(--arc-faint);
+  --color-background-primary:var(--arc-panel);
+  --color-background-secondary:var(--arc-panel-2);
+  --color-background-tertiary:var(--arc-bg-2);
+  --color-border-secondary:rgba(124,143,160,.55);
+  --color-border-tertiary:rgba(124,143,160,.38);
+  --border-radius-md:6px;
+  --border-radius-lg:10px;
+}
+
+/* Full width — the tracks chart is accuracy-first and spans the page.   */
+/* Override the 1220px caps the shared chrome puts on .arc-frame, and    */
+/* keep full width whether or not a marker is selected.                  */
+.arc-tracks-nav .arc-frame{
+  position:relative;
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:0 18px;
+  overflow-x:auto;
+}
+.arc-tracks-nav[data-arc-standalone="true"] .arc-frame,
+.arc-full-page .arc-tracks-nav .arc-frame,
+.arc-standalone-shell .arc-tracks-nav .arc-frame{
+  max-width:none;
+}
+.arc-tracks-nav[data-has-selection="true"] .arc-frame{
+  max-width:none;
+}
+
+.arc-tracks-nav .arc-svg{
+  display:block;
+  width:100%;
+  height:auto;
+  border:1px solid var(--color-border-tertiary);
+  border-radius:var(--border-radius-md);
+  background:linear-gradient(180deg,var(--arc-bg-2),var(--arc-bg));
+}
+
+/* Markers — small, status-colored (fill is inline from the draw module). */
+.arc-marker{cursor:pointer}
+.arc-marker:hover{stroke:var(--color-text-primary);stroke-width:1.5}
+.arc-item-group:focus-within .arc-marker,
+.arc-item-group.arc-is-selected .arc-marker{
+  stroke:var(--color-text-primary);
+  stroke-width:2;
+}
+.arc-item-group .arc-marker:focus{outline:none}
+.arc-item-group .arc-marker:focus-visible{outline:none}
+
+.arc-track-band{}
+.arc-track-label,.arc-track-chevron{cursor:pointer}
+
+/* Tooltip — absolutely positioned inside the frame, follows the cursor. */
+.arc-tracks-nav .arc-tooltip{
+  position:absolute;
+  pointer-events:none;
+  background:var(--color-background-primary);
+  border:.5px solid var(--color-border-secondary);
+  border-radius:var(--border-radius-md);
+  padding:4px 8px;
+  font:12px/1.3 var(--mono);
+  color:var(--color-text-primary);
+  max-width:280px;
+  box-shadow:0 6px 18px rgba(0,0,0,.22);
+  z-index:5;
+}
+.arc-tracks-nav .arc-tooltip[hidden]{display:none}
+
+/* Panels — now/current-focus + selected detail, side by side.           */
+.arc-panels{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:12px;
+  padding:0 18px 16px;
+}
+@media(max-width:760px){
+  .arc-panels{grid-template-columns:1fr}
+}
+.arc-now-panel,.arc-detail-panel{
+  background:var(--color-background-primary);
+  border:.5px solid var(--color-border-tertiary);
+  border-radius:var(--border-radius-lg);
+  padding:12px 14px;
+  min-width:0;
+}
+
+.arc-panel-eyebrow{
+  margin:0 0 6px;
+  color:var(--arc-cyan);
+  font:10px/1.2 var(--mono);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.arc-panel-subhead{
+  margin:12px 0 5px;
+  color:var(--color-text-tertiary);
+  font:10px/1.2 var(--mono);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.arc-now-head,.arc-detail-head{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.arc-now-code,.arc-detail-code{
+  font:700 15px/1.2 var(--mono);
+  color:var(--color-text-primary);
+}
+.arc-now-label{
+  margin:6px 0 0;
+  color:var(--color-text-secondary);
+  font-size:13px;
+  line-height:1.45;
+}
+.arc-now-blocker{
+  margin:8px 0 0;
+  color:var(--color-text-secondary);
+  font-size:12.5px;
+  line-height:1.45;
+}
+.arc-now-blocker-code{
+  font:700 12px/1 var(--mono);
+  color:var(--arc-red);
+}
+
+.arc-now-list{
+  list-style:none;
+  margin:0;
+  padding:0;
+}
+.arc-now-item{
+  display:grid;
+  grid-template-columns:auto 42px minmax(0,1fr);
+  align-items:baseline;
+  gap:8px;
+  padding:2px 0;
+  font-size:12.5px;
+  line-height:1.4;
+}
+.arc-now-item-code{
+  font:700 12px/1 var(--mono);
+  color:var(--color-text-primary);
+}
+.arc-now-item-text{
+  color:var(--color-text-secondary);
+  min-width:0;
+}
+
+/* Status dot — colors mirror the draw module's STATUS_FILL palette.      */
+.arc-status-dot{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#888780;
+  flex:0 0 auto;
+  align-self:center;
+}
+.arc-status-dot-done{background:#1D9E75}
+.arc-status-dot-active{background:#BA7517}
+.arc-status-dot-blocked{background:#E24B4A}
+.arc-status-dot-planned{background:#378ADD}
+.arc-status-dot-next{background:#378ADD}
+.arc-status-dot-future{background:#888780}
+
+/* Status badges — small pill, status-colored.                           */
+.arc-badge{
+  display:inline-block;
+  padding:1px 7px;
+  border-radius:999px;
+  font:700 10px/1.5 var(--mono);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  color:#fff;
+  background:#888780;
+}
+.arc-badge-done{background:#1D9E75}
+.arc-badge-active{background:#BA7517}
+.arc-badge-blocked{background:#E24B4A}
+.arc-badge-planned{background:#378ADD}
+.arc-badge-future{background:#888780}
+
+.arc-detail-track{
+  margin-left:auto;
+  color:var(--color-text-tertiary);
+  font:11px/1.2 var(--mono);
+}
+.arc-detail-label{
+  margin:8px 0 0;
+  color:var(--color-text-primary);
+  font-size:13.5px;
+  line-height:1.45;
+}
+.arc-detail-meta{
+  margin:6px 0 0;
+  color:var(--color-text-secondary);
+  font-size:12px;
+}
+.arc-detail-meta-key{
+  color:var(--color-text-tertiary);
+  font:700 10px/1 var(--mono);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.arc-detail-note{
+  margin:8px 0 0;
+  color:var(--color-text-secondary);
+  font-size:12.5px;
+  line-height:1.5;
+}
+.arc-detail-link{
+  display:inline-block;
+  margin-top:10px;
+  color:var(--arc-blue);
+  font:600 12.5px/1 var(--mono);
+}
+.arc-detail-link:hover{text-decoration:underline}
+.arc-detail-hint{
+  margin:0;
+  color:var(--color-text-tertiary);
+  font-size:12.5px;
+}
