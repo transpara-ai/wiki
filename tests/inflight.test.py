@@ -35,6 +35,11 @@ class PrToItem(unittest.TestCase):
         self.assertEqual(it["status"], "done")
         self.assertEqual(it["blocked"], False)
 
+    def test_closed_unmerged_pr_is_not_projected(self):
+        pr = {"number": 8, "title": "abandoned", "author": {"login": "c"},
+              "url": "https://github.com/transpara-ai/docs/pull/8", "state": "CLOSED", "isDraft": False}
+        self.assertIsNone(inflight.pr_to_item(pr, "docs"))
+
     def test_missing_author_login_falls_back_to_unknown(self):
         pr = {"number": 1, "title": "t", "author": None,
               "url": "https://github.com/transpara-ai/work/pull/1", "state": "OPEN", "isDraft": False}

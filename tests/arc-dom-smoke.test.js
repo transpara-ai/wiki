@@ -124,6 +124,7 @@ function assertRenderedDom() {
   assert(nav.querySelector(".arc-now-line"), "now-line element missing");
   assert.match(nav.querySelector(".arc-now-panel").textContent, /Gate-K/);
   assert.match(nav.querySelector(".arc-now-panel").textContent, /blocked/i);
+  assert.strictEqual(nav.querySelectorAll(".arc-now-blocker").length, 0, "now panel should degrade to gate-only focus when no blocked work item remains");
 }
 
 const { test } = require("node:test");

@@ -1,33 +1,26 @@
 #!/usr/bin/env python3
-"""Live in-flight layer for the Civilization Arc.
+"""Pure transforms for the future Civilization Arc in-flight layer.
 
-Collects open + recently-merged PRs across the dark-factory stack (+ civilization-wiki)
-via the `gh` CLI and writes dist/inflight.json — the live overlay the arc page fetches.
-
-Honors the standing rules, exactly like compile/refresh.py:
-  * No git commit/push/merge. Only writes local working files (dist/inflight.json).
-  * No secrets: `gh` uses the user's existing auth; the token is NEVER written to
-    inflight.json or shipped to the browser. inflight.json carries only PR metadata
-    (number, title, author login, url, state).
-  * Fail-loud: a gh failure for a repo is recorded, never silently treated as "no work".
+This module intentionally contains no gh/network/file-writing collector yet.
+Collector and browser-merge wiring will land separately; for now, keep the
+row-to-item mapping deterministic and unit-tested.
 """
-import json
-import subprocess
-import pathlib
-import datetime
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
-OUT = ROOT / "dist" / "inflight.json"
-MERGED_WINDOW_DAYS = 7
-# Live items join the ongoing "stewardship" sprint (existing vocab → passes validateItems,
-# resolves the tooltip sprint label, adds no new axis tick).
+# Live items join the ongoing "stewardship" sprint so future browser overlay
+# code can resolve the tooltip sprint label without adding a new axis tick.
 LIVE_SPRINT = "stewardship"
+PR_STATE_STATUS = {
+    "OPEN": "active",
+    "MERGED": "done",
+}
 
 
 def pr_to_item(pr, repo):
-    """Pure: one `gh pr list --json` row -> one derived arc item (no seq; browser assigns)."""
+    """Pure: one supported `gh pr list --json` row -> one derived arc item."""
     state = (pr.get("state") or "").upper()
-    status = "done" if state == "MERGED" else "active"
+    status = PR_STATE_STATUS.get(state)
+    if status is None:
+        return None
     author = ((pr.get("author") or {}).get("login")) or "unknown"
     number = pr.get("number")
     return {

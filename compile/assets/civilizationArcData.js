@@ -54,7 +54,7 @@
     // Risks[] disposition:
     //   genesis-gap → attached as note on origin-signal marker (below)
     //   role-oscillation → attached as note on demo-validation marker (gate guard item)
-    //   gate-e-pending → gate-e item is active+blocked, capturing this directly
+    //   gate-e-pending → resolved into the done Gate-E item; current blocker is Gate-K go-live revalidation
     //   future-autonomy → attached as note on stewardship marker (below)
     //   No standalone risk items created (per transform rules)
     // ------------------------------------------------------------------
