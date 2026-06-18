@@ -1,0 +1,8 @@
+{
+  "df": "deploy-authorization",
+  "authorized_sha": "REPLACE-WITH-40-CHAR-COMMIT-SHA-TO-DEPLOY",
+  "authority": "name / role of the human authorizing this deploy",
+  "authorized_at": "2026-01-01T00:00:00Z",
+  "expires_at": "2026-01-08T00:00:00Z",
+  "reason": "one-line note: why this exact commit is cleared to publish live"
+}

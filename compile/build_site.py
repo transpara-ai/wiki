@@ -219,6 +219,23 @@ def freshness(status):
     return '<span class="fresh %s">updated %s · %d stale</span>' % (cls, html.escape(synced), len(stale))
 
 
+def deploy_status_script():
+    """Client-side: fetch deploy-status.json (written by autodeploy.py each tick,
+    NOT baked at build time) and render a blocked banner + a live footer."""
+    return (
+        '<div id="deploy-banner" hidden></div>'
+        '<div id="deploy-foot" class="deploy-foot"></div>'
+        '<script>(function(){fetch("deploy-status.json",{cache:"no-store"})'
+        '.then(function(r){return r.ok?r.json():null}).then(function(s){if(!s)return;'
+        'var f=document.getElementById("deploy-foot");'
+        'if(f)f.textContent="live deploy: "+String(s.deployed_sha||"").slice(0,7)+" · "+(s.checked||"");'
+        'if(s.blocked){var b=document.getElementById("deploy-banner");'
+        'b.hidden=false;b.className="deploy-blocked";'
+        'b.textContent="\\u26a0 Auto-deploy blocked: "+s.reason+" (since "+(s.since||"?")+'
+        '") \\u2014 the live site may be behind authorized main."}}).catch(function(){})})();</script>'
+    )
+
+
 def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home=False):
     sidebar = build_sidebar(slug if not is_home else "")
     infobox = "" if is_home else build_infobox(meta, fm)
@@ -262,6 +279,7 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
         '<footer class="page-foot">Generated from <code>wiki/</code> + <code>index.md</code> · '
         'a Karpathy-style LLM wiki · fail-legible: gaps are TBD, conflicts are stated.</footer>'
         '</main></div>' + THEME_JS +
+        deploy_status_script() +
         '</body></html>'
     )
 
@@ -283,7 +301,8 @@ def arc_page(status):
         '</head><body class="arc-full-page">'
         '<main class="arc-standalone-shell">'
         '<div data-civilization-arc-nav data-arc-standalone="true" data-arc-expanded="true"></div>'
-        '</main></body></html>'
+        '</main>' + deploy_status_script() +
+        '</body></html>'
     )
 
 
