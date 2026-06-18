@@ -52,7 +52,7 @@ def test_missing_author_login_falls_back_to_unknown():
 def test_collect_items_records_repo_errors_without_dropping_good_repos():
     def fake_gh_json(args):
         if "broken" in " ".join(args):
-            raise RuntimeError("gh: not found")
+            raise RuntimeError("gh failed: ghp_SECRET stderr")
         return [{"number": 1, "title": "t", "author": {"login": "x"},
                  "url": "https://github.com/transpara-ai/hive/pull/1",
                  "state": "OPEN", "isDraft": False}]
@@ -64,6 +64,8 @@ def test_collect_items_records_repo_errors_without_dropping_good_repos():
         inflight.gh_json = orig
     assert any(i["id"] == "pr-hive-1" for i in items), items
     assert any("broken" in e for e in errors), errors
+    assert any("RuntimeError" in e for e in errors), errors
+    assert not any("ghp_SECRET" in e or "stderr" in e for e in errors), errors
     print("ok test_collect_items_records_repo_errors_without_dropping_good_repos")
 
 

@@ -22,7 +22,7 @@ jobs:
       - name: Stats unit tests (deterministic, stdlib only)
         run: python3 compile/test_stats.py
       - name: Inflight unit tests (deterministic, stdlib only)
-        run: python3 compile/test_inflight.py
+        run: npm run test:py
       - name: Arc asset syntax check
         run: npm run test:js
       - name: Arc unit tests (layout + ontology)

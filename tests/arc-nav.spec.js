@@ -100,6 +100,7 @@ test("narrow viewport: chart scrolls inside frame, not the page", async ({ page 
 });
 
 test('reflows on resize without horizontal page scroll', async ({ page }) => {
+  await page.route('**/inflight.json', route => route.fulfill({ status: 404, body: '' }));
   await page.goto('/civilization-arc.html');
   const svg = page.locator('.arc-svg');
   await expect(svg).toBeVisible();

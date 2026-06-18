@@ -25,7 +25,7 @@
 1. **Actor facet (DECIDED: build the toggle).** Add a real group-by toggle to the tracks renderer with dimensions `tracks | status | repo | sprint | gate | actor`. `tracks` (default) keeps the shipped 3 type-tracks; the others decompose lanes via `O.groupBy(items, dim)` sharing the one chronological seq axis. Live PRs carry `author`, so `actor` lanes split by who's working (baked history collapses into one `(unknown)` lane). `buildLayout` change (Task 4) + nav toolbar (Task 5).
 2. **Sprint for live items:** `sprint: "stewardship"` (existing vocab id → passes `validateItems`, resolves the tooltip's sprint label, adds no new axis tick).
 3. **Dedup vs baked N1–N7 worklist:** none in v1. Live PRs are their own `pr-<repo>-<number>` items; ids/codes can't collide with `N5`/`ORIGIN`.
-4. **Merged window:** PRs merged in the last **7 days**. Open PRs: all.
+4. **Merged window:** PRs merged in the last **30 days**. Open PRs: all.
 
 ---
 
@@ -863,7 +863,7 @@ function mountWithFetch(inflightPayload, opts) {
 }
 
 const LIVE_PR = {
-  generated: "2026-06-17 14:00", window_days: 7, repos: ["hive"], errors: [],
+  generated: "2026-06-17 14:00", window_days: 30, repos: ["hive"], errors: [],
   items: [{ id: "pr-hive-1", code: "hive#1", type: "work", label: "fix: live overlay",
     status: "active", blocked: false, provenance: "derived", repo: ["hive"],
     sprint: "stewardship", href: "https://github.com/transpara-ai/hive/pull/1",
