@@ -171,3 +171,8 @@ Compiled from four primary planning documents:
 - `raw/transpara/dark-factory/implementation/overnight-2026-06-13-claude-checkpoint.md` (DF-CKPT-20260613-OVERNIGHT-CLAUDE, v1.0.0) — lines 1–57: observatory overnight shift state, review convergence record, open decisions awaiting Michael.
 
 All four sources carry `authority: planning` or `status: draft/complete` without `canonical: true`. No claim here is advanced beyond what the sources state. Cross-links to `[[the-reunification]]`, `[[the-observatory]]`, `[[v4-0]]`, `[[v3-9]]`, `[[slice-1-completion]]` are forward references to separately compiled or forthcoming articles.
+
+## Live deploy status
+
+<div id="live-deploy"></div>
+<script>(function(){fetch("deploy-status.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(s){if(!s)return;var el=document.getElementById("live-deploy");if(!el)return;var rows=(s.recent||[]).slice().reverse().map(function(e){return e.at+" — "+String(e.sha).slice(0,7)+" ("+e.result+")"}).join("<br>");el.innerHTML="<strong>"+(s.blocked?"⚠ blocked: "+s.reason:"live: "+String(s.deployed_sha||"").slice(0,7))+"</strong><br>checked "+(s.checked||"")+"<br><br>recent:<br>"+rows;}).catch(function(){})})();</script>
