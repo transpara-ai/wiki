@@ -19,7 +19,7 @@ incident: INC-001 / Test 001 Cross-Repo Runtime-Doctrine Drift Tabletop
 surface_repo: transpara-ai/civilization-wiki
 surface_status: LOCAL_RENDER_EVIDENCE_RECORDED
 surface_status_meaning: selected wiki pages rendered in local browser tests; downstream citation still waits for validation, review, and merge
-source_commit: 3a1f093f62e658b2156763dea96e54939afb21dd
+source_commit: c726cfaaa76eac4a7aee8fa0b2f32df125e8dfb6
 correction_type: NO_CHANGE
 human_authorization_required: no
 human_authorization_evidence: none
@@ -30,7 +30,8 @@ local render evidence for existing wiki behavior. It does not authorize public
 correction, publication, deployment, doctrine change, incident closure, or
 production posture change.
 
-The `source_commit` is the base commit containing the unchanged wiki sources,
+The `source_commit` is the refreshed base commit, after
+`transpara-ai/civilization-wiki#18` merged, containing the wiki sources,
 renderer, and arc assets under test. The PR that adds this packet contains only
 test and documentation changes. `LOCAL_RENDER_EVIDENCE_RECORDED` is the
 Wiki-side evidence posture recorded by this packet, not a claim that the PR is
