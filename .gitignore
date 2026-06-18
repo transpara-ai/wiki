@@ -13,3 +13,11 @@ __pycache__/
 /.cache/
 /.adversarial-review/
 /.superpowers/
+
+# auto-deploy: never commit the real authorization or runtime state
+compile/deploy-authorization.json
+compile/.deployed-sha
+compile/.deploy-history.json
+compile/.autodeploy.lock
+compile/autodeploy.log
+dist/deploy-status.json

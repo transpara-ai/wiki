@@ -39,3 +39,46 @@ def site_affecting(paths):
         elif p.startswith("wiki/") and p.endswith(".md"):
             hits.append(p)
     return (len(hits) > 0, hits)
+
+
+SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+_REQUIRED = ("authorized_sha", "authority", "authorized_at", "expires_at", "reason")
+
+
+def _parse_iso(s):
+    dt = datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
+    return dt
+
+
+def _iso(dt):
+    return dt.astimezone(datetime.timezone.utc).isoformat()
+
+
+def authorized(root, now, ancestor_check):
+    """Deny-closed. Grant ONLY on the single fully-proven branch; return the sha."""
+    path = root / "compile" / "deploy-authorization.json"
+    if not path.exists():
+        return (False, "no deploy-authorization.json", None)
+    try:
+        a = json.loads(path.read_text())
+    except Exception as e:
+        return (False, "authorization unreadable: %s" % type(e).__name__, None)
+    if not isinstance(a, dict) or a.get("df") != "deploy-authorization":
+        return (False, "not a deploy-authorization artifact", None)
+    for k in _REQUIRED:
+        if not isinstance(a.get(k), str) or not a.get(k):
+            return (False, "missing/blank field: %s" % k, None)
+    sha = a["authorized_sha"]
+    if not SHA_RE.match(sha):
+        return (False, "authorized_sha not a 40-char hex sha", None)
+    try:
+        start, end = _parse_iso(a["authorized_at"]), _parse_iso(a["expires_at"])
+    except Exception:
+        return (False, "authorized_at/expires_at not ISO-8601", None)
+    if not (start <= now < end):
+        return (False, "outside validity window", None)
+    if not ancestor_check(sha):
+        return (False, "authorized_sha not an ancestor of origin/main", None)
+    return (True, "authorized by %s" % a["authority"], sha)
