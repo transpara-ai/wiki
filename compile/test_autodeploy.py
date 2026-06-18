@@ -169,6 +169,15 @@ def test_append_history_caps_and_returns_recent():
     print("ok test_append_history_caps_and_returns_recent")
 
 
+def test_deploy_merge_and_build_outcomes():
+    root = pathlib.Path(".")
+    sha = "a" * 40
+    assert ad.deploy(root, sha, runner=lambda: 0, merge=lambda: True)[0] is True
+    assert ad.deploy(root, sha, runner=lambda: 1, merge=lambda: True)[0] is False   # build fail
+    assert ad.deploy(root, sha, runner=lambda: 0, merge=lambda: False)[0] is False  # merge fail
+    print("ok test_deploy_merge_and_build_outcomes")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

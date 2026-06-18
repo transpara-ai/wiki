@@ -136,3 +136,16 @@ def append_deploy_history(root, event):
     hist = hist[-HISTORY_MAX:]
     path.write_text(json.dumps(hist, indent=2))
     return hist[-RECENT_N:]
+
+
+def deploy(root, target_sha, runner, merge=None):
+    """ff-only merge to target_sha, then rebuild via runner(). No-commit, no force."""
+    if merge is None:
+        merge = lambda: sh("git", "-C", str(root), "merge",
+                           "--ff-only", target_sha).returncode == 0
+    if not merge():
+        return (False, "ff-only merge failed")
+    rc = runner()
+    if rc != 0:
+        return (False, "refresh.py exit %s" % rc)
+    return (True, "deployed %s" % target_sha[:7])
