@@ -149,3 +149,100 @@ def deploy(root, target_sha, runner, merge=None):
     if rc != 0:
         return (False, "refresh.py exit %s" % rc)
     return (True, "deployed %s" % target_sha[:7])
+
+
+def read_deployed_sha(root):
+    p = root / "compile" / ".deployed-sha"
+    return p.read_text().strip() if p.exists() else None
+
+
+def write_deployed_sha(root, sha):
+    (root / "compile").mkdir(parents=True, exist_ok=True)
+    (root / "compile" / ".deployed-sha").write_text(sha + "\n")
+
+
+def diff_names(root, a, b):
+    r = sh("git", "-C", str(root), "diff", "--name-only", "%s..%s" % (a, b))
+    return [x for x in r.stdout.splitlines() if x.strip()]
+
+
+def decide(deployed_sha, target_sha, auth_ok, auth_reason,
+           changed_paths, preflight_ok, preflight_reason):
+    """Pure. Gate 0 (auth) first; then noop/skip/preflight/deploy."""
+    if not auth_ok:
+        return ("refuse", "gate0: " + auth_reason)
+    if target_sha == deployed_sha:
+        return ("noop", "already at authorized sha")
+    if not site_affecting(changed_paths)[0]:
+        return ("skip", "no site-affecting changes")
+    if not preflight_ok:
+        return ("refuse", preflight_reason)
+    return ("deploy", "authorized + site-affecting + preflight ok")
+
+
+def _prior_status(root):
+    p = root / "dist" / "deploy-status.json"
+    if p.exists():
+        try:
+            return json.loads(p.read_text())
+        except Exception:
+            return None
+    return None
+
+
+def run_tick(root, *, now, ancestor_check, runner, fetch=None, merge=None):
+    if fetch is None:
+        fetch = lambda: sh("git", "-C", str(root), "fetch", "--quiet", "origin")
+    prior = _prior_status(root)
+
+    def status(blocked, reason, deployed, target, auth_flag, recent=None):
+        return write_deploy_status(root, blocked=blocked, reason=reason,
+                                   deployed_sha=deployed, target_sha=target,
+                                   authorized_flag=auth_flag, now=now,
+                                   recent=recent or (prior.get("recent", []) if prior else []),
+                                   prior=prior)
+
+    if getattr(fetch(), "returncode", 1) != 0:
+        return status(True, "git fetch failed", read_deployed_sha(root), None, False)
+
+    auth_ok, auth_reason, target = authorized(root, now, ancestor_check)
+    deployed = read_deployed_sha(root)
+    if not auth_ok:
+        return status(True, "gate0: " + auth_reason, deployed, None, False)
+    if deployed is None:                       # first run: adopt target, do not deploy
+        write_deployed_sha(root, target)
+        return status(False, "initialized at authorized sha", target, target, True)
+
+    changed = diff_names(root, deployed, target)
+    pf_ok, pf_reason = preflight(root, target, ancestor_check)
+    action, reason = decide(deployed, target, auth_ok, auth_reason, changed, pf_ok, pf_reason)
+
+    if action == "noop":
+        return status(False, "up to date", deployed, target, True)
+    if action == "skip":
+        write_deployed_sha(root, target)
+        return status(False, "skip: " + reason, target, target, True)
+    if action == "refuse":
+        return status(True, reason, deployed, target, True)
+    # deploy
+    ok, detail = deploy(root, target, runner, merge=merge)
+    if not ok:
+        return status(True, "build failed: " + detail, deployed, target, True)
+    write_deployed_sha(root, target)
+    recent = append_deploy_history(root, {"sha": target, "at": _iso(now), "result": "deployed"})
+    return status(False, detail, target, target, True, recent=recent)
+
+
+def main():
+    now = datetime.datetime.now(datetime.timezone.utc)
+    ancestor_check = lambda s: sh("git", "-C", str(ROOT), "merge-base",
+                                  "--is-ancestor", s, "origin/main").returncode == 0
+    runner = lambda: sh("python3", str(ROOT / "compile" / "refresh.py")).returncode
+    out = run_tick(ROOT, now=now, ancestor_check=ancestor_check, runner=runner)
+    line = "%s %s -> %s" % (_iso(now), out.get("reason"), out.get("deployed_sha"))
+    (ROOT / "compile" / "autodeploy.log").open("a").write(line + "\n")
+    print(line)
+
+
+if __name__ == "__main__":
+    main()

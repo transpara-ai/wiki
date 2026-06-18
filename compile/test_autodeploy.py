@@ -178,6 +178,44 @@ def test_deploy_merge_and_build_outcomes():
     print("ok test_deploy_merge_and_build_outcomes")
 
 
+def test_decide_orderings():
+    aff = ["wiki/x.md"]
+    noaff = ["docs/x.md"]
+    # gate0 first: unauthorized always refuses
+    assert ad.decide("x", "y", False, "no auth", aff, True, "")[0] == "refuse"
+    # already at target
+    assert ad.decide("y", "y", True, "", aff, True, "")[0] == "noop"
+    # nothing site-affecting
+    assert ad.decide("x", "y", True, "", noaff, True, "")[0] == "skip"
+    # affecting but preflight fails
+    assert ad.decide("x", "y", True, "", aff, False, "dirty")[0] == "refuse"
+    # all clear
+    assert ad.decide("x", "y", True, "", aff, True, "")[0] == "deploy"
+    print("ok test_decide_orderings")
+
+
+def test_run_tick_build_fail_no_advance():
+    now = datetime.datetime(2026, 7, 1, tzinfo=UTC)
+    with tempfile.TemporaryDirectory() as d:
+        root, c1 = _git_repo(d)
+        (root / "wiki").mkdir()
+        (root / "wiki" / "x.md").write_text("# x\n")
+        _git(root, "add", "-A")
+        _git(root, "commit", "-q", "-m", "c2 site-affecting")
+        c2 = _git(root, "rev-parse", "HEAD").stdout.strip()
+        _git(root, "reset", "-q", "--hard", c1)             # serving checkout sits at c1
+        ad.write_deployed_sha(root, c1)
+        _auth(root, authorized_sha=c2,
+              authorized_at="2026-06-18T00:00:00Z", expires_at="2026-12-31T00:00:00Z")
+        out = ad.run_tick(root, now=now, ancestor_check=lambda s: True,
+                          runner=lambda: 1,                  # build FAILS
+                          fetch=lambda: subprocess.CompletedProcess([], 0),
+                          merge=lambda: True)                # pretend ff worked
+        assert out["blocked"] is True
+        assert ad.read_deployed_sha(root) == c1              # NOT advanced
+    print("ok test_run_tick_build_fail_no_advance")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
