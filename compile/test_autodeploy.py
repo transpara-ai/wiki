@@ -216,6 +216,14 @@ def test_run_tick_build_fail_no_advance():
     print("ok test_run_tick_build_fail_no_advance")
 
 
+def test_build_site_bakes_deploy_fetch():
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import build_site  # noqa
+    script = build_site.deploy_status_script()
+    assert "deploy-status.json" in script and "<script" in script
+    print("ok test_build_site_bakes_deploy_fetch")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
