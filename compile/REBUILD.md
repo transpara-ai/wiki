@@ -46,3 +46,28 @@ browser install step in `npm run test:browser`. `npm run verify` rebuilds the
 static site, syntax-checks the arc assets, runs the jsdom component smoke test,
 and runs the headless Chromium Playwright suite against a local test server on
 `127.0.0.1:8799`, separate from the production `:8787` wiki server.
+
+## Auto-deploy poller (NOT auto-installed)
+
+`compile/autodeploy.py` deploys the **authorized** commit when an authorized,
+site-affecting merge lands. It is fail-closed and self-hosting; it never
+commits/pushes/forces. Shipped inert — activation and authorization are
+deliberate human steps.
+
+**Authorize a deploy** (per reviewed commit):
+1. `cp compile/deploy-authorization.example.json compile/deploy-authorization.json`
+   (the real file is git-ignored).
+2. Set `authorized_sha` to the exact 40-char SHA to publish (must be an ancestor
+   of `origin/main`), `authority`, `authorized_at`/`expires_at` (ISO-8601), `reason`.
+
+**Activate the timer** (user units, no root):
+```
+loginctl enable-linger transpara
+mkdir -p ~/.config/systemd/user
+cp compile/systemd/civwiki-autodeploy.* ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now civwiki-autodeploy.timer
+journalctl --user -u civwiki-autodeploy -f      # logs
+```
+A blocked tick (unauthorized / dirty / build-fail) leaves the live site
+untouched and flips the on-page "Auto-deploy blocked" banner.
