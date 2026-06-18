@@ -7,9 +7,9 @@
     "build": "python3 compile/build_site.py",
     "test:js": "node --check compile/assets/civilizationArcData.js && node --check compile/assets/civilizationArcNav.js && node --check compile/assets/civilizationArcLayout.js && node --check compile/assets/civilizationArcDraw.js && node --check compile/assets/civilizationOntology.js",
     "test:unit": "node --test tests/arcLayout.test.js tests/ontology.test.js",
-    "test:py": "python3 tests/inflight.test.py",
     "test:dom": "node tests/arc-dom-smoke.test.js",
     "test:browser": "playwright install chromium && playwright test",
+    "test:py": "python3 compile/test_inflight.py && python3 tests/inflight.test.py",
     "verify": "npm run build && npm run test:js && npm run test:unit && npm run test:py && npm run test:dom && npm run test:browser"
   },
   "devDependencies": {

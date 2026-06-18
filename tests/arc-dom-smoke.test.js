@@ -229,6 +229,90 @@ test('javascript: href is never assigned to any rendered link (XSS hardening)', 
   assert.ok(relLinks.length >= 1, "Bare relative href 'the-civilization.html' must render a link (safeHref must not reject it)");
 });
 
+// --- grouping toolbar (Task 5) ---
+test('grouping toolbar: six group buttons render, Tracks active by default', () => {
+  const { nav } = mountArc();
+  const btns = [...nav.querySelectorAll('[data-arc-group]')];
+  assert.deepStrictEqual(btns.map(b => b.getAttribute('data-arc-group')),
+    ['tracks', 'status', 'repo', 'sprint', 'gate', 'actor']);
+  assert.strictEqual(nav.querySelector('.arc-group-btn-active').getAttribute('data-arc-group'), 'tracks');
+  assert.strictEqual(nav.querySelectorAll('.arc-track-band').length, 3); // default unchanged
+});
+
+test('clicking "Status" regroups the lanes and marks the button active', () => {
+  const { nav, dom } = mountArc();
+  nav.querySelector('[data-arc-group="status"]').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  const labels = [...nav.querySelectorAll('.arc-track-label')].map(t => t.textContent);
+  assert.ok(labels.includes('done') && labels.includes('planned'), 'status lanes present; got ' + labels.join(' | '));
+  assert.strictEqual(nav.querySelector('.arc-group-btn-active').getAttribute('data-arc-group'), 'status');
+});
+
+// --- live overlay (Task 6) ---
+function mountWithFetch(inflightPayload, opts) {
+  const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav></div>', {
+    pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
+  });
+  dom.window.fetch = function () {
+    if (opts && opts.reject) return Promise.reject(new Error("network"));
+    return Promise.resolve({ ok: true, json: function () { return Promise.resolve(inflightPayload); } });
+  };
+  ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
+   "civilizationArcDraw.js", "civilizationArcNav.js"].forEach((f) =>
+    dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
+  dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
+  return dom;
+}
+
+const LIVE_PR = {
+  generated: "2026-06-17 14:00", window_days: 30, repos: ["hive"], errors: [],
+  items: [{ id: "pr-hive-1", code: "hive#1", type: "work", label: "fix: live overlay",
+    status: "active", blocked: false, provenance: "derived", repo: ["hive"],
+    sprint: "stewardship", href: "https://github.com/transpara-ai/hive/pull/1",
+    author: "msaucier", note: "open · @msaucier" }],
+};
+
+test('live overlay: stubbed fetch adds the PR marker and a freshness chip', async () => {
+  const dom = mountWithFetch(LIVE_PR);
+  await new Promise((r) => setTimeout(r, 0));
+  const nav = dom.window.document.querySelector(".civilization-arc-nav");
+  assert(nav.querySelector('[data-arc-item="pr-hive-1"]'), "live PR marker should render after overlay");
+  const chip = nav.querySelector(".arc-live-chip");
+  assert(chip && /updated 2026-06-17 14:00/.test(chip.textContent), "chip should show generated time");
+});
+
+test('live overlay: the live marker is interactive and shows its author', async () => {
+  const dom = mountWithFetch(LIVE_PR);
+  await new Promise((r) => setTimeout(r, 0));
+  const nav = dom.window.document.querySelector(".civilization-arc-nav");
+  const marker = nav.querySelector('[data-arc-item="pr-hive-1"]');
+  marker.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
+  const tip = nav.querySelector('.arc-tooltip');
+  assert.strictEqual(tip.hidden, false);
+  assert.match(tip.textContent, /actor · @msaucier/);
+});
+
+test('live overlay FAILS SAFE: a rejected fetch keeps the baked render, no live marker', async () => {
+  const dom = mountWithFetch(null, { reject: true });
+  await new Promise((r) => setTimeout(r, 0));
+  const nav = dom.window.document.querySelector(".civilization-arc-nav");
+  assert(!nav.querySelector('[data-arc-item="pr-hive-1"]'), "no live marker on fetch failure");
+  assert(nav.querySelectorAll(".arc-item-group").length > 0, "baked render survives");
+});
+
+test('live overlay FAILS SAFE on invalid live data: merge rejected → baked kept + chip warns', async () => {
+  // Valid fetch, but a live item with an invalid status → mergeInflight returns ok:false.
+  const BAD = { generated: "g", window_days: 30, repos: ["hive"], errors: [],
+    items: [{ id: "pr-bad-1", code: "bad#1", type: "work", label: "x", status: "merged", // ∉ STATUS_ORDER
+      blocked: false, provenance: "derived", repo: ["hive"], sprint: "stewardship", author: "x", note: "x" }] };
+  const dom = mountWithFetch(BAD);
+  await new Promise((r) => setTimeout(r, 0));
+  const nav = dom.window.document.querySelector(".civilization-arc-nav");
+  assert(!nav.querySelector('[data-arc-item="pr-bad-1"]'), "invalid live item must not render");
+  assert(nav.querySelectorAll(".arc-item-group").length > 0, "baked render survives");
+  const chip = nav.querySelector(".arc-live-chip");
+  assert(chip && /unavailable/.test(chip.textContent), "chip warns unavailable on rejected merge");
+});
+
 test('Gate K renders as the blocked go-live frontier with evidence links', () => {
   const { nav, svg, dom } = mountArc();
   const gate = svg.querySelector('[data-arc-item="gate-k"]');

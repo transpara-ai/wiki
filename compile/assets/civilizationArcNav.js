@@ -21,6 +21,17 @@
   // returns 0 → we fall back to this so tests/SSR-style renders are stable.
   var BASE_WIDTH = 1680;
 
+  // Grouping dimensions for the toolbar. "tracks" is the default type-track view;
+  // the others decompose lanes via CivOntology.groupBy, sharing the chronological axis.
+  var GROUPINGS = [
+    { id: "tracks", label: "Tracks" },
+    { id: "status", label: "Status" },
+    { id: "repo", label: "Repo" },
+    { id: "sprint", label: "Sprint" },
+    { id: "gate", label: "Gate" },
+    { id: "actor", label: "Actor" },
+  ];
+
   // ---- small DOM helpers ----------------------------------------------------
 
   function htmlEl(name, className, text) {
@@ -145,9 +156,9 @@
   // ---- scaffold (built once per root, idempotent) ---------------------------
 
   function ensureScaffold(root) {
-    root._arc = root._arc || { collapsed: {}, selectedId: null };
+    root._arc = root._arc || { collapsed: {}, selectedId: null, groupBy: "tracks" };
     var s = root._arc;
-    if (s.scaffolded && s.frame && s.svg && s.nowPanel && s.detailPanel && s.tooltip) {
+    if (s.scaffolded && s.frame && s.svg && s.nowPanel && s.detailPanel && s.tooltip && s.toolbar) {
       return s;
     }
 
@@ -182,9 +193,20 @@
     var detailPanel = htmlEl("div", "arc-detail-panel");
     panels.append(nowPanel, detailPanel);
 
-    root.append(frame, panels);
+    var toolbar = htmlEl("div", "arc-toolbar");
+    toolbar.setAttribute("role", "group");
+    toolbar.setAttribute("aria-label", "Group the arc by");
+    GROUPINGS.forEach(function (g) {
+      var btn = htmlEl("button", "arc-group-btn", g.label);
+      btn.setAttribute("type", "button");
+      btn.setAttribute("data-arc-group", g.id);
+      toolbar.appendChild(btn);
+    });
+
+    root.append(toolbar, frame, panels);
 
     s.scaffolded = true;
+    s.toolbar = toolbar;
     s.frame = frame;
     s.svg = svg;
     s.tooltip = tooltip;
@@ -193,6 +215,18 @@
     s.detailPanel = detailPanel;
     s.standalone = standalone;
     return s;
+  }
+
+  // Reflect the active grouping on the toolbar buttons.
+  function updateToolbar(s) {
+    if (!s || !s.toolbar) return;
+    var cur = s.groupBy || "tracks";
+    var btns = s.toolbar.querySelectorAll("[data-arc-group]");
+    Array.prototype.forEach.call(btns, function (b) {
+      var on = b.getAttribute("data-arc-group") === cur;
+      b.classList.toggle("arc-group-btn-active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
   }
 
   // ---- tooltip --------------------------------------------------------------
@@ -213,6 +247,7 @@
     if (ord) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "step " + ord + " of " + s.itemCount));
     if (item.date) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "date · " + item.date)); // reserved for date-backfill follow-up
     if (item.provenance) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "provenance · " + item.provenance));
+    if (item.author) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "actor · @" + item.author));
     // No clickable link in the tooltip — pointer-events:none on .arc-tooltip makes
     // anchors unclickable and confusing. The detail panel (on click) shows the link.
     tip.hidden = false;
@@ -397,13 +432,12 @@
     var s = root._arc;
     if (s.wired) return;
     var svg = s.svg;
-    var byId = indexItems(data);
 
     function itemFromEvent(event) {
       var node = closestArcItem(event.target);
       if (!node) return null;
       var id = node.getAttribute("data-arc-item");
-      return id != null ? byId[id] : null;
+      return id != null ? s.byId[id] : null;
     }
 
     svg.addEventListener("mouseover", function (event) {
@@ -432,20 +466,20 @@
         var trackId = collapse.getAttribute("data-arc-collapse");
         if (trackId != null) {
           s.collapsed[trackId] = !s.collapsed[trackId];
-          render(root, data);
+          render(root, s.data);
         }
         return;
       }
       var node = closestArcItem(event.target);
       if (node) {
         s.selectedId = node.getAttribute("data-arc-item");
-        render(root, data);
+        render(root, s.data);
         return;
       }
       // Background click clears the selection.
       if (s.selectedId != null) {
         s.selectedId = null;
-        render(root, data);
+        render(root, s.data);
       }
     });
 
@@ -460,13 +494,25 @@
         var trackId = collapse.getAttribute("data-arc-collapse");
         if (trackId != null) {
           s.collapsed[trackId] = !s.collapsed[trackId];
-          render(root, data);
+          render(root, s.data);
         }
         return;
       }
       s.selectedId = node.getAttribute("data-arc-item");
-      render(root, data);
+      render(root, s.data);
     });
+
+    // Grouping toolbar: switch the lane decomposition; re-render with current data.
+    if (s.toolbar) {
+      s.toolbar.addEventListener("click", function (event) {
+        var btn = (event.target && event.target.closest) ? event.target.closest("[data-arc-group]") : null;
+        if (!btn) return;
+        var dim = btn.getAttribute("data-arc-group") || "tracks";
+        if (dim === (s.groupBy || "tracks")) return;
+        s.groupBy = dim;
+        render(root, s.data);
+      });
+    }
 
     s.wired = true;
   }
@@ -480,6 +526,8 @@
     if (!Layout || !Layout.buildLayout || !Draw) return;
 
     var s = ensureScaffold(root);
+    s.data = data;                 // current data (baked, or merged-with-live overlay)
+    s.byId = indexItems(data);     // re-index each render so live markers stay interactive
 
     if (!s.ordinalById) {
       s.ordinalById = {};
@@ -505,7 +553,7 @@
         if (s.raf && typeof cancelAnimationFrame !== "undefined") cancelAnimationFrame(s.raf);
         var schedule = (typeof requestAnimationFrame !== "undefined")
           ? requestAnimationFrame : function (fn) { return setTimeout(fn, 16); };
-        s.raf = schedule(function () { render(root, data); });
+        s.raf = schedule(function () { render(root, s.data); });
       });
       s.resizeObserver.observe(s.frame); // observe the FRAME (container), not the svg, to avoid feedback
     }
@@ -515,7 +563,7 @@
 
     var width = Math.round(s.frame.getBoundingClientRect().width) || BASE_WIDTH;
 
-    var layout = Layout.buildLayout(data, { width: width, collapsed: s.collapsed });
+    var layout = Layout.buildLayout(data, { width: width, collapsed: s.collapsed, groupBy: s.groupBy || "tracks" });
 
     var svg = s.svg;
     svg.setAttribute("viewBox", "0 0 " + layout.contentWidth + " " + layout.contentHeight);
@@ -540,6 +588,7 @@
       }
     }
 
+    updateToolbar(s);
     renderNowPanel(root, data);
     renderDetailPanel(root, data);
 
@@ -555,13 +604,57 @@
 
   // ---- bootstrap ------------------------------------------------------------
 
+  // Live-freshness chip in the frame ("live · updated …" or "live · unavailable").
+  function setLiveChip(root, text, ok) {
+    var s = root._arc;
+    if (!s) return;
+    var chip = s.liveChip;
+    if (!chip) {
+      chip = htmlEl("div", "arc-live-chip");
+      s.liveChip = chip;
+      (s.frame || root).appendChild(chip);
+    }
+    chip.classList.toggle("arc-live-chip-warn", !ok);
+    chip.textContent = text;
+  }
+
+  // Fetch dist/inflight.json, overlay the live derived items via the ontology's
+  // pure mergeInflight, and re-render. Fail-safe: missing fetch, a non-ok response,
+  // a rejected promise, or a rejected merge all keep the baked render.
+  function loadInflight(roots, data) {
+    if (typeof fetch !== "function") return;            // no fetch (SSR/jsdom default) → baked only
+    var O = lib("CivOntology");
+    if (!O || !O.mergeInflight) return;
+    fetch("inflight.json", { cache: "no-store" })
+      .then(function (resp) { if (!resp || !resp.ok) throw new Error("inflight HTTP"); return resp.json(); })
+      .then(function (inflight) {
+        var merged = O.mergeInflight(data, inflight);
+        if (!merged.ok) {
+          if (typeof console !== "undefined") console.warn("inflight: overlay rejected (fail-closed):", merged.errors);
+          Array.prototype.forEach.call(roots, function (root) { setLiveChip(root, "live · unavailable", false); });
+          return;
+        }
+        var liveData = {};
+        for (var key in data) { if (Object.prototype.hasOwnProperty.call(data, key)) liveData[key] = data[key]; }
+        liveData.items = merged.items;                  // new array — baked data untouched
+        Array.prototype.forEach.call(roots, function (root) {
+          if (root._arc) root._arc.ordinalById = null;  // recompute ordinals over the merged set
+          render(root, liveData);
+          setLiveChip(root, "live · updated " + (merged.generated || "?"), true);
+        });
+      })
+      .catch(function (e) {
+        if (typeof console !== "undefined") console.warn("inflight: fetch failed (keeping baked):", e && e.message);
+        Array.prototype.forEach.call(roots, function (root) { setLiveChip(root, "live · unavailable", false); });
+      });
+  }
+
   function boot() {
     var data = (typeof window !== "undefined") ? window.CIVILIZATION_ARC_DATA : null;
     if (!data) return;
     var roots = document.querySelectorAll("[data-civilization-arc-nav]");
-    Array.prototype.forEach.call(roots, function (root) {
-      render(root, data);
-    });
+    Array.prototype.forEach.call(roots, function (root) { render(root, data); }); // baked first — never blank
+    loadInflight(roots, data);                                                    // then overlay live
   }
 
   if (typeof document !== "undefined") {

@@ -77,22 +77,35 @@
     var plotRight = contentWidth - GEOM.marginRight;
     var sx = buildRankScale(items, plotLeft, plotRight);
 
-    var beats = items.filter(function (i) { return i.type === "work" && i.provenance === "reconstructed"; });
-    var decisions = items.filter(function (i) { return i.type === "decision"; });
-    var goal = items.filter(function (i) { return i.type === "goal"; });
-    var gates = items.filter(function (i) { return i.type === "gate"; });
-    var work = items.filter(function (i) { return i.type === "work" && i.provenance === "derived"; });
-
-    // Build gate rows from the ontology contract (groupBy "gate" = by family),
-    // so every contract-valid gate lands in exactly one row — no hardcoded family list.
-    var gateLanes = O.groupBy(gates, "gate");
-    var defs = [
-      { id: "construction", label: "construction arc", rows: [{ id: "beats", label: "", items: beats.concat(decisions, goal) }] },
-      { id: "gates", label: "gates", rows: gateLanes.map(function (lane) {
-          return { id: "gate:" + lane.lane, label: lane.lane, items: lane.items };
-        }) },
-      { id: "worklist", label: "worklist", rows: [{ id: "work", label: "", items: work }] },
-    ];
+    var groupBy = opts.groupBy || "tracks";
+    var defs;
+    if (groupBy === "tracks") {
+      var beats = items.filter(function (i) { return i.type === "work" && i.provenance === "reconstructed"; });
+      var decisions = items.filter(function (i) { return i.type === "decision"; });
+      var goal = items.filter(function (i) { return i.type === "goal"; });
+      var gates = items.filter(function (i) { return i.type === "gate"; });
+      var work = items.filter(function (i) { return i.type === "work" && i.provenance === "derived"; });
+      // Build gate rows from the ontology contract (groupBy "gate" = by family),
+      // so every contract-valid gate lands in exactly one row — no hardcoded family list.
+      var gateLanes = O.groupBy(gates, "gate");
+      defs = [
+        { id: "construction", label: "construction arc", rows: [{ id: "beats", label: "", items: beats.concat(decisions, goal) }] },
+        { id: "gates", label: "gates", rows: gateLanes.map(function (lane) {
+            return { id: "gate:" + lane.lane, label: lane.lane, items: lane.items };
+          }) },
+        { id: "worklist", label: "worklist", rows: [{ id: "work", label: "", items: work }] },
+      ];
+    } else {
+      // Swimlane mode: one track per contract lane (status/repo/sprint/gate/actor),
+      // each a single unlabeled row, all sharing the one chronological seq axis.
+      defs = O.groupBy(items, groupBy).map(function (lane) {
+        return {
+          id: groupBy + ":" + lane.lane,
+          label: lane.lane,
+          rows: [{ id: groupBy + ":" + lane.lane + ":row", label: "", items: lane.items }],
+        };
+      });
+    }
 
     var y = GEOM.top;
     var tracks = defs.map(function (t) {

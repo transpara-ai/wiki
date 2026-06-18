@@ -100,30 +100,35 @@ test("narrow viewport: chart scrolls inside frame, not the page", async ({ page 
 });
 
 test('reflows on resize without horizontal page scroll', async ({ page }) => {
+  await page.route('**/inflight.json', route => route.fulfill({ status: 404, body: '' }));
   await page.goto('/civilization-arc.html');
   const svg = page.locator('.arc-svg');
   await expect(svg).toBeVisible();
 
-  // minContent = plotLeft + (distinctSeqs-1)*minCol + marginRight = 190 + 101*34 + 28 = 3652px.
-  // Below this floor the viewBox clamps to minContent; above it the viewBox is frame-driven.
-  const MIN_CONTENT = 3652;
   const viewBoxWidth = async () => {
     const vb = await svg.getAttribute('viewBox');
     return vb ? parseFloat(vb.split(' ')[2]) : 0;
   };
 
-  // Wide viewport (> minContent): poll until the reflow produces the frame-driven viewBox
-  // (width above the floor). Condition-based wait, not a fixed delay — the resize ->
-  // ResizeObserver -> requestAnimationFrame chain lands when it lands, never on a guessed clock.
-  await page.setViewportSize({ width: 4000, height: 900 });
-  await expect.poll(viewBoxWidth, { timeout: 5000 }).toBeGreaterThan(MIN_CONTENT);
+  // The live in-flight overlay can add many derived PR markers, so the content
+  // floor is data-dependent. Measure it at a narrow viewport instead of
+  // hardcoding the baked 109-item value.
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect.poll(viewBoxWidth, { timeout: 5000 }).toBeGreaterThan(390);
+  const minContent = await viewBoxWidth();
+
+  // Wide viewport (> current minContent): poll until the reflow produces the
+  // frame-driven viewBox. Condition-based wait, not a fixed delay — the resize
+  // -> ResizeObserver -> requestAnimationFrame chain lands when it lands.
+  await page.setViewportSize({ width: Math.ceil(minContent + 800), height: 900 });
+  await expect.poll(viewBoxWidth, { timeout: 5000 }).toBeGreaterThan(minContent);
   const wide = await svg.getAttribute('viewBox');
   const wideWidth = await viewBoxWidth();
 
   // Narrow viewport (< minContent): poll until the reflow shrinks the viewBox below the wide
   // width (it clamps back to the minContent floor). Proves the resize recomputed the viewBox,
   // and waiting for "shrank below wide" ignores any stale wide-era value.
-  await page.setViewportSize({ width: 3000, height: 900 });
+  await page.setViewportSize({ width: Math.max(390, Math.floor(minContent - 800)), height: 900 });
   await expect.poll(viewBoxWidth, { timeout: 5000 }).toBeLessThan(wideWidth);
   const narrow = await svg.getAttribute('viewBox');
 

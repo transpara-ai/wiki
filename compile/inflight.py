@@ -3,7 +3,10 @@
 
 Collects open and recently merged PRs across public GitHub dark-factory topic
 repos plus civilization-wiki, writes dist/inflight.json, and records omitted
-private repos and repo-level errors in the payload.
+private repos and repo/query-level errors in the payload.
+
+Like compile/refresh.py, this command does not commit, push, or merge. It uses
+the user's ambient gh auth and never writes tokens to inflight.json.
 """
 
 import datetime
@@ -11,11 +14,13 @@ import json
 import pathlib
 import subprocess
 
-# Live items join the ongoing "stewardship" sprint so future browser overlay
-# code can resolve the tooltip sprint label without adding a new axis tick.
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+OUT = ROOT / "dist" / "inflight.json"
+
+# Live items join the ongoing "stewardship" sprint so browser overlay code can
+# resolve the tooltip sprint label without adding a new axis tick.
 LIVE_SPRINT = "stewardship"
 MERGED_WINDOW_DAYS = 30
-OUT = pathlib.Path(__file__).resolve().parent.parent / "dist" / "inflight.json"
 PR_STATE_STATUS = {
     "OPEN": "active",
     "MERGED": "done",
@@ -47,7 +52,7 @@ def pr_to_item(pr, repo):
 
 
 def gh_json(args):
-    """Run `gh ... --json ...` and parse stdout. Raises on non-zero exit (fail-loud)."""
+    """Run `gh ... --json ...` and parse stdout. Raises on non-zero exit."""
     p = subprocess.run(["gh"] + args, capture_output=True, text=True)
     if p.returncode != 0:
         raise RuntimeError("gh %s failed: %s" % (" ".join(args), (p.stderr or "").strip()))
@@ -64,16 +69,23 @@ def resolve_repo_access():
                     "--json", "name,repositoryTopics,isPrivate"])
     repo_access = {}
     for r in rows:
+        name = r.get("name")
+        if not name:
+            continue
+        is_public = r.get("isPrivate") is False
         topics = [t.get("name") for t in (r.get("repositoryTopics") or [])]
         if "dark-factory" in topics:
-            repo_access[r["name"]] = (r.get("isPrivate") is False)
-    repo_access["civilization-wiki"] = True
+            repo_access[name] = is_public
+        if name == "civilization-wiki":
+            repo_access[name] = is_public
+    if "civilization-wiki" not in repo_access:
+        repo_access["civilization-wiki"] = False
     return repo_access
 
 
 def resolve_repos():
-    """Live dark-factory set (+ civilization-wiki), resolved from GitHub topics."""
-    return sorted(resolve_repo_access())
+    """Public live dark-factory set (+ civilization-wiki), resolved from GitHub topics."""
+    return public_repos(resolve_repo_access())
 
 
 def public_repos(repo_access):
@@ -86,22 +98,25 @@ _FIELDS = "number,title,author,url,state,isDraft"
 def collect_items(repos):
     items_by_id, errors = {}, []
     since = (datetime.date.today() - datetime.timedelta(days=MERGED_WINDOW_DAYS)).isoformat()
+
+    def ingest(repo, label, args):
+        # Run one gh query and fold its PRs in. A failure is recorded per query
+        # and never discards rows already collected from the repo's other query.
+        try:
+            for pr in gh_json(args):
+                item = pr_to_item(pr, repo)
+                if item is not None:
+                    items_by_id[item["id"]] = item
+        except Exception as e:
+            errors.append(error_summary("%s %s" % (repo, label), e))
+
     for repo in repos:
         slug = "transpara-ai/%s" % repo
-        try:
-            rows = gh_json(["pr", "list", "--repo", slug, "--state", "open",
-                            "--json", _FIELDS, "--limit", "100"])
-            rows += gh_json(["pr", "list", "--repo", slug, "--state", "merged",
-                             "--search", "merged:>=%s" % since,
-                             "--json", _FIELDS, "--limit", "100"])
-        except Exception as e:  # one bad repo never zeroes the whole overlay
-            errors.append(error_summary(repo, e))
-            continue
-        for pr in rows:
-            it = pr_to_item(pr, repo)
-            if it is None:
-                continue
-            items_by_id[it["id"]] = it
+        ingest(repo, "open", ["pr", "list", "--repo", slug, "--state", "open",
+                              "--json", _FIELDS, "--limit", "100"])
+        ingest(repo, "merged", ["pr", "list", "--repo", slug, "--state", "merged",
+                                "--search", "merged:>=%s" % since,
+                                "--json", _FIELDS, "--limit", "100"])
     return list(items_by_id.values()), errors
 
 
@@ -110,7 +125,7 @@ def main():
         repo_access = resolve_repo_access()
         repo_err = []
     except Exception as e:
-        repo_access, repo_err = {"civilization-wiki": True}, [error_summary("resolve_repo_access", e)]
+        repo_access, repo_err = {"civilization-wiki": False}, [error_summary("resolve_repo_access", e)]
     repos = public_repos(repo_access)
     items, errors = collect_items(repos)
     errors = repo_err + errors
