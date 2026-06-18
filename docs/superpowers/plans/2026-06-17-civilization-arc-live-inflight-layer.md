@@ -132,7 +132,7 @@ import datetime
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "dist" / "inflight.json"
-MERGED_WINDOW_DAYS = 7
+MERGED_WINDOW_DAYS = 30
 # Live items join the ongoing "stewardship" sprint (existing vocab → passes validateItems,
 # resolves the tooltip sprint label, adds no new axis tick).
 LIVE_SPRINT = "stewardship"
@@ -1053,7 +1053,7 @@ git commit -m "docs(arc): INFLIGHT.md ops + wire inflight tests into verify"
 **1. Spec coverage:**
 - Source = GitHub via `gh` (no token in code/browser) → Task 2 `gh_json`/`resolve_repos` + Global Constraints. ✓
 - Scope = dark-factory + civilization-wiki, live topic query → Task 2 `resolve_repos`. ✓
-- Unit = open PRs + merged-in-last-7-days → Task 2 `collect_items`. ✓
+- Unit = open PRs + merged-in-last-30-days → Task 2 `collect_items`. ✓
 - Item mapping = `type:work, provenance:derived`, no ontology allowlist change → Task 1 `pr_to_item`. ✓
 - Mechanism B = `inflight.py` → `dist/inflight.json`; page fetch + `validateItems` + overlay; fail-loud fallback; "updated N min ago" → Tasks 2, 3, 6. ✓
 - Renderer: group-by toggle incl. **actor**, per-item author badge → Task 3 (`actorOf`/`laneOf`), Task 4 (`buildLayout` lanes), Task 5 (toolbar), Task 6 (tooltip author). ✓

@@ -69,16 +69,23 @@ def resolve_repo_access():
                     "--json", "name,repositoryTopics,isPrivate"])
     repo_access = {}
     for r in rows:
+        name = r.get("name")
+        if not name:
+            continue
+        is_public = r.get("isPrivate") is False
         topics = [t.get("name") for t in (r.get("repositoryTopics") or [])]
         if "dark-factory" in topics:
-            repo_access[r["name"]] = (r.get("isPrivate") is False)
-    repo_access["civilization-wiki"] = True
+            repo_access[name] = is_public
+        if name == "civilization-wiki":
+            repo_access[name] = is_public
+    if "civilization-wiki" not in repo_access:
+        repo_access["civilization-wiki"] = False
     return repo_access
 
 
 def resolve_repos():
-    """Live dark-factory set (+ civilization-wiki), resolved from GitHub topics."""
-    return sorted(resolve_repo_access())
+    """Public live dark-factory set (+ civilization-wiki), resolved from GitHub topics."""
+    return public_repos(resolve_repo_access())
 
 
 def public_repos(repo_access):

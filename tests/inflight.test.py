@@ -53,6 +53,7 @@ class CollectAndShape(unittest.TestCase):
             {"name": "docs", "repositoryTopics": [{"name": "dark-factory"}], "isPrivate": True},
             {"name": "site", "repositoryTopics": [{"name": "dark-factory"}], "isPrivate": False},
             {"name": "hive", "repositoryTopics": [{"name": "dark-factory"}], "isPrivate": False},
+            {"name": "civilization-wiki", "repositoryTopics": [], "isPrivate": False},
             {"name": "tinstaller", "repositoryTopics": []},
         ]
         orig = inflight.gh_json
@@ -61,11 +62,25 @@ class CollectAndShape(unittest.TestCase):
             repos = inflight.resolve_repos()
         finally:
             inflight.gh_json = orig
-        self.assertEqual(repos, ["agent", "civilization-wiki", "docs", "hive", "site"])
+        self.assertEqual(repos, ["agent", "civilization-wiki", "hive", "site"])
 
     def test_public_repos_omits_private_collective_members(self):
         repo_access = {"agent": True, "civilization-wiki": True, "docs": False, "site": True}
         self.assertEqual(inflight.public_repos(repo_access), ["agent", "civilization-wiki", "site"])
+
+    def test_civilization_wiki_visibility_is_respected_when_reported(self):
+        rows = [
+            {"name": "civilization-wiki", "repositoryTopics": [], "isPrivate": True},
+            {"name": "hive", "repositoryTopics": [{"name": "dark-factory"}], "isPrivate": False},
+        ]
+        orig = inflight.gh_json
+        inflight.gh_json = lambda args: rows
+        try:
+            repo_access = inflight.resolve_repo_access()
+        finally:
+            inflight.gh_json = orig
+        self.assertEqual(repo_access["civilization-wiki"], False)
+        self.assertEqual(inflight.public_repos(repo_access), ["hive"])
 
     def test_missing_visibility_fails_closed(self):
         rows = [
@@ -82,7 +97,8 @@ class CollectAndShape(unittest.TestCase):
         self.assertEqual(repo_access["agent"], False)
         self.assertEqual(repo_access["site"], False)
         self.assertEqual(repo_access["hive"], True)
-        self.assertEqual(inflight.public_repos(repo_access), ["civilization-wiki", "hive"])
+        self.assertEqual(repo_access["civilization-wiki"], False)
+        self.assertEqual(inflight.public_repos(repo_access), ["hive"])
 
     def test_collect_items_records_repo_errors_without_dropping_good_repos(self):
         def fake_gh_json(args):
