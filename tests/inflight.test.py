@@ -163,6 +163,31 @@ class CollectAndShape(unittest.TestCase):
         self.assertEqual(payload["omitted_private_repo_count"], 1)
         self.assertNotIn("docs", json.dumps(payload))
 
+    def test_main_resolve_failure_fails_closed_for_wiki(self):
+        orig_access = inflight.resolve_repo_access
+        orig_collect = inflight.collect_items
+        orig_out = inflight.OUT
+        seen_repos = []
+        with tempfile.TemporaryDirectory() as td:
+            def fail_access():
+                raise RuntimeError("gh failed with private stderr")
+            inflight.resolve_repo_access = fail_access
+            inflight.collect_items = lambda repos: (seen_repos.extend(repos) or [], [])
+            inflight.OUT = pathlib.Path(td) / "inflight.json"
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    inflight.main()
+                payload = json.loads(inflight.OUT.read_text())
+            finally:
+                inflight.resolve_repo_access = orig_access
+                inflight.collect_items = orig_collect
+                inflight.OUT = orig_out
+        self.assertEqual(seen_repos, [])
+        self.assertEqual(payload["repos"], [])
+        self.assertEqual(payload["omitted_private_repo_count"], 1)
+        self.assertTrue(any("resolve_repo_access: RuntimeError" == e for e in payload["errors"]))
+        self.assertNotIn("private stderr", json.dumps(payload))
+
 
 if __name__ == "__main__":
     unittest.main()

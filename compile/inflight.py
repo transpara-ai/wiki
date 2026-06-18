@@ -125,7 +125,7 @@ def main():
         repo_access = resolve_repo_access()
         repo_err = []
     except Exception as e:
-        repo_access, repo_err = {"civilization-wiki": True}, [error_summary("resolve_repo_access", e)]
+        repo_access, repo_err = {"civilization-wiki": False}, [error_summary("resolve_repo_access", e)]
     repos = public_repos(repo_access)
     items, errors = collect_items(repos)
     errors = repo_err + errors

@@ -264,7 +264,7 @@ function mountWithFetch(inflightPayload, opts) {
 }
 
 const LIVE_PR = {
-  generated: "2026-06-17 14:00", window_days: 7, repos: ["hive"], errors: [],
+  generated: "2026-06-17 14:00", window_days: 30, repos: ["hive"], errors: [],
   items: [{ id: "pr-hive-1", code: "hive#1", type: "work", label: "fix: live overlay",
     status: "active", blocked: false, provenance: "derived", repo: ["hive"],
     sprint: "stewardship", href: "https://github.com/transpara-ai/hive/pull/1",
@@ -301,7 +301,7 @@ test('live overlay FAILS SAFE: a rejected fetch keeps the baked render, no live 
 
 test('live overlay FAILS SAFE on invalid live data: merge rejected → baked kept + chip warns', async () => {
   // Valid fetch, but a live item with an invalid status → mergeInflight returns ok:false.
-  const BAD = { generated: "g", window_days: 7, repos: ["hive"], errors: [],
+  const BAD = { generated: "g", window_days: 30, repos: ["hive"], errors: [],
     items: [{ id: "pr-bad-1", code: "bad#1", type: "work", label: "x", status: "merged", // ∉ STATUS_ORDER
       blocked: false, provenance: "derived", repo: ["hive"], sprint: "stewardship", author: "x", note: "x" }] };
   const dom = mountWithFetch(BAD);

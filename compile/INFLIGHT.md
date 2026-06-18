@@ -1,9 +1,9 @@
 # compile/INFLIGHT.md — live in-flight overlay
 
-`compile/inflight.py` writes `dist/inflight.json`: open + recently-merged PRs across the
-dark-factory stack (+ civilization-wiki), which the arc page fetches and overlays as live
-`derived` work at the sequence frontier. The grouping toolbar's **Actor** mode splits that
-live work into per-author lanes.
+`compile/inflight.py` writes `dist/inflight.json`: all open PRs plus PRs merged in the
+last 30 days across the public dark-factory stack (+ civilization-wiki), which the arc
+page fetches and overlays as live `derived` work at the sequence frontier. The grouping
+toolbar's **Actor** mode splits that live work into per-author lanes.
 
 ## Run
 
