@@ -95,6 +95,15 @@ test('groupBy repo dedupes a repeated repo so the item appears once in that lane
   const lanes = O.groupBy([{ id: 'd', repo: ['hive', 'hive'] }], 'repo');
   assert.strictEqual(lanes.find(l => l.lane === 'hive').items.length, 1);
 });
+
+test('groupBy repo routes a repo-less item to (other) so it is never silently dropped', () => {
+  // validateItems accepts repo: [] (it only checks Array), so the grouping must not
+  // make such an item vanish — it lands in (other), visible. (Fail-legible, never drop.)
+  const lanes = O.groupBy([{ id: 'norepo', repo: [] }], 'repo');
+  const other = lanes.find(l => l.lane === '(other)');
+  assert.ok(other && other.items.some(i => i.id === 'norepo'),
+    'an item with an empty repo array must appear in (other), not disappear');
+});
 test('groupBy gate lanes by family; family-less items fall in (ungated); fixed family order', () => {
   const lanes = O.groupBy(G, 'gate');
   // Lane = item.family (not item.gate); ordered by GATE_FAMILIES with (ungated) last.

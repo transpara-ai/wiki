@@ -145,6 +145,19 @@ test('zoom>1 widens content for detail; zoom<1 clamps to fit (never narrower tha
   assert.strictEqual(L.buildLayout(data, { width: 800, zoom: 0.4 }).contentWidth, 800);
 });
 
+test('detailWidth yields chip-safe column spacing (>=30px) regardless of frame width', () => {
+  // The controller derives its max zoom from detailWidth so that, even on a narrow
+  // frame, max zoom can always reach a readable detail view (>= the 30px worklist
+  // chip footprint). This replaces the removed minCol overflow guarantee.
+  const data = loadData();
+  const dw = L.detailWidth(data);
+  const n = L.buildLayout(data, { width: 800 }).scaleX.distinctCount;
+  const plotStart = L.GEOM.gutter + L.GEOM.plotPad;
+  const spacing = (dw - L.GEOM.marginRight - plotStart) / (n - 1);
+  assert.ok(L.GEOM.detailCol >= 30, 'detailCol must cover the 30px chip footprint');
+  assert.ok(spacing >= 30, 'detailWidth must give >=30px column spacing, got ' + spacing.toFixed(1));
+});
+
 // --- group-by lanes (Task 4) ---
 test('buildLayout default groupBy stays the 3 type tracks (unchanged)', () => {
   const lay = L.buildLayout(loadData(), { width: 1600, groupBy: 'tracks' });

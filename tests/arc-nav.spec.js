@@ -115,6 +115,26 @@ test("zooming in widens the arc past the frame (scroll for detail), page never s
   expect(bodyScrollsX).toBeFalsy();
 });
 
+test('max zoom reaches chip-safe detail spacing even on a narrow frame', async ({ page }) => {
+  // Regression guard (cross-family review): the fit model removed the old minCol
+  // overflow, so max zoom must be derived from the chip footprint — on a 390px frame
+  // it must still be able to widen the content far past the frame so ~100 columns get
+  // >= the 30px worklist-chip footprint. Persist a huge zoom; render clamps it to the
+  // derived max for the frame.
+  await page.addInitScript(() => { try { localStorage.setItem('civ-arc-zoom', '16'); } catch (e) {} });
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto('/civilization-arc.html');
+  const svg = page.locator('.arc-svg');
+  await expect(svg).toBeVisible();
+  const vbWidth = async () => {
+    const vb = await svg.getAttribute('viewBox');
+    return vb ? parseFloat(vb.split(' ')[2]) : 0;
+  };
+  // >=30px over ~100 distinct seqs is ~3200px of content; assert we blow well past
+  // the 390px frame into chip-safe detail territory.
+  await expect.poll(vbWidth, { timeout: 5000 }).toBeGreaterThan(3200);
+});
+
 test('reflows on resize: the fit viewBox tracks the frame width, page never scrolls X', async ({ page }) => {
   await page.goto('/civilization-arc.html');
   const svg = page.locator('.arc-svg');

@@ -13,7 +13,9 @@
 
   // plotPad insets the first column from the gutter so markers never collide with
   // the right-anchored track/sub-row labels that live in the gutter.
-  var GEOM = { gutter: 190, marginRight: 28, rowH: 30, trackPad: 8, trackGap: 10, top: 64, axisH: 56, plotPad: 18 };
+  // detailCol = chip-safe column width (>= the 30px worklist-chip footprint), used to
+  // derive the max zoom so a readable detail view is always reachable (see detailWidth).
+  var GEOM = { gutter: 190, marginRight: 28, rowH: 30, trackPad: 8, trackGap: 10, top: 64, axisH: 56, plotPad: 18, detailCol: 34 };
 
   // Ordinal rank scale: distinct seq values are placed at equidistant columns
   // (NOT proportional to seq magnitude). Items sharing a seq share a column.
@@ -59,6 +61,18 @@
     });
     ticks.sort(function (a, b) { return a.x - b.x; });
     return ticks;
+  }
+
+  // Chip-safe full-detail content width: the width at which every distinct-seq column
+  // is at least GEOM.detailCol wide. The controller derives its max zoom from this so a
+  // readable detail view is always reachable, no matter how narrow the frame is —
+  // replacing the old min-column overflow guarantee that was removed for fit-to-frame.
+  function detailWidth(data) {
+    var items = (data && data.items) || [];
+    var seqSet = {};
+    items.forEach(function (it) { if (it && typeof it.seq === "number") seqSet[it.seq] = 1; });
+    var distinctN = Object.keys(seqSet).length;
+    return GEOM.gutter + GEOM.plotPad + Math.max(0, distinctN - 1) * GEOM.detailCol + GEOM.marginRight;
   }
 
   function bySeq(a, b) { return a.seq - b.seq; }
@@ -138,7 +152,7 @@
     };
   }
 
-  var api = { GEOM: GEOM, GATE_FAMILIES: GATE_FAMILIES, buildRankScale: buildRankScale, buildLayout: buildLayout };
+  var api = { GEOM: GEOM, GATE_FAMILIES: GATE_FAMILIES, buildRankScale: buildRankScale, buildLayout: buildLayout, detailWidth: detailWidth };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (root) root.CivArcLayout = api;
 })(typeof window !== "undefined" ? window : null);

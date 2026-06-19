@@ -36,11 +36,16 @@
   // Higher zoom widens the content so columns spread out for detail (frame scrolls).
   // Persisted per-browser so a chosen detail level survives reloads.
   var ZOOM_KEY = "civ-arc-zoom";
-  var ZOOM_MIN = 1, ZOOM_MAX = 6, ZOOM_STEP = 0.5;
-  function clampZoom(z) {
+  var ZOOM_MIN = 1, ZOOM_STEP = 0.5, ZOOM_BASE_MAX = 4, ZOOM_ABS_MAX = 16;
+  // Snap to a 0.5 step and clamp to [1, maxZoom]. maxZoom is derived per render from
+  // the frame width + chip-safe detail width (see render) so the top of the zoom range
+  // always reaches a readable detail view even on a narrow frame; falls back to an
+  // absolute ceiling when no max is supplied (e.g. reading the persisted value).
+  function clampZoom(z, maxZoom) {
     if (typeof z !== "number" || isNaN(z)) return 1;
-    z = Math.round(z * 2) / 2;                     // snap to 0.5 steps
-    return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+    z = Math.round(z * 2) / 2;
+    var hi = (typeof maxZoom === "number" && maxZoom >= ZOOM_MIN) ? maxZoom : ZOOM_ABS_MAX;
+    return Math.max(ZOOM_MIN, Math.min(hi, z));
   }
   function readZoom() {
     try {
@@ -559,8 +564,9 @@
         if (zoomBtn) {
           var act = zoomBtn.getAttribute("data-arc-zoom");
           var z = s.zoom || 1;
-          if (act === "in") z = clampZoom(z + ZOOM_STEP);
-          else if (act === "out") z = clampZoom(z - ZOOM_STEP);
+          var hi = s.maxZoom || ZOOM_BASE_MAX;
+          if (act === "in") z = clampZoom(z + ZOOM_STEP, hi);
+          else if (act === "out") z = clampZoom(z - ZOOM_STEP, hi);
           else z = 1; // "fit" readout button resets to whole-arc view
           if (z !== s.zoom) { s.zoom = z; writeZoom(z); render(root, s.data); }
           return;
@@ -623,7 +629,13 @@
 
     var width = Math.round(s.frame.getBoundingClientRect().width) || BASE_WIDTH;
 
-    s.zoom = clampZoom(s.zoom || 1);
+    // Derive the max zoom from the frame width + chip-safe detail width, so a readable
+    // detail view is always reachable no matter how narrow the frame is (at least
+    // ZOOM_BASE_MAX on wide frames, capped at ZOOM_ABS_MAX).
+    var detailW = Layout.detailWidth ? Layout.detailWidth(data) : width;
+    var neededZoom = Math.ceil((detailW / Math.max(1, width)) / ZOOM_STEP) * ZOOM_STEP;
+    s.maxZoom = Math.min(ZOOM_ABS_MAX, Math.max(ZOOM_BASE_MAX, neededZoom));
+    s.zoom = clampZoom(s.zoom || 1, s.maxZoom);
     var layout = Layout.buildLayout(data, { width: width, collapsed: s.collapsed, groupBy: s.groupBy || "tracks", zoom: s.zoom });
 
     var svg = s.svg;

@@ -80,13 +80,16 @@
     var other = [], hasOther = false;
     (items || []).forEach(function (it) {
       var repos = (it && Array.isArray(it.repo)) ? it.repo : [];
-      var seen = {}, addedOther = false;
+      var seen = {}, addedOther = false, matchedCanon = false;
       repos.forEach(function (r) {
         if (seen[r]) return;                 // dedupe repeated repos within one item
         seen[r] = true;
-        if (REPO_CANON.indexOf(r) !== -1) { map[r].push(it); }
+        if (REPO_CANON.indexOf(r) !== -1) { map[r].push(it); matchedCanon = true; }
         else if (!addedOther) { other.push(it); addedOther = true; hasOther = true; }
       });
+      // A repo-less item (repo:[]) matches no lane above. validateItems accepts an
+      // empty repo array, so route it to (other) rather than silently dropping it.
+      if (!matchedCanon && !addedOther) { other.push(it); hasOther = true; }
     });
     var lanes = REPO_CANON.map(function (r) { return { lane: r, items: map[r] }; });
     if (hasOther) lanes.push({ lane: "(other)", items: other });
