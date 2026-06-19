@@ -110,7 +110,7 @@ test('markers within a row are placed in non-decreasing seq order', () => {
   for (let i = 1; i < xs.length; i++) assert.ok(xs[i] >= xs[i - 1]);
 });
 
-test('sprintTicks: one ordered tick per sprint, first is origin at plotLeft', () => {
+test('sprintTicks: one ordered tick per sprint, first is origin at plotStart', () => {
   const data = loadData();
   const lay = L.buildLayout(data, { width: 1600 });
   assert.strictEqual(lay.sprintTicks.length, 15);
@@ -118,39 +118,44 @@ test('sprintTicks: one ordered tick per sprint, first is origin at plotLeft', ()
     assert.ok(lay.sprintTicks[i].x >= lay.sprintTicks[i - 1].x);
   }
   assert.strictEqual(lay.sprintTicks[0].id, 'origin');
-  assert.strictEqual(lay.sprintTicks[0].x, lay.plotLeft);
+  assert.strictEqual(lay.sprintTicks[0].x, lay.plotStart);
   assert.strictEqual(lay.eras, undefined);
 });
 
-test('narrow width forces horizontal overflow via MIN_COL', () => {
-  const data = loadData();
-  const lay = L.buildLayout(data, { width: 300 });
-  const n = lay.scaleX.distinctCount;
-  assert.ok(lay.contentWidth >= lay.plotLeft + (n - 1) * L.GEOM.minCol + L.GEOM.marginRight);
-  assert.ok(lay.contentWidth > 300);
+test('the plot is inset from the gutter so the first marker never collides with track labels', () => {
+  const lay = L.buildLayout(loadData(), { width: 1200 });
+  assert.ok(L.GEOM.plotPad > 0, 'GEOM.plotPad must create a gap between the label gutter and the first column');
+  assert.strictEqual(lay.plotStart, lay.plotLeft + L.GEOM.plotPad);
+  assert.strictEqual(lay.sprintTicks[0].x, lay.plotStart, 'first column starts at the inset, not the gutter edge');
 });
 
-test('worklist chip footprint: adjacent worklist markers differ by at least chip width (>=30, i.e. >=minCol)', () => {
-  // At a deliberately narrow width the worklist row must still space adjacent markers
-  // at least 30px apart (the chip width, per civilizationArcDraw.js w=30).
-  // minCol=34 ≥ 30 guarantees this when the overflow scale is in effect.
+test('default zoom fits the viewport width (whole arc visible, no horizontal overflow)', () => {
+  // Presentational width fix: at the default zoom the entire arc fits the frame —
+  // contentWidth === frame width, so the page shows no horizontal scroll.
+  const lay = L.buildLayout(loadData(), { width: 900 });
+  assert.strictEqual(lay.contentWidth, 900);
+  assert.strictEqual(lay.plotRight, 900 - L.GEOM.marginRight);
+});
+
+test('zoom>1 widens content for detail; zoom<1 clamps to fit (never narrower than the frame)', () => {
   const data = loadData();
-  const lay = L.buildLayout(data, { width: 300 });
-  // Find the worklist track row.
-  const worklist = lay.tracks.find((t) => t.id === 'worklist');
-  assert.ok(worklist, 'worklist track must exist');
-  const workRow = worklist.rows[0];
-  assert.ok(workRow, 'worklist row[0] must exist');
-  const xs = workRow.items.map((p) => p.x);
-  // Adjacent placed markers must be at least minCol apart (≥30 for chip coverage).
-  for (let i = 1; i < xs.length; i++) {
-    assert.ok(
-      xs[i] - xs[i - 1] >= 30,
-      'adjacent worklist markers too close: ' + (xs[i] - xs[i - 1]).toFixed(2) + 'px (need >=30 for chip footprint)'
-    );
-  }
-  // Sanity: minCol itself must be >=30.
-  assert.ok(L.GEOM.minCol >= 30, 'GEOM.minCol must be >= 30 to cover chip footprint');
+  assert.strictEqual(L.buildLayout(data, { width: 800 }).contentWidth, 800);
+  assert.strictEqual(L.buildLayout(data, { width: 800, zoom: 2 }).contentWidth, 1600);
+  assert.strictEqual(L.buildLayout(data, { width: 800, zoom: 3 }).contentWidth, 2400);
+  assert.strictEqual(L.buildLayout(data, { width: 800, zoom: 0.4 }).contentWidth, 800);
+});
+
+test('detailWidth yields chip-safe column spacing (>=30px) regardless of frame width', () => {
+  // The controller derives its max zoom from detailWidth so that, even on a narrow
+  // frame, max zoom can always reach a readable detail view (>= the 30px worklist
+  // chip footprint). This replaces the removed minCol overflow guarantee.
+  const data = loadData();
+  const dw = L.detailWidth(data);
+  const n = L.buildLayout(data, { width: 800 }).scaleX.distinctCount;
+  const plotStart = L.GEOM.gutter + L.GEOM.plotPad;
+  const spacing = (dw - L.GEOM.marginRight - plotStart) / (n - 1);
+  assert.ok(L.GEOM.detailCol >= 30, 'detailCol must cover the 30px chip footprint');
+  assert.ok(spacing >= 30, 'detailWidth must give >=30px column spacing, got ' + spacing.toFixed(1));
 });
 
 // --- group-by lanes (Task 4) ---

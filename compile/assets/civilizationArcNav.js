@@ -32,6 +32,32 @@
     { id: "actor", label: "Actor" },
   ];
 
+  // Zoom: 1 == fit-to-frame (the default; whole arc visible, no horizontal scroll).
+  // Higher zoom widens the content so columns spread out for detail (frame scrolls).
+  // Persisted per-browser so a chosen detail level survives reloads.
+  var ZOOM_KEY = "civ-arc-zoom";
+  var ZOOM_MIN = 1, ZOOM_STEP = 0.5, ZOOM_BASE_MAX = 4, ZOOM_ABS_MAX = 16;
+  // Snap to a 0.5 step and clamp to [1, maxZoom]. maxZoom is derived per render from
+  // the frame width + chip-safe detail width (see render) so the top of the zoom range
+  // always reaches a readable detail view even on a narrow frame; falls back to an
+  // absolute ceiling when no max is supplied (e.g. reading the persisted value).
+  function clampZoom(z, maxZoom) {
+    if (typeof z !== "number" || isNaN(z)) return 1;
+    z = Math.round(z * 2) / 2;
+    var hi = (typeof maxZoom === "number" && maxZoom >= ZOOM_MIN) ? maxZoom : ZOOM_ABS_MAX;
+    return Math.max(ZOOM_MIN, Math.min(hi, z));
+  }
+  function readZoom() {
+    try {
+      var v = parseFloat(window.localStorage.getItem(ZOOM_KEY));
+      if (!isNaN(v)) return clampZoom(v);
+    } catch (e) { /* no localStorage (SSR/jsdom) → fit */ }
+    return 1;
+  }
+  function writeZoom(z) {
+    try { window.localStorage.setItem(ZOOM_KEY, String(z)); } catch (e) { /* ignore */ }
+  }
+
   // ---- small DOM helpers ----------------------------------------------------
 
   function htmlEl(name, className, text) {
@@ -156,7 +182,7 @@
   // ---- scaffold (built once per root, idempotent) ---------------------------
 
   function ensureScaffold(root) {
-    root._arc = root._arc || { collapsed: {}, selectedId: null, groupBy: "tracks" };
+    root._arc = root._arc || { collapsed: {}, selectedId: null, groupBy: "tracks", zoom: readZoom() };
     var s = root._arc;
     if (s.scaffolded && s.frame && s.svg && s.nowPanel && s.detailPanel && s.tooltip && s.toolbar) {
       return s;
@@ -203,10 +229,32 @@
       toolbar.appendChild(btn);
     });
 
+    // Zoom controls (presentational width): − / Fit / + . "Fit" shows the whole arc;
+    // + spreads columns for detail (the frame scrolls). The middle button is the live
+    // zoom readout and resets to Fit.
+    var zoomWrap = htmlEl("div", "arc-zoom");
+    zoomWrap.setAttribute("role", "group");
+    zoomWrap.setAttribute("aria-label", "Zoom the timeline");
+    var zoomOut = htmlEl("button", "arc-zoom-btn", "−");
+    zoomOut.setAttribute("type", "button");
+    zoomOut.setAttribute("data-arc-zoom", "out");
+    zoomOut.setAttribute("aria-label", "Zoom out");
+    var zoomReadout = htmlEl("button", "arc-zoom-btn arc-zoom-level", "Fit");
+    zoomReadout.setAttribute("type", "button");
+    zoomReadout.setAttribute("data-arc-zoom", "fit");
+    zoomReadout.setAttribute("aria-label", "Fit timeline to width");
+    var zoomIn = htmlEl("button", "arc-zoom-btn", "+");
+    zoomIn.setAttribute("type", "button");
+    zoomIn.setAttribute("data-arc-zoom", "in");
+    zoomIn.setAttribute("aria-label", "Zoom in");
+    zoomWrap.append(zoomOut, zoomReadout, zoomIn);
+    toolbar.appendChild(zoomWrap);
+
     root.append(toolbar, frame, panels);
 
     s.scaffolded = true;
     s.toolbar = toolbar;
+    s.zoomReadout = zoomReadout;
     s.frame = frame;
     s.svg = svg;
     s.tooltip = tooltip;
@@ -227,6 +275,12 @@
       b.classList.toggle("arc-group-btn-active", on);
       b.setAttribute("aria-pressed", on ? "true" : "false");
     });
+    if (s.zoomReadout) {
+      var z = s.zoom || 1;
+      s.zoomReadout.textContent = z <= 1 ? "Fit" : (Math.round(z * 100) + "%");
+      s.zoomReadout.setAttribute("aria-label",
+        z <= 1 ? "Fit timeline to width" : ("Zoom " + Math.round(z * 100) + "% — click to fit"));
+    }
   }
 
   // ---- tooltip --------------------------------------------------------------
@@ -505,7 +559,19 @@
     // Grouping toolbar: switch the lane decomposition; re-render with current data.
     if (s.toolbar) {
       s.toolbar.addEventListener("click", function (event) {
-        var btn = (event.target && event.target.closest) ? event.target.closest("[data-arc-group]") : null;
+        var hit = (event.target && event.target.closest) ? event.target : null;
+        var zoomBtn = hit ? hit.closest("[data-arc-zoom]") : null;
+        if (zoomBtn) {
+          var act = zoomBtn.getAttribute("data-arc-zoom");
+          var z = s.zoom || 1;
+          var hi = s.maxZoom || ZOOM_BASE_MAX;
+          if (act === "in") z = clampZoom(z + ZOOM_STEP, hi);
+          else if (act === "out") z = clampZoom(z - ZOOM_STEP, hi);
+          else z = 1; // "fit" readout button resets to whole-arc view
+          if (z !== s.zoom) { s.zoom = z; writeZoom(z); render(root, s.data); }
+          return;
+        }
+        var btn = hit ? hit.closest("[data-arc-group]") : null;
         if (!btn) return;
         var dim = btn.getAttribute("data-arc-group") || "tracks";
         if (dim === (s.groupBy || "tracks")) return;
@@ -563,12 +629,27 @@
 
     var width = Math.round(s.frame.getBoundingClientRect().width) || BASE_WIDTH;
 
-    var layout = Layout.buildLayout(data, { width: width, collapsed: s.collapsed, groupBy: s.groupBy || "tracks" });
+    // Derive the max zoom from the frame width + chip-safe detail width, so a readable
+    // detail view is always reachable no matter how narrow the frame is (at least
+    // ZOOM_BASE_MAX on wide frames, capped at ZOOM_ABS_MAX).
+    var detailW = Layout.detailWidth ? Layout.detailWidth(data) : width;
+    var neededZoom = Math.ceil((detailW / Math.max(1, width)) / ZOOM_STEP) * ZOOM_STEP;
+    s.maxZoom = Math.min(ZOOM_ABS_MAX, Math.max(ZOOM_BASE_MAX, neededZoom));
+    s.zoom = clampZoom(s.zoom || 1, s.maxZoom);
+    var layout = Layout.buildLayout(data, { width: width, collapsed: s.collapsed, groupBy: s.groupBy || "tracks", zoom: s.zoom });
 
     var svg = s.svg;
     svg.setAttribute("viewBox", "0 0 " + layout.contentWidth + " " + layout.contentHeight);
-    svg.style.width = layout.contentWidth + "px";
-    svg.style.height = layout.contentHeight + "px";
+    if (s.zoom > 1) {
+      // Zoomed in: render at content size so the frame scrolls horizontally for detail.
+      svg.style.width = layout.contentWidth + "px";
+      svg.style.height = layout.contentHeight + "px";
+    } else {
+      // Fit: clear the inline size so the CSS width:100% + viewBox scales the whole arc
+      // to the frame — the entire arc is visible with no horizontal scroll.
+      svg.style.width = "";
+      svg.style.height = "";
+    }
     clearNode(svg);
 
     Draw.drawAxis(svg, layout);
@@ -649,12 +730,25 @@
       });
   }
 
+  // Live overlay is OPT-IN. It needs a host that generates dist/inflight.json
+  // (currently parked — see civwiki-chart-current-direction memory). When it is not
+  // enabled we skip the fetch entirely: no 404, no "live · unavailable" chip — the
+  // baked arc stands on its own. Re-enable by setting window.CIV_ARC_LIVE = true or
+  // data-arc-live="true" on a root, once a generator is wired up.
+  function liveEnabled(roots) {
+    if (typeof window !== "undefined" && window.CIV_ARC_LIVE === true) return true;
+    for (var i = 0; i < roots.length; i++) {
+      if (roots[i].getAttribute && roots[i].getAttribute("data-arc-live") === "true") return true;
+    }
+    return false;
+  }
+
   function boot() {
     var data = (typeof window !== "undefined") ? window.CIVILIZATION_ARC_DATA : null;
     if (!data) return;
     var roots = document.querySelectorAll("[data-civilization-arc-nav]");
     Array.prototype.forEach.call(roots, function (root) { render(root, data); }); // baked first — never blank
-    loadInflight(roots, data);                                                    // then overlay live
+    if (liveEnabled(roots)) loadInflight(roots, data);                            // overlay live only when enabled
   }
 
   if (typeof document !== "undefined") {

@@ -65,8 +65,44 @@ test('groupBy status: fixed band order; each item in exactly one lane (blocked o
   const blocked = O.groupBy(G, 'status').find(l => l.lane === 'blocked');
   assert.deepStrictEqual(blocked.items.map(i => i.id), ['b']);
 });
-test('groupBy repo uses repo[0]', () => {
-  assert.deepStrictEqual(O.groupBy(G, 'repo').map(l => l.lane), ['docs', 'hive', 'site']);
+test('groupBy repo always shows every canonical dark-factory repo as a lane (even empty)', () => {
+  const lanes = O.groupBy(G, 'repo');
+  assert.deepStrictEqual(lanes.map(l => l.lane), ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work']);
+  // canonical repos with no items still appear, empty — never swamped or dropped
+  assert.strictEqual(lanes.find(l => l.lane === 'agent').items.length, 0);
+  assert.strictEqual(lanes.find(l => l.lane === 'eventgraph').items.length, 0);
+  assert.deepStrictEqual(lanes.find(l => l.lane === 'site').items.map(i => i.id), ['c', 'd']);
+});
+
+test('groupBy repo places a multi-repo item in EACH of its repo lanes (not just repo[0])', () => {
+  const item = { id: 'm', type: 'work', status: 'done', provenance: 'derived', seq: 1, sprint: 's', repo: ['docs', 'eventgraph'] };
+  const lanes = O.groupBy([item], 'repo');
+  assert.ok(lanes.find(l => l.lane === 'docs').items.includes(item));
+  assert.ok(lanes.find(l => l.lane === 'eventgraph').items.includes(item),
+    'eventgraph must appear even when it is the second repo');
+});
+
+test('groupBy repo routes non-canonical repos to (other), hidden when there are none', () => {
+  const canonOnly = O.groupBy([{ id: 'a', repo: ['site'] }], 'repo');
+  assert.ok(!canonOnly.some(l => l.lane === '(other)'), '(other) is hidden when every repo is canonical');
+  const withOther = O.groupBy([{ id: 'cw', repo: ['civilization-wiki'] }], 'repo');
+  const other = withOther.find(l => l.lane === '(other)');
+  assert.ok(other && other.items.length === 1, 'a non-canonical repo lands in (other)');
+  assert.strictEqual(withOther[withOther.length - 1].lane, '(other)', '(other) sorts after the canonical lanes');
+});
+
+test('groupBy repo dedupes a repeated repo so the item appears once in that lane', () => {
+  const lanes = O.groupBy([{ id: 'd', repo: ['hive', 'hive'] }], 'repo');
+  assert.strictEqual(lanes.find(l => l.lane === 'hive').items.length, 1);
+});
+
+test('groupBy repo routes a repo-less item to (other) so it is never silently dropped', () => {
+  // validateItems accepts repo: [] (it only checks Array), so the grouping must not
+  // make such an item vanish — it lands in (other), visible. (Fail-legible, never drop.)
+  const lanes = O.groupBy([{ id: 'norepo', repo: [] }], 'repo');
+  const other = lanes.find(l => l.lane === '(other)');
+  assert.ok(other && other.items.some(i => i.id === 'norepo'),
+    'an item with an empty repo array must appear in (other), not disappear');
 });
 test('groupBy gate lanes by family; family-less items fall in (ungated); fixed family order', () => {
   const lanes = O.groupBy(G, 'gate');

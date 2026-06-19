@@ -56,6 +56,20 @@
     return (typeof n === "number" && !isNaN(n)) ? n : (fallback || 0);
   }
 
+  // Short, bounded axis label: prefer the punchy part after the last "/", then
+  // truncate so the rotated sprint-tick labels stay legible and don't overrun the
+  // axis band or collide with each other when the arc is fit to a narrow frame.
+  // The full sprint label still shows in each marker's tooltip.
+  function axisTickLabel(label) {
+    var s = label == null ? "" : String(label);
+    var slash = s.lastIndexOf("/");
+    if (slash !== -1) s = s.slice(slash + 1);
+    s = s.replace(/^\s+|\s+$/g, "");
+    var MAX = 20;
+    if (s.length > MAX) s = s.slice(0, MAX - 1).replace(/\s+$/, "") + "…";
+    return s;
+  }
+
   // ---- axis -----------------------------------------------------------------
 
   function drawAxis(svg, layout) {
@@ -63,12 +77,13 @@
     var doc = svg.ownerDocument;
     var baseY = num(layout.contentHeight) - GEOM.axisH;
     var plotLeft = num(layout.plotLeft);
+    var plotStart = (layout.plotStart != null) ? num(layout.plotStart) : plotLeft;
     var plotRight = num(layout.plotRight);
 
-    // Baseline.
+    // Baseline (starts at the inset plot start so it aligns with the first tick).
     svg.appendChild(svgEl(doc, "line", {
       "class": "arc-axis-base",
-      x1: plotLeft, y1: baseY, x2: plotRight, y2: baseY,
+      x1: plotStart, y1: baseY, x2: plotRight, y2: baseY,
       stroke: "var(--color-text-tertiary)", "stroke-width": 1,
       "vector-effect": "non-scaling-stroke",
     }));
@@ -85,13 +100,13 @@
       }));
       var label = svgEl(doc, "text", {
         "class": "arc-sprint-tick-label",
-        x: tx, y: baseY + 9,
+        x: tx, y: baseY + 10,
         "text-anchor": "end",
-        "font-size": 9,
-        fill: "var(--color-text-tertiary)",
-        transform: "rotate(-40 " + tx + " " + (baseY + 9) + ")",
+        "font-size": 9.5,
+        fill: "var(--color-text-secondary)",
+        transform: "rotate(-38 " + tx + " " + (baseY + 10) + ")",
       });
-      label.textContent = t.label == null ? "" : String(t.label);
+      label.textContent = axisTickLabel(t.label);
       svg.appendChild(label);
     });
 

@@ -72,7 +72,7 @@ test("arc remains inside the mobile viewport", async ({ page }) => {
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
-test("narrow viewport: chart scrolls inside frame, not the page", async ({ page }) => {
+test("narrow viewport: the arc fits the frame at default zoom (no internal or page scroll)", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
   await page.goto("/index.html");
 
@@ -80,27 +80,62 @@ test("narrow viewport: chart scrolls inside frame, not the page", async ({ page 
   await expect(nav).toBeVisible();
   await expect(page.locator("svg.arc-svg")).toBeVisible();
 
-  // The .arc-frame must overflow internally (svg wider than frame).
-  const frameOverflows = await page.locator(".arc-frame").evaluate(function (el) {
-    return el.scrollWidth > el.clientWidth;
+  // At the default zoom ("Fit") the whole arc fits the frame — no internal scroll.
+  const frameOverflow = await page.locator(".arc-frame").evaluate(function (el) {
+    return el.scrollWidth - el.clientWidth;
   });
-  expect(frameOverflows).toBeTruthy();
+  expect(frameOverflow).toBeLessThanOrEqual(1);
 
-  // The document body must NOT scroll horizontally.
+  // The document body must NOT scroll horizontally either.
   const bodyScrollsX = await page.evaluate(function () {
     return document.body.scrollWidth > window.innerWidth + 1;
   });
   expect(bodyScrollsX).toBeFalsy();
-
-  // The SVG must be rendered at content width (well above the 390px viewport).
-  const svgWidth = await page.locator("svg.arc-svg").evaluate(function (el) {
-    return el.getBoundingClientRect().width;
-  });
-  expect(svgWidth).toBeGreaterThan(390);
 });
 
-test('reflows on resize without horizontal page scroll', async ({ page }) => {
-  await page.route('**/inflight.json', route => route.fulfill({ status: 404, body: '' }));
+test("zooming in widens the arc past the frame (scroll for detail), page never scrolls X", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 800 });
+  await page.goto("/civilization-arc.html");
+  const svg = page.locator("svg.arc-svg");
+  await expect(svg).toBeVisible();
+  const fitWidth = await svg.evaluate((el) => el.getBoundingClientRect().width);
+
+  // Zoom in a couple of steps via the toolbar "+".
+  const zoomIn = page.locator('[data-arc-zoom="in"]');
+  await zoomIn.click();
+  await zoomIn.click();
+  await expect
+    .poll(async () => svg.evaluate((el) => el.getBoundingClientRect().width), { timeout: 5000 })
+    .toBeGreaterThan(fitWidth);
+
+  // The frame now scrolls internally; the document body still does not scroll X.
+  const frameOverflows = await page.locator(".arc-frame").evaluate((el) => el.scrollWidth > el.clientWidth);
+  expect(frameOverflows).toBeTruthy();
+  const bodyScrollsX = await page.evaluate(() => document.body.scrollWidth > window.innerWidth + 1);
+  expect(bodyScrollsX).toBeFalsy();
+});
+
+test('max zoom reaches chip-safe detail spacing even on a narrow frame', async ({ page }) => {
+  // Regression guard (cross-family review): the fit model removed the old minCol
+  // overflow, so max zoom must be derived from the chip footprint — on a 390px frame
+  // it must still be able to widen the content far past the frame so ~100 columns get
+  // >= the 30px worklist-chip footprint. Persist a huge zoom; render clamps it to the
+  // derived max for the frame.
+  await page.addInitScript(() => { try { localStorage.setItem('civ-arc-zoom', '16'); } catch (e) {} });
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto('/civilization-arc.html');
+  const svg = page.locator('.arc-svg');
+  await expect(svg).toBeVisible();
+  const vbWidth = async () => {
+    const vb = await svg.getAttribute('viewBox');
+    return vb ? parseFloat(vb.split(' ')[2]) : 0;
+  };
+  // >=30px over ~100 distinct seqs is ~3200px of content; assert we blow well past
+  // the 390px frame into chip-safe detail territory.
+  await expect.poll(vbWidth, { timeout: 5000 }).toBeGreaterThan(3200);
+});
+
+test('reflows on resize: the fit viewBox tracks the frame width, page never scrolls X', async ({ page }) => {
   await page.goto('/civilization-arc.html');
   const svg = page.locator('.arc-svg');
   await expect(svg).toBeVisible();
@@ -110,30 +145,17 @@ test('reflows on resize without horizontal page scroll', async ({ page }) => {
     return vb ? parseFloat(vb.split(' ')[2]) : 0;
   };
 
-  // The live in-flight overlay can add many derived PR markers, so the content
-  // floor is data-dependent. Measure it at a narrow viewport instead of
-  // hardcoding the baked 109-item value.
-  await page.setViewportSize({ width: 390, height: 900 });
-  await expect.poll(viewBoxWidth, { timeout: 5000 }).toBeGreaterThan(390);
-  const minContent = await viewBoxWidth();
+  // Wide viewport → wide fit viewBox (the arc fills the frame).
+  await page.setViewportSize({ width: 1300, height: 900 });
+  await expect.poll(viewBoxWidth, { timeout: 5000 }).toBeGreaterThan(1000);
+  const wide = await viewBoxWidth();
 
-  // Wide viewport (> current minContent): poll until the reflow produces the
-  // frame-driven viewBox. Condition-based wait, not a fixed delay — the resize
-  // -> ResizeObserver -> requestAnimationFrame chain lands when it lands.
-  await page.setViewportSize({ width: Math.ceil(minContent + 800), height: 900 });
-  await expect.poll(viewBoxWidth, { timeout: 5000 }).toBeGreaterThan(minContent);
-  const wide = await svg.getAttribute('viewBox');
-  const wideWidth = await viewBoxWidth();
+  // Narrow viewport → the fit viewBox reflows smaller to track the frame.
+  await page.setViewportSize({ width: 520, height: 900 });
+  await expect.poll(viewBoxWidth, { timeout: 5000 }).toBeLessThan(wide);
+  const narrow = await viewBoxWidth();
 
-  // Narrow viewport (< minContent): poll until the reflow shrinks the viewBox below the wide
-  // width (it clamps back to the minContent floor). Proves the resize recomputed the viewBox,
-  // and waiting for "shrank below wide" ignores any stale wide-era value.
-  await page.setViewportSize({ width: Math.max(390, Math.floor(minContent - 800)), height: 900 });
-  await expect.poll(viewBoxWidth, { timeout: 5000 }).toBeLessThan(wideWidth);
-  const narrow = await svg.getAttribute('viewBox');
-
-  expect(narrow).not.toBe(wide); // viewBox width recomputed for the new container
-  // the chart frame scrolls horizontally, never the document body
+  expect(narrow).toBeLessThan(wide); // viewBox recomputed for the new container
   const bodyScrollsX = await page.evaluate(() => document.body.scrollWidth > window.innerWidth + 1);
   expect(bodyScrollsX).toBeFalsy();
 });

@@ -248,10 +248,13 @@ test('clicking "Status" regroups the lanes and marks the button active', () => {
 });
 
 // --- live overlay (Task 6) ---
+// The live overlay is OPT-IN (it needs a host that generates inflight.json). These
+// tests exercise the overlay itself, so they turn it on via window.CIV_ARC_LIVE.
 function mountWithFetch(inflightPayload, opts) {
   const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav></div>', {
     pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
   });
+  dom.window.CIV_ARC_LIVE = true;                 // enable the opt-in live overlay for these tests
   dom.window.fetch = function () {
     if (opts && opts.reject) return Promise.reject(new Error("network"));
     return Promise.resolve({ ok: true, json: function () { return Promise.resolve(inflightPayload); } });
@@ -262,6 +265,24 @@ function mountWithFetch(inflightPayload, opts) {
   dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
   return dom;
 }
+
+test('live overlay is OPT-IN: with no flag the fetch never fires and no chip appears', async () => {
+  const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav></div>', {
+    pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
+  });
+  let fetched = false;
+  dom.window.fetch = function () { fetched = true; return Promise.resolve({ ok: false }); };
+  // NOTE: window.CIV_ARC_LIVE intentionally unset → overlay disabled.
+  ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
+   "civilizationArcDraw.js", "civilizationArcNav.js"].forEach((f) =>
+    dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
+  dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
+  await new Promise((r) => setTimeout(r, 0));
+  const nav = dom.window.document.querySelector(".civilization-arc-nav");
+  assert.strictEqual(fetched, false, "no inflight.json fetch when the overlay is not enabled");
+  assert(!nav.querySelector(".arc-live-chip"), "no live chip when the overlay is disabled");
+  assert(nav.querySelectorAll(".arc-item-group").length > 0, "the baked arc still renders on its own");
+});
 
 const LIVE_PR = {
   generated: "2026-06-17 14:00", window_days: 30, repos: ["hive"], errors: [],

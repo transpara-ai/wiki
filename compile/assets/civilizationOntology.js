@@ -19,6 +19,12 @@
     "Release & security gates (v3.9)",
     "(ungated)",
   ];
+  // Canonical dark-factory repos (GitHub topic "dark-factory"), resolved live
+  // 2026-06-19 via: gh repo list transpara-ai --json name,repositoryTopics
+  //   --jq '.[] | select(.repositoryTopics[]?.name=="dark-factory") | .name'
+  // The "repo" grouping always shows ALL of these as lanes (even empty) so no repo
+  // is ever swamped or dropped; repos outside the set fall into "(other)".
+  var REPO_CANON = ["agent", "docs", "eventgraph", "hive", "site", "work"];
 
   // "now" on the sequence axis = the frontier: the largest seq among settled (done/active) items.
   function deriveNow(items) {
@@ -63,7 +69,35 @@
     if (dim === "actor") return actorOf(it);
     return "(none)";
   }
+  // Repo grouping is a COMPLETE canonical enumeration with multi-membership: every
+  // dark-factory repo gets a lane (even with zero items), an item appears in EACH of
+  // its repos (not just repo[0]), and non-canonical repos collapse into "(other)"
+  // (shown only when non-empty). This is the allowlist-not-denylist fix for the old
+  // repo[0] behavior that silently dropped under-weighted repos like eventgraph/agent.
+  function groupByRepo(items) {
+    var map = {};
+    REPO_CANON.forEach(function (r) { map[r] = []; });
+    var other = [], hasOther = false;
+    (items || []).forEach(function (it) {
+      var repos = (it && Array.isArray(it.repo)) ? it.repo : [];
+      var seen = {}, addedOther = false, matchedCanon = false;
+      repos.forEach(function (r) {
+        if (seen[r]) return;                 // dedupe repeated repos within one item
+        seen[r] = true;
+        if (REPO_CANON.indexOf(r) !== -1) { map[r].push(it); matchedCanon = true; }
+        else if (!addedOther) { other.push(it); addedOther = true; hasOther = true; }
+      });
+      // A repo-less item (repo:[]) matches no lane above. validateItems accepts an
+      // empty repo array, so route it to (other) rather than silently dropping it.
+      if (!matchedCanon && !addedOther) { other.push(it); hasOther = true; }
+    });
+    var lanes = REPO_CANON.map(function (r) { return { lane: r, items: map[r] }; });
+    if (hasOther) lanes.push({ lane: "(other)", items: other });
+    return lanes;
+  }
+
   function groupBy(items, dim) {
+    if (dim === "repo") return groupByRepo(items);
     var map = {}, order = [];
     items.forEach(function (it) {
       var lane = laneOf(it, dim);
