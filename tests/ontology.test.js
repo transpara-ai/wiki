@@ -271,10 +271,10 @@ test('validateItems accepts an ISO date + repo#n ref on a done item', () => {
   assert.strictEqual(O.validateItems([datedItem({ date: '2026-06-17', ref: 'docs#138' })]).ok, true);
 });
 
-test('arc data: exactly the 21 done items carry verified backfilled dates + provenance refs', () => {
+test('arc data: exactly the 23 done items carry verified backfilled dates + provenance refs', () => {
   const items = loadData().items;
   const dated = items.filter(i => i.date != null);
-  assert.strictEqual(dated.length, 21, 'exactly 21 dated items; got ' + dated.length);
+  assert.strictEqual(dated.length, 23, 'exactly 23 dated items; got ' + dated.length);
   dated.forEach(i => {
     assert.strictEqual(i.status, 'done', i.code + ' is dated but not done');
     assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(i.date), i.code + ' date not ISO: ' + i.date);
@@ -286,7 +286,9 @@ test('arc data: exactly the 21 done items carry verified backfilled dates + prov
   assert.strictEqual(by('Gate-K').date, '2026-06-17');
   assert.strictEqual(by('Trace').date, '2026-05-14');
   assert.strictEqual(by('Gate-F').date, '2026-06-01');
-  assert.strictEqual(by('N6').date, '2026-06-12');
+  assert.strictEqual(by('N6').date, '2026-06-18');    // promote-to-canonical = docs#142 (not the #127 seed)
+  assert.strictEqual(by('v4.0').date, '2026-06-12');  // v4.0 seed acceptance = docs#127
+  assert.strictEqual(by('Gate-L').date, '2026-06-18'); // reconciliation certified = docs#141
   // the contract rule holds over the whole baked set
   assert.strictEqual(O.validateItems(items).ok, true);
 });

@@ -619,8 +619,10 @@
       {
         id: "v40",
         code: "v4.0",
+        ref: "docs#127",
+        date: "2026-06-12",
         type: "gate",
-        label: "v4.0 doctrine seed accepted; folder remains candidate",
+        label: "v4.0 doctrine seed accepted (#127); later promoted to canonical via Gate-L",
         status: "done",
         blocked: false,
         blocked_reason: null,
@@ -1761,6 +1763,8 @@
       {
         id: "gate-l",
         code: "Gate-L",
+        ref: "docs#141",
+        date: "2026-06-18",
         type: "gate",
         label: "v3.9→v4.0 reconciliation certified (carries v3.9 forward, does not retire it)",
         status: "done",
@@ -1775,7 +1779,7 @@
         family: "v4.0 (K-S)",
         deps: [],
         href: "gate-l.html",
-        note: "v4.0 Event 2 (gate-l.md): the documentation-coverage matrix certifying every load-bearing v3.9 artifact has a reconciled place in v4.0 — additive, carries v3.9 INTO v4.0; defined and unsatisfied, needs human authorization, not a run. May proceed in parallel with Gate K (no autonomy implication).",
+        note: "Gate-L (v4.0 Event 2, gate-l.md): the documentation-coverage matrix certifying every load-bearing v3.9 artifact has a reconciled place in v4.0 — additive, carries v3.9 INTO v4.0. CERTIFIED via Event 2 reconciliation (docs#141) and v4.0 canonical acceptance (docs#142) on 2026-06-18; ran in parallel with Gate K (no autonomy implication).",
       },
       {
         id: "gate-m",
@@ -2108,8 +2112,8 @@
       {
         id: "n6",
         code: "N6",
-        ref: "docs#127",
-        date: "2026-06-12",
+        ref: "docs#142",
+        date: "2026-06-18",
         type: "work",
         label: "Put v3.9 to bed and promote v4.0 to canonical",
         status: "done",
@@ -2124,7 +2128,7 @@
         family: "v4.0 (K-S)",
         deps: ["n5"],
         href: "v4-0.html",
-        note: "v4.0 seed doctrine (DF-V4.0-ADR-001) was accepted via #127 (2026-06-12), but v4.0 stays a candidate folder and v3.9 remains the operative baseline - folder-canonical acceptance is structurally unmet (reconciliation coverage matrix). With N5 closed for pre-live by waiver, promotion still requires the Gate L reconciliation/acceptance path and explicit human authorization.",
+        note: "v4.0 seed doctrine (DF-V4.0-ADR-001) was accepted via #127 (2026-06-12); v3.9→v4.0 reconciliation was then certified (Gate-L, Event 2 docs#141) and v4.0 was accepted as the canonical docs baseline via docs#142 (2026-06-18), carrying v3.9 forward. v3.9 is put to bed and v4.0 is promoted to canonical.",
       },
       {
         id: "n7",
@@ -2405,12 +2409,12 @@
         },
         {
           order: "N6",
-          status: "next",
+          status: "done",
           work: "Put v3.9 to bed and promote v4.0 to canonical",
           surface: "transpara-ai/docs",
           gate: "v4.0 authorization packet",
           href: "v4-0.html",
-          finish: "v4.0 seed doctrine (DF-V4.0-ADR-001) was accepted via #127 (2026-06-12), but v4.0 stays a candidate folder and v3.9 remains the operative baseline - folder-canonical acceptance is structurally unmet (reconciliation coverage matrix). With N5 closed for pre-live by waiver, promotion still requires the Gate L reconciliation/acceptance path and explicit human authorization.",
+          finish: "v4.0 seed doctrine (DF-V4.0-ADR-001) was accepted via #127 (2026-06-12); reconciliation was certified (Gate-L, Event 2 docs#141) and v4.0 was accepted as the canonical docs baseline via docs#142 (2026-06-18). v3.9 is put to bed (carried forward) and v4.0 is promoted to canonical.",
         },
         {
           order: "N7",

@@ -28,6 +28,7 @@
     { id: "status", label: "Status" },
     { id: "repo", label: "Repo" },
     { id: "sprint", label: "Sprint" },
+    { id: "gate", label: "Gate" },
     { id: "actor", label: "Actor" },
   ];
 

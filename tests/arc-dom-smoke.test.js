@@ -242,11 +242,11 @@ test('javascript: href is never assigned to any rendered link (XSS hardening)', 
 });
 
 // --- grouping toolbar (Task 5) ---
-test('grouping toolbar: five group buttons render, Tracks active by default', () => {
+test('grouping toolbar: six group buttons render, Tracks active by default', () => {
   const { nav } = mountArc();
   const btns = [...nav.querySelectorAll('[data-arc-group]')];
   assert.deepStrictEqual(btns.map(b => b.getAttribute('data-arc-group')),
-    ['tracks', 'status', 'repo', 'sprint', 'actor']);
+    ['tracks', 'status', 'repo', 'sprint', 'gate', 'actor']);
   assert.strictEqual(nav.querySelector('.arc-group-btn-active').getAttribute('data-arc-group'), 'tracks');
   assert.strictEqual(nav.querySelectorAll('.arc-track-band').length, 3); // default unchanged
 });
@@ -257,6 +257,14 @@ test('clicking "Status" regroups the lanes and marks the button active', () => {
   const labels = [...nav.querySelectorAll('.arc-track-label')].map(t => t.textContent);
   assert.ok(labels.includes('done') && labels.includes('planned'), 'status lanes present; got ' + labels.join(' | '));
   assert.strictEqual(nav.querySelector('.arc-group-btn-active').getAttribute('data-arc-group'), 'status');
+});
+
+test('clicking "Gate" regroups the lanes by gate family (the dimension is reachable in the UI)', () => {
+  const { nav, dom } = mountArc();
+  nav.querySelector('[data-arc-group="gate"]').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  const labels = [...nav.querySelectorAll('.arc-track-label')].map(t => t.textContent);
+  assert.ok(labels.includes('v4.0 (K-S)'), 'gate-family lanes present; got ' + labels.join(' | '));
+  assert.strictEqual(nav.querySelector('.arc-group-btn-active').getAttribute('data-arc-group'), 'gate');
 });
 
 test('Repo view shows Civilization/Governance group headers, 8 named lanes, no (other)', () => {
