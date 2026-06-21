@@ -19,6 +19,22 @@ test("homepage arc renders with tracks structure", async ({ page }) => {
   expect(count).toBeGreaterThan(0);
 });
 
+test("homepage arc displays operation progress evidence", async ({ page }) => {
+  await page.goto("/index.html");
+
+  const panel = page.locator(".arc-progress-panel");
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText("Progress evidence snapshot");
+  await expect(panel).toContainText("Test 001 Remains YELLOW");
+  await expect(panel).toContainText("not live truth");
+  await expect(panel).not.toContainText(/operator_notes|raw_issue_body/);
+  await expect(panel).not.toContainText(/transpara-ai\/docs|docs#[0-9]+/i);
+
+  await expect(panel.locator('a[href="https://github.com/transpara-ai/civilization-operation/pull/28"]')).toBeVisible();
+  await expect(panel.locator('a[href="https://github.com/transpara-ai/civilization-operation/issues/26"]')).toBeVisible();
+  await expect(panel.locator('a[href*="github.com/transpara-ai/docs"]')).toHaveCount(0);
+});
+
 test("marker click populates the detail panel", async ({ page }) => {
   await page.goto("/index.html");
 

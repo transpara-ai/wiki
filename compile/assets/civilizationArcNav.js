@@ -143,6 +143,30 @@
     return String(value || "").replace(/[-_]+/g, " ");
   }
 
+  function progressEvidence() {
+    return (typeof window !== "undefined") ? window.CIVILIZATION_PROGRESS_EVIDENCE : null;
+  }
+
+  function progressSource() {
+    return (typeof window !== "undefined") ? window.CIVILIZATION_PROGRESS_EVIDENCE_SOURCE : null;
+  }
+
+  function appendSafeLink(parent, href, label, className) {
+    var safe = safeHref(href);
+    if (!safe) {
+      parent.appendChild(document.createTextNode(label || ""));
+      return null;
+    }
+    var link = htmlEl("a", className || "", label || safe);
+    link.href = safe;
+    if (isExternalHref(safe)) {
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+    }
+    parent.appendChild(link);
+    return link;
+  }
+
   // The current focus = the blocked frontier:
   //   currentGate    — the blocked gate nearest the now-frontier (e.g. Gate-K)
   //   blockingWork   — the blocked derived-work item (e.g. N5)
@@ -184,7 +208,7 @@
   function ensureScaffold(root) {
     root._arc = root._arc || { collapsed: {}, selectedId: null, groupBy: "tracks", zoom: readZoom() };
     var s = root._arc;
-    if (s.scaffolded && s.frame && s.svg && s.nowPanel && s.detailPanel && s.tooltip && s.toolbar) {
+    if (s.scaffolded && s.frame && s.svg && s.nowPanel && s.detailPanel && s.tooltip && s.toolbar && s.progressPanel) {
       return s;
     }
 
@@ -219,6 +243,9 @@
     var detailPanel = htmlEl("div", "arc-detail-panel");
     panels.append(nowPanel, detailPanel);
 
+    var progressPanel = htmlEl("section", "arc-progress-panel");
+    progressPanel.setAttribute("aria-label", "Progress evidence snapshot");
+
     var toolbar = htmlEl("div", "arc-toolbar");
     toolbar.setAttribute("role", "group");
     toolbar.setAttribute("aria-label", "Group the arc by");
@@ -250,7 +277,7 @@
     zoomWrap.append(zoomOut, zoomReadout, zoomIn);
     toolbar.appendChild(zoomWrap);
 
-    root.append(toolbar, frame, panels);
+    root.append(toolbar, frame, panels, progressPanel);
 
     s.scaffolded = true;
     s.toolbar = toolbar;
@@ -261,6 +288,7 @@
     s.panels = panels;
     s.nowPanel = nowPanel;
     s.detailPanel = detailPanel;
+    s.progressPanel = progressPanel;
     s.standalone = standalone;
     return s;
   }
@@ -471,6 +499,105 @@
     }
   }
 
+  // ---- progress evidence snapshot ------------------------------------------
+
+  function appendList(parent, className, values) {
+    if (!Array.isArray(values) || !values.length) return;
+    var list = htmlEl("ul", className);
+    values.forEach(function (value) {
+      list.appendChild(htmlEl("li", "", value));
+    });
+    parent.appendChild(list);
+  }
+
+  function renderProgressEvidence(root) {
+    var s = root._arc;
+    var panel = s && s.progressPanel;
+    if (!panel) return;
+    clearNode(panel);
+
+    var payload = progressEvidence();
+    var privacy = payload && payload.privacy;
+    if (!payload || payload.schema_version !== 1 || !privacy || privacy.public_safe !== true) {
+      panel.appendChild(htmlEl("h3", "", "Progress evidence snapshot"));
+      panel.appendChild(htmlEl("p", "arc-progress-note", "No public-safe progress evidence export is available."));
+      return;
+    }
+
+    var source = progressSource() || {};
+    var items = Array.isArray(payload.items) ? payload.items : [];
+    var omitted = Array.isArray(payload.omitted_sources) ? payload.omitted_sources : [];
+
+    var header = htmlEl("div", "arc-progress-header");
+    var titleWrap = htmlEl("div", "");
+    titleWrap.appendChild(htmlEl("div", "arc-panel-eyebrow", "operation export"));
+    titleWrap.appendChild(htmlEl("h3", "", "Progress evidence snapshot"));
+    titleWrap.appendChild(htmlEl(
+      "p",
+      "arc-progress-note",
+      "Display-only snapshot from civilization-operation. It is not live truth, not gate closure, and not production authority."
+    ));
+    header.appendChild(titleWrap);
+
+    var sourceBox = htmlEl("p", "arc-progress-source");
+    sourceBox.appendChild(document.createTextNode("source "));
+    appendSafeLink(sourceBox, source.operation_pr_url, source.operation_pr || "operation export", "arc-progress-link");
+    if (source.operation_merge_commit) {
+      sourceBox.appendChild(document.createTextNode(" at " + String(source.operation_merge_commit).slice(0, 12)));
+    }
+    header.appendChild(sourceBox);
+    panel.appendChild(header);
+
+    var metrics = htmlEl("dl", "arc-progress-metrics");
+    [
+      ["snapshot", payload.generated_at || "unknown"],
+      ["items", String(items.length)],
+      ["omitted", String(omitted.length)],
+      ["privacy", (payload.privacy && payload.privacy.projection_policy) || "unknown"],
+    ].forEach(function (row) {
+      metrics.appendChild(htmlEl("dt", "", row[0]));
+      metrics.appendChild(htmlEl("dd", "", row[1]));
+    });
+    panel.appendChild(metrics);
+
+    var grid = htmlEl("div", "arc-progress-grid");
+    items.forEach(function (item) {
+      var card = htmlEl("article", "arc-progress-item");
+      var head = htmlEl("div", "arc-progress-item-head");
+      head.appendChild(htmlEl("strong", "", item.title || item.id || "Progress item"));
+      head.appendChild(htmlEl("span", "arc-progress-chip", [item.kind, item.state].filter(Boolean).join(" / ")));
+      card.appendChild(head);
+      card.appendChild(htmlEl("p", "arc-progress-summary", item.public_summary || ""));
+
+      var meta = htmlEl("p", "arc-progress-meta");
+      meta.appendChild(document.createTextNode((item.source_repo || "unknown") + " "));
+      appendSafeLink(meta, item.source_url, item.source_ref || "source", "arc-progress-link");
+      if (item.evidence_state || item.authority_state) {
+        meta.appendChild(document.createTextNode(" - " + [item.evidence_state, item.authority_state].filter(Boolean).join(" / ")));
+      }
+      card.appendChild(meta);
+
+      appendList(card, "arc-progress-list arc-progress-blockers", item.blockers);
+      appendList(card, "arc-progress-list", item.limitations);
+      grid.appendChild(card);
+    });
+    panel.appendChild(grid);
+
+    if (omitted.length) {
+      var omittedSection = htmlEl("section", "arc-progress-omitted");
+      omittedSection.appendChild(htmlEl("h4", "", "Omitted sources"));
+      var omittedList = htmlEl("ul", "");
+      omitted.forEach(function (entry) {
+        var li = htmlEl("li", "");
+        li.appendChild(htmlEl("strong", "", entry.title || entry.id || "Omitted source"));
+        li.appendChild(document.createTextNode(" - " + (entry.reason || "omitted") + ": " + (entry.public_summary || "")));
+        omittedList.appendChild(li);
+      });
+      omittedSection.appendChild(omittedList);
+      panel.appendChild(omittedSection);
+    }
+  }
+
   // ---- event wiring (delegated, attached once) ------------------------------
 
   function closestArcItem(target) {
@@ -672,6 +799,7 @@
     updateToolbar(s);
     renderNowPanel(root, data);
     renderDetailPanel(root, data);
+    renderProgressEvidence(root);
 
     wireEvents(root, data);
   }
