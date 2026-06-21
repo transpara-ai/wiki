@@ -29,16 +29,17 @@ on disk this run.
 |---|---|---|---|
 | `searles` | `raw/searles/` | **Yes** | `all-posts-1.md` present (43 posts) |
 | `first_party` | (read in place — see below) | **No local mirror** | read from `docs/dark-factory`; `raw/transpara/` holds only `.gitkeep` |
-| `open_brain` | `raw/open-brain/` | **Yes, stale** | `2026-{03,04,05,06}.md` — ~1,193 thoughts through 2026-06-13; live OpenBrain checked 2026-06-21 reports 2,338 thoughts and June 21 captures |
+| `open_brain` | `raw/open-brain/` | **Yes, stale** | `2026-{03,04,05,06}.md` — 1,175 thoughts through 2026-06-13; live OpenBrain checked 2026-06-21 reports 2,338 thoughts and June 21 captures |
 | `upstream_context` | `raw/investigations/` | **No** | empty but for `.gitkeep` — Phase 2 (per `DESIGN.md`) |
 
-**What this means for trust:** only the `searles` tier is reproducible from this
-repo alone today. The `first_party` corpus was read **in place** from a sibling
-checkout (Run-1 compiled the arc spine directly against `docs/dark-factory`
-rather than copying it into `raw/transpara/` first); the `open_brain` tier **has a
-committed mirror** (`raw/open-brain/2026-{03..06}.md`, ~1,193 thoughts through
-2026-06-13) but is **not current with the live store** as of 2026-06-21, while
-`upstream_context` is still **declared but unfilled**. Do not read an empty
+**What this means for trust:** the `searles` tier and the stale `open_brain`
+mirror are reproducible from this repo alone today. The `first_party` corpus was
+read **in place** from a sibling checkout (Run-1 compiled the arc spine directly
+against `docs/dark-factory` rather than copying it into `raw/transpara/` first);
+the `open_brain` tier **has a committed mirror** (`raw/open-brain/2026-{03..06}.md`,
+1,175 thoughts through 2026-06-13) but is **not current with the live store** as
+of 2026-06-21, while `upstream_context` is still **declared but unfilled**. Do
+not read an empty
 `raw/` subdirectory as "no such source" — read it as "not yet mirrored." The
 nightly keep-current job in `DESIGN.md` is what will populate them.
 
@@ -137,16 +138,16 @@ its own nightly re-export.
 
 | Field | Value |
 |---|---|
-| **Target location** | `raw/open-brain/` — **filled but stale**: `2026-{03,04,05,06}.md`, one dump per month (~1,193 thoughts). |
+| **Target location** | `raw/open-brain/` — **filled but stale**: `2026-{03,04,05,06}.md`, one dump per month (1,175 thoughts). |
 | **Origin** | First-party — the Open Brain thought store (captured via `mcp__open-brain__capture_thought`), to be dumped as dated markdown, one record per thought. |
 | **Date / range** | The store opens **2026-03-04** (per `DESIGN.md` §"The Feb genesis": "Open Brain starts 3/4"). The committed mirror currently covers through **2026-06-13**. Live OpenBrain access on 2026-06-21 confirms recent captures on **2026-06-21**. |
-| **Volume** | **~1,193 thoughts on disk** in the committed mirror. Live `thought_stats` checked 2026-06-21 reports **2,338 total thoughts**. |
+| **Volume** | **1,175 thoughts on disk** in the committed mirror. Live `thought_stats` checked 2026-06-21 reports **2,338 total thoughts**. |
 | **Tier** | `open_brain` |
-| **How the wiki uses it** | Phase-1 source alongside `searles` + `first_party` (`DESIGN.md`: "Phase 1 = searles + first_party + open_brain — the arc itself"). Run-1 reached Open Brain via targeted queries to ground specific arc facts (e.g. the earliest spawn-lifecycle thoughts naming `lovyou-ai-hive`, cited in `wiki/agent.md` / `wiki/hive-governance.md`), and the **bulk dated export is now written to `raw/open-brain/`** (4 monthly dumps, ~1,193 thoughts, through 2026-06-13). |
+| **How the wiki uses it** | Phase-1 source alongside `searles` + `first_party` (`DESIGN.md`: "Phase 1 = searles + first_party + open_brain — the arc itself"). Run-1 reached Open Brain via targeted queries to ground specific arc facts (e.g. the earliest spawn-lifecycle thoughts naming `lovyou-ai-hive`, cited in `wiki/agent.md` / `wiki/hive-governance.md`), and the **bulk dated export is now written to `raw/open-brain/`** (4 monthly dumps, 1,175 thoughts, through 2026-06-13). |
 
 **Fail-legible notes (open_brain):**
 - **Exported 2026-06-13.** `raw/open-brain/` holds 4 monthly dumps (`2026-03..06.md`,
-  ~1,193 thoughts), committed and on `main`. The dated export named in `DESIGN.md` is a
+  1,175 thoughts), committed and on `main`. The dated export named in `DESIGN.md` is a
   **completed** ingestion, not a planned one. Articles may still cite individual thoughts
   pulled at compile time, but a committed mirror now exists.
 - **Behind live store (as of 2026-06-21).** The committed dump covers through
