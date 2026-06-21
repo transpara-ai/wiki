@@ -92,9 +92,9 @@ test('no-family gate falls in (ungated) row and is placed (not dropped)', () => 
     'every gate (including no-family) must be placed');
 });
 
-test('nowX === scaleX(deriveNow); frontier is 13.9', () => {
+test('nowX === scaleX(deriveNow); frontier is 14.36', () => {
   const lay = L.buildLayout(loadData(), { width: 1600 });
-  assert.ok(Math.abs(lay.nowSeq - 13.9) < 1e-9);
+  assert.ok(Math.abs(lay.nowSeq - 14.36) < 1e-9);
   assert.strictEqual(lay.nowX, lay.scaleX(lay.nowSeq));
 });
 
@@ -186,4 +186,25 @@ test('buildLayout groupBy="actor" splits authors into lanes sharing the seq axis
   assert.ok(labels.includes('(unknown)'), 'baked items (no author) collapse into (unknown)');
   const base = L.buildLayout(testData, { width: 1600 });
   assert.strictEqual(lay.nowX, base.nowX);
+});
+
+// --- repo collection grouping: Civilization / Governance group headers ---
+test('buildLayout groupBy="repo": 8 collection tracks with Civilization/Governance group headers', () => {
+  const lay = L.buildLayout(loadData(), { width: 1600, groupBy: 'repo' });
+  assert.deepStrictEqual(lay.tracks.map(t => t.label),
+    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'civilization-wiki', 'civilization-operation']);
+  assert.deepStrictEqual((lay.groupHeaders || []).map(h => h.label), ['Civilization', 'Governance']);
+  // headers run top→down; each sits ABOVE its group's first track
+  assert.ok(lay.groupHeaders[0].y < lay.groupHeaders[1].y, 'Civilization header above Governance header');
+  const agentTrack = lay.tracks.find(t => t.label === 'agent');
+  const cwTrack = lay.tracks.find(t => t.label === 'civilization-wiki');
+  assert.ok(lay.groupHeaders[0].y <= agentTrack.top, 'Civilization header sits above the agent track');
+  assert.ok(lay.groupHeaders[1].y < cwTrack.top, 'Governance header sits above the civilization-wiki track');
+  // headers add vertical space → repo view is taller than the same data with no headers possible
+  assert.ok(lay.contentHeight > 0);
+});
+
+test('buildLayout group headers appear ONLY for the repo dimension (none for status/tracks)', () => {
+  assert.deepStrictEqual(L.buildLayout(loadData(), { width: 1600, groupBy: 'status' }).groupHeaders || [], []);
+  assert.deepStrictEqual(L.buildLayout(loadData(), { width: 1600, groupBy: 'tracks' }).groupHeaders || [], []);
 });

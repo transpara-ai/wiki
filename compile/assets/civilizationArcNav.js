@@ -178,27 +178,28 @@
     var items = (data && data.items) || [];
     var nowSeq = (O && O.deriveNow) ? O.deriveNow(items) : 0;
 
-    function pickBlocked(pred) {
+    function pick(pred) {
       var atFrontier = null;
-      var anyBlocked = null;
+      var any = null;
       for (var i = 0; i < items.length; i++) {
         var it = items[i];
-        if (!it || !it.blocked || !pred(it)) continue;
-        if (!anyBlocked || (typeof it.seq === "number" && it.seq > anyBlocked.seq)) {
-          anyBlocked = it;
-        }
+        if (!it || !pred(it)) continue;
+        if (!any || (typeof it.seq === "number" && it.seq > any.seq)) any = it;
         if (typeof it.seq === "number" && it.seq <= nowSeq + 1e-9) {
           if (!atFrontier || it.seq > atFrontier.seq) atFrontier = it;
         }
       }
-      return atFrontier || anyBlocked;
+      return atFrontier || any;
     }
 
     return {
       nowSeq: nowSeq,
-      currentGate: pickBlocked(function (it) { return it.type === "gate"; }),
-      blockingWork: pickBlocked(function (it) {
-        return it.type === "work" && it.provenance === "derived";
+      currentGate: pick(function (it) { return it.blocked && it.type === "gate"; }),
+      // Post-waiver: a closed gate can still hold the go-live hard stop. Surface it so the
+      // focus panel never reads "all clear" while go_live_revalidation is blocked.
+      goLiveGate: pick(function (it) { return it.type === "gate" && it.go_live_revalidation === "blocked"; }),
+      blockingWork: pick(function (it) {
+        return it.blocked && it.type === "work" && it.provenance === "derived";
       }),
     };
   }
@@ -303,6 +304,19 @@
       b.classList.toggle("arc-group-btn-active", on);
       b.setAttribute("aria-pressed", on ? "true" : "false");
     });
+    // Actor grouping needs per-item authors; baked items have none (live overlay is
+    // parked), so disable the toggle when no actor data exists instead of showing a
+    // useless "(unknown)" lane.
+    var actorItems = (s.data && s.data.items) || [];
+    var hasActors = actorItems.some(function (it) { return it && it.author; });
+    var actorBtn = s.toolbar.querySelector('[data-arc-group="actor"]');
+    if (actorBtn) {
+      actorBtn.disabled = !hasActors;
+      actorBtn.classList.toggle("arc-group-btn-disabled", !hasActors);
+      actorBtn.setAttribute("title", hasActors
+        ? "Group by actor"
+        : "Actor view needs live / ownership data (none loaded yet)");
+    }
     if (s.zoomReadout) {
       var z = s.zoom || 1;
       s.zoomReadout.textContent = z <= 1 ? "Fit" : (Math.round(z * 100) + "%");
@@ -369,6 +383,7 @@
 
     var focus = currentFocus(data);
     var gate = focus.currentGate;
+    var goLive = focus.goLiveGate;
 
     var head = htmlEl("div", "arc-now-head");
     if (gate) {
@@ -376,6 +391,14 @@
       head.appendChild(htmlEl("span", "arc-badge arc-badge-blocked", "blocked"));
       panel.appendChild(head);
       panel.appendChild(htmlEl("p", "arc-now-label", gate.label || ""));
+    } else if (goLive) {
+      // No fully-blocked gate, but a closed gate still holds the go-live hard stop
+      // (go_live_revalidation: "blocked"). Surface it as the focus, not "all clear".
+      head.appendChild(htmlEl("span", "arc-now-code", goLive.code || goLive.id || "gate"));
+      head.appendChild(htmlEl("span", "arc-badge arc-badge-blocked", "go-live blocked"));
+      panel.appendChild(head);
+      panel.appendChild(htmlEl("p", "arc-now-label", goLive.label || ""));
+      panel.appendChild(htmlEl("p", "arc-now-boundary", "go-live revalidation blocked (pre-live work closed by waiver)"));
     } else {
       head.appendChild(htmlEl("span", "arc-now-code", "no blocked gate"));
       panel.appendChild(head);
@@ -457,9 +480,38 @@
       panel.appendChild(boundary);
     }
 
+    // Backfilled completion date + its provenance ref (present only on dated done items;
+    // see the date-ownership backfill). Absent items render no date line — graceful.
+    if (item.date) {
+      var dateMeta = htmlEl("p", "arc-detail-meta arc-detail-date");
+      dateMeta.appendChild(htmlEl("span", "arc-detail-meta-key", "date "));
+      dateMeta.appendChild(document.createTextNode(item.date + (item.ref ? " · " + item.ref : "")));
+      panel.appendChild(dateMeta);
+    }
+
     if (item.note) {
       panel.appendChild(htmlEl("p", "arc-detail-note", item.note));
     }
+
+    // Dependency edges, mirroring the on-chart dashed lines: precedents (what this
+    // depends on / is gated by) and antecedents (what depends on / is gated by it).
+    var allItems = (data && data.items) || [];
+    var precedents = (item.deps || []).map(function (id) { return byId[id]; }).filter(Boolean);
+    var antecedents = allItems.filter(function (it) { return (it.deps || []).indexOf(item.id) !== -1; });
+    function depLine(keyText, list, cls) {
+      if (!list.length) return;
+      var p = htmlEl("p", "arc-detail-deps " + cls);
+      p.appendChild(htmlEl("span", "arc-detail-meta-key", keyText));
+      list.forEach(function (it, i) {
+        if (i) p.appendChild(document.createTextNode(", "));
+        var span = htmlEl("span", "arc-detail-dep", it.code || it.id || "");
+        if (it.label) span.title = it.label;
+        p.appendChild(span);
+      });
+      panel.appendChild(p);
+    }
+    depLine("depends on ", precedents, "arc-detail-deps-precedent");
+    depLine("depended on by ", antecedents, "arc-detail-deps-antecedent");
 
     if (Array.isArray(item.evidence_links) && item.evidence_links.length) {
       var evidence = htmlEl("p", "arc-detail-evidence");
@@ -641,6 +693,27 @@
       hideTooltip(root);
     });
 
+    // Scroll-wheel zoom: wheel up = zoom in, wheel down = zoom out (snap to ZOOM_STEP,
+    // clamped to the per-render maxZoom). Scoped to the standalone arc page so the
+    // embedded sticky nav still scrolls the article normally (no scroll-trap). On the
+    // standalone page preventDefault stops the page from scrolling while zooming.
+    svg.addEventListener("wheel", function (event) {
+      if (root.getAttribute("data-arc-standalone") !== "true") return;
+      // Only a dominant-VERTICAL wheel zooms. A dominant-horizontal gesture (trackpad
+      // sideways pan) falls through so it scrolls the zoomed .arc-frame instead of being
+      // hijacked into a zoom-out.
+      if (!event.deltaY || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      var dir = event.deltaY < 0 ? 1 : -1;
+      var hi = s.maxZoom || ZOOM_ABS_MAX;
+      var current = s.zoom || 1;
+      var nz = clampZoom(current + dir * ZOOM_STEP, hi);
+      if (nz === current) return;
+      if (typeof event.preventDefault === "function") event.preventDefault();
+      s.zoom = nz;
+      writeZoom(nz);
+      render(root, s.data);
+    }, { passive: false });
+
     svg.addEventListener("click", function (event) {
       var collapse = closestArcCollapse(event.target);
       if (collapse) {
@@ -699,7 +772,7 @@
           return;
         }
         var btn = hit ? hit.closest("[data-arc-group]") : null;
-        if (!btn) return;
+        if (!btn || btn.disabled) return;
         var dim = btn.getAttribute("data-arc-group") || "tracks";
         if (dim === (s.groupBy || "tracks")) return;
         s.groupBy = dim;
@@ -781,6 +854,11 @@
 
     Draw.drawAxis(svg, layout);
     Draw.drawTracks(svg, layout, s);
+    if (s.selectedId != null && Draw.drawDeps) {
+      var Onto = lib("CivOntology");
+      var depEdges = (Onto && Onto.visibleDeps) ? Onto.visibleDeps((data.items) || [], s.selectedId) : [];
+      Draw.drawDeps(svg, layout, depEdges, s.selectedId);
+    }
     Draw.drawMarkers(svg, layout, s);
 
     // Mark the selected item's group for the selection treatment + reflect the

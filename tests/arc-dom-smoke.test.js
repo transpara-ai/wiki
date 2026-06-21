@@ -84,7 +84,7 @@ function assertData(data) {
   // grouping="gate" lanes by item.family; the expanded gate landscape must
   // surface the three load-bearing gate families (ordered by GATE_FAMILIES).
   const gateLanes = O.groupBy(data.items, "gate").map((l) => l.lane);
-  ["v3.9 milestones (A-J)", "Deployment register (G-0..G-8.4)", "v4.0 (K/L)"].forEach(
+  ["v3.9 milestones (A-J)", "Deployment register (G-0..G-8.4)", "v4.0 (K-S)"].forEach(
     (fam) => {
       assert(
         gateLanes.includes(fam),
@@ -94,7 +94,7 @@ function assertData(data) {
   );
   // GATE_FAMILIES ordering: the v3.9-milestones lane precedes the v4.0 lane.
   assert(
-    gateLanes.indexOf("v3.9 milestones (A-J)") < gateLanes.indexOf("v4.0 (K/L)"),
+    gateLanes.indexOf("v3.9 milestones (A-J)") < gateLanes.indexOf("v4.0 (K-S)"),
     `gate lanes should follow GATE_FAMILIES order; saw: ${gateLanes.join(" | ")}`
   );
 
@@ -107,19 +107,19 @@ function assertData(data) {
   assert(data.executionPlan, "execution plan missing");
   assert(/^\d{4}-\d{2}-\d{2}$/.test(data.executionPlan.updated), "execution plan date must be ISO");
 
-  // Gate K is pre-live closed but remains the machine-readable go-live blocker.
+  // Gate K is closed by the pre-go-live waiver (docs#138) — done, not blocked —
+  // while the go-live revalidation residual stays machine-readable on the dot.
   const gateK = data.items.find((it) => it.id === "gate-k");
   assert(gateK, "gate-k item missing");
-  assert.strictEqual(gateK.status, "active");
-  assert.strictEqual(gateK.blocked, true);
-  assert.strictEqual(gateK.blocked_reason, "go-live-revalidation");
+  assert.strictEqual(gateK.status, "done");
+  assert.strictEqual(gateK.blocked, false);
   assert.strictEqual(gateK.boundary_status, "pre-live-closed-go-live-blocked");
   assert.strictEqual(gateK.go_live_revalidation, "blocked");
   assert(
     O.groupBy(data.items, "status").some((lane) =>
-      lane.lane === "blocked" && lane.items.some((it) => it.id === "gate-k")
+      lane.lane === "done" && lane.items.some((it) => it.id === "gate-k")
     ),
-    "gate-k must remain in the machine-readable blocked lane"
+    "gate-k (waiver-closed) must sit in the done lane, no longer blocked"
   );
 }
 
@@ -161,7 +161,7 @@ test('tooltip shows sprint + ordinal step + provenance', () => {
   marker.dispatchEvent(new root.ownerDocument.defaultView.MouseEvent('mouseover', { bubbles: true }));
   const tip = root.querySelector('.arc-tooltip');
   assert.strictEqual(tip.hidden, false);
-  assert.match(tip.textContent, /step \d+ of 109/);
+  assert.match(tip.textContent, /step \d+ of 116/);
   assert.match(tip.textContent, /sprint ·/);
 });
 
@@ -259,6 +259,27 @@ test('clicking "Status" regroups the lanes and marks the button active', () => {
   assert.strictEqual(nav.querySelector('.arc-group-btn-active').getAttribute('data-arc-group'), 'status');
 });
 
+test('clicking "Gate" regroups the lanes by gate family (the dimension is reachable in the UI)', () => {
+  const { nav, dom } = mountArc();
+  nav.querySelector('[data-arc-group="gate"]').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  const labels = [...nav.querySelectorAll('.arc-track-label')].map(t => t.textContent);
+  assert.ok(labels.includes('v4.0 (K-S)'), 'gate-family lanes present; got ' + labels.join(' | '));
+  assert.strictEqual(nav.querySelector('.arc-group-btn-active').getAttribute('data-arc-group'), 'gate');
+});
+
+test('Repo view shows Civilization/Governance group headers, 8 named lanes, no (other)', () => {
+  const { nav, dom } = mountArc();
+  nav.querySelector('[data-arc-group="repo"]').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  const headers = [...nav.querySelectorAll('.arc-group-header')].map(h => h.textContent);
+  assert.deepStrictEqual(headers, ['Civilization', 'Governance'],
+    'in-collection groups are marked; got ' + headers.join(' | '));
+  const labels = [...nav.querySelectorAll('.arc-track-label')].map(t => t.textContent);
+  assert.deepStrictEqual(labels,
+    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'civilization-wiki', 'civilization-operation'],
+    'all 8 collection repos render as named lanes; got ' + labels.join(' | '));
+  assert.ok(!labels.includes('(other)'), 'the generic (other) bucket lane is gone');
+});
+
 // --- live overlay (Task 6) ---
 // The live overlay is OPT-IN (it needs a host that generates inflight.json). These
 // tests exercise the overlay itself, so they turn it on via window.CIV_ARC_LIVE.
@@ -346,19 +367,21 @@ test('live overlay FAILS SAFE on invalid live data: merge rejected → baked kep
   assert(chip && /unavailable/.test(chip.textContent), "chip warns unavailable on rejected merge");
 });
 
-test('Gate K renders as the blocked go-live frontier with evidence links', () => {
+test('Gate K renders as cleared-by-waiver (done) with go-live residual surfaced and evidence links', () => {
   const { nav, svg, dom } = mountArc();
   const gate = svg.querySelector('[data-arc-item="gate-k"]');
   assert(gate, "gate-k marker missing");
-  assert(gate.classList.contains("arc-blocked"), "gate-k marker must carry blocked class");
+  assert(gate.classList.contains("arc-status-done"), "gate-k must render done (pre-go-live waiver, docs#138)");
+  assert(!gate.classList.contains("arc-blocked"), "gate-k is no longer blocked after the pre-go-live waiver");
 
   gate.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
   const tip = nav.querySelector('.arc-tooltip');
-  assert.match(tip.textContent, /gate · blocked/i);
+  assert.match(tip.textContent, /gate · done/i);
 
   gate.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
   const detail = nav.querySelector('.arc-detail-panel');
-  assert.match(detail.textContent, /Blocked/);
+  assert.match(detail.textContent, /Done/);
+  // The waiver closed Gate K, but the go-live revalidation residual must still be surfaced.
   assert.match(detail.textContent, /go-live/i);
   assert.match(detail.textContent, /boundary/i);
   assert.match(detail.textContent, /pre live closed go live blocked/i);
@@ -425,6 +448,102 @@ test('operation progress evidence asset omits private governing-repo identifiers
   const asset = fs.readFileSync(path.join(root, "compile/assets/civilizationProgressEvidence.js"), "utf8");
   assert.doesNotMatch(asset, /github\.com\/transpara-ai\/docs|transpara-ai\/docs|docs#[0-9]+/i);
   assert.strictEqual(loadProgressEvidence().schema_version, 1);
+});
+
+test('selecting an item draws dashed dependency lines (both directions) + lists deps', () => {
+  const { nav, svg, dom } = mountArc();
+  const marker = svg.querySelector('[data-arc-item="civic-ai"]');
+  assert(marker, "civic-ai marker missing");
+  marker.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  assert(svg.querySelectorAll('.arc-dep-line').length > 0, "dependency lines must render on selection");
+  assert(svg.querySelector('.arc-dep-precedent'), "a precedent (upstream) line must render");
+  assert(svg.querySelector('.arc-dep-antecedent'), "an antecedent (downstream) line must render");
+  const detail = nav.querySelector('.arc-detail-panel');
+  assert.match(detail.textContent, /depends on/i);
+  assert.match(detail.textContent, /depended on by/i);
+  // Background click clears the selection and removes the lines.
+  svg.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  assert.strictEqual(svg.querySelectorAll('.arc-dep-line').length, 0, "lines clear on deselect");
+});
+
+test('drawDeps anchors a line to EVERY placement of a duplicated multi-lane item (repo view)', () => {
+  const D = require('../compile/assets/civilizationArcDraw.js');
+  const doc = new JSDOM('<!doctype html>').window.document;
+  const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  // Item X is rendered in TWO lanes (y=10 and y=50); item Y once (y=30). X depends on Y.
+  const layout = { tracks: [
+    { rows: [{ items: [{ item: { id: 'X' }, x: 100, y: 10 }, { item: { id: 'Y' }, x: 60, y: 30 }] }] },
+    { rows: [{ items: [{ item: { id: 'X' }, x: 100, y: 50 }] }] },
+  ] };
+  D.drawDeps(svg, layout, [{ from: 'Y', to: 'X' }], 'X');
+  const lines = [...svg.querySelectorAll('.arc-dep-line')];
+  const ys = new Set(lines.flatMap(l => [Number(l.getAttribute('y1')), Number(l.getAttribute('y2'))]));
+  assert.ok(ys.has(10) && ys.has(50),
+    'a dep line must reach BOTH copies of X (y=10 and y=50), not just the last; got ' + [...ys].join(','));
+});
+
+test('now-panel surfaces the Gate-K go-live hard stop even though the gate is no longer blocked', () => {
+  const { nav } = mountArc();
+  const np = nav.querySelector('.arc-now-panel').textContent;
+  assert.match(np, /Gate-K/, 'the go-live hard-stop gate is surfaced in the focus panel');
+  assert.match(np, /go-live/i, 'the go-live revalidation residual is named, not hidden behind a click');
+});
+
+test('standalone wheel: dominant-horizontal pans the frame (not hijacked into zoom); vertical zooms', () => {
+  const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav data-arc-standalone="true"></div>', {
+    pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/civilization-arc.html",
+  });
+  ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
+   "civilizationArcDraw.js", "civilizationArcNav.js"].forEach((f) =>
+    dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
+  dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
+  const svg = dom.window.document.querySelector(".civilization-arc-nav svg.arc-svg");
+  // A dominant-horizontal trackpad gesture must fall through to scroll the frame, not zoom.
+  const hEvt = new dom.window.WheelEvent('wheel', { deltaX: 140, deltaY: 0, bubbles: true, cancelable: true });
+  svg.dispatchEvent(hEvt);
+  assert.strictEqual(hEvt.defaultPrevented, false, 'dominant-horizontal wheel must pan the frame, not be hijacked into zoom');
+  // At Fit, a zoom-out gesture cannot change zoom and must fall through so the page can scroll.
+  const lowerBoundEvt = new dom.window.WheelEvent('wheel', { deltaX: 0, deltaY: 140, bubbles: true, cancelable: true });
+  svg.dispatchEvent(lowerBoundEvt);
+  assert.strictEqual(lowerBoundEvt.defaultPrevented, false, 'wheel down at Fit must scroll the page, not be swallowed');
+  // A vertical wheel is still treated as zoom (prevents the page from scrolling).
+  const vEvt = new dom.window.WheelEvent('wheel', { deltaX: 0, deltaY: -140, bubbles: true, cancelable: true });
+  svg.dispatchEvent(vEvt);
+  assert.strictEqual(vEvt.defaultPrevented, true, 'vertical wheel is treated as zoom');
+});
+
+test('a backfilled date shows in the tooltip + a STRUCTURED detail-panel date line (with ref)', () => {
+  const { nav, svg, dom } = mountArc();
+  const gate = svg.querySelector('[data-arc-item="gate-k"]');
+  assert(gate, 'gate-k marker missing');
+  gate.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
+  assert.match(nav.querySelector('.arc-tooltip').textContent, /date · 2026-06-17/, 'tooltip shows the date');
+  gate.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  // Target the dedicated date element, NOT the panel text (gate-k's prose note also
+  // happens to mention the date/ref — a prose match would be a false positive).
+  const dateLine = nav.querySelector('.arc-detail-date');
+  assert(dateLine, 'detail panel must have a structured .arc-detail-date line');
+  assert.match(dateLine.textContent, /date\b/, 'date line is labelled');
+  assert.match(dateLine.textContent, /2026-06-17/, 'date line shows the ISO date');
+  assert.match(dateLine.textContent, /docs#138/, 'date line carries the provenance ref');
+});
+
+test('an undated item shows NO date line in tooltip or detail — graceful absence', () => {
+  const { nav, svg, dom } = mountArc();
+  // origin-signal is a reconstructed beat with no date; its detail must not fabricate one.
+  const m = svg.querySelector('[data-arc-item="origin-signal"]');
+  m.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
+  assert.doesNotMatch(nav.querySelector('.arc-tooltip').textContent, /date ·/, 'no tooltip date for an undated item');
+  m.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  assert.strictEqual(nav.querySelector('.arc-detail-date'), null, 'no detail date line for an undated item');
+});
+
+test('Actor toggle is disabled when no item carries an author (live overlay parked)', () => {
+  const { nav } = mountArc();
+  const actor = nav.querySelector('[data-arc-group="actor"]');
+  assert(actor, "actor button present");
+  assert.strictEqual(actor.disabled, true, "actor button must be disabled with no actor data");
+  assert(actor.classList.contains('arc-group-btn-disabled'), "disabled class applied");
 });
 
 const data = loadArcData();
