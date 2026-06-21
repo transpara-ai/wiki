@@ -29,14 +29,15 @@ on disk this run.
 |---|---|---|---|
 | `searles` | `raw/searles/` | **Yes** | `all-posts-1.md` present (43 posts) |
 | `first_party` | (read in place — see below) | **No local mirror** | read from `docs/dark-factory`; `raw/transpara/` holds only `.gitkeep` |
-| `open_brain` | `raw/open-brain/` | **No** | empty but for `.gitkeep` — export not yet run |
+| `open_brain` | `raw/open-brain/` | **Yes** | `2026-{03,04,05,06}.md` — ~1,193 thoughts (export run 2026-06-13; ~8 days behind as of 2026-06-21) |
 | `upstream_context` | `raw/investigations/` | **No** | empty but for `.gitkeep` — Phase 2 (per `DESIGN.md`) |
 
 **What this means for trust:** only the `searles` tier is reproducible from this
 repo alone today. The `first_party` corpus was read **in place** from a sibling
 checkout (Run-1 compiled the arc spine directly against `docs/dark-factory`
-rather than copying it into `raw/transpara/` first); the `open_brain` and
-`upstream_context` tiers are **declared but unfilled**. Do not read an empty
+rather than copying it into `raw/transpara/` first); the `open_brain` tier **is now
+mirrored** (`raw/open-brain/2026-{03..06}.md`, ~1,193 thoughts through 2026-06-13),
+while `upstream_context` is still **declared but unfilled**. Do not read an empty
 `raw/` subdirectory as "no such source" — read it as "not yet mirrored." The
 nightly keep-current job in `DESIGN.md` is what will populate them.
 
@@ -135,18 +136,22 @@ its own nightly re-export.
 
 | Field | Value |
 |---|---|
-| **Target location** | `raw/open-brain/` — **empty this run** (only `.gitkeep`). |
+| **Target location** | `raw/open-brain/` — **filled**: `2026-{03,04,05,06}.md`, one dump per month (~1,193 thoughts). |
 | **Origin** | First-party — the Open Brain thought store (captured via `mcp__open-brain__capture_thought`), to be dumped as dated markdown, one record per thought. |
 | **Date / range** | The store opens **2026-03-04** (per `DESIGN.md` §"The Feb genesis": "Open Brain starts 3/4") and runs to the present. The export date range will be set when the dump first runs. |
 | **Volume (target)** | **~1,175 thoughts** (`DESIGN.md` figure). Verify live at export time via `mcp__open-brain__list_thoughts` / `thought_stats`; the 1,175 figure is the design estimate, not an on-disk count. |
 | **Tier** | `open_brain` |
-| **How the wiki uses it** | Phase-1 source alongside `searles` + `first_party` (`DESIGN.md`: "Phase 1 = searles + first_party + open_brain — the arc itself"). Run-1 reached Open Brain via targeted queries to ground specific arc facts (e.g. the earliest spawn-lifecycle thoughts naming `lovyou-ai-hive`, cited in `wiki/agent.md` / `wiki/hive-governance.md`), but the **bulk dated export has not been written to `raw/open-brain/`**. |
+| **How the wiki uses it** | Phase-1 source alongside `searles` + `first_party` (`DESIGN.md`: "Phase 1 = searles + first_party + open_brain — the arc itself"). Run-1 reached Open Brain via targeted queries to ground specific arc facts (e.g. the earliest spawn-lifecycle thoughts naming `lovyou-ai-hive`, cited in `wiki/agent.md` / `wiki/hive-governance.md`), and the **bulk dated export is now written to `raw/open-brain/`** (4 monthly dumps, ~1,193 thoughts, through 2026-06-13). |
 
 **Fail-legible notes (open_brain):**
-- **Not yet exported.** `raw/open-brain/` is empty. The 1,175-thought dump named
-  in `DESIGN.md` is a planned ingestion, not a completed one. Articles that lean
-  on Open Brain today cite individual thoughts pulled at compile time, not a
-  committed mirror.
+- **Exported 2026-06-13.** `raw/open-brain/` holds 4 monthly dumps (`2026-03..06.md`,
+  ~1,193 thoughts), committed and on `main`. The dated export named in `DESIGN.md` is a
+  **completed** ingestion, not a planned one. Articles may still cite individual thoughts
+  pulled at compile time, but a committed mirror now exists.
+- **⚠️ ~8 days behind (as of 2026-06-21).** The dump covers through 2026-06-13. DESIGN's
+  "nightly re-export" is **not yet automated**, so refreshing requires a direct Postgres
+  dump — the store has grown to ~2,324 thoughts, too many to re-pull through the MCP list
+  cap, so catch-up needs the OB DB connection (not the MCP).
 - **Secret-scrub gate applies.** Per `DESIGN.md`, nothing enters `raw/` with live
   secrets; the Open Brain export must pass the secret scanner before any commit
   (the platform has a known hardcoded-credentials finding, F-01). This is a
