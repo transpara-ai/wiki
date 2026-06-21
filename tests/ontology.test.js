@@ -263,6 +263,18 @@ test('every dep id resolves to a real item', () => {
   items.forEach(i => (i.deps || []).forEach(d => assert.ok(ids.has(d), 'dangling dep ' + d + ' on ' + i.id)));
 });
 
+test('executionPlan row statuses mirror canonical item statuses', () => {
+  const data = loadData();
+  const byCode = new Map(data.items.map(i => [i.code, i]));
+  ['nearTerm', 'complete'].forEach((section) => {
+    (data.executionPlan[section] || []).forEach((row) => {
+      const item = byCode.get(row.order);
+      assert(item, `executionPlan.${section} row ${row.order} must have a matching item`);
+      assert.strictEqual(row.status, item.status, `executionPlan.${section}.${row.order} status drifted from item`);
+    });
+  });
+});
+
 // --- date backfill: fail-closed contract rule (date ⇒ ISO + done; ref well-formed) ---
 function datedItem(over) {
   return Object.assign({ id: 'a', type: 'gate', status: 'done', provenance: 'derived',

@@ -1,6 +1,6 @@
-# Civilization Arc — Date Ownership & Backfill Feasibility (scoping)
+# Civilization Arc — Date Ownership & Backfill Feasibility
 
-**Date:** 2026-06-21 · **Branch:** `claude/elegant-jang-3373f3` · **Status:** scoping only, no code changed
+**Date:** 2026-06-21 · **Branch:** `claude/elegant-jang-3373f3` · **Status:** Tier-1 implemented in this branch
 **Question (Michael):** "once 2,3,4,5 are done we'll revisit who precisely OWNS the dates" — and whether
 that unblocks #1 (dates on tooltip/detail), #6 (date-based x-axis + duration-proportional widths), and
 real Actor attribution.
@@ -13,15 +13,16 @@ real Actor attribution.
   items are effectively a foreign-key table; `gh api repos/transpara-ai/<repo>/issues/<n>` resolves each
   cited ref to a real `merged_at` (and they corroborate the labels — docs#138 *is* "revise Gate K pre-live
   closeout").
-- **Coverage is partial by design.** Of 116 items: **25 are datable now** (cite a ref), **70 have no
-  datable event** (reconstructed narrative / design-principle beats), **21 are future/planned** (haven't
+- **Coverage is partial by design.** Of 116 items: **23 done items are dated in this branch** (committed `date`
+  + `ref` fields), **72 have no datable event** (reconstructed narrative / design-principle beats), **21 are future/planned** (haven't
   happened — no date possible).
 - **Who owns the dates:** the **source-of-truth repos' GitHub PR/issue history** — overwhelmingly
   `transpara-ai/docs` (governance/gates), plus `work`/`hive`/`site`/`eventgraph` for implementation.
   `civilization-wiki` owns only the *reconstructed pre-history*, which is "not commit-derived" by its own
   honesty note and therefore **ownerless for dating**.
-- **Do:** #1 (tooltip/detail dates) for the 25 datable items — cheap, honest, graceful blanks elsewhere
-  (the `item.date` hook already renders this way). ~½ day.
+- **Done in this branch:** #1 (tooltip/detail dates) for the Tier-1 done items — honest, graceful blanks
+  elsewhere. Dates are baked into `civilizationArcData.js`, render in tooltip/detail, and are covered by
+  fail-closed validation/tests.
 - **Don't:** #6 (date x-axis / duration-proportional widths) — too sparse; a date axis with ~¾ of dots
   unplaceable forces fabricated positions, contradicting the accuracy-first redesign. The ordinal-`seq`
   axis is the *honest* representation. (Optional later: a "dated-only" sparse lens.)
@@ -38,11 +39,9 @@ real Actor attribution.
 
 ### Data model (elegant-jang `compile/assets/civilizationArcData.js`, 116 items)
 
-- Per-item fields: `id, code, type, label, status, blocked, blocked_reason, provenance, seq, repo[],
-  sprint, gate, goal, deps[], href, note`. **No `date` field.** `href` points to *wiki article pages*
-  (`the-20-primitives.html`), **not** to PRs — it is not a date source.
-- A tooltip hook is already reserved and renders gracefully when absent:
-  `civilizationArcNav.js:314 → if (item.date) … "date · " + item.date  // reserved for date-backfill`.
+- Per-item fields now allow `ref` and `date` on historical `done` items. `href` continues to point to wiki
+  article pages (`the-20-primitives.html`) and is not a date source.
+- Tooltip/detail rendering shows `date` only when present and remains blank for undated items.
 
 ### Coverage audit (programmatic load of the data; `/tmp/arc_date_audit.js`)
 
@@ -51,8 +50,8 @@ real Actor attribution.
 | **Total items** | 116 | — |
 | Historical (`done`/`active`) | 95 | a date *can* exist |
 | Future (`planned`/`future`) | 21 | **no** — hasn't happened |
-| Historical **with** deref-able `#ref` | **25** | **yes, now** (Tier 1) |
-| Historical **without** a `#ref` | 70 | mostly no (see tiers) |
+| Done items with committed `date` + `ref` | **23** | **implemented** (Tier 1) |
+| Historical without a committed date | 72 | mostly no (see tiers) |
 | provenance `derived` / `reconstructed` | 17 / 99 | — |
 
 ### Recoverability — proven by dereference (read-only `gh`, all transpara-ai)
@@ -76,7 +75,7 @@ reconstructed Feb-genesis pre-history with no commit dates.
 
 | Owner | Items | Date source | Quality |
 |---|---|---|---|
-| `transpara-ai/docs` PR/issue history | 62 docs-owned (governance/gates/events) | `merged_at` of the cited PR | real, precise (for the 25 that cite a ref) |
+| `transpara-ai/docs` PR/issue history | 62 docs-owned (governance/gates/events) | `merged_at` of the cited PR | real, precise for implemented Tier-1 refs |
 | `work`/`hive`/`site`/`eventgraph` history | implementation items | `merged_at` of the cited PR | real, precise |
 | `civilization-wiki` (reconstructed narrative) | origin story + design-principle beats | **none** — "not commit-derived" by its own note | n/a (undatable by design) |
 
@@ -84,15 +83,15 @@ reconstructed Feb-genesis pre-history with no commit dates.
 
 ## Feasibility per deferred feature
 
-### #1 — dates on tooltip / detail panel  →  **DO (Tier 1)**
-- 25 items get a real, sourced date immediately. Hook already renders; undated items simply show no date
-  line (already-wired graceful fallback). Low risk, honest, partial-by-design.
+### #1 — dates on tooltip / detail panel  →  **DONE (Tier 1)**
+- 23 done items carry real, sourced `date` + `ref` fields. Undated items show no date line.
+- `validateItems` fails closed on malformed refs, non-ISO dates, and dates attached to non-`done` items.
 
 ### #6 — date-based x-axis + duration-proportional widths  →  **DON'T**
-- Even Tier 1 + Tier 2 (below) dates well under half the items; ~¾ have no real position. A date axis then
+- Even Tier 1 + Tier 2 (below) dates remain well under half the items; most have no real position. A date axis then
   either drops most of the chart or fabricates positions — the exact "decorative axis that encodes nothing"
   failure the Direction-C rebuild was meant to kill. Ordinal-`seq` is the accurate choice.
-- *Optional future:* a separate "dated-only" sparse timeline lens showing just the 25 real events.
+- *Optional future:* a separate "dated-only" sparse timeline lens showing only real dated events.
 
 ### Actor attribution  →  **SKIP (low value)**
 - PR `author`/`merged_by` ≈ `MichaelSaucier` for nearly all (single-human-operator model). Agent-level
@@ -103,7 +102,7 @@ reconstructed Feb-genesis pre-history with no commit dates.
 
 ## Datability tiers (the 116, precisely)
 
-- **Tier 1 — date now, by deref (25):** items citing a PR/issue. One script. Reliable.
+- **Tier 1 — committed in this branch (23):** done items with reliable PR/issue dates.
 - **Tier 2 — date with PR-hunting research (~30–40):** real-but-uncited gates (Gate-A..D, security gates,
   several `G-x.x` docs gates) + worklist `C*/N*` items. Moderate–high manual effort, variable reliability.
 - **Tier 3 — undatable by design:** reconstructed origin-story + design-principle beats (MEM "memory
@@ -111,24 +110,20 @@ reconstructed Feb-genesis pre-history with no commit dates.
 
 ---
 
-## Concrete next step IF greenlit (Tier-1 only)
+## Implemented Tier-1 Shape
 
-1. Lift the cited ref into a structured field on the 25 items (e.g. `ref: "docs#138"`), out of prose.
-2. One-time **human-run** deref script (`gh api … merged_at`) writes `date` (ISO) into the data file as a
-   **committed value** — no network at build time.
-3. Render: tooltip hook already exists; add a detail-panel "date" line.
-4. Tests: data-integrity guard — refs well-formed, dates ISO, **date ≤ today**, dated ⇒ historical status
-   (fail-closed allowlist style).
-5. `npm run verify` + build.
+1. Cited refs are structured as `ref: "docs#138"` style fields.
+2. ISO dates are committed values in the data file; no build-time network is used.
+3. Tooltip and detail panel render dates when present.
+4. Tests cover ISO/ref validation, done-only dates, and graceful absence for undated items.
 
-**Effort:** ~½ day. **Risk:** low (additive; graceful fallback already wired). **Reversible:** yes.
+**Risk:** low (additive; graceful fallback stays wired). **Reversible:** yes.
 
 ---
 
 ## What I did NOT do / caveats
 
-- No arc code changed; the fragile 9-file uncommitted diff on this branch is untouched. This note is a new,
-  **untracked** file — keep, commit, or `rm` at will.
+- This branch now includes the Tier-1 code/data/test implementation described above.
 - Did not exhaustively map every Tier-2 ref to a PR (that *is* the moderate-effort work, deferred to a
   greenlight).
 - `gh` deref reflects state as queried 2026-06-21; baked dates would be a point-in-time snapshot,

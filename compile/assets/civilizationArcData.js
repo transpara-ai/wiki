@@ -2002,11 +2002,8 @@
       },
 
       // ── ExecutionPlan — nearTerm N1–N7 ───────────────────────────────
-      // Placed in the late arc. Done/active items: seq ≤ 13.89 (left of/at frontier 13.9).
-      // N1 done, N2 active, N3 done (seq 12.8), N4 done (seq 13.3),
-      // N5 done Gate-K pre-live waiver closeout (seq 13.85),
-      // N6 planned v3.9/v4.0 promotion (seq 14.1),
-      // N7 planned observability (seq 14.15).
+      // Placed in the late arc. These mirror the rows in executionPlan.nearTerm.
+      // N1-N6 are done; N7 is active observability work.
       {
         id: "n1",
         code: "N1",
@@ -2151,9 +2148,8 @@
       },
 
       // ── ExecutionPlan — complete C1–C10 ──────────────────────────────
-      // C1: active, C2: planned, C3: planned, C4: active, C5: active, C6: active,
-      // C7: planned, C8: active, C9: planned, C10: future.
-      // Active items: seq ≤ 13.89. Planned/future: seq > 13.9.
+      // These mirror the rows in executionPlan.complete.
+      // C1/C6/C8 are done; C2/C3/C4/C5/C7/C9 are active; C10 is future.
       {
         id: "c1",
         code: "C1",
@@ -2374,7 +2370,7 @@
         },
         {
           order: "N2",
-          status: "active",
+          status: "done",
           work: "Keep the ordered arc plan visible",
           surface: "civilization-wiki arc page",
           gate: "civilization-arc.html",
@@ -2418,7 +2414,7 @@
         },
         {
           order: "N7",
-          status: "planned",
+          status: "active",
           work: "Wire live observability into task state",
           surface: "site, hive, work, docs",
           gate: "Observatory progress read model",
@@ -2429,7 +2425,7 @@
       complete: [
         {
           order: "C1",
-          status: "active",
+          status: "done",
           work: "Normalize intake into FactoryOrder",
           surface: "Hive and Work",
           gate: "FactoryOrder contract",
@@ -2438,7 +2434,7 @@
         },
         {
           order: "C2",
-          status: "planned",
+          status: "active",
           work: "Scaffold new repositories for never-attempted work",
           surface: "Hive, Work, GitHub",
           gate: "New-work repo policy",
@@ -2446,7 +2442,7 @@
         },
         {
           order: "C3",
-          status: "planned",
+          status: "active",
           work: "Acquire existing work by scanning source-repo issues",
           surface: "Work heartbeat and repo registry",
           gate: "Issue acquisition loop",
@@ -2470,7 +2466,7 @@
         },
         {
           order: "C6",
-          status: "active",
+          status: "done",
           work: "Run the cross-family adversarial loop",
           surface: "Codex, Claude, CI status checks",
           gate: "cross-family-adversarial-review",
@@ -2478,7 +2474,7 @@
         },
         {
           order: "C7",
-          status: "planned",
+          status: "active",
           work: "Promote reviewed PRs to bulletproof",
           surface: "Hive, Work, Site",
           gate: "Bulletproof readiness rule",
@@ -2486,7 +2482,7 @@
         },
         {
           order: "C8",
-          status: "active",
+          status: "done",
           work: "Surface human approval through the UI",
           surface: "Site operator surface and Hive decisions",
           gate: "AuthorityDecision",
@@ -2495,7 +2491,7 @@
         },
         {
           order: "C9",
-          status: "planned",
+          status: "active",
           work: "Expose full observability while work runs",
           surface: "Observatory and Civilization Wiki",
           gate: "Live read-only state",
