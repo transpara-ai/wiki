@@ -17,15 +17,27 @@ function loadArcData() {
   return context.window.CIVILIZATION_ARC_DATA;
 }
 
+function loadProgressEvidence() {
+  const context = { window: {} };
+  vm.createContext(context);
+  vm.runInContext(
+    fs.readFileSync(path.join(root, "compile/assets/civilizationProgressEvidence.js"), "utf8"),
+    context
+  );
+  return context.window.CIVILIZATION_PROGRESS_EVIDENCE;
+}
+
 // ── Reusable mount helper — eval all five modules into a JSDOM window and
 //    dispatch DOMContentLoaded. Returns { nav, svg, dom } for test assertions.
-function mountArc() {
+function mountArc(options = {}) {
   const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav></div>', {
     pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
   });
   ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
-   "civilizationArcDraw.js", "civilizationArcNav.js"].forEach((f) =>
-    dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
+   "civilizationArcDraw.js", "civilizationProgressEvidence.js", "civilizationArcNav.js"].forEach((f) => {
+    dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8"));
+    if (f === "civilizationProgressEvidence.js" && options.beforeNav) options.beforeNav(dom.window);
+  });
   dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
   const nav = dom.window.document.querySelector(".civilization-arc-nav");
   const svg = nav ? nav.querySelector("svg.arc-svg") : null;
@@ -160,7 +172,7 @@ function mountWithInjectedHrefs(hrefMap, evidenceMap = {}) {
     pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
   });
   ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
-   "civilizationArcDraw.js"].forEach((f) =>
+   "civilizationArcDraw.js", "civilizationProgressEvidence.js"].forEach((f) =>
     dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
   const items = dom.window.CIVILIZATION_ARC_DATA.items;
   Object.keys(hrefMap).forEach((k) => { items[Number(k)].href = hrefMap[k]; });
@@ -260,7 +272,7 @@ function mountWithFetch(inflightPayload, opts) {
     return Promise.resolve({ ok: true, json: function () { return Promise.resolve(inflightPayload); } });
   };
   ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
-   "civilizationArcDraw.js", "civilizationArcNav.js"].forEach((f) =>
+   "civilizationArcDraw.js", "civilizationProgressEvidence.js", "civilizationArcNav.js"].forEach((f) =>
     dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
   dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
   return dom;
@@ -274,7 +286,7 @@ test('live overlay is OPT-IN: with no flag the fetch never fires and no chip app
   dom.window.fetch = function () { fetched = true; return Promise.resolve({ ok: false }); };
   // NOTE: window.CIV_ARC_LIVE intentionally unset → overlay disabled.
   ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
-   "civilizationArcDraw.js", "civilizationArcNav.js"].forEach((f) =>
+   "civilizationArcDraw.js", "civilizationProgressEvidence.js", "civilizationArcNav.js"].forEach((f) =>
     dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
   dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
   await new Promise((r) => setTimeout(r, 0));
@@ -358,6 +370,61 @@ test('Gate K renders as the blocked go-live frontier with evidence links', () =>
   assert(evidenceHrefs.includes("gate-k.html"));
   assert(!evidenceHrefs.some((href) => href && href.includes("github.com/transpara-ai/docs")),
     "Gate K detail must not link private docs repo evidence");
+});
+
+test('operation progress evidence snapshot renders under the arc', () => {
+  const { nav } = mountArc();
+  const panel = nav.querySelector('.arc-progress-panel');
+  assert(panel, 'progress evidence panel missing');
+  assert.match(panel.textContent, /Progress evidence snapshot/);
+  assert.match(panel.textContent, /snapshot2026-06-21T00:00:00Z/);
+  assert.match(panel.textContent, /Test 001 Remains YELLOW/);
+  assert.match(panel.textContent, /Omitted sources/);
+  assert.match(panel.textContent, /not live truth/i);
+  assert.doesNotMatch(panel.textContent, /operator_notes|raw_issue_body|Source notes are intentionally not exported|Raw issue text is not exported/);
+
+  const hrefs = [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href'));
+  assert(hrefs.includes('https://github.com/transpara-ai/civilization-operation/pull/28'));
+  assert(hrefs.includes('https://github.com/transpara-ai/civilization-operation/issues/26'));
+  assert(!hrefs.some((href) => href && href.includes('github.com/transpara-ai/docs')),
+    'progress panel must not link private docs repo evidence');
+  assert.doesNotMatch(panel.textContent, /transpara-ai\/docs|docs#[0-9]+/i);
+});
+
+test('operation progress evidence fails closed without explicit public-safe metadata', () => {
+  [
+    ["public_safe false", (win) => { win.CIVILIZATION_PROGRESS_EVIDENCE.privacy.public_safe = false; }],
+    ["missing privacy", (win) => { delete win.CIVILIZATION_PROGRESS_EVIDENCE.privacy; }],
+    ["schema mismatch", (win) => { win.CIVILIZATION_PROGRESS_EVIDENCE.schema_version = 2; }],
+  ].forEach(([label, beforeNav]) => {
+    const { nav } = mountArc({ beforeNav });
+    const panel = nav.querySelector('.arc-progress-panel');
+    assert(panel, `progress evidence panel missing for ${label}`);
+    assert.match(panel.textContent, /No public-safe progress evidence export is available/);
+    assert.strictEqual(panel.querySelectorAll('.arc-progress-item').length, 0, label);
+    assert.doesNotMatch(panel.textContent, /Test 001 Remains YELLOW/);
+  });
+});
+
+test('operation progress evidence rejects unsafe progress links', () => {
+  const { nav } = mountArc({
+    beforeNav(win) {
+      win.CIVILIZATION_PROGRESS_EVIDENCE_SOURCE.operation_pr_url = 'data:text/html,unsafe';
+      win.CIVILIZATION_PROGRESS_EVIDENCE.items[0].source_url = 'javascript:alert(1)';
+    },
+  });
+  const panel = nav.querySelector('.arc-progress-panel');
+  assert(panel, 'progress evidence panel missing');
+  const hrefs = [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href'));
+  assert(!hrefs.some((href) => href && /^(javascript:|data:|\/\/)/i.test(href)), 'unsafe progress href rendered');
+  assert.match(panel.textContent, /transpara-ai\/civilization-operation#28/);
+  assert.match(panel.textContent, /governing authority on file/);
+});
+
+test('operation progress evidence asset omits private governing-repo identifiers', () => {
+  const asset = fs.readFileSync(path.join(root, "compile/assets/civilizationProgressEvidence.js"), "utf8");
+  assert.doesNotMatch(asset, /github\.com\/transpara-ai\/docs|transpara-ai\/docs|docs#[0-9]+/i);
+  assert.strictEqual(loadProgressEvidence().schema_version, 1);
 });
 
 const data = loadArcData();

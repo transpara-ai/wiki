@@ -540,6 +540,155 @@ code,pre,.mono{font-family:var(--mono)}
   border-color:rgba(155,167,180,.58);
   background:rgba(155,167,180,.12);
 }
+.arc-progress-panel{
+  max-width:1220px;
+  margin:8px auto 16px;
+  padding:12px 20px 4px;
+  border-top:1px solid rgba(122,142,160,.3);
+}
+.arc-standalone-nav .arc-progress-panel{
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:0 18px 18px;
+}
+.arc-progress-header{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(220px,340px);
+  gap:12px;
+  align-items:start;
+  margin-bottom:10px;
+}
+.arc-progress-header h3{
+  margin:0 0 5px;
+  color:var(--arc-text);
+  font-size:18px;
+  line-height:1.25;
+}
+.arc-progress-note{
+  margin:0;
+  color:var(--arc-muted);
+  font-size:13px;
+  line-height:1.45;
+}
+.arc-progress-source{
+  margin:0;
+  min-width:0;
+  color:var(--arc-muted);
+  font:700 11px/1.45 var(--mono);
+  overflow-wrap:anywhere;
+}
+.arc-progress-link{
+  color:var(--arc-blue);
+  font-weight:750;
+}
+.arc-progress-link:hover{text-decoration:underline}
+.arc-progress-metrics{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin:0 0 12px;
+}
+.arc-progress-metrics dt,
+.arc-progress-metrics dd{
+  min-width:0;
+  margin:0;
+  border:1px solid rgba(122,142,160,.4);
+  background:rgba(255,255,255,.035);
+}
+.arc-progress-metrics dt{
+  border-bottom:0;
+  border-radius:6px 6px 0 0;
+  padding:8px 10px 2px;
+  color:var(--arc-faint);
+  font:800 10px/1.2 var(--mono);
+  text-transform:uppercase;
+}
+.arc-progress-metrics dd{
+  border-top:0;
+  border-radius:0 0 6px 6px;
+  padding:0 10px 8px;
+  color:var(--arc-text);
+  font-size:12px;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+:root[data-theme="light"] .arc-progress-metrics dt,
+:root[data-theme="light"] .arc-progress-metrics dd{background:rgba(255,255,255,.76)}
+.arc-progress-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:9px;
+}
+.arc-progress-item{
+  min-width:0;
+  border:1px solid rgba(122,142,160,.4);
+  border-radius:6px;
+  background:rgba(255,255,255,.03);
+  padding:10px 11px;
+}
+:root[data-theme="light"] .arc-progress-item{background:rgba(255,255,255,.76)}
+.arc-progress-item-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:7px;
+}
+.arc-progress-item-head strong{
+  min-width:0;
+  color:var(--arc-text);
+  font-size:13px;
+  line-height:1.25;
+}
+.arc-progress-chip{
+  flex:0 1 auto;
+  max-width:44%;
+  border:1px solid rgba(105,210,212,.66);
+  border-radius:4px;
+  padding:3px 6px;
+  color:var(--arc-cyan);
+  font:800 9px/1.2 var(--mono);
+  text-transform:uppercase;
+  overflow-wrap:anywhere;
+}
+.arc-progress-summary,
+.arc-progress-meta{
+  margin:0 0 8px;
+  color:var(--arc-muted);
+  font-size:12px;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.arc-progress-meta{font-family:var(--mono);font-size:11px}
+.arc-progress-list{
+  margin:7px 0 0;
+  padding-left:18px;
+  color:var(--arc-muted);
+  font-size:11px;
+  line-height:1.35;
+}
+.arc-progress-list li{margin-top:3px}
+.arc-progress-blockers{color:#ffd9d9}
+:root[data-theme="light"] .arc-progress-blockers{color:#8c2626}
+.arc-progress-omitted{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid rgba(122,142,160,.3);
+}
+.arc-progress-omitted h4{
+  margin:0 0 6px;
+  color:var(--arc-text);
+  font-size:14px;
+  line-height:1.25;
+}
+.arc-progress-omitted ul{
+  margin:0;
+  padding-left:18px;
+  color:var(--arc-muted);
+  font-size:12px;
+  line-height:1.4;
+}
 .arc-lower{
   display:flex;
   align-items:flex-start;
@@ -974,6 +1123,10 @@ code,pre,.mono{font-family:var(--mono)}
   .arc-copy{font-size:14px;max-width:none}
   .arc-plan-header{grid-template-columns:1fr;gap:7px}
   .arc-plan-summary{grid-template-columns:1fr}
+  .arc-progress-header{grid-template-columns:1fr}
+  .arc-progress-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .arc-progress-panel,
+  .arc-standalone-nav .arc-progress-panel{padding:0 12px 14px}
   .arc-plan-table,
   .arc-plan-table thead,
   .arc-plan-table tbody,
