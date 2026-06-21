@@ -135,6 +135,7 @@ code,pre,.mono{font-family:var(--mono)}
 }
 
 .civilization-arc-nav{
+  --arc-fs:1.5; /* arc text scale (+50%); single knob */
   --arc-bg:#10151b;
   --arc-bg-2:#151d25;
   --arc-panel:#1b242d;
@@ -186,7 +187,7 @@ code,pre,.mono{font-family:var(--mono)}
   margin:0 0 1px;
   color:var(--arc-cyan);
   font-family:var(--mono);
-  font-size:10px;
+  font-size:calc(var(--arc-fs) * 10px);
   text-transform:uppercase;
   letter-spacing:.08em;
 }
@@ -194,7 +195,7 @@ code,pre,.mono{font-family:var(--mono)}
   margin:0;
   color:var(--arc-text);
   font-family:var(--serif);
-  font-size:20px;
+  font-size:calc(var(--arc-fs) * 20px);
   font-weight:600;
   line-height:1.16;
 }
@@ -230,7 +231,7 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-icon-button{
   width:30px;
   padding:0;
-  font-size:17px;
+  font-size:calc(var(--arc-fs) * 17px);
 }
 .arc-phase-select{
   justify-content:flex-start;
@@ -376,7 +377,7 @@ code,pre,.mono{font-family:var(--mono)}
   max-width:150ch;
   margin:0 0 8px;
   color:var(--arc-muted);
-  font-size:15px;
+  font-size:calc(var(--arc-fs) * 15px);
   line-height:1.5;
   text-wrap:pretty;
 }
@@ -395,7 +396,7 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-plan-header h3{
   margin:0 0 4px;
   color:var(--arc-text);
-  font-size:18px;
+  font-size:calc(var(--arc-fs) * 18px);
   line-height:1.25;
 }
 .arc-plan-updated{
@@ -407,7 +408,7 @@ code,pre,.mono{font-family:var(--mono)}
   margin:0;
   max-width:118ch;
   color:var(--arc-muted);
-  font-size:14px;
+  font-size:calc(var(--arc-fs) * 14px);
   line-height:1.45;
 }
 .arc-plan-summary{
@@ -437,7 +438,7 @@ code,pre,.mono{font-family:var(--mono)}
   min-width:0;
   margin-bottom:8px;
   color:var(--arc-text);
-  font-size:13px;
+  font-size:calc(var(--arc-fs) * 13px);
   line-height:1.3;
   overflow-wrap:anywhere;
 }
@@ -447,7 +448,7 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-plan-section h4{
   margin:0 0 7px;
   color:var(--arc-text);
-  font-size:15px;
+  font-size:calc(var(--arc-fs) * 15px);
   line-height:1.25;
 }
 .arc-plan-table{
@@ -467,7 +468,7 @@ code,pre,.mono{font-family:var(--mono)}
   padding:9px 10px;
   vertical-align:top;
   color:var(--arc-muted);
-  font-size:12px;
+  font-size:calc(var(--arc-fs) * 12px);
   line-height:1.35;
   overflow-wrap:anywhere;
 }
@@ -743,7 +744,7 @@ code,pre,.mono{font-family:var(--mono)}
 }
 .arc-selected h3,.arc-legend h3{
   margin:0 0 8px;
-  font-size:16px;
+  font-size:calc(var(--arc-fs) * 16px);
   line-height:1.25;
 }
 .arc-selected-header h3{
@@ -752,7 +753,7 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-selected-help{
   margin:0 0 10px;
   color:var(--arc-muted);
-  font-size:13px;
+  font-size:calc(var(--arc-fs) * 13px);
   line-height:1.45;
 }
 .arc-selected-code{
@@ -765,7 +766,7 @@ code,pre,.mono{font-family:var(--mono)}
   grid-template-columns:max-content minmax(0,1fr);
   gap:5px 10px;
   margin:0 0 10px;
-  font-size:12px;
+  font-size:calc(var(--arc-fs) * 12px);
 }
 .arc-selected-facts dt{
   color:var(--arc-faint);
@@ -812,7 +813,7 @@ code,pre,.mono{font-family:var(--mono)}
   gap:7px;
   min-width:0;
   color:var(--arc-text);
-  font-size:12px;
+  font-size:calc(var(--arc-fs) * 12px);
   line-height:1.3;
 }
 .arc-selected-related-code{
@@ -836,7 +837,7 @@ code,pre,.mono{font-family:var(--mono)}
   flex:0 1 220px;
   min-width:170px;
   color:var(--arc-muted);
-  font-size:12px;
+  font-size:calc(var(--arc-fs) * 12px);
   line-height:1.25;
 }
 .arc-legend-swatch{
@@ -908,7 +909,7 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-tooltip strong{
   display:block;
   margin-bottom:6px;
-  font-size:13px;
+  font-size:calc(var(--arc-fs) * 13px);
   line-height:1.25;
 }
 .arc-tooltip-code{
@@ -917,7 +918,7 @@ code,pre,.mono{font-family:var(--mono)}
   color:var(--arc-muted);
   font:700 11px/1.25 var(--mono);
 }
-.arc-tooltip-meta{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.arc-tooltip-meta{font-size:calc(var(--arc-fs) * 11px);color:var(--color-text-secondary);margin-top:2px}
 
 .arc-map-bg{fill:rgba(255,255,255,.025);stroke:rgba(122,142,160,.24);stroke-width:1}
 /* Swimlane bands: clean alternating stripes (no hard outline) give the lanes a
@@ -943,7 +944,7 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-swimlane-label{
   fill:var(--arc-text);
   font-family:var(--mono);
-  font-size:11.5px;
+  font-size:calc(var(--arc-fs) * 11.5px);
   font-weight:800;
   letter-spacing:.02em;
   pointer-events:none;
@@ -989,11 +990,11 @@ code,pre,.mono{font-family:var(--mono)}
   pointer-events:none;
   text-shadow:0 1px 2px rgba(0,0,0,.5);
 }
-.arc-phase-label{font-size:15px;letter-spacing:0}
+.arc-phase-label{font-size:calc(var(--arc-fs) * 15px);letter-spacing:0}
 .arc-phase-status-label{
   fill:rgba(241,244,247,.72);
   font-family:var(--mono);
-  font-size:8.5px;
+  font-size:calc(var(--arc-fs) * 8.5px);
   font-weight:700;
   letter-spacing:.04em;
   pointer-events:none;
@@ -1001,13 +1002,13 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-axis-label{
   fill:var(--arc-muted);
   font-family:var(--mono);
-  font-size:10px;
+  font-size:calc(var(--arc-fs) * 10px);
   font-weight:800;
   letter-spacing:.06em;
   text-transform:uppercase;
   pointer-events:none;
 }
-.arc-marker-label{font-size:10.5px}
+.arc-marker-label{font-size:calc(var(--arc-fs) * 10.5px)}
 .arc-compact-rail-line{
   stroke:rgba(136,158,180,.32);
   stroke-width:1;
@@ -1027,15 +1028,15 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-compact-rail-label{
   fill:var(--arc-text);
   font-family:var(--mono);
-  font-size:8.8px;
+  font-size:calc(var(--arc-fs) * 8.8px);
   font-weight:900;
   pointer-events:none;
   text-shadow:0 1px 2px rgba(0,0,0,.62);
 }
-.arc-gate-label{font-size:11px;fill:var(--arc-gold)}
+.arc-gate-label{font-size:calc(var(--arc-fs) * 11px);fill:var(--arc-gold)}
 .arc-close-label{
   fill:#fff;
-  font-size:11px;
+  font-size:calc(var(--arc-fs) * 11px);
   letter-spacing:0;
 }
 .arc-risk-label,.arc-decision-label{fill:#fff}
@@ -1093,7 +1094,7 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-current-label{
   fill:var(--arc-gold);
   font-family:var(--mono);
-  font-size:11px;
+  font-size:calc(var(--arc-fs) * 11px);
   font-weight:800;
   pointer-events:none;
 }
@@ -1115,12 +1116,12 @@ code,pre,.mono{font-family:var(--mono)}
     padding:0 12px 10px;
   }
   .arc-frame{padding:0 12px 8px}
-  .arc-title{font-size:17px}
+  .arc-title{font-size:calc(var(--arc-fs) * 17px)}
   .arc-svg{height:104px}
   .civilization-arc-nav[data-expanded="true"] .arc-svg{height:min(520px,64vh)}
   .arc-standalone-nav[data-expanded="true"] .arc-svg{height:min(560px,58vh)}
   .arc-expanded{padding:0 14px 14px}
-  .arc-copy{font-size:14px;max-width:none}
+  .arc-copy{font-size:calc(var(--arc-fs) * 14px);max-width:none}
   .arc-plan-header{grid-template-columns:1fr;gap:7px}
   .arc-plan-summary{grid-template-columns:1fr}
   .arc-progress-header{grid-template-columns:1fr}
@@ -1242,6 +1243,10 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-track-label,.arc-track-chevron{cursor:pointer}
 .arc-track-label{font-weight:600}
 .arc-subrow-label{fill:var(--color-text-secondary)}
+/* Repo-view collection markers: faint uppercased section label + hairline separating
+   the Civilization / Governance groups (and an Outside-collection group when present). */
+.arc-group-header{text-transform:uppercase;letter-spacing:.08em;font-weight:700;fill:var(--color-text-tertiary)}
+.arc-group-rule{pointer-events:none}
 .arc-sprint-tick-label{font-family:var(--mono)}
 
 /* Toolbar — grouping buttons (left) + zoom controls (pushed right).          */
@@ -1344,13 +1349,13 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-now-label{
   margin:6px 0 0;
   color:var(--color-text-secondary);
-  font-size:13px;
+  font-size:calc(var(--arc-fs) * 13px);
   line-height:1.45;
 }
 .arc-now-blocker{
   margin:8px 0 0;
   color:var(--color-text-secondary);
-  font-size:12.5px;
+  font-size:calc(var(--arc-fs) * 12.5px);
   line-height:1.45;
 }
 .arc-now-blocker-code{
@@ -1369,7 +1374,7 @@ code,pre,.mono{font-family:var(--mono)}
   align-items:baseline;
   gap:8px;
   padding:2px 0;
-  font-size:12.5px;
+  font-size:calc(var(--arc-fs) * 12.5px);
   line-height:1.4;
 }
 .arc-now-item-code{
@@ -1423,13 +1428,13 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-detail-label{
   margin:8px 0 0;
   color:var(--color-text-primary);
-  font-size:13.5px;
+  font-size:calc(var(--arc-fs) * 13.5px);
   line-height:1.45;
 }
 .arc-detail-meta{
   margin:6px 0 0;
   color:var(--color-text-secondary);
-  font-size:12px;
+  font-size:calc(var(--arc-fs) * 12px);
 }
 .arc-detail-meta-key{
   color:var(--color-text-tertiary);
@@ -1440,13 +1445,13 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-detail-note{
   margin:8px 0 0;
   color:var(--color-text-secondary);
-  font-size:12.5px;
+  font-size:calc(var(--arc-fs) * 12.5px);
   line-height:1.5;
 }
 .arc-detail-evidence{
   margin:8px 0 0;
   color:var(--color-text-secondary);
-  font-size:12.5px;
+  font-size:calc(var(--arc-fs) * 12.5px);
   line-height:1.5;
 }
 .arc-detail-evidence-link{
@@ -1464,5 +1469,18 @@ code,pre,.mono{font-family:var(--mono)}
 .arc-detail-hint{
   margin:0;
   color:var(--color-text-tertiary);
-  font-size:12.5px;
+  font-size:calc(var(--arc-fs) * 12.5px);
 }
+
+/* #5 dependency edges: dashed lines drawn on selection (precedent = blue upstream,
+   antecedent = gold downstream). Stroke is also set inline in Draw for no-CSS render. */
+.arc-dep-line{pointer-events:none}
+.arc-dep-precedent{stroke:var(--arc-blue)}
+.arc-dep-antecedent{stroke:var(--arc-gold)}
+.arc-detail-deps{margin:5px 0 0;font-size:calc(var(--arc-fs) * 12px);color:var(--arc-muted);line-height:1.5}
+.arc-detail-dep{color:var(--arc-text);font-family:var(--mono)}
+.arc-detail-deps-precedent .arc-detail-meta-key{color:var(--arc-blue)}
+.arc-detail-deps-antecedent .arc-detail-meta-key{color:var(--arc-gold)}
+
+/* Actor toggle: disabled when no per-item actor data exists (live overlay parked). */
+.arc-group-btn-disabled,.arc-group-btn:disabled{opacity:.4;cursor:not-allowed}

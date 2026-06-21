@@ -15,16 +15,27 @@
   var GATE_FAMILIES = [
     "v3.9 milestones (A-J)",
     "Deployment register (G-0..G-8.4)",
-    "v4.0 (K/L)",
+    "v4.0 (K-S)",
     "Release & security gates (v3.9)",
     "(ungated)",
   ];
-  // Canonical dark-factory repos (GitHub topic "dark-factory"), resolved live
-  // 2026-06-19 via: gh repo list transpara-ai --json name,repositoryTopics
-  //   --jq '.[] | select(.repositoryTopics[]?.name=="dark-factory") | .name'
-  // The "repo" grouping always shows ALL of these as lanes (even empty) so no repo
-  // is ever swamped or dropped; repos outside the set fall into "(other)".
-  var REPO_CANON = ["agent", "docs", "eventgraph", "hive", "site", "work"];
+  // The arc's repo collection. ALL of these repos are the Transpara-AI Civilization; the
+  // two DISPLAY groups are:
+  //   "civilization" — the operational repos (the working society)
+  //   "governance"   — the civilization-wiki/operation meta-layer OVER the civilization
+  // NOTE: the repos NAMED civilization-* live in the GOVERNANCE group BY DESIGN — do not
+  // "fix" this to match repo names. This is a CURATED list, intentionally NOT the live
+  // `dark-factory` topic query (which returns only the 6 operational repos as of 2026-06-21).
+  // The "repo" grouping shows every collection repo as a lane (even empty) so none is
+  // swamped or dropped; repos OUTSIDE the collection get their own named lanes, and a
+  // repo-less item gets a named "(no repo)" lane — nothing is ever silently dropped.
+  var REPO_GROUPS = [
+    { key: "civilization", label: "Civilization",
+      repos: ["agent", "docs", "eventgraph", "hive", "site", "work"] },
+    { key: "governance", label: "Governance",
+      repos: ["civilization-wiki", "civilization-operation"] },
+  ];
+  var REPO_CANON = REPO_GROUPS.reduce(function (acc, g) { return acc.concat(g.repos); }, []);
 
   // "now" on the sequence axis = the frontier: the largest seq among settled (done/active) items.
   function deriveNow(items) {
@@ -53,6 +64,16 @@
       if (typeof it.seq !== "number" || isNaN(it.seq)) errors.push(where + ": seq must be a number");
       if (!it.sprint) errors.push(where + ": missing sprint");
       if (!Array.isArray(it.repo)) errors.push(where + ": repo must be an array");
+      // Backfilled date provenance (fail-closed): a date asserts completion, so it must be
+      // ISO YYYY-MM-DD and only a done item may carry one. A ref, when present, must look
+      // like "repo#123" so its source stays dereferenceable.
+      if (it.date != null) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(it.date)) errors.push(where + ": date must be ISO YYYY-MM-DD, got '" + it.date + "'");
+        if (it.status !== "done") errors.push(where + ": only done items may carry a date (status '" + it.status + "')");
+      }
+      if (it.ref != null && !/^[a-z][a-z0-9-]*#\d+$/.test(it.ref)) {
+        errors.push(where + ": ref must look like 'repo#123', got '" + it.ref + "'");
+      }
       if (typeof it.seq === "number" && !isNaN(it.seq) && it.seq < now && !SETTLED[it.status]) {
         errors.push(where + ": status '" + it.status + "' at seq " + it.seq +
           " is left of now (" + now + ") — past items must be done/active");
@@ -69,30 +90,47 @@
     if (dim === "actor") return actorOf(it);
     return "(none)";
   }
-  // Repo grouping is a COMPLETE canonical enumeration with multi-membership: every
-  // dark-factory repo gets a lane (even with zero items), an item appears in EACH of
-  // its repos (not just repo[0]), and non-canonical repos collapse into "(other)"
-  // (shown only when non-empty). This is the allowlist-not-denylist fix for the old
-  // repo[0] behavior that silently dropped under-weighted repos like eventgraph/agent.
+  // Repo grouping is a COMPLETE collection enumeration with multi-membership: every
+  // collection repo gets a lane (even with zero items) tagged with its display group
+  // ("civilization" | "governance"); an item appears in EACH of its repos (not just
+  // repo[0]). Repos OUTSIDE the collection get their OWN named lanes, and a repo-less
+  // item gets a "(no repo)" lane — both tagged "outside" and appended (sorted) only when
+  // present. Allowlist-not-denylist: membership in REPO_CANON is the proven branch; any
+  // repo not on the list is named, never bucketed, never silently dropped.
   function groupByRepo(items) {
-    var map = {};
-    REPO_CANON.forEach(function (r) { map[r] = []; });
-    var other = [], hasOther = false;
+    var canon = {};                          // collection repo → items[]
+    REPO_CANON.forEach(function (r) { canon[r] = []; });
+    var outsideMap = {};                      // outside repo (or "(no repo)") → items[]
+    function pushOutside(name, it) {
+      if (!outsideMap[name]) outsideMap[name] = [];
+      outsideMap[name].push(it);
+    }
     (items || []).forEach(function (it) {
       var repos = (it && Array.isArray(it.repo)) ? it.repo : [];
-      var seen = {}, addedOther = false, matchedCanon = false;
+      var seen = {}, matchedAny = false;
       repos.forEach(function (r) {
         if (seen[r]) return;                 // dedupe repeated repos within one item
         seen[r] = true;
-        if (REPO_CANON.indexOf(r) !== -1) { map[r].push(it); matchedCanon = true; }
-        else if (!addedOther) { other.push(it); addedOther = true; hasOther = true; }
+        matchedAny = true;
+        if (REPO_CANON.indexOf(r) !== -1) canon[r].push(it);
+        else pushOutside(r, it);             // outside repo → its OWN named lane
       });
-      // A repo-less item (repo:[]) matches no lane above. validateItems accepts an
-      // empty repo array, so route it to (other) rather than silently dropping it.
-      if (!matchedCanon && !addedOther) { other.push(it); hasOther = true; }
+      // A repo-less item (repo:[]) matches nothing above → named "(no repo)" lane, never dropped.
+      if (!matchedAny) pushOutside("(no repo)", it);
     });
-    var lanes = REPO_CANON.map(function (r) { return { lane: r, items: map[r] }; });
-    if (hasOther) lanes.push({ lane: "(other)", items: other });
+    // Collection lanes, in group order, each tagged with its display group + label.
+    var lanes = [];
+    REPO_GROUPS.forEach(function (g) {
+      g.repos.forEach(function (r) {
+        lanes.push({ lane: r, items: canon[r], group: g.key, groupLabel: g.label });
+      });
+    });
+    // Outside lanes (only when present): named repos alphabetically, then "(no repo)" last.
+    var named = Object.keys(outsideMap).filter(function (n) { return n !== "(no repo)"; }).sort();
+    if (outsideMap["(no repo)"]) named.push("(no repo)");
+    named.forEach(function (n) {
+      lanes.push({ lane: n, items: outsideMap[n], group: "outside", groupLabel: "Outside collection" });
+    });
     return lanes;
   }
 
@@ -190,7 +228,8 @@
 
   var api = {
     STATUS_ORDER: STATUS_ORDER, NODE_TYPES: NODE_TYPES, PROVENANCE: PROVENANCE,
-    SETTLED: SETTLED, deriveNow: deriveNow, validateItems: validateItems,
+    SETTLED: SETTLED, REPO_GROUPS: REPO_GROUPS, REPO_CANON: REPO_CANON,
+    deriveNow: deriveNow, validateItems: validateItems,
     groupBy: groupBy, visibleDeps: visibleDeps, actorOf: actorOf, mergeInflight: mergeInflight,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

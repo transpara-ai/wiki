@@ -54,9 +54,9 @@ test('validateItems rejects invalid enum + duplicate id + missing fields', () =>
 
 const G = [
   { id: 'a', type: 'work', status: 'done',    blocked: false, seq: 1, sprint: 'hive',   gate: 'v3.9',  family: 'v3.9 milestones (A-J)', repo: ['hive'] },
-  { id: 'b', type: 'work', status: 'active',  blocked: true,  seq: 2, sprint: 'gov',    gate: 'gate-k', family: 'v4.0 (K/L)',           repo: ['docs'] },
+  { id: 'b', type: 'work', status: 'active',  blocked: true,  seq: 2, sprint: 'gov',    gate: 'gate-k', family: 'v4.0 (K-S)',           repo: ['docs'] },
   { id: 'c', type: 'work', status: 'planned', blocked: false, seq: 3, sprint: 'deploy',                                                 repo: ['site'] },
-  { id: 'd', type: 'work', status: 'active',  blocked: false, seq: 4, sprint: 'wiki',   gate: 'gate-k', family: 'v4.0 (K/L)',           repo: ['site'] },
+  { id: 'd', type: 'work', status: 'active',  blocked: false, seq: 4, sprint: 'wiki',   gate: 'gate-k', family: 'v4.0 (K-S)',           repo: ['site'] },
 ];
 test('groupBy status: fixed band order; each item in exactly one lane (blocked overrides)', () => {
   assert.deepStrictEqual(O.groupBy(G, 'status').map(l => l.lane), ['done', 'active', 'blocked', 'planned']);
@@ -65,12 +65,18 @@ test('groupBy status: fixed band order; each item in exactly one lane (blocked o
   const blocked = O.groupBy(G, 'status').find(l => l.lane === 'blocked');
   assert.deepStrictEqual(blocked.items.map(i => i.id), ['b']);
 });
-test('groupBy repo always shows every canonical dark-factory repo as a lane (even empty)', () => {
+test('groupBy repo: 8-repo collection in Civilization→Governance order, each lane group-tagged', () => {
   const lanes = O.groupBy(G, 'repo');
-  assert.deepStrictEqual(lanes.map(l => l.lane), ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work']);
-  // canonical repos with no items still appear, empty — never swamped or dropped
+  assert.deepStrictEqual(lanes.map(l => l.lane),
+    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'civilization-wiki', 'civilization-operation']);
+  // the 6 operational repos are the "civilization" group; the 2 civilization-* repos are "governance"
+  assert.strictEqual(lanes.find(l => l.lane === 'agent').group, 'civilization');
+  assert.strictEqual(lanes.find(l => l.lane === 'work').group, 'civilization');
+  assert.strictEqual(lanes.find(l => l.lane === 'civilization-wiki').group, 'governance');
+  assert.strictEqual(lanes.find(l => l.lane === 'civilization-operation').group, 'governance');
+  // every canonical repo shows even when empty — never swamped or dropped
   assert.strictEqual(lanes.find(l => l.lane === 'agent').items.length, 0);
-  assert.strictEqual(lanes.find(l => l.lane === 'eventgraph').items.length, 0);
+  assert.strictEqual(lanes.find(l => l.lane === 'civilization-operation').items.length, 0);
   assert.deepStrictEqual(lanes.find(l => l.lane === 'site').items.map(i => i.id), ['c', 'd']);
 });
 
@@ -82,52 +88,105 @@ test('groupBy repo places a multi-repo item in EACH of its repo lanes (not just 
     'eventgraph must appear even when it is the second repo');
 });
 
-test('groupBy repo routes non-canonical repos to (other), hidden when there are none', () => {
-  const canonOnly = O.groupBy([{ id: 'a', repo: ['site'] }], 'repo');
-  assert.ok(!canonOnly.some(l => l.lane === '(other)'), '(other) is hidden when every repo is canonical');
-  const withOther = O.groupBy([{ id: 'cw', repo: ['civilization-wiki'] }], 'repo');
-  const other = withOther.find(l => l.lane === '(other)');
-  assert.ok(other && other.items.length === 1, 'a non-canonical repo lands in (other)');
-  assert.strictEqual(withOther[withOther.length - 1].lane, '(other)', '(other) sorts after the canonical lanes');
-});
-
 test('groupBy repo dedupes a repeated repo so the item appears once in that lane', () => {
   const lanes = O.groupBy([{ id: 'd', repo: ['hive', 'hive'] }], 'repo');
   assert.strictEqual(lanes.find(l => l.lane === 'hive').items.length, 1);
 });
 
-test('groupBy repo routes a repo-less item to (other) so it is never silently dropped', () => {
-  // validateItems accepts repo: [] (it only checks Array), so the grouping must not
-  // make such an item vanish — it lands in (other), visible. (Fail-legible, never drop.)
+test('groupBy repo: civilization-wiki is now IN the collection (governance), not (other)', () => {
+  const lanes = O.groupBy([{ id: 'cw', repo: ['civilization-wiki'] }], 'repo');
+  assert.ok(!lanes.some(l => l.lane === '(other)'), 'the generic (other) bucket is gone');
+  const cw = lanes.find(l => l.lane === 'civilization-wiki');
+  assert.deepStrictEqual(cw.items.map(i => i.id), ['cw']);
+  assert.strictEqual(cw.group, 'governance');
+});
+
+test('groupBy repo: a repo OUTSIDE the collection gets its OWN named lane, tagged "outside"', () => {
+  const lanes = O.groupBy([{ id: 'g', repo: ['ghost-repo'] }], 'repo');
+  assert.ok(!lanes.some(l => l.lane === '(other)'), 'named, not bucketed into (other)');
+  const ghost = lanes.find(l => l.lane === 'ghost-repo');
+  assert.ok(ghost, 'the actual repo name appears as a lane');
+  assert.deepStrictEqual(ghost.items.map(i => i.id), ['g']);
+  assert.strictEqual(ghost.group, 'outside');
+  assert.strictEqual(lanes[lanes.length - 1].lane, 'ghost-repo', 'outside lanes sort after the collection');
+});
+
+test('groupBy repo: the outside group is ABSENT when every repo is in the collection', () => {
+  const lanes = O.groupBy([{ id: 'a', repo: ['site'] }, { id: 'b', repo: ['civilization-wiki'] }], 'repo');
+  assert.ok(!lanes.some(l => l.group === 'outside'), 'no outside lanes');
+  assert.strictEqual(lanes.length, 8, 'exactly the 8-repo collection, no extra');
+});
+
+test('groupBy repo: a repo-less item lands in a named "(no repo)" outside lane, never dropped', () => {
+  // validateItems accepts repo: [] (it only checks Array), so the grouping must not make
+  // such an item vanish — it lands in a named (no repo) lane, visible. (Fail-legible, never drop.)
   const lanes = O.groupBy([{ id: 'norepo', repo: [] }], 'repo');
-  const other = lanes.find(l => l.lane === '(other)');
-  assert.ok(other && other.items.some(i => i.id === 'norepo'),
-    'an item with an empty repo array must appear in (other), not disappear');
+  const nr = lanes.find(l => l.lane === '(no repo)');
+  assert.ok(nr && nr.items.some(i => i.id === 'norepo'),
+    'an item with an empty repo array must appear in (no repo), not disappear');
+  assert.strictEqual(nr.group, 'outside');
+});
+
+test('groupBy repo is FAIL-CLOSED: no item dropped across canonical/outside/mixed/repo-less', () => {
+  const items = [
+    { id: 'canon', repo: ['docs'] },
+    { id: 'mixed', repo: ['docs', 'ghost-repo'] },
+    { id: 'outsideOnly', repo: ['ghost-repo'] },
+    { id: 'norepo', repo: [] },
+  ];
+  const lanes = O.groupBy(items, 'repo');
+  const seen = new Set();
+  lanes.forEach(l => l.items.forEach(i => seen.add(i.id)));
+  assert.deepStrictEqual([...seen].sort(), ['canon', 'mixed', 'norepo', 'outsideOnly'],
+    'every input item must surface in at least one lane');
+  // a mixed item appears in BOTH its canonical and its outside lane
+  assert.ok(lanes.find(l => l.lane === 'docs').items.some(i => i.id === 'mixed'));
+  assert.ok(lanes.find(l => l.lane === 'ghost-repo').items.some(i => i.id === 'mixed'));
+  // outside lanes: named repos alphabetically, then "(no repo)" last
+  assert.deepStrictEqual(lanes.filter(l => l.group === 'outside').map(l => l.lane), ['ghost-repo', '(no repo)']);
+});
+
+test('REPO_GROUPS is the curated Civilization/Governance collection; REPO_CANON is their union (8)', () => {
+  assert.deepStrictEqual(O.REPO_GROUPS.map(g => g.label), ['Civilization', 'Governance']);
+  assert.deepStrictEqual(O.REPO_GROUPS.find(g => g.key === 'civilization').repos,
+    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work']);
+  assert.deepStrictEqual(O.REPO_GROUPS.find(g => g.key === 'governance').repos,
+    ['civilization-wiki', 'civilization-operation']);
+  assert.deepStrictEqual(O.REPO_CANON,
+    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'civilization-wiki', 'civilization-operation']);
+});
+
+test('groupBy repo on real arc data: civ-wiki populated, civ-operation empty, no outside group', () => {
+  const items = loadData().items;
+  const lanes = O.groupBy(items, 'repo');
+  assert.ok(!lanes.some(l => l.group === 'outside'), 'all real items are within the 8-repo collection');
+  assert.ok(lanes.find(l => l.lane === 'civilization-wiki').items.length > 0, 'civ-wiki lane is populated');
+  assert.strictEqual(lanes.find(l => l.lane === 'civilization-operation').items.length, 0, 'civ-operation empty for now');
 });
 test('groupBy gate lanes by family; family-less items fall in (ungated); fixed family order', () => {
   const lanes = O.groupBy(G, 'gate');
   // Lane = item.family (not item.gate); ordered by GATE_FAMILIES with (ungated) last.
   assert.deepStrictEqual(lanes.map(l => l.lane), [
     'v3.9 milestones (A-J)',
-    'v4.0 (K/L)',
+    'v4.0 (K-S)',
     '(ungated)',
   ]);
   // Item 'c' has no family → (ungated). Items b & d share the v4.0 family.
   const ungated = lanes.find(l => l.lane === '(ungated)');
   assert.deepStrictEqual(ungated.items.map(i => i.id), ['c']);
-  const v40 = lanes.find(l => l.lane === 'v4.0 (K/L)');
+  const v40 = lanes.find(l => l.lane === 'v4.0 (K-S)');
   assert.deepStrictEqual(v40.items.map(i => i.id).sort(), ['b', 'd']);
 });
 test('groupBy gate appends unknown families alphabetically, before (ungated)', () => {
   const items = [
     { id: 'u', type: 'work', status: 'done', blocked: false, seq: 1, sprint: 's', repo: ['r'] }, // no family → (ungated)
     { id: 'z', type: 'gate', status: 'done', blocked: false, seq: 2, sprint: 's', family: 'Zeta family', repo: ['r'] },
-    { id: 'k', type: 'gate', status: 'done', blocked: false, seq: 3, sprint: 's', family: 'v4.0 (K/L)', repo: ['r'] },
+    { id: 'k', type: 'gate', status: 'done', blocked: false, seq: 3, sprint: 's', family: 'v4.0 (K-S)', repo: ['r'] },
     { id: 'm', type: 'gate', status: 'done', blocked: false, seq: 4, sprint: 's', family: 'Alpha family', repo: ['r'] },
   ];
   // Known family first (v4.0), then unknowns alphabetically (Alpha, Zeta), then (ungated) last.
   assert.deepStrictEqual(O.groupBy(items, 'gate').map(l => l.lane), [
-    'v4.0 (K/L)',
+    'v4.0 (K-S)',
     'Alpha family',
     'Zeta family',
     '(ungated)',
@@ -186,6 +245,50 @@ test('every dep id resolves to a real item', () => {
   const items = loadData().items;
   const ids = new Set(items.map(i => i.id));
   items.forEach(i => (i.deps || []).forEach(d => assert.ok(ids.has(d), 'dangling dep ' + d + ' on ' + i.id)));
+});
+
+// --- date backfill: fail-closed contract rule (date ⇒ ISO + done; ref well-formed) ---
+function datedItem(over) {
+  return Object.assign({ id: 'a', type: 'gate', status: 'done', provenance: 'derived',
+    seq: 1, sprint: 's', repo: ['docs'] }, over || {});
+}
+test('validateItems FAILS CLOSED on a non-ISO date', () => {
+  const r = O.validateItems([datedItem({ date: '6/17/2026' })]);
+  assert.strictEqual(r.ok, false);
+  assert.ok(r.errors.some(e => /date must be ISO/.test(e)));
+});
+test('validateItems FAILS CLOSED on a date attached to a non-done item', () => {
+  const r = O.validateItems([datedItem({ status: 'active', date: '2026-06-17' })]);
+  assert.strictEqual(r.ok, false);
+  assert.ok(r.errors.some(e => /only done items may carry a date/.test(e)));
+});
+test('validateItems FAILS CLOSED on a malformed provenance ref', () => {
+  const r = O.validateItems([datedItem({ ref: 'PR-138' })]);
+  assert.strictEqual(r.ok, false);
+  assert.ok(r.errors.some(e => /ref must look like/.test(e)));
+});
+test('validateItems accepts an ISO date + repo#n ref on a done item', () => {
+  assert.strictEqual(O.validateItems([datedItem({ date: '2026-06-17', ref: 'docs#138' })]).ok, true);
+});
+
+test('arc data: exactly the 21 done items carry verified backfilled dates + provenance refs', () => {
+  const items = loadData().items;
+  const dated = items.filter(i => i.date != null);
+  assert.strictEqual(dated.length, 21, 'exactly 21 dated items; got ' + dated.length);
+  dated.forEach(i => {
+    assert.strictEqual(i.status, 'done', i.code + ' is dated but not done');
+    assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(i.date), i.code + ' date not ISO: ' + i.date);
+    assert.ok(i.date <= '2026-06-21', i.code + ' date is in the future: ' + i.date); // ISO sorts lexically
+    assert.ok(/^[a-z][a-z0-9-]*#\d+$/.test(i.ref), i.code + ' missing/malformed ref: ' + i.ref);
+  });
+  // sentinels — each independently verified against the cited PR's merge date
+  const by = c => items.find(i => i.code === c);
+  assert.strictEqual(by('Gate-K').date, '2026-06-17');
+  assert.strictEqual(by('Trace').date, '2026-05-14');
+  assert.strictEqual(by('Gate-F').date, '2026-06-01');
+  assert.strictEqual(by('N6').date, '2026-06-12');
+  // the contract rule holds over the whole baked set
+  assert.strictEqual(O.validateItems(items).ok, true);
 });
 
 // --- Live in-flight overlay (mergeInflight) + actor facet (Task 3) ---

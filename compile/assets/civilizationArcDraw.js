@@ -17,6 +17,9 @@
     gutter: 168, marginRight: 28, rowH: 30, trackPad: 8, trackGap: 10, top: 64, axisH: 34,
   };
 
+  // Arc text scale (+50%): single knob, mirrored by --arc-fs in style.css.
+  var ARC_FS = 1.5;
+
   // Status -> fill hex. These read in both light and dark themes.
   var STATUS_FILL = {
     done: "#1D9E75",
@@ -75,7 +78,7 @@
   function drawAxis(svg, layout) {
     if (!svg || !layout) return;
     var doc = svg.ownerDocument;
-    var baseY = num(layout.contentHeight) - GEOM.axisH;
+    var baseY = num(layout.contentHeight) - num(layout.axisH != null ? layout.axisH : GEOM.axisH);
     var plotLeft = num(layout.plotLeft);
     var plotStart = (layout.plotStart != null) ? num(layout.plotStart) : plotLeft;
     var plotRight = num(layout.plotRight);
@@ -102,11 +105,11 @@
         "class": "arc-sprint-tick-label",
         x: tx, y: baseY + 10,
         "text-anchor": "end",
-        "font-size": 9.5,
+        "font-size": GEOM.axisFont || (9.5 * ARC_FS),
         fill: "var(--color-text-secondary)",
         transform: "rotate(-38 " + tx + " " + (baseY + 10) + ")",
       });
-      label.textContent = axisTickLabel(t.label);
+      label.textContent = (t.display != null ? t.display : axisTickLabel(t.label));
       svg.appendChild(label);
     });
 
@@ -130,7 +133,7 @@
       "class": "arc-now-tag-label",
       x: nowX, y: nowTop - tagH / 2 + 3,
       "text-anchor": "middle",
-      "font-size": 10,
+      "font-size": 10 * ARC_FS,
       fill: "#3a2a08",
     });
     nowText.textContent = "now";
@@ -146,6 +149,30 @@
     var tracks = layout.tracks || [];
     var contentWidth = num(layout.contentWidth);
     var plotLeft = num(layout.plotLeft);
+
+    // Group headers (repo view): a faint, uppercased section label per display group
+    // ("Civilization" / "Governance" / "Outside collection") with a hairline under it,
+    // marking which lanes are in the collection vs outside it. Empty for other dimensions.
+    var headerH = GEOM.groupHeaderH || 22;
+    (layout.groupHeaders || []).forEach(function (h) {
+      var baseline = num(h.y) + headerH - 7;
+      var hdr = svgEl(doc, "text", {
+        "class": "arc-group-header",
+        x: 4, y: baseline,
+        "text-anchor": "start",
+        "font-size": 11 * ARC_FS,
+        fill: "var(--color-text-tertiary)",
+        "data-arc-group-header": h.group == null ? "" : String(h.group),
+      });
+      hdr.textContent = h.label == null ? "" : String(h.label);
+      svg.appendChild(hdr);
+      svg.appendChild(svgEl(doc, "line", {
+        "class": "arc-group-rule",
+        x1: 0, y1: baseline + 4, x2: contentWidth, y2: baseline + 4,
+        stroke: "var(--color-text-tertiary)", "stroke-width": 1, opacity: 0.4,
+        "vector-effect": "non-scaling-stroke",
+      }));
+    });
 
     tracks.forEach(function (track, idx) {
       // Faint background band; alternate stripe via opacity.
@@ -181,7 +208,7 @@
         "class": "arc-track-label",
         x: labelX, y: labelY,
         "text-anchor": "end",
-        "font-size": 13,
+        "font-size": 13 * ARC_FS,
         fill: "var(--color-text-primary)",
         "data-arc-collapse": track.id,
       });
@@ -197,7 +224,7 @@
           "class": "arc-subrow-label",
           x: plotLeft - 14, y: num(row.y) + 4,
           "text-anchor": "end",
-          "font-size": 11,
+          "font-size": 11 * ARC_FS,
           fill: "var(--color-text-secondary)",
         });
         sub.textContent = rowLabel;
@@ -291,6 +318,38 @@
     });
   }
 
+  // ---- dependency edges -----------------------------------------------------
+
+  // Dashed lines from the selected marker to its dependencies, in BOTH directions:
+  //   precedent  (blue)  — what the selected item depends on / is gated by (upstream)
+  //   antecedent (gold)  — what depends on / is gated by the selected item (downstream)
+  // `edges` come from CivOntology.visibleDeps (each {from, to} = "to depends on from").
+  // Drawn between tracks and markers so the lines sit under the marker shapes.
+  function drawDeps(svg, layout, edges, selectedId) {
+    if (!svg || !layout || !edges || !edges.length) return;
+    var doc = svg.ownerDocument;
+    var pos = {};
+    (layout.tracks || []).forEach(function (t) {
+      (t.rows || []).forEach(function (r) {
+        (r.items || []).forEach(function (p) {
+          if (p && p.item && p.item.id != null) pos[p.item.id] = { x: num(p.x), y: num(p.y) };
+        });
+      });
+    });
+    edges.forEach(function (e) {
+      var a = pos[e.from], b = pos[e.to];
+      if (!a || !b) return;
+      var kind = (e.to === selectedId) ? "precedent" : "antecedent";
+      var stroke = (kind === "precedent") ? "#6cb6ff" : "#e7bf64";
+      svg.appendChild(svgEl(doc, "line", {
+        "class": "arc-dep-line arc-dep-" + kind,
+        x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+        stroke: stroke, "stroke-width": 1.5, "stroke-dasharray": "5 4",
+        opacity: 0.9, "vector-effect": "non-scaling-stroke",
+      }));
+    });
+  }
+
   // ---- exports --------------------------------------------------------------
 
   var api = {
@@ -299,6 +358,7 @@
     drawAxis: drawAxis,
     drawTracks: drawTracks,
     drawMarkers: drawMarkers,
+    drawDeps: drawDeps,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (root) root.CivArcDraw = api;

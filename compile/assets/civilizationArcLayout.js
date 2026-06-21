@@ -7,7 +7,7 @@
   var GATE_FAMILIES = [
     "v3.9 milestones (A-J)",
     "Deployment register (G-0..G-8.4)",
-    "v4.0 (K/L)",
+    "v4.0 (K-S)",
     "Release & security gates (v3.9)",
   ];
 
@@ -15,7 +15,7 @@
   // the right-anchored track/sub-row labels that live in the gutter.
   // detailCol = chip-safe column width (>= the 30px worklist-chip footprint), used to
   // derive the max zoom so a readable detail view is always reachable (see detailWidth).
-  var GEOM = { gutter: 190, marginRight: 28, rowH: 30, trackPad: 8, trackGap: 10, top: 64, axisH: 56, plotPad: 18, detailCol: 34 };
+  var GEOM = { gutter: 190, marginRight: 28, rowH: 30, trackPad: 8, trackGap: 10, top: 64, axisH: 56, plotPad: 18, detailCol: 34, axisFont: 14, axisAngle: 38, axisHMin: 44, groupHeaderH: 22 };
 
   // Ordinal rank scale: distinct seq values are placed at equidistant columns
   // (NOT proportional to seq magnitude). Items sharing a seq share a column.
@@ -57,7 +57,7 @@
     sprints.forEach(function (sp) {
       var ms = minSeq[sp.id];
       if (ms === undefined) return; // sprint with no items → no tick
-      ticks.push({ id: sp.id, label: sp.label, x: sx(ms), startSeq: ms });
+      ticks.push({ id: sp.id, label: sp.label, display: axisLabelText(sp.label), x: sx(ms), startSeq: ms });
     });
     ticks.sort(function (a, b) { return a.x - b.x; });
     return ticks;
@@ -76,6 +76,29 @@
   }
 
   function bySeq(a, b) { return a.seq - b.seq; }
+
+  // Display label for an axis tick: the punchy part after the last "/", shown in
+  // FULL (no ellipsis truncation). The complete sprint name still shows in tooltips.
+  function axisLabelText(label) {
+    var s = label == null ? "" : String(label);
+    var slash = s.lastIndexOf("/");
+    if (slash !== -1) s = s.slice(slash + 1);
+    return s.replace(/^\s+|\s+$/g, "");
+  }
+
+  // Axis band height grows to fit the rotated sprint labels in full (no clipping,
+  // no ellipsis). Derived from the longest display label at the tick rotation angle,
+  // so zooming (which never changes label length) keeps every label fully visible.
+  function computeAxisH(ticks) {
+    var maxChars = 0;
+    (ticks || []).forEach(function (t) {
+      var s = (t && t.display != null) ? String(t.display) : "";
+      if (s.length > maxChars) maxChars = s.length;
+    });
+    var approxW = maxChars * GEOM.axisFont * 0.6;          // mono ~= 0.6em / char
+    var drop = approxW * Math.sin(GEOM.axisAngle * Math.PI / 180);
+    return Math.max(GEOM.axisHMin, Math.ceil(drop) + GEOM.axisFont + 16);
+  }
 
   function buildLayout(data, opts) {
     opts = opts || {};
@@ -122,13 +145,24 @@
         return {
           id: groupBy + ":" + lane.lane,
           label: lane.lane,
+          group: lane.group,              // repo view: "civilization" | "governance" | "outside"
+          groupLabel: lane.groupLabel,    // undefined for other dimensions → no header drawn
           rows: [{ id: groupBy + ":" + lane.lane + ":row", label: "", items: lane.items }],
         };
       });
     }
 
     var y = GEOM.top;
+    var groupHeaders = [];
+    var prevGroup = null;
     var tracks = defs.map(function (t) {
+      // Group header (repo view only): emit when entering a new display group. Other
+      // dimensions carry no group on their defs, so no header is produced.
+      if (t.group && t.group !== prevGroup) {
+        groupHeaders.push({ group: t.group, label: t.groupLabel, y: y });
+        y += GEOM.groupHeaderH;
+      }
+      prevGroup = t.group || null;
       var isColl = !!collapsed[t.id], top = y, rows = [];
       if (isColl) { y += GEOM.rowH; }
       else {
@@ -144,11 +178,13 @@
     });
 
     var nowSeq = O.deriveNow(items);
+    var sprintTicks = buildSprintTicks(data, items, sx);
+    var axisH = computeAxisH(sprintTicks);
     return {
-      tracks: tracks, scaleX: sx, domain: domain, plotLeft: plotLeft, plotStart: plotStart, plotRight: plotRight,
+      tracks: tracks, groupHeaders: groupHeaders, scaleX: sx, domain: domain, plotLeft: plotLeft, plotStart: plotStart, plotRight: plotRight,
       nowSeq: nowSeq, nowX: sx(nowSeq),
-      sprintTicks: buildSprintTicks(data, items, sx),
-      width: width, contentWidth: contentWidth, contentHeight: y + GEOM.axisH,
+      sprintTicks: sprintTicks, axisH: axisH,
+      width: width, contentWidth: contentWidth, contentHeight: y + axisH,
     };
   }
 
