@@ -17,7 +17,8 @@
     gutter: 168, marginRight: 28, rowH: 30, trackPad: 8, trackGap: 10, top: 64, axisH: 34,
   };
 
-  // Arc text scale (+50%): single knob, mirrored by --arc-fs in style.css.
+  // Arc content text scale (+50%): mirrored by --arc-fs in style.css.
+  // Gutter lane labels stay unscaled so long repo/gate labels fit the SVG viewBox.
   var ARC_FS = 1.5;
 
   // Status -> fill hex. These read in both light and dark themes.
@@ -208,7 +209,7 @@
         "class": "arc-track-label",
         x: labelX, y: labelY,
         "text-anchor": "end",
-        "font-size": 13 * ARC_FS,
+        "font-size": 13,
         fill: "var(--color-text-primary)",
         "data-arc-collapse": track.id,
       });
@@ -224,7 +225,7 @@
           "class": "arc-subrow-label",
           x: plotLeft - 14, y: num(row.y) + 4,
           "text-anchor": "end",
-          "font-size": 11 * ARC_FS,
+          "font-size": 11,
           fill: "var(--color-text-secondary)",
         });
         sub.textContent = rowLabel;

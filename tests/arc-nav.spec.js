@@ -19,6 +19,23 @@ test("homepage arc renders with tracks structure", async ({ page }) => {
   expect(count).toBeGreaterThan(0);
 });
 
+test("arc gutter labels stay inside the SVG viewBox", async ({ page }) => {
+  await page.goto("/index.html");
+  await expect(page.locator("svg.arc-svg")).toBeVisible();
+
+  async function clippedLabels() {
+    return page.evaluate(() =>
+      [...document.querySelectorAll(".arc-track-label, .arc-subrow-label")]
+        .map((el) => ({ text: el.textContent, x: el.getBBox().x }))
+        .filter((label) => label.x < -0.5)
+    );
+  }
+
+  expect(await clippedLabels()).toEqual([]);
+  await page.locator('[data-arc-group="repo"]').click();
+  expect(await clippedLabels()).toEqual([]);
+});
+
 test("homepage arc displays operation progress evidence", async ({ page }) => {
   await page.goto("/index.html");
 
