@@ -1,7 +1,7 @@
 ---
 title: Civilization Wiki — provenance manifest
-last_updated: 2026-06-13
-status: partial — tiers declared; two of four source tiers not yet mirrored
+last_updated: 2026-06-21
+status: partial — searles and open_brain mirrored; open_brain mirror stale after 2026-06-13; first_party/upstream_context not locally mirrored
 authority: reference (the source manifest named in DESIGN.md)
 tiers: [searles, first_party, open_brain, upstream_context]
 ---
@@ -25,18 +25,21 @@ This manifest is honest about its own gaps, the way `index.md` is honest about
 deferred articles. The four tiers exist as declared scope; only two have content
 on disk this run.
 
-| Tier | `raw/` location | Mirrored? | State on disk (2026-06-13) |
+| Tier | `raw/` location | Mirrored? | State on disk (2026-06-21) |
 |---|---|---|---|
 | `searles` | `raw/searles/` | **Yes** | `all-posts-1.md` present (43 posts) |
 | `first_party` | (read in place — see below) | **No local mirror** | read from `docs/dark-factory`; `raw/transpara/` holds only `.gitkeep` |
-| `open_brain` | `raw/open-brain/` | **No** | empty but for `.gitkeep` — export not yet run |
+| `open_brain` | `raw/open-brain/` | **Yes, stale** | `2026-{03,04,05,06}.md` — 1,175 thoughts, 2026-03-03 through 2026-06-13; live OpenBrain checked 2026-06-21 reports 2,338 thoughts and June 21 captures |
 | `upstream_context` | `raw/investigations/` | **No** | empty but for `.gitkeep` — Phase 2 (per `DESIGN.md`) |
 
-**What this means for trust:** only the `searles` tier is reproducible from this
-repo alone today. The `first_party` corpus was read **in place** from a sibling
-checkout (Run-1 compiled the arc spine directly against `docs/dark-factory`
-rather than copying it into `raw/transpara/` first); the `open_brain` and
-`upstream_context` tiers are **declared but unfilled**. Do not read an empty
+**What this means for trust:** the `searles` tier and the stale `open_brain`
+mirror are reproducible from this repo alone today. The `first_party` corpus was
+read **in place** from a sibling checkout (Run-1 compiled the arc spine directly
+against `docs/dark-factory` rather than copying it into `raw/transpara/` first);
+the `open_brain` tier **has a committed mirror** (`raw/open-brain/2026-{03..06}.md`,
+1,175 thoughts, 2026-03-03 through 2026-06-13) but is **not current with the live
+store** as of 2026-06-21, while `upstream_context` is still **declared but
+unfilled**. Do not read an empty
 `raw/` subdirectory as "no such source" — read it as "not yet mirrored." The
 nightly keep-current job in `DESIGN.md` is what will populate them.
 
@@ -135,18 +138,40 @@ its own nightly re-export.
 
 | Field | Value |
 |---|---|
-| **Target location** | `raw/open-brain/` — **empty this run** (only `.gitkeep`). |
+| **Target location** | `raw/open-brain/` — **filled but stale**: `2026-{03,04,05,06}.md`, one dump per month (1,175 thoughts). |
 | **Origin** | First-party — the Open Brain thought store (captured via `mcp__open-brain__capture_thought`), to be dumped as dated markdown, one record per thought. |
-| **Date / range** | The store opens **2026-03-04** (per `DESIGN.md` §"The Feb genesis": "Open Brain starts 3/4") and runs to the present. The export date range will be set when the dump first runs. |
-| **Volume (target)** | **~1,175 thoughts** (`DESIGN.md` figure). Verify live at export time via `mcp__open-brain__list_thoughts` / `thought_stats`; the 1,175 figure is the design estimate, not an on-disk count. |
+| **Date / range** | The committed mirror covers **2026-03-03 → 2026-06-13**. `DESIGN.md` still says "Open Brain starts 3/4"; that is treated here as the design/store-open claim, while 2026-03-03 is the actual first date present in the committed mirror. Live OpenBrain access on 2026-06-21 confirms recent captures on **2026-06-21**. |
+| **Volume** | **1,175 thoughts on disk** in the committed mirror. Live `thought_stats` checked 2026-06-21 reports **2,338 total thoughts**. |
 | **Tier** | `open_brain` |
-| **How the wiki uses it** | Phase-1 source alongside `searles` + `first_party` (`DESIGN.md`: "Phase 1 = searles + first_party + open_brain — the arc itself"). Run-1 reached Open Brain via targeted queries to ground specific arc facts (e.g. the earliest spawn-lifecycle thoughts naming `lovyou-ai-hive`, cited in `wiki/agent.md` / `wiki/hive-governance.md`), but the **bulk dated export has not been written to `raw/open-brain/`**. |
+| **How the wiki uses it** | Phase-1 source alongside `searles` + `first_party` (`DESIGN.md`: "Phase 1 = searles + first_party + open_brain — the arc itself"). Run-1 reached Open Brain via targeted queries to ground specific arc facts (e.g. the earliest spawn-lifecycle thoughts naming `lovyou-ai-hive`, cited in `wiki/agent.md` / `wiki/hive-governance.md`), and the **bulk dated export is now written to `raw/open-brain/`** (4 monthly dumps, 1,175 thoughts, 2026-03-03 through 2026-06-13). |
 
 **Fail-legible notes (open_brain):**
-- **Not yet exported.** `raw/open-brain/` is empty. The 1,175-thought dump named
-  in `DESIGN.md` is a planned ingestion, not a completed one. Articles that lean
-  on Open Brain today cite individual thoughts pulled at compile time, not a
-  committed mirror.
+- **Exported 2026-06-13.** `raw/open-brain/` holds 4 monthly dumps (`2026-03..06.md`,
+  1,175 thoughts), committed and on `main`. The dated export named in `DESIGN.md` is a
+  **completed** ingestion, not a planned one. Articles may still cite individual thoughts
+  pulled at compile time, but a committed mirror now exists.
+- **Behind live store (as of 2026-06-21).** The committed dump covers through
+  2026-06-13. Live `thought_stats` through the standardized OpenBrain helper reports
+  **2,338 total thoughts** and recent rows through **2026-06-21**. `DESIGN.md`'s
+  "nightly re-export" is **not yet automated**, so this repo must not imply that the
+  mirror is current.
+- **Standard access path.** Codex/OpenBrain work for this repo uses
+  `/Transpara/transpara-ai/data/repos/docs/tools/openbrain-capture/openbrain_capture.py`
+  with `/Transpara/transpara-ai/data/repos/OB1/.openbrain.env` as the configuration
+  source. The env file supplies `MCP_SERVER_URL`, `MCP_ACCESS_KEY`, and
+  `SUPABASE_PROJECT_REF`; secret values are never copied into this repo.
+- **MCP read ceiling verified.** `list_thoughts(limit=1000)` and
+  `list_thoughts(limit=5000)` both returned exactly **1,000** entries on 2026-06-21.
+  MCP is therefore suitable for capture, stats, search, and bounded recent reads, but
+  not by itself a complete historical export path.
+- **REST export path not live at the documented URL.** The OB1 source tree documents an
+  `open-brain-rest` Supabase Edge Function with paginated `/thoughts`, but
+  `https://<SUPABASE_PROJECT_REF>.supabase.co/functions/v1/open-brain-rest/{health,stats,thoughts}`
+  returned HTTP 404 from this environment on 2026-06-21. Do not claim REST pagination
+  or a catch-up dump until that function is deployed/reachable and smoke-tested.
+- **Catch-up condition.** Updating `raw/open-brain/` after 2026-06-13 requires a
+  paginated/export-capable OpenBrain read path plus the normal secret-scrub gate. This
+  PR corrects provenance; it does not add new raw thought dumps.
 - **Secret-scrub gate applies.** Per `DESIGN.md`, nothing enters `raw/` with live
   secrets; the Open Brain export must pass the secret scanner before any commit
   (the platform has a known hardcoded-credentials finding, F-01). This is a
@@ -203,6 +228,9 @@ knows what is load-bearing **without anything being excluded** (`DESIGN.md`:
   `investigations/<x>/` is added; `docs/dark-factory` is mirrored into
   `raw/transpara/`), update that tier's **Mirrored?** state and its date/volume,
   and flip the "what is NOT mirrored" table above.
+- When OpenBrain access changes, verify both paths separately: the standardized MCP
+  helper for capture/bounded reads, and any deployed paginated export gateway for bulk
+  mirror refresh. Do not treat one as proof of the other.
 - Keep counts **verified on disk**, not copied from `DESIGN.md` estimates; where
   they differ (e.g. 43 vs ~50 searles posts), record both and label the estimate.
 - A source that is read **in place** rather than mirrored is a provenance caveat,
