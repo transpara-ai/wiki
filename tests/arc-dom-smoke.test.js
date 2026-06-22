@@ -565,6 +565,21 @@ test('Actor toggle is disabled when no item carries an author (live overlay park
   assert(actor.classList.contains('arc-group-btn-disabled'), "disabled class applied");
 });
 
+test('legend renders the symbol/colour key from data.legendItems (regression: it was missing)', () => {
+  const { nav } = mountArc();
+  const legend = nav.querySelector('.arc-legend');
+  assert(legend, 'legend panel must render');
+  assert.strictEqual(legend.hidden, false, 'legend must be visible when legendItems exist');
+  const rows = [...legend.querySelectorAll('.arc-legend-item')];
+  const legendItems = loadArcData().legendItems;
+  assert.strictEqual(rows.length, legendItems.length, 'one legend row per legendItem (got ' + rows.length + ')');
+  // The swatch must carry the shape-specific class so the colour/shape actually styles.
+  assert(legend.querySelector('.arc-legend-swatch.arc-legend-diamond'), 'gate diamond swatch present');
+  assert(legend.querySelector('.arc-legend-swatch.arc-legend-risk-high'), 'risk-high swatch present');
+  assert(legend.querySelector('.arc-legend-swatch.arc-legend-line'), 'critical-path line swatch present');
+  assert.match(legend.textContent, /Milestone \/ gate/, 'legend labels render');
+});
+
 const data = loadArcData();
 assertData(data);
 assertRenderedDom();

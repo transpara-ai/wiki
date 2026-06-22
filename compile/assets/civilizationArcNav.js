@@ -222,7 +222,7 @@
   function ensureScaffold(root) {
     root._arc = root._arc || { collapsed: {}, selectedId: null, groupBy: "tracks", zoom: readZoom() };
     var s = root._arc;
-    if (s.scaffolded && s.frame && s.svg && s.nowPanel && s.detailPanel && s.tooltip && s.toolbar && s.progressPanel) {
+    if (s.scaffolded && s.frame && s.svg && s.nowPanel && s.detailPanel && s.tooltip && s.toolbar && s.progressPanel && s.legend) {
       return s;
     }
 
@@ -260,6 +260,12 @@
     var progressPanel = htmlEl("section", "arc-progress-panel");
     progressPanel.setAttribute("aria-label", "Progress evidence snapshot");
 
+    // Symbol/colour key. Driven by data.legendItems; rebuilt each render. Sits under
+    // the chart so the marker vocabulary (gates, chips, dependency lines) is readable
+    // without guessing. (Regression: the arc shipped with the data + CSS but no render.)
+    var legend = htmlEl("section", "arc-legend");
+    legend.setAttribute("aria-label", "Legend — chart symbols and colours");
+
     var toolbar = htmlEl("div", "arc-toolbar");
     toolbar.setAttribute("role", "group");
     toolbar.setAttribute("aria-label", "Group the arc by");
@@ -291,7 +297,7 @@
     zoomWrap.append(zoomOut, zoomReadout, zoomIn);
     toolbar.appendChild(zoomWrap);
 
-    root.append(toolbar, frame, panels, progressPanel);
+    root.append(toolbar, frame, legend, panels, progressPanel);
 
     s.scaffolded = true;
     s.toolbar = toolbar;
@@ -303,6 +309,7 @@
     s.nowPanel = nowPanel;
     s.detailPanel = detailPanel;
     s.progressPanel = progressPanel;
+    s.legend = legend;
     s.standalone = standalone;
     return s;
   }
@@ -685,6 +692,43 @@
     }
   }
 
+  // ---- legend ---------------------------------------------------------------
+
+  // Allowlisted swatch shapes — only classes that exist in style.css are emitted; an
+  // unknown/garbage shape falls back to the base swatch (never an arbitrary injected
+  // class). Mirrors the .arc-legend-* rules.
+  var LEGEND_SHAPES = {
+    "rect": 1, "small-rect": 1, "tick": 1, "diamond": 1, "risk-high": 1,
+    "risk-watch": 1, "decision-chip": 1, "circle": 1, "arrow": 1, "line": 1,
+    "hatch": 1, "faded": 1,
+  };
+
+  // Render the symbol/colour key from data.legendItems ({key,label,shape}); each row is
+  // a styled swatch + label. Idempotent: cleared and rebuilt each render. Empty/absent
+  // legendItems -> the panel is hidden rather than an empty bordered box.
+  function renderLegend(root, data) {
+    var s = root._arc;
+    var panel = s && s.legend;
+    if (!panel) return;
+    clearNode(panel);
+    var items = (data && data.legendItems) || [];
+    if (!items.length) { panel.hidden = true; return; }
+    panel.hidden = false;
+    panel.appendChild(htmlEl("h3", "", "Legend"));
+    var list = htmlEl("ul", "arc-legend-list");
+    items.forEach(function (it) {
+      if (!it) return;
+      var li = htmlEl("li", "arc-legend-item");
+      var shape = (typeof it.shape === "string" && LEGEND_SHAPES[it.shape]) ? it.shape : "rect";
+      var swatch = htmlEl("span", "arc-legend-swatch arc-legend-" + shape);
+      swatch.setAttribute("aria-hidden", "true");
+      li.appendChild(swatch);
+      li.appendChild(htmlEl("span", "arc-legend-label", it.label == null ? "" : String(it.label)));
+      list.appendChild(li);
+    });
+    panel.appendChild(list);
+  }
+
   // ---- event wiring (delegated, attached once) ------------------------------
 
   function closestArcItem(target) {
@@ -912,6 +956,7 @@
     updateToolbar(s);
     renderNowPanel(root, data);
     renderDetailPanel(root, data);
+    renderLegend(root, data);
     renderProgressEvidence(root);
 
     wireEvents(root, data);
