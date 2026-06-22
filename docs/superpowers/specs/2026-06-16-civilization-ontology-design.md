@@ -1,6 +1,6 @@
 # Civilization Ontology & Construction-Arc Projection — Design Spec
 
-**Status:** draft v0.1 · **Date:** 2026-06-16 · **Owner:** Michael Saucier · **Authority:** planning (proposal, pending review) · **Repo/branch:** transpara-ai/civilization-wiki @ claude/elegant-swanson-965269
+**Status:** draft v0.1 · **Date:** 2026-06-16 · **Owner:** Michael Saucier · **Authority:** planning (proposal, pending review) · **Repo/branch:** transpara-ai/wiki @ claude/elegant-swanson-965269
 
 ## 0. Purpose & scope
 
@@ -84,7 +84,7 @@ Every element traces to corpus precedent + an external formal precedent. Corpus 
 | Actor/Role dual-layer (24 roles; CanOperate; ModelPolicy) | civic-roles.md (9 runtime); roles-catalog.md (15 governance); hive-governance.md (Michael = ceiling); Searles-P1/P3 ("AI is a node in the graph, not above it") | RBAC; org role taxonomy; principal/agent |
 | Surface kinds (execution/decision/transparency) | hive-governance.md (Observatory); observability.md (T1–T7 read-only); civic-roles.md (codex/* branches) | Separation of concerns; read/write segregation |
 
-> **Provenance TODO (code-is-truth):** the "14 invariants" is unstable in prose (civic-roles.md says 14; a 2026-06-05 capture said 10). The enumerated list lives in **code**: `hive/pkg/hive/agentdef.go` and `docs/roles-catalog.md`. Recover and pin it before Policy/Invariant instances are authored: `grep -rniE "invariant" /Transpara/transpara-ai/data/repos/{hive,docs}`.
+> **Provenance TODO (code-is-truth):** the "14 invariants" is unstable in prose (civic-roles.md says 14; a 2026-06-05 capture said 10). The enumerated list lives in **code**: `hive/pkg/hive/agentdef.go` and `docs/roles-catalog.md`. Recover and pin it before Policy/Invariant instances are authored: `grep -rniE "invariant" /Transpara/transpara-ai/repos/{hive,docs}`.
 
 ### 2.1 External frameworks — canonical sources & per-change mapping
 
@@ -230,7 +230,7 @@ Matt Searles, *LovYou* / mind-zero, Substack `mattsearles2.substack.com`; code: 
 > Posts not individually keyed here (e.g. The Cognitive Grammar, Higher-Order Operations) are in the local index `raw/searles/all-posts-1.md` with exact date/URL — not re-typed here to avoid an unverified slug.
 
 ### 8.3 First-party — dark-factory / hive (internal; repo path + doc ID, no public URL)
-Origin `transpara-ai/docs`, read in place at `/Transpara/transpara-ai/data/repos/docs/dark-factory/` (~322 md); per `PROVENANCE.md`. Internal — grounds to path + doc ID + date.
+Origin `transpara-ai/docs`, read in place at `/Transpara/transpara-ai/repos/docs/dark-factory/` (~322 md); per `PROVENANCE.md`. Internal — grounds to path + doc ID + date.
 
 | ID | Source | Path / doc ID | Grounds |
 |---|---|---|---|

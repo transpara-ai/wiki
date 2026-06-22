@@ -135,10 +135,10 @@ The overnight checkpoint (2026-06-13) summarizes the arc concisely: the goal was
 
 ## Sources & provenance
 
-- `/home/transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/transparency-contract-v0.1.0.md` lines 1–70 — canonical T1–T7 definitions, satisfaction map (as of 2026-06-13, pre-observatory), and the "projection / EventGraph remains truth" framing.
-- `/home/transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/observability-as-built-recon-v0.1.0.md` lines 1–84 — as-built metrics/trace/API inventory; the "zero visualization" finding that defined Phase 3; API-first deviation catalog; "where the visualization belongs" decision.
-- `/home/transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/site-observatory-phase3-plan.md` lines 1–70 — Phase 3 as Mission Control read view; data contract table; guardrail list; satisfaction status per slice.
-- `/home/transpara/transpara-ai/repos/site/graph/observatory.go` lines 97–106, 249–258 — `ObsVitals` pointer-typed struct; `authorityOutcomes` allowlist; nil rendering helpers (`obsInt`, `obsMoney`, `obsScore`, `obsIntPair`).
+- `/Transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/transparency-contract-v0.1.0.md` lines 1–70 — canonical T1–T7 definitions, satisfaction map (as of 2026-06-13, pre-observatory), and the "projection / EventGraph remains truth" framing.
+- `/Transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/observability-as-built-recon-v0.1.0.md` lines 1–84 — as-built metrics/trace/API inventory; the "zero visualization" finding that defined Phase 3; API-first deviation catalog; "where the visualization belongs" decision.
+- `/Transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/site-observatory-phase3-plan.md` lines 1–70 — Phase 3 as Mission Control read view; data contract table; guardrail list; satisfaction status per slice.
+- `/Transpara/transpara-ai/repos/site/graph/observatory.go` lines 97–106, 249–258 — `ObsVitals` pointer-typed struct; `authorityOutcomes` allowlist; nil rendering helpers (`obsInt`, `obsMoney`, `obsScore`, `obsIntPair`).
 - `raw/transpara/dark-factory/implementation/overnight-2026-06-13-claude-checkpoint.md` lines 1–57 — authorization scope, overnight grant wording, TL;DR of the shift.
 
 **Conflicts stated:** T4 and T5 satisfaction is partial — stated explicitly in the satisfaction map and in the fail-legible notes above. The contract pre-dates the observatory; the satisfaction column reflects the state after site#76/77 merged.

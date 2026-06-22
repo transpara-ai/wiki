@@ -10,16 +10,16 @@ tier: investigation
 status: compiled
 last_compiled: 2026-06-13
 sources:
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; AGT decision row (L82) + per-item note (L175-189); freeze/reopen policy (L41-68)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md  # Phase 4 Batch D — repo-grounded ~25-field candidate analysis of transpara-ai/agent-governance-toolkit (section 6, L210-340; Gap D2 L623-639; inclusion matrix row L590)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md  # investigation ground rules; AGT = candidate 14 (L191-192); access verified (L294)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 matrix — AGT row "Optional adapter / high-priority reference" (L136); highest-priority adapter ranking (L196-197)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-08-phase-6-gap-analysis-versus-v3-8.md  # Gap G2 GovernancePolicyEngine / PolicyEngineAdapter gap; AGT as strongest candidate reference + 10-point adapter requirements (L151-200)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-09-phase-7-proposed-canonical-updates.md  # Phase 7 U2 — PolicyEngineAdapter optional pattern, 14 adapter fields, required behavior (L147-200)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # closeout — AGT under "optional adapter/subsystem candidates" (L123); U2 in U1-U10 set (L218, L239)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-11-v3.9-adversarial-review.md  # adversarial review — U2 present/strong (L118); H3 open defect: PolicyEngineAdapterDecision Tier 0 node has no schema, severity HIGH (L224-230, L439)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 13 (accepted ADR): PolicyEngineAdapter is optional and non-canonical (L149-164)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/03-authority-identity-and-sops-v3.9.md  # PolicyEngineAdapter Pattern — normative adapter fields (L110+)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; AGT decision row (L82) + per-item note (L175-189); freeze/reopen policy (L41-68)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md  # Phase 4 Batch D — repo-grounded ~25-field candidate analysis of transpara-ai/agent-governance-toolkit (section 6, L210-340; Gap D2 L623-639; inclusion matrix row L590)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md  # investigation ground rules; AGT = candidate 14 (L191-192); access verified (L294)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 matrix — AGT row "Optional adapter / high-priority reference" (L136); highest-priority adapter ranking (L196-197)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-08-phase-6-gap-analysis-versus-v3-8.md  # Gap G2 GovernancePolicyEngine / PolicyEngineAdapter gap; AGT as strongest candidate reference + 10-point adapter requirements (L151-200)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-09-phase-7-proposed-canonical-updates.md  # Phase 7 U2 — PolicyEngineAdapter optional pattern, 14 adapter fields, required behavior (L147-200)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # closeout — AGT under "optional adapter/subsystem candidates" (L123); U2 in U1-U10 set (L218, L239)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-11-v3.9-adversarial-review.md  # adversarial review — U2 present/strong (L118); H3 open defect: PolicyEngineAdapterDecision Tier 0 node has no schema, severity HIGH (L224-230, L439)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 13 (accepted ADR): PolicyEngineAdapter is optional and non-canonical (L149-164)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/03-authority-identity-and-sops-v3.9.md  # PolicyEngineAdapter Pattern — normative adapter fields (L110+)
   - "GitHub API: repos/transpara-ai/agent-governance-toolkit (fork metadata, 2026-06-13 live)"  # isFork=true, parent=microsoft/agent-governance-toolkit, createdAt 2026-05-13T03:35:00Z, MIT, description (policy enforcement, zero-trust identity, execution sandboxing, 10/10 OWASP Agentic Top 10)
   - Open Brain  # 2026-05-18 v3.9 epic-roadmap adversarial-review capture: AGT + PageIndex "require human choice on dependency posture"; PR #61 reviewed-planning / implementation frozen
 confidence:
@@ -138,7 +138,7 @@ The crosswalk binds AGT to **Epic 3 — Hive Governance Reconciliation** as the 
 
 ## Sources & provenance
 
-- v3.9.1 **External Technology Decision Crosswalk** — `/Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (AGT decision row L82; per-item note "Decision: optional `PolicyEngineAdapter` candidate" L175-189; freeze/reopen policy L41-68). The per-item decision record; document status is `review` / `canonical: false`.
+- v3.9.1 **External Technology Decision Crosswalk** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (AGT decision row L82; per-item note "Decision: optional `PolicyEngineAdapter` candidate" L175-189; freeze/reopen policy L41-68). The per-item decision record; document status is `review` / `canonical: false`.
 - **Phase 4 Batch D** candidate analysis — `…/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md` (AGT = section 6, L210-340, explicitly README-only; Gap D2 "GovernancePolicyEngine can borrow from AGT" L623-639; inclusion-matrix row L590). Primary evidence for what the investigation found.
 - **Investigation kickoff** — `…/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md` (ground rules; AGT = candidate 14 / `transpara-ai/agent-governance-toolkit`, L191-192; Batch D membership L418; access target L294).
 - **Access-verification checkpoint** — `…/research/checkpoints/2026-05-13-access-verification-complete.md` (AGT access verified, L113, L206-207).

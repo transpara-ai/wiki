@@ -115,7 +115,7 @@ Expected: FAIL — `ModuleNotFoundError`/`AttributeError: module 'inflight' has 
 #!/usr/bin/env python3
 """Live in-flight layer for the Civilization Arc.
 
-Collects open + recently-merged PRs across the dark-factory stack (+ civilization-wiki)
+Collects open + recently-merged PRs across the dark-factory stack (+ wiki)
 via the `gh` CLI and writes dist/inflight.json — the live overlay the arc page fetches.
 
 Honors the standing rules, exactly like compile/refresh.py:
@@ -234,7 +234,7 @@ def gh_json(args):
 
 
 def resolve_repos():
-    """Live dark-factory set (+ civilization-wiki), resolved from the GitHub topic — never hardcoded."""
+    """Live dark-factory set (+ wiki), resolved from the GitHub topic — never hardcoded."""
     rows = gh_json(["repo", "list", "transpara-ai", "--no-archived", "--limit", "200",
                     "--json", "name,repositoryTopics"])
     repos = set()
@@ -242,7 +242,7 @@ def resolve_repos():
         topics = [t.get("name") for t in (r.get("repositoryTopics") or [])]
         if "dark-factory" in topics:
             repos.add(r["name"])
-    repos.add("civilization-wiki")
+    repos.add("wiki")
     return sorted(repos)
 
 
@@ -274,7 +274,7 @@ def main():
         repos = resolve_repos()
         repo_err = []
     except Exception as e:
-        repos, repo_err = ["civilization-wiki"], ["resolve_repos: %s" % e]
+        repos, repo_err = ["wiki"], ["resolve_repos: %s" % e]
     items, errors = collect_items(repos)
     errors = repo_err + errors
     OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -328,7 +328,7 @@ git commit -m "feat(arc): inflight.py collects open+merged PRs to dist/inflight.
 const BAKED = {
   domain: { start: 0, end: 15 },
   items: [
-    { id: 'h1',  code: 'H1',  type: 'work', status: 'done',    provenance: 'reconstructed', seq: 1,    sprint: 'origin',     repo: ['civilization-wiki'] },
+    { id: 'h1',  code: 'H1',  type: 'work', status: 'done',    provenance: 'reconstructed', seq: 1,    sprint: 'origin',     repo: ['wiki'] },
     { id: 'now', code: 'NOW', type: 'gate', status: 'active',  provenance: 'reconstructed', seq: 13.9, sprint: 'deployment', repo: ['docs'] },
     { id: 'p1',  code: 'P1',  type: 'work', status: 'planned', provenance: 'derived',       seq: 14.0, sprint: 'deployment', repo: ['site'] },
     { id: 'f1',  code: 'F1',  type: 'work', status: 'future',  provenance: 'derived',       seq: 15.0, sprint: 'stewardship', repo: ['site'] },
@@ -1007,7 +1007,7 @@ In `package.json` `scripts`, add `test:py` and chain it into `verify`:
 # compile/INFLIGHT.md — live in-flight overlay
 
 `compile/inflight.py` writes `dist/inflight.json`: open + recently-merged PRs across the
-dark-factory stack (+ civilization-wiki), which the arc page fetches and overlays as live
+dark-factory stack (+ wiki), which the arc page fetches and overlays as live
 `derived` work at the sequence frontier. The grouping toolbar's **Actor** mode splits that
 live work into per-author lanes.
 
@@ -1019,7 +1019,7 @@ Requires the `gh` CLI authenticated as a user who can read the transpara-ai repo
 
 ## Cron (suggested ~10 min cadence)
 
-    */10 * * * *  cd /path/to/civilization-wiki && python3 compile/inflight.py
+    */10 * * * *  cd /Transpara/transpara-ai/repos/wiki && python3 compile/inflight.py
 
 Decoupled from the article build on purpose: it refreshes fast-moving PR state without
 regenerating the articles. `dist/inflight.json` survives a `build_site.py` run.
@@ -1052,7 +1052,7 @@ git commit -m "docs(arc): INFLIGHT.md ops + wire inflight tests into verify"
 
 **1. Spec coverage:**
 - Source = GitHub via `gh` (no token in code/browser) → Task 2 `gh_json`/`resolve_repos` + Global Constraints. ✓
-- Scope = dark-factory + civilization-wiki, live topic query → Task 2 `resolve_repos`. ✓
+- Scope = dark-factory + wiki, live topic query → Task 2 `resolve_repos`. ✓
 - Unit = open PRs + merged-in-last-30-days → Task 2 `collect_items`. ✓
 - Item mapping = `type:work, provenance:derived`, no ontology allowlist change → Task 1 `pr_to_item`. ✓
 - Mechanism B = `inflight.py` → `dist/inflight.json`; page fetch + `validateItems` + overlay; fail-loud fallback; "updated N min ago" → Tasks 2, 3, 6. ✓

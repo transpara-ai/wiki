@@ -2,8 +2,8 @@
   "use strict";
 
   window.CIVILIZATION_PROGRESS_EVIDENCE_SOURCE = {
-    operation_pr: "transpara-ai/civilization-operation#28",
-    operation_pr_url: "https://github.com/transpara-ai/civilization-operation/pull/28",
+    operation_pr: "transpara-ai/operation#28",
+    operation_pr_url: "https://github.com/transpara-ai/operation/pull/28",
     operation_merge_commit: "65305b2f2a7a095a01015a5b3e4532f22c072ac6",
     operation_reviewed_head: "56082d91baffff3f714e096ac2f5fac3934fba12",
   };
@@ -65,9 +65,9 @@
         ],
         "public_summary": "The operations record reconciled selected local Site and Civilization Wiki render evidence while preserving the Test 001 YELLOW result.",
         "source_commit": "39a48bebd64db756fd04a38e834e1b19a1d1ba65",
-        "source_ref": "civilization-operation#27",
-        "source_repo": "transpara-ai/civilization-operation",
-        "source_url": "https://github.com/transpara-ai/civilization-operation/pull/27",
+        "source_ref": "operation#27",
+        "source_repo": "transpara-ai/operation",
+        "source_url": "https://github.com/transpara-ai/operation/pull/27",
         "state": "merged",
         "title": "INC-001 Local-Render Reconciliation"
       },
@@ -89,9 +89,9 @@
         ],
         "public_summary": "Test 001 remains YELLOW while live evidence, production roster evidence, runtime evidence, user-facing evidence, public correction proof, and action-specific human authorization remain incomplete.",
         "source_commit": "39a48bebd64db756fd04a38e834e1b19a1d1ba65",
-        "source_ref": "civilization-operation#26",
-        "source_repo": "transpara-ai/civilization-operation",
-        "source_url": "https://github.com/transpara-ai/civilization-operation/issues/26",
+        "source_ref": "operation#26",
+        "source_repo": "transpara-ai/operation",
+        "source_url": "https://github.com/transpara-ai/operation/issues/26",
         "state": "yellow",
         "title": "Test 001 Remains YELLOW"
       },
@@ -112,9 +112,9 @@
         ],
         "public_summary": "Civilization Wiki recorded selected local browser-render evidence for INC-001, but no live-reader progress display feed has been accepted yet.",
         "source_commit": "ff5211716e488a68615082b0fc384540069a9631",
-        "source_ref": "civilization-wiki#19",
-        "source_repo": "transpara-ai/civilization-wiki",
-        "source_url": "https://github.com/transpara-ai/civilization-wiki/pull/19",
+        "source_ref": "wiki#19",
+        "source_repo": "transpara-ai/wiki",
+        "source_url": "https://github.com/transpara-ai/wiki/pull/19",
         "state": "local-render-recorded",
         "title": "Civilization Wiki Local Render Evidence"
       }
@@ -125,7 +125,7 @@
         "public_summary": "No accepted public-safe wiki progress feed exists yet; the display consumer is intentionally deferred until this operation export PR lifecycle merges.",
         "reason": "missing-public-projection",
         "source_ref": "pending-wiki-consumer-pr",
-        "source_repo": "transpara-ai/civilization-wiki",
+        "source_repo": "transpara-ai/wiki",
         "title": "Future Wiki Progress Feed"
       },
       {
@@ -152,10 +152,10 @@
         "public_summary": "Governing authority is recorded outside this public wiki asset; private source identifiers are intentionally omitted."
       },
       "export_mode": "wiki-public-display-projection",
-      "owning_repo": "transpara-ai/civilization-operation",
+      "owning_repo": "transpara-ai/operation",
       "source_repositories": [
-        "transpara-ai/civilization-operation",
-        "transpara-ai/civilization-wiki"
+        "transpara-ai/operation",
+        "transpara-ai/wiki"
       ]
     }
   };

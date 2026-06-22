@@ -831,7 +831,7 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 /home/transpara/transpara-ai/repos/civilization-wiki/compile/autodeploy.py
+ExecStart=/usr/bin/python3 /Transpara/transpara-ai/repos/wiki/compile/autodeploy.py
 ```
 
 - [ ] **Step 2: Create the timer** — `compile/systemd/civwiki-autodeploy.timer`:

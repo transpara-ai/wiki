@@ -23,7 +23,7 @@ class LiveReaderCorrectionFixtureTests(unittest.TestCase):
         self.assertEqual(payload["schema_version"], 1)
         self.assertTrue(payload["display_only"])
         self.assertTrue(payload["privacy"]["public_safe"])
-        self.assertEqual(payload["source"]["operation_pr"], "transpara-ai/civilization-operation#30")
+        self.assertEqual(payload["source"]["operation_pr"], "transpara-ai/operation#30")
         self.assertEqual(
             payload["source"]["operation_reviewed_head"],
             "08786bdcfc6034ac877dd5aa2fbb0e7883cb3b85",
@@ -101,7 +101,7 @@ process.stdout.write(JSON.stringify(context.window.CIVILIZATION_LIVE_READER_CORR
         js = fixture.render_js_fixture()
         self.assertIn("window.CIVILIZATION_LIVE_READER_CORRECTION", js)
         self.assertIn("correction-test-001-yellow-not-green", js)
-        self.assertIn("civilization-operation#30", js)
+        self.assertIn("operation#30", js)
 
         bad = fixture.build_fixture()
         bad["corrections"][0]["corrected_item_id"] = "missing-item"

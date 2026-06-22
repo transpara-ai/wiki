@@ -26,7 +26,7 @@ import stats
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 RAW = ROOT / "raw"
 WIKI = ROOT / "wiki"
-DF = pathlib.Path("/Transpara/transpara-ai/data/repos/docs/dark-factory")
+DF = pathlib.Path("/Transpara/transpara-ai/repos/docs/dark-factory")
 SNAP = ROOT / "compile" / "source-snapshot.json"
 STATUS = ROOT / "compile" / "refresh-status.json"
 

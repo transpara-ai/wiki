@@ -1,5 +1,5 @@
 {
-  "name": "civilization-wiki",
+  "name": "wiki",
   "version": "0.1.0",
   "private": true,
   "description": "Static Civilization Wiki renderer and visualization smoke tests.",
@@ -9,7 +9,7 @@
     "test:unit": "node --test tests/arcLayout.test.js tests/ontology.test.js",
     "test:dom": "node tests/arc-dom-smoke.test.js",
     "test:browser": "playwright install chromium && playwright test",
-    "test:py": "python3 compile/test_inflight.py && python3 tests/inflight.test.py",
+    "test:py": "python3 compile/test_live_reader_correction.py && python3 compile/test_inflight.py && python3 tests/inflight.test.py",
     "verify": "npm run build && npm run test:js && npm run test:unit && npm run test:py && npm run test:dom && npm run test:browser"
   },
   "devDependencies": {

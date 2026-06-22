@@ -2,7 +2,7 @@
 """Live in-flight overlay generator for the Civilization Arc.
 
 Collects open and recently merged PRs across public GitHub dark-factory topic
-repos plus civilization-wiki, writes dist/inflight.json, and records omitted
+repos plus wiki, writes dist/inflight.json, and records omitted
 private repos and repo/query-level errors in the payload.
 
 Like compile/refresh.py, this command does not commit, push, or merge. It uses
@@ -64,7 +64,7 @@ def error_summary(label, exc):
 
 
 def resolve_repo_access():
-    """Live dark-factory set (+ civilization-wiki), resolved from GitHub topics and visibility."""
+    """Live dark-factory set (+ wiki), resolved from GitHub topics and visibility."""
     rows = gh_json(["repo", "list", "transpara-ai", "--no-archived", "--limit", "200",
                     "--json", "name,repositoryTopics,isPrivate"])
     repo_access = {}
@@ -76,15 +76,15 @@ def resolve_repo_access():
         topics = [t.get("name") for t in (r.get("repositoryTopics") or [])]
         if "dark-factory" in topics:
             repo_access[name] = is_public
-        if name == "civilization-wiki":
+        if name == "wiki":
             repo_access[name] = is_public
-    if "civilization-wiki" not in repo_access:
-        repo_access["civilization-wiki"] = False
+    if "wiki" not in repo_access:
+        repo_access["wiki"] = False
     return repo_access
 
 
 def resolve_repos():
-    """Public live dark-factory set (+ civilization-wiki), resolved from GitHub topics."""
+    """Public live dark-factory set (+ wiki), resolved from GitHub topics."""
     return public_repos(resolve_repo_access())
 
 
@@ -125,7 +125,7 @@ def main():
         repo_access = resolve_repo_access()
         repo_err = []
     except Exception as e:
-        repo_access, repo_err = {"civilization-wiki": False}, [error_summary("resolve_repo_access", e)]
+        repo_access, repo_err = {"wiki": False}, [error_summary("resolve_repo_access", e)]
     repos = public_repos(repo_access)
     items, errors = collect_items(repos)
     errors = repo_err + errors

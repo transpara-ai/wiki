@@ -124,7 +124,7 @@ A wrongly-*skipped* or *refused* deploy = a stale site (visible, recoverable on 
 ## Scheduler (systemd, user-level — NOT activated this iteration)
 
 Repo-tracked unit files under `compile/systemd/`:
-- `civwiki-autodeploy.service` — `Type=oneshot`, `ExecStart=/usr/bin/python3 /home/transpara/transpara-ai/repos/civilization-wiki/compile/autodeploy.py` (the serving checkout), run as the `transpara` user.
+- `civwiki-autodeploy.service` — `Type=oneshot`, `ExecStart=/usr/bin/python3 /Transpara/transpara-ai/repos/wiki/compile/autodeploy.py` (the serving checkout), run as the `transpara` user.
 - `civwiki-autodeploy.timer` — `OnBootSec=2min`, `OnUnitActiveSec=2min`, `Persistent=true`, `WantedBy=timers.target`.
 - **Provided but not installed/enabled in this iteration.** `REBUILD.md` documents install as **user units** (`systemctl --user enable --now civwiki-autodeploy.timer`) with `loginctl enable-linger transpara`, the first-authorization step, and `journalctl --user -u civwiki-autodeploy` for logs.
 

@@ -11,7 +11,7 @@ status: compiled
 last_compiled: 2026-06-13
 sources:
   - raw/searles/all-posts-1.md  # post 2, "From 44 to 200", 2026-02-28 [Searles-P2] — "The Second Derivation" (L422-454), "The Experiment" / "The Layers" / "Three Things It Can't Derive" (L300-388)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/Dark Factory - Motive, Goal, Approach.md  # treats the hive0 44-primitive run as research input, "not independently proven" (L379-380); Citation Handles table [Searles-P2] (L512)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/Dark Factory - Motive, Goal, Approach.md  # treats the hive0 44-primitive run as research input, "not independently proven" (L379-380); Citation Handles table [Searles-P2] (L512)
 confidence:
   experiment_account: source-grounded but single-source — the entire account exists only in [Searles-P2]; no first-party doc or Open Brain thought corroborates the physics-up run itself
   convergence_claim: asserted by the author as "the strongest evidence available," explicitly NOT a proof — he disclaims it ("doesn't prove mind-zero will be conscious," "doesn't bridge the hard problem")

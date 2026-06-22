@@ -90,7 +90,7 @@ Architecture and Arc article.
 
 | Field | Value |
 |---|---|
-| **Origin** | First-party — `transpara-ai/docs` repo (git remote `origin = git@github.com:transpara-ai/docs.git`; `upstream = transpara/docs`, push disabled). Read at the local checkout `/Transpara/transpara-ai/data/repos/docs/dark-factory/`. |
+| **Origin** | First-party — `transpara-ai/docs` repo (git remote `origin = git@github.com:transpara-ai/docs.git`; `upstream = transpara/docs`, push disabled). Read at the local checkout `/Transpara/transpara-ai/repos/docs/dark-factory/`. |
 | **Read location** | `docs/dark-factory/` — **read in place, not mirrored.** The wiki's own `raw/transpara/` is empty this run. |
 | **Date / range** | Active corpus. Repo first commit 2022-07-07; the dark-factory record set spans roughly **2026-04 → 2026-06-13** (latest dark-factory commit on disk: 2026-06-13). Dated arc stations run from the 2026-05-13 v3.9 acceptance-candidate checkpoint through the 2026-06-12 v4.0 doctrine-acceptance checkpoint. |
 | **Volume** | **~322 markdown files** under `docs/dark-factory/` (excluding `.git`). Run-1 read the arc-spine subset, not all 322. |
@@ -156,8 +156,8 @@ its own nightly re-export.
   "nightly re-export" is **not yet automated**, so this repo must not imply that the
   mirror is current.
 - **Standard access path.** Codex/OpenBrain work for this repo uses
-  `/Transpara/transpara-ai/data/repos/docs/tools/openbrain-capture/openbrain_capture.py`
-  with `/Transpara/transpara-ai/data/repos/OB1/.openbrain.env` as the configuration
+  `/Transpara/transpara-ai/repos/docs/tools/openbrain-capture/openbrain_capture.py`
+  with `/Transpara/transpara-ai/repos/OB1/.openbrain.env` as the configuration
   source. The env file supplies `MCP_SERVER_URL`, `MCP_ACCESS_KEY`, and
   `SUPABASE_PROJECT_REF`; secret values are never copied into this repo.
 - **MCP read ceiling verified.** `list_thoughts(limit=1000)` and

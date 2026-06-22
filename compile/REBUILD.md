@@ -29,7 +29,7 @@ Re-synthesizing article **content** from sources is the expensive, autonomous-sp
 `dist/` is served on nucbuntu at `:8787`. The cron regenerates it in place; only restart the static server if the host reboots:
 
 ```
-cd /home/transpara/transpara-ai/repos/civilization-wiki/dist && python3 -m http.server 8787 --bind 0.0.0.0
+cd /Transpara/transpara-ai/repos/wiki/dist && python3 -m http.server 8787 --bind 0.0.0.0
 ```
 
 ## Browser verification

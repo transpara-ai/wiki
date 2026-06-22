@@ -5,12 +5,12 @@ tier: investigation
 status: compiled
 last_compiled: 2026-06-13
 sources:
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk, Symphony decision row + per-item note (status: review, canonical: false)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 inclusion matrix, symphony row (class C)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-08-phase-6-gap-analysis-versus-v3-8.md  # Phase 6 operator-UX gap + proof-of-work packet
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # closeout buckets (pattern/reference AND defer)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-access-verification-complete.md  # candidate 22 = transpara-ai/symphony, access verified
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md  # candidate list entry 22
+  - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk, Symphony decision row + per-item note (status: review, canonical: false)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 inclusion matrix, symphony row (class C)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-08-phase-6-gap-analysis-versus-v3-8.md  # Phase 6 operator-UX gap + proof-of-work packet
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # closeout buckets (pattern/reference AND defer)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-access-verification-complete.md  # candidate 22 = transpara-ai/symphony, access verified
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md  # candidate list entry 22
   - Open Brain  # compiler note on civilization-landscape-investigation (U9 gap chain; three-layer category vocabulary)
   - https://github.com/openai/symphony  # upstream, cited as context only — NOT mirrored or re-published (org rule: public/upstream)
 confidence:
@@ -111,7 +111,7 @@ Three boundaries the sources draw explicitly:
 
 First-party, all read this run:
 
-- **`/Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md`** — the Symphony decision row (L85) and per-item note (L203–207): pattern-only; trials/proof-of-work; "useful only when backed by EventGraph evidence, not as presentation theater"; risk "trial packaging can become theater"; "tie to concrete trial fixtures." Document is `status: review`, `canonical: false`.
+- **`/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md`** — the Symphony decision row (L85) and per-item note (L203–207): pattern-only; trials/proof-of-work; "useful only when backed by EventGraph evidence, not as presentation theater"; risk "trial packaging can become theater"; "tie to concrete trial fixtures." Document is `status: review`, `canonical: false`.
 - **`...research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md`** (L134) — the structured `symphony` row: Batch C, "Pattern / reference only," contribution "Isolated implementation runs and proof-of-work pattern," overlap "Work → runtime → evidence path," risk "Preview maturity, agent spawning."
 - **`...research/checkpoints/2026-05-13-08-phase-6-gap-analysis-versus-v3-8.md`** (L458, L451–505) — "symphony = isolated implementation runs with proof of work"; the operator-UX/parallel-truth concern; the EventGraph-linked proof-of-work packet field list; "Proof-of-work packet view."
 - **`...research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md`** (L143, L160, L165–169) — `symphony` listed under *both* "Include as pattern/reference only" and "Defer until prerequisite controls exist"; the blanket "Reject as controller/kernel/authority" rule.

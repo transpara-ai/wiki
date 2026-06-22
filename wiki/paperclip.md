@@ -5,11 +5,11 @@ tier: investigation
 status: compiled
 last_compiled: 2026-06-13
 sources:
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; Paperclip decision row (L84) + per-item note (L197-201)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md  # Phase 4 Batch D — repo-grounded candidate analysis of transpara-ai/paperclip (L455-592)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md  # investigation ground rules, scope, source list (paperclip is candidate 16)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-08-phase-6-gap-analysis-versus-v3-8.md  # Gap G6 (Site operator UX / proof-of-work) — paperclip as candidate evidence (L447-505)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # final inclusion summary — paperclip as pattern/reference + defer (L132-163)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; Paperclip decision row (L84) + per-item note (L197-201)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md  # Phase 4 Batch D — repo-grounded candidate analysis of transpara-ai/paperclip (L455-592)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md  # investigation ground rules, scope, source list (paperclip is candidate 16)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-08-phase-6-gap-analysis-versus-v3-8.md  # Gap G6 (Site operator UX / proof-of-work) — paperclip as candidate evidence (L447-505)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # final inclusion summary — paperclip as pattern/reference + defer (L132-163)
   - "GitHub API: repos/transpara-ai/paperclip (fork metadata, 2026-06-13 live)"  # isFork=true, parent=paperclipai/paperclip, createdAt 2026-03-17T17:54:05Z, description "Open-source orchestration for zero-human companies"
   - "Upstream context only (not re-published): github.com/paperclipai/paperclip — README headline + MIT license badge, fetched 2026-06-13"
 confidence:
@@ -92,7 +92,7 @@ The one place the investigation pointed Paperclip's surfaces is **Gap G6 — Sit
 
 ## Sources & provenance
 
-- v3.9.1 **External Technology Decision Crosswalk** — `/Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (decision row L84; per-item note "Decision: UX pattern only" L197-201; freeze/reopen policy L41-68). This is the authoritative decision record.
+- v3.9.1 **External Technology Decision Crosswalk** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (decision row L84; per-item note "Decision: UX pattern only" L197-201; freeze/reopen policy L41-68). This is the authoritative decision record.
 - **Phase 4 Batch D** candidate analysis — `…/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md` (Paperclip section L455-592, inclusion matrix L587-592). Primary evidence for what the investigation found; explicitly README-only.
 - **Investigation kickoff** — `…/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md` (ground rules L9-27; scope L42-71; Paperclip as candidate 16 / `transpara-ai/paperclip`).
 - **Phase 6 gap analysis** — `…/research/checkpoints/2026-05-13-08-phase-6-gap-analysis-versus-v3-8.md` (Gap G6 Site operator UX, Paperclip as candidate evidence + EventGraph-linked proof-of-work packet, L447-505).

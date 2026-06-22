@@ -10,14 +10,14 @@ tier: investigation
 status: compiled
 last_compiled: 2026-06-13
 sources:
-  - /Transpara/transpara-ai/data/repos/bitsandpieces/README.md  # catalog of 4 building blocks, all from gstack; "Atomic / Attributed / Adapted" philosophy
-  - /Transpara/transpara-ai/data/repos/bitsandpieces/safety-hooks/README.md  # one entry, README-grounded: gstack (MIT) careful/freeze/guard PreToolUse hooks, fail-closed deny on freeze boundary
+  - /Transpara/transpara-ai/repos/bitsandpieces/README.md  # catalog of 4 building blocks, all from gstack; "Atomic / Attributed / Adapted" philosophy
+  - /Transpara/transpara-ai/repos/bitsandpieces/safety-hooks/README.md  # one entry, README-grounded: gstack (MIT) careful/freeze/guard PreToolUse hooks, fail-closed deny on freeze boundary
   - "GitHub API: repos/transpara-ai/bitsandpieces (live metadata, 2026-06-13) — isFork=false, parent=null, licenseInfo=null, createdAt=2026-03-30T10:28:30Z, description 'Atomic, standalone building blocks stolen from the best open-source AI tooling.'"
-  - /Transpara/transpara-ai/data/repos/civilization-wiki/raw/open-brain/2026-06.md  # L4028 — Epic-1 "Investigations" era maps repos paperclip / hermes-agent / bitsandpieces = "Paperclips/Hermes/Atoms"
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk — NO row for bitsandpieces/Atoms; gStack row (pattern-only, L83/L191) is the nearest governed decision
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-13-issue-14-go-module-path-recon.md  # L25 — the only research-checkpoint mention of bitsandpieces ("no go.mod")
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/archive/v2/atoms-analysis-and-dark-factory.md  # the OTHER "Atoms" (AI product-creation platform) — name-collision source, NOT this repo
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/archive/v2/adrs/ADR-0005-atoms-production-line-pattern.md  # ADR-0005 "Adopt Atoms as a production-line pattern only" — also the OTHER Atoms
+  - /Transpara/transpara-ai/repos/wiki/raw/open-brain/2026-06.md  # L4028 — Epic-1 "Investigations" era maps repos paperclip / hermes-agent / bitsandpieces = "Paperclips/Hermes/Atoms"
+  - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk — NO row for bitsandpieces/Atoms; gStack row (pattern-only, L83/L191) is the nearest governed decision
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-13-issue-14-go-module-path-recon.md  # L25 — the only research-checkpoint mention of bitsandpieces ("no go.mod")
+  - /Transpara/transpara-ai/repos/docs/dark-factory/archive/v2/atoms-analysis-and-dark-factory.md  # the OTHER "Atoms" (AI product-creation platform) — name-collision source, NOT this repo
+  - /Transpara/transpara-ai/repos/docs/dark-factory/archive/v2/adrs/ADR-0005-atoms-production-line-pattern.md  # ADR-0005 "Adopt Atoms as a production-line pattern only" — also the OTHER Atoms
   - "Upstream context only (not re-published): github.com/garrytan/gstack — the MIT-licensed project the 4 entries distil patterns from"
 confidence:
   fork_framing: contested/refuted — the compile request frames bitsandpieces as "a forked public project" with an "upstream"; live GitHub metadata says isFork=false, parent=null. It is an ORIGINAL transpara-ai catalog that extracts patterns from upstream OSS (chiefly gstack), not a fork of any single upstream. Stated, not silently adopted.
@@ -125,12 +125,12 @@ bitsandpieces is a minor, early data point in the same outward-looking phase tha
 
 ## Sources & provenance
 
-- **Repo README** — `/Transpara/transpara-ai/data/repos/bitsandpieces/README.md`: the "Atomic / Attributed / Adapted" philosophy, the four-entry catalog (all sourced from gstack), and the contributing rule. Primary evidence for what the catalog *is*.
-- **One entry, read in full** — `/Transpara/transpara-ai/data/repos/bitsandpieces/safety-hooks/README.md`: gStack (MIT) PreToolUse hooks; `freeze` = hard `deny` outside a boundary (no override), `careful` = overridable `ask` on destructive Bash. README-grounded; reference implementation not exercised this run.
+- **Repo README** — `/Transpara/transpara-ai/repos/bitsandpieces/README.md`: the "Atomic / Attributed / Adapted" philosophy, the four-entry catalog (all sourced from gstack), and the contributing rule. Primary evidence for what the catalog *is*.
+- **One entry, read in full** — `/Transpara/transpara-ai/repos/bitsandpieces/safety-hooks/README.md`: gStack (MIT) PreToolUse hooks; `freeze` = hard `deny` outside a boundary (no override), `careful` = overridable `ask` on destructive Bash. README-grounded; reference implementation not exercised this run.
 - **Live GitHub metadata** — `repos/transpara-ai/bitsandpieces` (`gh repo view`, 2026-06-13): `isFork=false`, `parent=null`, `licenseInfo=null`, `createdAt=2026-03-30T10:28:30Z`, description "Atomic, standalone building blocks stolen from the best open-source AI tooling." Refutes the "fork/upstream" framing.
-- **Open Brain narrative** — `/Transpara/transpara-ai/data/repos/civilization-wiki/raw/open-brain/2026-06.md`, L4028: the Epic-1 "Investigations" era map, the sole source of the *"Atoms"* alias ("paperclip / hermes-agent / bitsandpieces = 'Paperclips/Hermes/Atoms'").
-- **v3.9.1 External Technology Decision Crosswalk** — `/Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md`: **contains no bitsandpieces/Atoms row**; the **gStack** row (decision `pattern-only`, L83; per-item note L191-195) is the nearest governed verdict and is cited as inherited, not as a row for this repo.
-- **Go-module recon checkpoint** — `/Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-13-issue-14-go-module-path-recon.md`, L25: the only research-corpus mention of bitsandpieces ("no go.mod"), confirming it was swept incidentally, not analysed for inclusion.
+- **Open Brain narrative** — `/Transpara/transpara-ai/repos/wiki/raw/open-brain/2026-06.md`, L4028: the Epic-1 "Investigations" era map, the sole source of the *"Atoms"* alias ("paperclip / hermes-agent / bitsandpieces = 'Paperclips/Hermes/Atoms'").
+- **v3.9.1 External Technology Decision Crosswalk** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md`: **contains no bitsandpieces/Atoms row**; the **gStack** row (decision `pattern-only`, L83; per-item note L191-195) is the nearest governed verdict and is cited as inherited, not as a row for this repo.
+- **Go-module recon checkpoint** — `/Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-13-issue-14-go-module-path-recon.md`, L25: the only research-corpus mention of bitsandpieces ("no go.mod"), confirming it was swept incidentally, not analysed for inclusion.
 - **Name-collision sources (the *other* Atoms)** — `…/dark-factory/archive/v2/atoms-analysis-and-dark-factory.md` and `…/archive/v2/adrs/ADR-0005-atoms-production-line-pattern.md`: an AI product-creation platform, unrelated to this repo; cited to keep the two "Atoms" distinct.
 - **Upstream (context only, not re-published)** — `github.com/garrytan/gstack` (MIT), the project the four entries distil patterns from, named in the repo README and each entry's attribution.
 

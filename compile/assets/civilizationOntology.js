@@ -22,9 +22,9 @@
   // The arc's repo collection. ALL of these repos are the Transpara-AI Civilization; the
   // two DISPLAY groups are:
   //   "civilization" — the operational repos (the working society)
-  //   "governance"   — the civilization-wiki/operation meta-layer OVER the civilization
-  // NOTE: the repos NAMED civilization-* live in the GOVERNANCE group BY DESIGN — do not
-  // "fix" this to match repo names. This is a CURATED list, intentionally NOT the live
+  //   "governance"   — the wiki/operation meta-layer OVER the civilization
+  // NOTE: wiki and operation live in the GOVERNANCE group BY DESIGN — do not
+  // "fix" this to match repo topics. This is a CURATED list, intentionally NOT the live
   // `dark-factory` topic query (which returns only the 6 operational repos as of 2026-06-21).
   // The "repo" grouping shows every collection repo as a lane (even empty) so none is
   // swamped or dropped; repos OUTSIDE the collection get their own named lanes, and a
@@ -33,7 +33,7 @@
     { key: "civilization", label: "Civilization",
       repos: ["agent", "docs", "eventgraph", "hive", "site", "work"] },
     { key: "governance", label: "Governance",
-      repos: ["civilization-wiki", "civilization-operation"] },
+      repos: ["wiki", "operation"] },
   ];
   var REPO_CANON = REPO_GROUPS.reduce(function (acc, g) { return acc.concat(g.repos); }, []);
 

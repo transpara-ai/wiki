@@ -12,9 +12,9 @@ sources:
   - transpara-ai/hive  # pkg/loop/commit_verification.go — commitVerdict taxonomy; Operate receipt discipline
   - transpara-ai/hive  # pkg/loop/operate_instruction.go — composeOperateInstruction (WorkDir, Instruction, AllowedTools)
   - transpara-ai/eventgraph  # go/pkg/decision/intelligence.go — OperateTask, OperateResult, IOperator interface
-  - civilization-wiki/wiki/runtime-broker.md  # normative spec: RuntimeEnvelope fields, enforcement stages, adapter conformance
-  - civilization-wiki/wiki/the-mind-loop.md  # "agent action becomes bounded runtime invocation"; dark-factory crosswalk
-  - civilization-wiki/wiki/authority-layer.md  # authority gate as the pre-flight check the envelope binds to
+  - wiki/wiki/runtime-broker.md  # normative spec: RuntimeEnvelope fields, enforcement stages, adapter conformance
+  - wiki/wiki/the-mind-loop.md  # "agent action becomes bounded runtime invocation"; dark-factory crosswalk
+  - wiki/wiki/authority-layer.md  # authority gate as the pre-flight check the envelope binds to
 confidence:
   sources: primary
   claims: grounded
@@ -166,8 +166,8 @@ Primary source (read this run):
 - `transpara-ai/hive` `pkg/loop/spawner.go` — `SpawnCommand.CanOperate` (L26), "CanOperate blocked for all spawned agents; trust must be earned first" (L262-264).
 - `transpara-ai/hive` `pkg/loop/commit_verification.go` — `commitVerdict` taxonomy (L13-50 approx), `handleOperateResult` (L173 approx).
 - `transpara-ai/eventgraph` `go/pkg/decision/intelligence.go` — `OperateTask` struct (L47-51), `OperateResult` struct (L54-57), `IOperator` interface (L60-65).
-- `civilization-wiki/wiki/runtime-broker.md` — `RuntimeEnvelope` field set (L36-53); eleven enforcement stages (L72); `BoundedWorker` / `RuntimeResult` schema; adapter conformance posture.
-- `civilization-wiki/wiki/the-mind-loop.md` — "agent action becomes bounded runtime invocation" (L128); `CanOperate`-false for spawned agents corroborated in operational record.
-- `civilization-wiki/wiki/authority-layer.md` — graduated consent; self-approval allowlist pattern.
+- `wiki/wiki/runtime-broker.md` — `RuntimeEnvelope` field set (L36-53); eleven enforcement stages (L72); `BoundedWorker` / `RuntimeResult` schema; adapter conformance posture.
+- `wiki/wiki/the-mind-loop.md` — "agent action becomes bounded runtime invocation" (L128); `CanOperate`-false for spawned agents corroborated in operational record.
+- `wiki/wiki/authority-layer.md` — graduated consent; self-approval allowlist pattern.
 
 One naming tension noted and not silently resolved: the dark-factory docs use `BoundedRuntime` / `BoundedWorker` / `RuntimeEnvelope` as design-level terms; the hive Go codebase implements the concept through `Config`, `BudgetConfig`, `OperateTask`, and the containment tripwire without using those identifiers. Both are noted above; no merger is implied. `[[wikilinks]]` to `[[authority-request]]` and `[[execution-receipt]]` are forward references compiled in the same session.

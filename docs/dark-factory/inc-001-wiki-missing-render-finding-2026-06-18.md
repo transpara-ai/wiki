@@ -4,7 +4,7 @@
 
 This packet records the Civilization Wiki-side user-facing evidence posture for
 the Test 001 cross-repo runtime-doctrine drift tabletop tracked by
-`transpara-ai/civilization-operation`.
+`transpara-ai/operation`.
 
 It is a missing-render finding, not a correction, deployment record, browser
 capture, runtime observation, doctrine artifact, or authority artifact.
@@ -14,7 +14,7 @@ capture, runtime observation, doctrine artifact, or authority artifact.
 ```text
 finding_id: inc-001-civilization-wiki-missing-render-2026-06-18
 incident: INC-001 / Test 001 Cross-Repo Runtime-Doctrine Drift Tabletop
-surface_repo: transpara-ai/civilization-wiki
+surface_repo: transpara-ai/wiki
 surface_status: MISSING_RENDER_ACCEPTED
 surface_status_meaning: missing durable rendered or deployed evidence recorded, not authority signoff
 source_commit: 0e15544ca32c8dfabaf9ea53f5fa4bf495a8d612
@@ -80,6 +80,6 @@ npm run verify
 This validation may build ignored local `dist/` output as part of the repo's
 normal verification path. That output is not cited as durable incident evidence.
 
-The packet should be cited by `civilization-operation` only after the PR that
+The packet should be cited by `operation` only after the PR that
 adds it has passed local validation, GitHub CI, exact-head adversarial review,
 and has been merged to `origin/main`.

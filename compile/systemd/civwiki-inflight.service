@@ -4,4 +4,4 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 /home/transpara/transpara-ai/repos/civilization-wiki/compile/inflight.py
+ExecStart=/usr/bin/python3 /Transpara/transpara-ai/repos/wiki/compile/inflight.py

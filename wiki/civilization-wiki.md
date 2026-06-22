@@ -106,7 +106,7 @@ The wiki is rendered as a **Wikipedia-style static site** by `compile/build_site
 The site is served on **nucbuntu at `http://192.168.20.184:8787`**. The nightly Tier-1 refresh regenerates `dist/` in place; the server only needs a restart on host reboot:
 
 ```
-cd /home/transpara/transpara-ai/repos/civilization-wiki/dist
+cd /Transpara/transpara-ai/repos/wiki/dist
 python3 -m http.server 8787 --bind 0.0.0.0
 ```
 
@@ -138,7 +138,7 @@ The wiki inherits the platform's fail-safe-by-default doctrine:
 
 ## Scope and governance
 
-- **Repo:** `transpara-ai/civilization-wiki` (private). Never touch `lovyou-ai` / upstream; `upstream_context` quotes public docs as cited context, never re-publishes or pushes.
+- **Repo:** `transpara-ai/wiki` (private). Never touch `lovyou-ai` / upstream; `upstream_context` quotes public docs as cited context, never re-publishes or pushes.
 - **Compile runs:** manual, human-authorized, reviewed as PRs before merge. Article content is not written autonomously without human review.
 - **Air-gap friendly:** compile runs locally on nucbuntu; only dependency is a local LLM (Claude Code).
 - **Org boundary:** transpara-ai only.
@@ -157,14 +157,14 @@ Run-3 addresses a portion of the deferred long-tail. The remaining deferred enti
 
 Compiled from:
 
-- `/home/transpara/transpara-ai/repos/civilization-wiki/DESIGN.md` — purpose, pattern, layout, corpus scope, compilation engine, keep-current design, Feb genesis section. Full file (~77 lines).
-- `/home/transpara/transpara-ai/repos/civilization-wiki/PROVENANCE.md` — per-tier manifest: origin, date/range, volume, mirroring status, fail-legible tier caveats. Full file (~213 lines).
-- `/home/transpara/transpara-ai/repos/civilization-wiki/index.md` — arc spine + article index (Run-2 state, 61 articles); freshness header; deferred list. Full file (~403 lines).
-- `/home/transpara/transpara-ai/repos/civilization-wiki/raw/open-brain/2026-06.md` — lines ~4050–4134: genesis of the Karpathy-wiki direction, design decisions, compile progress captures (lines 4050, 4052, 4066, 4072).
-- `/home/transpara/transpara-ai/repos/civilization-wiki/compile/refresh.py` — Tier-1 nightly deterministic refresh implementation. Full file (~102 lines).
-- `/home/transpara/transpara-ai/repos/civilization-wiki/compile/REBUILD.md` — two-tier rebuild protocol documentation. Full file (~30 lines).
-- `/home/transpara/transpara-ai/repos/civilization-wiki/compile/build_site.py` — Wikipedia-style renderer: sidebar, infobox, dark/light theme, blue/red wikilinks. Lines 1–60.
-- `/home/transpara/transpara-ai/repos/civilization-wiki/README.md` — top-level description, principles, status (61 articles, ~58 deferred). Full file.
+- `/Transpara/transpara-ai/repos/wiki/DESIGN.md` — purpose, pattern, layout, corpus scope, compilation engine, keep-current design, Feb genesis section. Full file (~77 lines).
+- `/Transpara/transpara-ai/repos/wiki/PROVENANCE.md` — per-tier manifest: origin, date/range, volume, mirroring status, fail-legible tier caveats. Full file (~213 lines).
+- `/Transpara/transpara-ai/repos/wiki/index.md` — arc spine + article index (Run-2 state, 61 articles); freshness header; deferred list. Full file (~403 lines).
+- `/Transpara/transpara-ai/repos/wiki/raw/open-brain/2026-06.md` — lines ~4050–4134: genesis of the Karpathy-wiki direction, design decisions, compile progress captures (lines 4050, 4052, 4066, 4072).
+- `/Transpara/transpara-ai/repos/wiki/compile/refresh.py` — Tier-1 nightly deterministic refresh implementation. Full file (~102 lines).
+- `/Transpara/transpara-ai/repos/wiki/compile/REBUILD.md` — two-tier rebuild protocol documentation. Full file (~30 lines).
+- `/Transpara/transpara-ai/repos/wiki/compile/build_site.py` — Wikipedia-style renderer: sidebar, infobox, dark/light theme, blue/red wikilinks. Lines 1–60.
+- `/Transpara/transpara-ai/repos/wiki/README.md` — top-level description, principles, status (61 articles, ~58 deferred). Full file.
 
 **Fail-legible conflicts and caveats carried into this article:**
 - Run-1/Run-2 token and agent counts (2.17M/28 and 3.6M/42) come from task-framing metadata, not independently captured thoughts — labeled as such.

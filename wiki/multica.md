@@ -5,13 +5,13 @@ tier: investigation
 status: compiled
 last_compiled: 2026-06-13
 sources:
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; Multica decision row (L86) + per-item note (L209-213); freeze/reopen policy (L41-68)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md  # Phase 4 Batch C — repo-grounded candidate analysis of transpara-ai/multica (section 11, L762-864; cross-cutting findings L1107-1301)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md  # investigation ground rules, scope; multica = candidate 20 (L209-210); access verified (L266, L276)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 marginal-contribution matrix — multica row (L132)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # final inclusion summary — multica as pattern/reference (L141) and defer (L158)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-08-phase-6-gap-analysis-versus-v3-8.md  # Gap analysis — multica as runtime/work-orchestration reference, not a runtime adapter (L216, L457, L825)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-11-v3.9-adversarial-review.md  # adversarial review — "same containment as Paperclip" (L170, L189)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; Multica decision row (L86) + per-item note (L209-213); freeze/reopen policy (L41-68)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md  # Phase 4 Batch C — repo-grounded candidate analysis of transpara-ai/multica (section 11, L762-864; cross-cutting findings L1107-1301)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md  # investigation ground rules, scope; multica = candidate 20 (L209-210); access verified (L266, L276)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 marginal-contribution matrix — multica row (L132)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # final inclusion summary — multica as pattern/reference (L141) and defer (L158)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-08-phase-6-gap-analysis-versus-v3-8.md  # Gap analysis — multica as runtime/work-orchestration reference, not a runtime adapter (L216, L457, L825)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-11-v3.9-adversarial-review.md  # adversarial review — "same containment as Paperclip" (L170, L189)
   - Open Brain  # civilization-landscape-investigation compile note (2026-06-13): U9 lineage, category-vocabulary layering, Decision 15 as the accepted law
 confidence:
   decision_row: high — Multica has a complete row in the v3.9.1 crosswalk (pattern-only / UX-only) plus a per-item note
@@ -103,7 +103,7 @@ The crosswalk binds Multica's surfaces to **Epic 4 operator workflow** as the on
 
 ## Sources & provenance
 
-- v3.9.1 **External Technology Decision Crosswalk** — `/Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (Multica decision row L86; per-item note "Decision: managed-agent UX pattern only" L209-213; freeze/reopen policy L41-68). This is the authoritative decision record. Document status is `review` / `canonical: false`.
+- v3.9.1 **External Technology Decision Crosswalk** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (Multica decision row L86; per-item note "Decision: managed-agent UX pattern only" L209-213; freeze/reopen policy L41-68). This is the authoritative decision record. Document status is `review` / `canonical: false`.
 - **Phase 4 Batch C** candidate analysis — `…/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md` (Multica = section 11, L762-864, explicitly README-only; cross-cutting orchestration/skill/board findings L1107-1301). Primary evidence for what the investigation found.
 - **Investigation kickoff** — `…/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md` (ground rules; Multica as candidate 20 / `transpara-ai/multica`, L209-210; access verified L266, L276).
 - **Phase 5 marginal-contribution matrix** — `…/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md` (multica row, "Pattern / reference only … Mine UX/runtime inventory patterns only", L132).

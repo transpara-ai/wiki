@@ -22,7 +22,7 @@ test('deriveNow returns 0 when nothing is settled', () => {
 
 test('validateItems accepts a clean settled-prefix set', () => {
   const items = [
-    { id: 'a', type: 'work', status: 'done', provenance: 'reconstructed', seq: 1, sprint: 'origin', repo: ['civilization-wiki'] },
+    { id: 'a', type: 'work', status: 'done', provenance: 'reconstructed', seq: 1, sprint: 'origin', repo: ['wiki'] },
     { id: 'b', type: 'work', status: 'active', provenance: 'derived', seq: 2, sprint: 'hive', repo: ['hive'] },
     { id: 'c', type: 'work', status: 'planned', provenance: 'derived', seq: 3, sprint: 'deploy', repo: ['site'] },
   ];
@@ -68,15 +68,15 @@ test('groupBy status: fixed band order; each item in exactly one lane (blocked o
 test('groupBy repo: 8-repo collection in Civilization→Governance order, each lane group-tagged', () => {
   const lanes = O.groupBy(G, 'repo');
   assert.deepStrictEqual(lanes.map(l => l.lane),
-    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'civilization-wiki', 'civilization-operation']);
+    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'wiki', 'operation']);
   // the 6 operational repos are the "civilization" group; the 2 civilization-* repos are "governance"
   assert.strictEqual(lanes.find(l => l.lane === 'agent').group, 'civilization');
   assert.strictEqual(lanes.find(l => l.lane === 'work').group, 'civilization');
-  assert.strictEqual(lanes.find(l => l.lane === 'civilization-wiki').group, 'governance');
-  assert.strictEqual(lanes.find(l => l.lane === 'civilization-operation').group, 'governance');
+  assert.strictEqual(lanes.find(l => l.lane === 'wiki').group, 'governance');
+  assert.strictEqual(lanes.find(l => l.lane === 'operation').group, 'governance');
   // every canonical repo shows even when empty — never swamped or dropped
   assert.strictEqual(lanes.find(l => l.lane === 'agent').items.length, 0);
-  assert.strictEqual(lanes.find(l => l.lane === 'civilization-operation').items.length, 0);
+  assert.strictEqual(lanes.find(l => l.lane === 'operation').items.length, 0);
   assert.deepStrictEqual(lanes.find(l => l.lane === 'site').items.map(i => i.id), ['c', 'd']);
 });
 
@@ -93,10 +93,10 @@ test('groupBy repo dedupes a repeated repo so the item appears once in that lane
   assert.strictEqual(lanes.find(l => l.lane === 'hive').items.length, 1);
 });
 
-test('groupBy repo: civilization-wiki is now IN the collection (governance), not (other)', () => {
-  const lanes = O.groupBy([{ id: 'cw', repo: ['civilization-wiki'] }], 'repo');
+test('groupBy repo: wiki is now IN the collection (governance), not (other)', () => {
+  const lanes = O.groupBy([{ id: 'cw', repo: ['wiki'] }], 'repo');
   assert.ok(!lanes.some(l => l.lane === '(other)'), 'the generic (other) bucket is gone');
-  const cw = lanes.find(l => l.lane === 'civilization-wiki');
+  const cw = lanes.find(l => l.lane === 'wiki');
   assert.deepStrictEqual(cw.items.map(i => i.id), ['cw']);
   assert.strictEqual(cw.group, 'governance');
 });
@@ -128,7 +128,7 @@ test('groupBy repo: prototype-named outside repos still get named lanes', () => 
 });
 
 test('groupBy repo: the outside group is ABSENT when every repo is in the collection', () => {
-  const lanes = O.groupBy([{ id: 'a', repo: ['site'] }, { id: 'b', repo: ['civilization-wiki'] }], 'repo');
+  const lanes = O.groupBy([{ id: 'a', repo: ['site'] }, { id: 'b', repo: ['wiki'] }], 'repo');
   assert.ok(!lanes.some(l => l.group === 'outside'), 'no outside lanes');
   assert.strictEqual(lanes.length, 8, 'exactly the 8-repo collection, no extra');
 });
@@ -167,17 +167,17 @@ test('REPO_GROUPS is the curated Civilization/Governance collection; REPO_CANON 
   assert.deepStrictEqual(O.REPO_GROUPS.find(g => g.key === 'civilization').repos,
     ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work']);
   assert.deepStrictEqual(O.REPO_GROUPS.find(g => g.key === 'governance').repos,
-    ['civilization-wiki', 'civilization-operation']);
+    ['wiki', 'operation']);
   assert.deepStrictEqual(O.REPO_CANON,
-    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'civilization-wiki', 'civilization-operation']);
+    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'wiki', 'operation']);
 });
 
-test('groupBy repo on real arc data: civ-wiki + civ-operation populated, no outside group', () => {
+test('groupBy repo on real arc data: wiki + operation populated, no outside group', () => {
   const items = loadData().items;
   const lanes = O.groupBy(items, 'repo');
   assert.ok(!lanes.some(l => l.group === 'outside'), 'all real items are within the 8-repo collection');
-  assert.ok(lanes.find(l => l.lane === 'civilization-wiki').items.length > 0, 'civ-wiki lane is populated');
-  assert.ok(lanes.find(l => l.lane === 'civilization-operation').items.length > 0, 'civ-operation now populated (Gate-V / Event 12 progress-evidence export, civilization-operation#28)');
+  assert.ok(lanes.find(l => l.lane === 'wiki').items.length > 0, 'wiki lane is populated');
+  assert.ok(lanes.find(l => l.lane === 'operation').items.length > 0, 'operation now populated (Gate-V / Event 12 progress-evidence export, operation#28)');
 });
 test('groupBy gate lanes by family; family-less items fall in (ungated); fixed family order', () => {
   const lanes = O.groupBy(G, 'gate');
@@ -320,7 +320,7 @@ test('arc data: exactly the 26 done items carry verified backfilled dates + prov
   // Event 10-12 operating cadence — each dated to its cited capability PR's merge
   assert.strictEqual(by('Gate-T').date, '2026-06-21'); // Site consumes Assembly projection = site#89
   assert.strictEqual(by('Gate-U').date, '2026-06-22'); // RuntimeBroker dry-run fixture = work#55
-  assert.strictEqual(by('Gate-V').date, '2026-06-21'); // progress-evidence export = civilization-operation#28
+  assert.strictEqual(by('Gate-V').date, '2026-06-21'); // progress-evidence export = operation#28
   // the contract rule holds over the whole baked set
   assert.strictEqual(O.validateItems(items).ok, true);
 });
@@ -329,7 +329,7 @@ test('arc data: exactly the 26 done items carry verified backfilled dates + prov
 const BAKED = {
   domain: { start: 0, end: 15 },
   items: [
-    { id: 'h1',  code: 'H1',  type: 'work', status: 'done',    provenance: 'reconstructed', seq: 1,    sprint: 'origin',     repo: ['civilization-wiki'] },
+    { id: 'h1',  code: 'H1',  type: 'work', status: 'done',    provenance: 'reconstructed', seq: 1,    sprint: 'origin',     repo: ['wiki'] },
     { id: 'now', code: 'NOW', type: 'gate', status: 'active',  provenance: 'reconstructed', seq: 13.9, sprint: 'deployment', repo: ['docs'] },
     { id: 'p1',  code: 'P1',  type: 'work', status: 'planned', provenance: 'derived',       seq: 14.0, sprint: 'deployment', repo: ['site'] },
     { id: 'f1',  code: 'F1',  type: 'work', status: 'future',  provenance: 'derived',       seq: 15.0, sprint: 'stewardship', repo: ['site'] },
