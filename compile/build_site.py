@@ -216,8 +216,29 @@ def freshness(status):
     stale = status.get("stale_articles", [])
     if not synced:
         return '<span class="fresh warn">not yet refreshed</span>'
-    cls = "warn" if stale else "ok"
-    return '<span class="fresh %s">updated %s · %d stale</span>' % (cls, html.escape(synced), len(stale))
+    if not stale:
+        return '<span class="fresh ok">updated %s · 0 stale</span>' % html.escape(synced)
+    # "stale" = articles whose cited sources changed but whose bodies have NOT been
+    # re-compiled (the LLM re-compile is manual; see compile/REBUILD.md). Make the chip a
+    # disclosure that names + links each stale article, so the count is actionable rather
+    # than opaque. Native <details>: no JS, keyboard-accessible.
+    n = len(stale)
+    links = "".join(
+        '<li><a href="%s.html">%s</a></li>' % (html.escape(s), html.escape(title_of(s)))
+        for s in stale
+    )
+    return (
+        '<details class="fresh-details">'
+        '<summary class="fresh warn">updated %s · %d stale</summary>'
+        '<div class="fresh-pop" role="group" aria-label="Stale articles">'
+        '<p class="fresh-pop-head">%d article%s cite repo sources that changed but '
+        'whose pages have not been re-compiled yet:</p>'
+        '<ul class="fresh-pop-list">%s</ul>'
+        '<p class="fresh-pop-foot">Resolving these is a manual re-compile '
+        '(see <code>compile/REBUILD.md</code>) — the 2-minute auto-refresh tracks '
+        'freshness but does not rewrite article prose.</p>'
+        '</div></details>'
+    ) % (html.escape(synced), n, n, "" if n == 1 else "s", links)
 
 
 def deploy_status_script():
