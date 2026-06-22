@@ -84,7 +84,7 @@ function assertData(data) {
   // grouping="gate" lanes by item.family; the expanded gate landscape must
   // surface the three load-bearing gate families (ordered by GATE_FAMILIES).
   const gateLanes = O.groupBy(data.items, "gate").map((l) => l.lane);
-  ["v3.9 milestones (A-J)", "Deployment register (G-0..G-8.4)", "v4.0 (K-S)"].forEach(
+  ["v3.9 milestones (A-J)", "Deployment register (G-0..G-8.4)", "v4.0 (K-V)"].forEach(
     (fam) => {
       assert(
         gateLanes.includes(fam),
@@ -94,7 +94,7 @@ function assertData(data) {
   );
   // GATE_FAMILIES ordering: the v3.9-milestones lane precedes the v4.0 lane.
   assert(
-    gateLanes.indexOf("v3.9 milestones (A-J)") < gateLanes.indexOf("v4.0 (K-S)"),
+    gateLanes.indexOf("v3.9 milestones (A-J)") < gateLanes.indexOf("v4.0 (K-V)"),
     `gate lanes should follow GATE_FAMILIES order; saw: ${gateLanes.join(" | ")}`
   );
 
@@ -161,7 +161,7 @@ test('tooltip shows sprint + ordinal step + provenance', () => {
   marker.dispatchEvent(new root.ownerDocument.defaultView.MouseEvent('mouseover', { bubbles: true }));
   const tip = root.querySelector('.arc-tooltip');
   assert.strictEqual(tip.hidden, false);
-  assert.match(tip.textContent, /step \d+ of 116/);
+  assert.match(tip.textContent, /step \d+ of 120/);
   assert.match(tip.textContent, /sprint ·/);
 });
 
@@ -263,7 +263,7 @@ test('clicking "Gate" regroups the lanes by gate family (the dimension is reacha
   const { nav, dom } = mountArc();
   nav.querySelector('[data-arc-group="gate"]').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
   const labels = [...nav.querySelectorAll('.arc-track-label')].map(t => t.textContent);
-  assert.ok(labels.includes('v4.0 (K-S)'), 'gate-family lanes present; got ' + labels.join(' | '));
+  assert.ok(labels.includes('v4.0 (K-V)'), 'gate-family lanes present; got ' + labels.join(' | '));
   assert.strictEqual(nav.querySelector('.arc-group-btn-active').getAttribute('data-arc-group'), 'gate');
 });
 

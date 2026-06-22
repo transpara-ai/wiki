@@ -201,6 +201,19 @@
       blockingWork: pick(function (it) {
         return it.blocked && it.type === "work" && it.provenance === "derived";
       }),
+      // Most-recently-dated done item — surfaces that the operating cadence has
+      // advanced (e.g. Gate-V on 2026-06-22) even while the go-live hard stop holds.
+      latestDated: (function () {
+        var best = null;
+        for (var j = 0; j < items.length; j++) {
+          var d = items[j];
+          if (d && d.status === "done" && typeof d.date === "string" &&
+              /^\d{4}-\d{2}-\d{2}$/.test(d.date) && (!best || d.date > best.date)) {
+            best = d;
+          }
+        }
+        return best;
+      })(),
     };
   }
 
@@ -412,6 +425,18 @@
       nd.appendChild(htmlEl("span", "arc-now-date-key", "date "));
       nd.appendChild(document.createTextNode(focusGate.date + (focusGate.ref ? " · " + focusGate.ref : "")));
       panel.appendChild(nd);
+    }
+
+    // Latest dated closure: the focus panel holds the go-live blocker, but the
+    // operating cadence keeps advancing — show the newest closed milestone so the
+    // "now" panel reflects real progress instead of reading as frozen at the block.
+    var latest = focus.latestDated;
+    if (latest && (!focusGate || latest.id !== focusGate.id)) {
+      var lc = htmlEl("p", "arc-now-latest");
+      lc.appendChild(htmlEl("span", "arc-now-date-key", "latest closed "));
+      lc.appendChild(document.createTextNode(
+        (latest.code || latest.id) + " · " + latest.date + (latest.ref ? " · " + latest.ref : "")));
+      panel.appendChild(lc);
     }
 
     if (focus.blockingWork) {
