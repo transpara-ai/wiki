@@ -149,24 +149,13 @@
     var doc = svg.ownerDocument;
     var tracks = layout.tracks || [];
     var contentWidth = num(layout.contentWidth);
-    var plotLeft = num(layout.plotLeft);
 
-    // Group headers (repo view): a faint, uppercased section label per display group
-    // ("Civilization" / "Governance" / "Outside collection") with a hairline under it,
-    // marking which lanes are in the collection vs outside it. Empty for other dimensions.
+    // Group rules (repo view): the faint hairline under each section header. The header
+    // TEXT is drawn in the pinned gutter layer (drawGutter); the rule spans the full plot
+    // and scrolls with the timeline. Empty for other dimensions.
     var headerH = GEOM.groupHeaderH || 22;
     (layout.groupHeaders || []).forEach(function (h) {
       var baseline = num(h.y) + headerH - 7;
-      var hdr = svgEl(doc, "text", {
-        "class": "arc-group-header",
-        x: 4, y: baseline,
-        "text-anchor": "start",
-        "font-size": 11 * ARC_FS,
-        fill: "var(--color-text-tertiary)",
-        "data-arc-group-header": h.group == null ? "" : String(h.group),
-      });
-      hdr.textContent = h.label == null ? "" : String(h.label);
-      svg.appendChild(hdr);
       svg.appendChild(svgEl(doc, "line", {
         "class": "arc-group-rule",
         x1: 0, y1: baseline + 4, x2: contentWidth, y2: baseline + 4,
@@ -175,63 +164,101 @@
       }));
     });
 
+    // Track background bands (full width — these scroll with the timeline).
     tracks.forEach(function (track, idx) {
-      // Faint background band; alternate stripe via opacity.
       svg.appendChild(svgEl(doc, "rect", {
         "class": "arc-track-band",
         x: 0, y: num(track.top), width: contentWidth, height: num(track.height), rx: 6,
         fill: "var(--color-background-secondary)",
         opacity: (idx % 2 === 0) ? 0.6 : 0.35,
       }));
+    });
+  }
 
-      // Gutter label group: chevron + clickable label.
+  // ---- pinned gutter (frozen row-name column) -------------------------------
+
+  // The row-name labels — group-header text, track labels + collapse chevrons, and sub-row
+  // labels — drawn into a single <g class="arc-gutter"> that the controller translates by the
+  // frame's scrollLeft so they stay put while the timeline scrolls horizontally. An opaque
+  // backing rect hides any marker that scrolls under the column; a hairline divider marks the
+  // plot edge. Called LAST (after the markers) so it paints on top. Returns the <g>.
+  function drawGutter(svg, layout, state) {
+    if (!svg || !layout) return null;
+    state = state || {};
+    var doc = svg.ownerDocument;
+    var tracks = layout.tracks || [];
+    var plotLeft = num(layout.plotLeft);
+    var contentHeight = num(layout.contentHeight);
+    var headerH = GEOM.groupHeaderH || 22;
+
+    var g = svgEl(doc, "g", { "class": "arc-gutter" });
+
+    // Opaque backing so markers scrolling left never bleed through the labels.
+    g.appendChild(svgEl(doc, "rect", {
+      "class": "arc-gutter-bg",
+      x: 0, y: 0, width: plotLeft, height: contentHeight,
+      fill: "var(--color-background-primary)",
+    }));
+    // Divider at the plot edge so the frozen column reads as separate from the timeline.
+    g.appendChild(svgEl(doc, "line", {
+      "class": "arc-gutter-divider",
+      x1: plotLeft, y1: 0, x2: plotLeft, y2: contentHeight,
+      stroke: "var(--color-text-tertiary)", "stroke-width": 1, opacity: 0.35,
+      "vector-effect": "non-scaling-stroke",
+    }));
+
+    // Group header text (repo view; empty for other dimensions).
+    (layout.groupHeaders || []).forEach(function (h) {
+      var baseline = num(h.y) + headerH - 7;
+      var hdr = svgEl(doc, "text", {
+        "class": "arc-group-header",
+        x: 4, y: baseline, "text-anchor": "start",
+        "font-size": 11 * ARC_FS, fill: "var(--color-text-tertiary)",
+        "data-arc-group-header": h.group == null ? "" : String(h.group),
+      });
+      hdr.textContent = h.label == null ? "" : String(h.label);
+      g.appendChild(hdr);
+    });
+
+    tracks.forEach(function (track) {
       var labelX = plotLeft - 14;
       var labelY = num(track.top) + 16;
-      var group = svgEl(doc, "g", { "class": "arc-track-label-group" });
 
-      // Chevron just left of the label text. Down triangle when expanded,
-      // right triangle when collapsed. Sized ~8px, sitting left of labelX.
-      var cx = labelX - 8;
-      var cy = labelY - 4;
+      // Chevron just left of the label: down when expanded, right when collapsed.
+      var cx = labelX - 8, cy = labelY - 4;
       var chevD = track.collapsed
-        // right-pointing triangle
         ? "M " + (cx - 3) + " " + (cy - 4) + " L " + (cx + 3) + " " + cy + " L " + (cx - 3) + " " + (cy + 4) + " Z"
-        // down-pointing triangle
         : "M " + (cx - 4) + " " + (cy - 3) + " L " + (cx + 4) + " " + (cy - 3) + " L " + cx + " " + (cy + 3) + " Z";
-      group.appendChild(svgEl(doc, "path", {
-        "class": "arc-track-chevron",
-        d: chevD,
-        fill: "var(--color-text-primary)",
-        "data-arc-collapse": track.id,
+      g.appendChild(svgEl(doc, "path", {
+        "class": "arc-track-chevron", d: chevD,
+        fill: "var(--color-text-primary)", "data-arc-collapse": track.id,
       }));
 
       var label = svgEl(doc, "text", {
         "class": "arc-track-label",
-        x: labelX, y: labelY,
-        "text-anchor": "end",
-        "font-size": 13,
-        fill: "var(--color-text-primary)",
+        x: labelX, y: labelY, "text-anchor": "end",
+        "font-size": 13, fill: "var(--color-text-primary)",
         "data-arc-collapse": track.id,
       });
       label.textContent = track.label == null ? "" : String(track.label);
-      group.appendChild(label);
-      svg.appendChild(group);
+      g.appendChild(label);
 
-      // Sub-row labels (skipped implicitly when collapsed: rows is empty then).
+      // Sub-row labels (empty when collapsed: rows is empty then).
       (track.rows || []).forEach(function (row) {
         var rowLabel = row.label == null ? "" : String(row.label);
-        if (rowLabel === "") return; // single-row tracks carry no sub-row label
+        if (rowLabel === "") return;
         var sub = svgEl(doc, "text", {
           "class": "arc-subrow-label",
-          x: plotLeft - 14, y: num(row.y) + 4,
-          "text-anchor": "end",
-          "font-size": 11,
-          fill: "var(--color-text-secondary)",
+          x: plotLeft - 14, y: num(row.y) + 4, "text-anchor": "end",
+          "font-size": 11, fill: "var(--color-text-secondary)",
         });
         sub.textContent = rowLabel;
-        svg.appendChild(sub);
+        g.appendChild(sub);
       });
     });
+
+    svg.appendChild(g);
+    return g;
   }
 
   // ---- markers --------------------------------------------------------------
@@ -366,6 +393,7 @@
     statusFill: statusFill,
     drawAxis: drawAxis,
     drawTracks: drawTracks,
+    drawGutter: drawGutter,
     drawMarkers: drawMarkers,
     drawDeps: drawDeps,
   };

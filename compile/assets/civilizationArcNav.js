@@ -889,6 +889,25 @@
     s.wired = true;
   }
 
+  // ---- pinned gutter (sticky row-name column) -------------------------------
+
+  // Keep the frozen row-name column aligned to the viewport's left edge: translate the gutter
+  // layer by the frame's current scrollLeft. At zoom>1 the SVG renders 1 user-unit per px, so
+  // scrollLeft maps 1:1; at Fit (no horizontal scroll) scrollLeft is 0 → a no-op.
+  function pinGutter(s) {
+    if (!s || !s.gutter || !s.frame) return;
+    var x = s.frame.scrollLeft || 0;
+    s.gutter.setAttribute("transform", "translate(" + x + ",0)");
+  }
+  // Wire the frame's scroll → re-pin, once per root. Reads root._arc fresh each event so it
+  // always pins the current render's gutter group.
+  function wireGutterScroll(root) {
+    var s = root._arc;
+    if (!s || s.gutterScrollWired || !s.frame) return;
+    s.frame.addEventListener("scroll", function () { pinGutter(root._arc); }, { passive: true });
+    s.gutterScrollWired = true;
+  }
+
   // ---- render (idempotent) --------------------------------------------------
 
   function render(root, data) {
@@ -972,6 +991,14 @@
       Draw.drawDeps(svg, layout, depEdges, s.selectedId);
     }
     Draw.drawMarkers(svg, layout, s);
+
+    // Pinned row-name gutter — drawn LAST so it paints above the markers, then offset to the
+    // current scroll so it stays put as the frame scrolls horizontally (sticky row names).
+    if (Draw.drawGutter) {
+      s.gutter = Draw.drawGutter(svg, layout, s);
+      pinGutter(s);
+      wireGutterScroll(root);
+    }
 
     // Mark the selected item's group for the selection treatment + reflect the
     // selection on the marker's aria state (the group class is also set by the

@@ -602,6 +602,22 @@ test('Actor toggle ENABLES once >= 2 distinct actors exist', async () => {
   assert(!actor.classList.contains('arc-group-btn-disabled'));
 });
 
+test('row-name gutter is a pinned layer that tracks frame scroll (sticky row names)', () => {
+  const { nav, svg, dom } = mountArc();
+  const gutter = svg.querySelector('.arc-gutter');
+  assert(gutter, 'a dedicated pinned gutter <g> must render');
+  assert(gutter.querySelector('.arc-gutter-bg'), 'opaque backing rect present (markers must not bleed through)');
+  assert(gutter.querySelector('.arc-track-label'), 'track labels live INSIDE the pinned gutter layer');
+  assert(gutter.querySelector('.arc-subrow-label'), 'sub-row labels live inside the pinned gutter layer');
+  // Drawn last → paints above the markers.
+  assert.strictEqual(svg.children[svg.children.length - 1], gutter, 'gutter paints on top (appended last)');
+  // jsdom has no layout, so drive scrollLeft directly + fire scroll → the gutter must offset to match.
+  const frame = nav.querySelector('.arc-frame');
+  frame.scrollLeft = 137;
+  frame.dispatchEvent(new dom.window.Event('scroll'));
+  assert.strictEqual(gutter.getAttribute('transform'), 'translate(137,0)', 'gutter pins to viewport-left on horizontal scroll');
+});
+
 test('legend renders the symbol/colour key from data.legendItems (regression: it was missing)', () => {
   const { nav } = mountArc();
   const legend = nav.querySelector('.arc-legend');
