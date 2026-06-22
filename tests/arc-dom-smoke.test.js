@@ -367,6 +367,24 @@ test('live overlay FAILS SAFE on invalid live data: merge rejected → baked kep
   assert(chip && /unavailable/.test(chip.textContent), "chip warns unavailable on rejected merge");
 });
 
+test('live overlay FAILS CLOSED on a degraded refresh: errors present → chip warns "stale", never "updated"', async () => {
+  // inflight.py still writes a payload when a gh/network/auth call fails: errors[] is set
+  // and items may be empty. mergeInflight treats empty items as ok, so without this guard
+  // the chip would stamp a green "live · updated" on a failed refresh — hiding missing
+  // live PRs while claiming the view is current. A degraded refresh must warn, not lie.
+  const DEGRADED = { generated: "2026-06-17 14:00", window_days: 30, repos: ["hive"],
+    errors: ["hive open: RuntimeError"], items: [] };
+  const dom = mountWithFetch(DEGRADED);
+  await new Promise((r) => setTimeout(r, 0));
+  const nav = dom.window.document.querySelector(".civilization-arc-nav");
+  const chip = nav.querySelector(".arc-live-chip");
+  assert(chip, "a chip must render on a degraded refresh");
+  assert.doesNotMatch(chip.textContent, /updated/, "a failed refresh must NOT claim 'live · updated'");
+  assert.match(chip.textContent, /stale|source error/, "chip must signal the degraded refresh");
+  assert(chip.classList.contains("arc-live-chip-warn"), "degraded chip must use the warn style");
+  assert(nav.querySelectorAll(".arc-item-group").length > 0, "baked render survives a degraded refresh");
+});
+
 test('Gate K renders as cleared-by-waiver (done) with go-live residual surfaced and evidence links', () => {
   const { nav, svg, dom } = mountArc();
   const gate = svg.querySelector('[data-arc-item="gate-k"]');

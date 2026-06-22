@@ -956,13 +956,24 @@
           Array.prototype.forEach.call(roots, function (root) { setLiveChip(root, "live · unavailable", false); });
           return;
         }
+        // Fail-closed on a degraded refresh: inflight.py still writes a payload (with
+        // errors[] and possibly items:[]) when a gh/network/auth call fails, and
+        // mergeInflight treats empty items as ok. A failed refresh must NOT masquerade
+        // as a clean "live · updated" — surface a warn chip so missing live PRs are
+        // never presented as current. Whatever items DID load still render.
+        var errs = (inflight && Array.isArray(inflight.errors)) ? inflight.errors : [];
+        var degraded = errs.length > 0;
         var liveData = {};
         for (var key in data) { if (Object.prototype.hasOwnProperty.call(data, key)) liveData[key] = data[key]; }
         liveData.items = merged.items;                  // new array — baked data untouched
         Array.prototype.forEach.call(roots, function (root) {
           if (root._arc) root._arc.ordinalById = null;  // recompute ordinals over the merged set
           render(root, liveData);
-          setLiveChip(root, "live · updated " + (merged.generated || "?"), true);
+          setLiveChip(root,
+            degraded
+              ? ("live · stale (" + errs.length + " source error" + (errs.length === 1 ? "" : "s") + ")")
+              : ("live · updated " + (merged.generated || "?")),
+            !degraded);
         });
       })
       .catch(function (e) {

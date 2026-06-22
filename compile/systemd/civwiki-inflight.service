@@ -1,0 +1,7 @@
+[Unit]
+Description=Civilization Wiki live in-flight overlay refresh (one tick)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /home/transpara/transpara-ai/repos/civilization-wiki/compile/inflight.py

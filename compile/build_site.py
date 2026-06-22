@@ -255,7 +255,7 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
             '<script defer src="civilizationArcNav.js?v=%s"></script>'
             % (ONTO_VER, ARC_DATA_VER, PROGRESS_VER, ARC_LAYOUT_VER, ARC_DRAW_VER, ARC_NAV_VER)
         )
-        arc_mount = '<div data-civilization-arc-nav></div>'
+        arc_mount = '<div data-civilization-arc-nav data-arc-live="true"></div>'
     tagline = "" if is_home else '<div class="tagline">%s%s</div>' % (
         ('<span class="tier %s">%s</span> · ' % (html.escape(meta["tier"]), html.escape(meta["tier"]))),
         "an article in the Civilization Wiki")
@@ -303,7 +303,7 @@ def arc_page(status):
         'document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body class="arc-full-page">'
         '<main class="arc-standalone-shell">'
-        '<div data-civilization-arc-nav data-arc-standalone="true" data-arc-expanded="true"></div>'
+        '<div data-civilization-arc-nav data-arc-standalone="true" data-arc-expanded="true" data-arc-live="true"></div>'
         '</main>' + deploy_status_script() +
         '</body></html>'
     )

@@ -12,9 +12,20 @@ toolbar's **Actor** mode splits that live work into per-author lanes.
 Requires the `gh` CLI authenticated as a user who can read the transpara-ai repos. The
 dark-factory repo set is resolved live from the GitHub `dark-factory` topic (never hardcoded).
 
-## Cron (suggested ~10 min cadence)
+## Schedule (systemd user timer, 5-min cadence)
 
-    */10 * * * *  cd /path/to/civilization-wiki && python3 compile/inflight.py
+Installed as a user timer mirroring `civwiki-autodeploy`. The unit files live in
+`compile/systemd/civwiki-inflight.{service,timer}`:
+
+    cp compile/systemd/civwiki-inflight.{service,timer} ~/.config/systemd/user/
+    systemctl --user daemon-reload
+    systemctl --user enable --now civwiki-inflight.timer
+
+The timer runs `inflight.py` from the serving checkout every 5 minutes, so the arc's live
+overlay reflects any open/merge across the dark-factory repos within one interval. On an
+on-prem box with no public ingress, GitHub cannot push events *in* (webhooks are out), so
+polling *out* on a short cadence is the only available path — and keeps it effectively
+event-driven from the viewer's side. Load is trivial (~12 `gh` calls/run over ~5 repos).
 
 Decoupled from the article build on purpose: it refreshes fast-moving PR state without
 regenerating the articles. `dist/inflight.json` survives a `build_site.py` run, and `dist/`
