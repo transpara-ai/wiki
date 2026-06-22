@@ -565,6 +565,36 @@ test('Actor toggle is disabled when no item carries an author (live overlay park
   assert(actor.classList.contains('arc-group-btn-disabled'), "disabled class applied");
 });
 
+// A live inflight payload of N items, each attributed to the given author(s) — exercises
+// the actor gate the way the real overlay does (it attributes every in-flight PR to an author).
+function livePayloadWithAuthors(authors) {
+  return {
+    generated: "2026-06-17 14:00", window_days: 30, repos: ["hive"], errors: [],
+    items: authors.map(function (a, i) {
+      return { id: "pr-actor-" + i, code: "pr#" + i, type: "work", label: "live work",
+        status: "active", blocked: false, provenance: "derived", repo: ["hive"],
+        sprint: "stewardship", href: "https://github.com/transpara-ai/hive/pull/" + (i + 1),
+        author: a, note: "open · @" + a };
+    }),
+  };
+}
+
+test('Actor toggle STAYS disabled with a single distinct actor (the operator only)', async () => {
+  const dom = mountWithFetch(livePayloadWithAuthors(['MichaelSaucier', 'MichaelSaucier']));
+  await new Promise((r) => setTimeout(r, 0));
+  const actor = dom.window.document.querySelector('[data-arc-group="actor"]');
+  assert.strictEqual(actor.disabled, true, 'one actor = one useless lane → still disabled');
+  assert(actor.classList.contains('arc-group-btn-disabled'));
+});
+
+test('Actor toggle ENABLES once >= 2 distinct actors exist', async () => {
+  const dom = mountWithFetch(livePayloadWithAuthors(['guardian', 'implementer']));
+  await new Promise((r) => setTimeout(r, 0));
+  const actor = dom.window.document.querySelector('[data-arc-group="actor"]');
+  assert.strictEqual(actor.disabled, false, 'multiple actors → actor view is meaningful');
+  assert(!actor.classList.contains('arc-group-btn-disabled'));
+});
+
 test('legend renders the symbol/colour key from data.legendItems (regression: it was missing)', () => {
   const { nav } = mountArc();
   const legend = nav.querySelector('.arc-legend');

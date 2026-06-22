@@ -315,6 +315,17 @@
   }
 
   // Reflect the active grouping on the toolbar buttons.
+  // Distinct non-empty actors among items. The "actor" grouping is only meaningful with
+  // >= 2 (one actor = a single useless lane); used to gate the toolbar button and to fall
+  // back off a stale "actor" selection. Deny-closed: non-string/empty authors are ignored.
+  function distinctActorCount(items) {
+    var set = {};
+    (items || []).forEach(function (it) {
+      if (it && typeof it.author === "string" && it.author) set[it.author] = 1;
+    });
+    return Object.keys(set).length;
+  }
+
   function updateToolbar(s) {
     if (!s || !s.toolbar) return;
     var cur = s.groupBy || "tracks";
@@ -324,18 +335,19 @@
       b.classList.toggle("arc-group-btn-active", on);
       b.setAttribute("aria-pressed", on ? "true" : "false");
     });
-    // Actor grouping needs per-item authors; baked items have none (live overlay is
-    // parked), so disable the toggle when no actor data exists instead of showing a
-    // useless "(unknown)" lane.
-    var actorItems = (s.data && s.data.items) || [];
-    var hasActors = actorItems.some(function (it) { return it && it.author; });
+    // Actor grouping is only meaningful with MULTIPLE distinct actors. Right now the sole
+    // actor is the operator (the live overlay attributes every in-flight PR to one author),
+    // so a single-actor view is one useless lane. Gate on >= 2 distinct actors; it lights up
+    // once real role ownership (Guardian, Implementer, Archivist, CTO, Spawner, …) lands.
+    // Deny-closed: default disabled.
+    var multiActor = distinctActorCount((s.data && s.data.items) || []) >= 2;
     var actorBtn = s.toolbar.querySelector('[data-arc-group="actor"]');
     if (actorBtn) {
-      actorBtn.disabled = !hasActors;
-      actorBtn.classList.toggle("arc-group-btn-disabled", !hasActors);
-      actorBtn.setAttribute("title", hasActors
+      actorBtn.disabled = !multiActor;
+      actorBtn.classList.toggle("arc-group-btn-disabled", !multiActor);
+      actorBtn.setAttribute("title", multiActor
         ? "Group by actor"
-        : "Actor view needs live / ownership data (none loaded yet)");
+        : "Actor view activates with multiple actors (Guardian, Implementer, Archivist, …) — only one actor so far");
     }
     if (s.zoomReadout) {
       var z = s.zoom || 1;
@@ -873,6 +885,12 @@
     var s = ensureScaffold(root);
     s.data = data;                 // current data (baked, or merged-with-live overlay)
     s.byId = indexItems(data);     // re-index each render so live markers stay interactive
+
+    // Fail-safe: never sit on the actor grouping without real multi-actor data (e.g. a live
+    // reload that drops back to a single author). Fall back to the default tracks view.
+    if (s.groupBy === "actor" && distinctActorCount((data.items) || []) < 2) {
+      s.groupBy = "tracks";
+    }
 
     if (!s.ordinalById) {
       s.ordinalById = {};
