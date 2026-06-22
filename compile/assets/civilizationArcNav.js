@@ -404,6 +404,16 @@
       panel.appendChild(head);
     }
 
+    // Date of the focus gate (e.g. Gate-K's go-live hard stop) shown inline, so the
+    // "when" is visible without hovering the dot.
+    var focusGate = gate || goLive;
+    if (focusGate && focusGate.date) {
+      var nd = htmlEl("p", "arc-now-date");
+      nd.appendChild(htmlEl("span", "arc-now-date-key", "date "));
+      nd.appendChild(document.createTextNode(focusGate.date + (focusGate.ref ? " · " + focusGate.ref : "")));
+      panel.appendChild(nd);
+    }
+
     if (focus.blockingWork) {
       var bw = focus.blockingWork;
       var blk = htmlEl("p", "arc-now-blocker");

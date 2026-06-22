@@ -487,6 +487,7 @@ test('now-panel surfaces the Gate-K go-live hard stop even though the gate is no
   const np = nav.querySelector('.arc-now-panel').textContent;
   assert.match(np, /Gate-K/, 'the go-live hard-stop gate is surfaced in the focus panel');
   assert.match(np, /go-live/i, 'the go-live revalidation residual is named, not hidden behind a click');
+  assert.match(np, /2026-06-17/, 'the focus gate (Gate-K) date is shown in the now-panel, not just on hover');
 });
 
 test('standalone wheel: dominant-horizontal pans the frame (not hijacked into zoom); vertical zooms', () => {
