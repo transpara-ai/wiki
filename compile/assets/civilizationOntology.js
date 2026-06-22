@@ -15,7 +15,7 @@
   var GATE_FAMILIES = [
     "v3.9 milestones (A-J)",
     "Deployment register (G-0..G-8.4)",
-    "v4.0 (K-S)",
+    "v4.0 (K-V)",
     "Release & security gates (v3.9)",
     "(ungated)",
   ];

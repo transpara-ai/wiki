@@ -54,9 +54,9 @@ test('validateItems rejects invalid enum + duplicate id + missing fields', () =>
 
 const G = [
   { id: 'a', type: 'work', status: 'done',    blocked: false, seq: 1, sprint: 'hive',   gate: 'v3.9',  family: 'v3.9 milestones (A-J)', repo: ['hive'] },
-  { id: 'b', type: 'work', status: 'active',  blocked: true,  seq: 2, sprint: 'gov',    gate: 'gate-k', family: 'v4.0 (K-S)',           repo: ['docs'] },
+  { id: 'b', type: 'work', status: 'active',  blocked: true,  seq: 2, sprint: 'gov',    gate: 'gate-k', family: 'v4.0 (K-V)',           repo: ['docs'] },
   { id: 'c', type: 'work', status: 'planned', blocked: false, seq: 3, sprint: 'deploy',                                                 repo: ['site'] },
-  { id: 'd', type: 'work', status: 'active',  blocked: false, seq: 4, sprint: 'wiki',   gate: 'gate-k', family: 'v4.0 (K-S)',           repo: ['site'] },
+  { id: 'd', type: 'work', status: 'active',  blocked: false, seq: 4, sprint: 'wiki',   gate: 'gate-k', family: 'v4.0 (K-V)',           repo: ['site'] },
 ];
 test('groupBy status: fixed band order; each item in exactly one lane (blocked overrides)', () => {
   assert.deepStrictEqual(O.groupBy(G, 'status').map(l => l.lane), ['done', 'active', 'blocked', 'planned']);
@@ -172,37 +172,37 @@ test('REPO_GROUPS is the curated Civilization/Governance collection; REPO_CANON 
     ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'civilization-wiki', 'civilization-operation']);
 });
 
-test('groupBy repo on real arc data: civ-wiki populated, civ-operation empty, no outside group', () => {
+test('groupBy repo on real arc data: civ-wiki + civ-operation populated, no outside group', () => {
   const items = loadData().items;
   const lanes = O.groupBy(items, 'repo');
   assert.ok(!lanes.some(l => l.group === 'outside'), 'all real items are within the 8-repo collection');
   assert.ok(lanes.find(l => l.lane === 'civilization-wiki').items.length > 0, 'civ-wiki lane is populated');
-  assert.strictEqual(lanes.find(l => l.lane === 'civilization-operation').items.length, 0, 'civ-operation empty for now');
+  assert.ok(lanes.find(l => l.lane === 'civilization-operation').items.length > 0, 'civ-operation now populated (Gate-V / Event 12 progress-evidence export, civilization-operation#28)');
 });
 test('groupBy gate lanes by family; family-less items fall in (ungated); fixed family order', () => {
   const lanes = O.groupBy(G, 'gate');
   // Lane = item.family (not item.gate); ordered by GATE_FAMILIES with (ungated) last.
   assert.deepStrictEqual(lanes.map(l => l.lane), [
     'v3.9 milestones (A-J)',
-    'v4.0 (K-S)',
+    'v4.0 (K-V)',
     '(ungated)',
   ]);
   // Item 'c' has no family → (ungated). Items b & d share the v4.0 family.
   const ungated = lanes.find(l => l.lane === '(ungated)');
   assert.deepStrictEqual(ungated.items.map(i => i.id), ['c']);
-  const v40 = lanes.find(l => l.lane === 'v4.0 (K-S)');
+  const v40 = lanes.find(l => l.lane === 'v4.0 (K-V)');
   assert.deepStrictEqual(v40.items.map(i => i.id).sort(), ['b', 'd']);
 });
 test('groupBy gate appends unknown families alphabetically, before (ungated)', () => {
   const items = [
     { id: 'u', type: 'work', status: 'done', blocked: false, seq: 1, sprint: 's', repo: ['r'] }, // no family → (ungated)
     { id: 'z', type: 'gate', status: 'done', blocked: false, seq: 2, sprint: 's', family: 'Zeta family', repo: ['r'] },
-    { id: 'k', type: 'gate', status: 'done', blocked: false, seq: 3, sprint: 's', family: 'v4.0 (K-S)', repo: ['r'] },
+    { id: 'k', type: 'gate', status: 'done', blocked: false, seq: 3, sprint: 's', family: 'v4.0 (K-V)', repo: ['r'] },
     { id: 'm', type: 'gate', status: 'done', blocked: false, seq: 4, sprint: 's', family: 'Alpha family', repo: ['r'] },
   ];
   // Known family first (v4.0), then unknowns alphabetically (Alpha, Zeta), then (ungated) last.
   assert.deepStrictEqual(O.groupBy(items, 'gate').map(l => l.lane), [
-    'v4.0 (K-S)',
+    'v4.0 (K-V)',
     'Alpha family',
     'Zeta family',
     '(ungated)',
@@ -299,14 +299,14 @@ test('validateItems accepts an ISO date + repo#n ref on a done item', () => {
   assert.strictEqual(O.validateItems([datedItem({ date: '2026-06-17', ref: 'docs#138' })]).ok, true);
 });
 
-test('arc data: exactly the 23 done items carry verified backfilled dates + provenance refs', () => {
+test('arc data: exactly the 26 done items carry verified backfilled dates + provenance refs', () => {
   const items = loadData().items;
   const dated = items.filter(i => i.date != null);
-  assert.strictEqual(dated.length, 23, 'exactly 23 dated items; got ' + dated.length);
+  assert.strictEqual(dated.length, 26, 'exactly 26 dated items; got ' + dated.length);
   dated.forEach(i => {
     assert.strictEqual(i.status, 'done', i.code + ' is dated but not done');
     assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(i.date), i.code + ' date not ISO: ' + i.date);
-    assert.ok(i.date <= '2026-06-21', i.code + ' date is in the future: ' + i.date); // ISO sorts lexically
+    assert.ok(i.date <= '2026-06-22', i.code + ' date is in the future: ' + i.date); // ISO sorts lexically
     assert.ok(/^[a-z][a-z0-9-]*#\d+$/.test(i.ref), i.code + ' missing/malformed ref: ' + i.ref);
   });
   // sentinels — each independently verified against the cited PR's merge date
@@ -317,6 +317,10 @@ test('arc data: exactly the 23 done items carry verified backfilled dates + prov
   assert.strictEqual(by('N6').date, '2026-06-18');    // promote-to-canonical = docs#142 (not the #127 seed)
   assert.strictEqual(by('v4.0').date, '2026-06-12');  // v4.0 seed acceptance = docs#127
   assert.strictEqual(by('Gate-L').date, '2026-06-18'); // reconciliation certified = docs#141
+  // Event 10-12 operating cadence — each dated to its cited capability PR's merge
+  assert.strictEqual(by('Gate-T').date, '2026-06-21'); // Site consumes Assembly projection = site#89
+  assert.strictEqual(by('Gate-U').date, '2026-06-22'); // RuntimeBroker dry-run fixture = work#55
+  assert.strictEqual(by('Gate-V').date, '2026-06-21'); // progress-evidence export = civilization-operation#28
   // the contract rule holds over the whole baked set
   assert.strictEqual(O.validateItems(items).ok, true);
 });
