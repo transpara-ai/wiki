@@ -468,6 +468,101 @@ test('operation progress evidence asset omits private governing-repo identifiers
   assert.strictEqual(loadProgressEvidence().schema_version, 1);
 });
 
+test('live-reader correction proof renders public-safe correction labels under the arc', () => {
+  const { nav } = mountArc();
+  const panel = nav.querySelector('.arc-live-reader-correction');
+  assert(panel, 'live-reader correction panel missing');
+  assert.match(panel.textContent, /Live Reader Correction Proof/);
+  assert.match(panel.textContent, /source transpara-ai\/civilization-operation#30/);
+  assert.match(panel.textContent, /generated2026-06-22T15:10:35Z/);
+  assert.match(panel.textContent, /freshnessfixture/);
+  assert.match(panel.textContent, /Test 001 Remains YELLOW/);
+  assert.match(panel.textContent, /corrected \/ source_recorded/);
+  assert.match(panel.textContent, /superseded \/ stale/);
+  assert.match(panel.textContent, /Missing or unavailable sources/);
+  assert.match(panel.textContent, /unavailable-source/);
+  assert.match(panel.textContent, /not live truth/i);
+  assert.match(panel.textContent, /not Gate X closure/i);
+  assert.doesNotMatch(panel.textContent, /No valid public-safe correction export is available/);
+
+  const hrefs = [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href'));
+  assert(hrefs.includes('https://github.com/transpara-ai/civilization-operation/pull/30'));
+  assert(hrefs.includes('https://github.com/transpara-ai/civilization-operation/issues/26'));
+});
+
+function assertLiveReaderCorrectionPayload(payload) {
+  assert(payload, 'live-reader correction payload missing');
+  assert.strictEqual(payload.schema_version, 1);
+  assert.strictEqual(payload.display_only, true);
+  assert.strictEqual(payload.privacy.public_safe, true);
+  assert.strictEqual(payload.privacy.network_access, 'none');
+  assert.strictEqual(payload.source.network_access, 'none');
+  assert(['fresh', 'fixture', 'source_recorded'].includes(payload.freshness.state));
+
+  const itemIds = new Set(payload.items.map((item) => item.id));
+  payload.items.forEach((item) => {
+    assert.strictEqual(item.display_only, true, `${item.id} must be display-only`);
+    assert(['source_recorded', 'corrected', 'superseded', 'stale', 'missing', 'unavailable'].includes(item.evidence_state),
+      `${item.id} has invalid evidence_state`);
+    assert(['fresh', 'fixture', 'source_recorded', 'stale', 'missing', 'unavailable'].includes(item.freshness_state),
+      `${item.id} has invalid freshness_state`);
+    assert(item.limitation, `${item.id} must carry limitation text`);
+  });
+  payload.corrections.forEach((correction) => {
+    assert.strictEqual(correction.display_only, true, `${correction.correction_id} must be display-only`);
+    assert(itemIds.has(correction.supersedes_item_id), `${correction.correction_id} missing superseded item`);
+    assert(itemIds.has(correction.corrected_item_id), `${correction.correction_id} missing corrected item`);
+    assert(correction.limitation, `${correction.correction_id} must carry limitation text`);
+  });
+  payload.omitted_sources.forEach((source) => {
+    assert(['missing', 'stale', 'unavailable'].includes(source.freshness_state),
+      `${source.id} must be missing, stale, or unavailable`);
+    assert(source.reason && source.public_summary, `${source.id} must carry reason and summary`);
+  });
+
+  const serialized = JSON.stringify(payload);
+  assert.doesNotMatch(serialized, /github\.com\/transpara-ai\/docs|transpara-ai\/docs|docs#[0-9]+/i);
+  assert.doesNotMatch(serialized, /api\.github\.com|fetch\(|XMLHttpRequest|GITHUB_TOKEN|RuntimeBroker|EventGraph write|deploy hook|protected setting|protected action|production readiness/i);
+}
+
+test('live-reader correction payload itself satisfies the public-safe contract', () => {
+  const dom = new JSDOM('<!doctype html><div></div>', {
+    pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
+  });
+  dom.window.eval(fs.readFileSync(path.join(root, "compile/assets/civilizationArcData.js"), "utf8"));
+  assertLiveReaderCorrectionPayload(dom.window.CIVILIZATION_LIVE_READER_CORRECTION);
+});
+
+test('live-reader correction proof fails closed without valid public-safe metadata', () => {
+  [
+    ["public_safe false", (win) => { win.CIVILIZATION_LIVE_READER_CORRECTION.privacy.public_safe = false; }],
+    ["global stale", (win) => { win.CIVILIZATION_LIVE_READER_CORRECTION.freshness.state = "stale"; }],
+    ["dangling correction", (win) => { win.CIVILIZATION_LIVE_READER_CORRECTION.corrections[0].corrected_item_id = "missing"; }],
+  ].forEach(([label, beforeNav]) => {
+    const { nav } = mountArc({ beforeNav });
+    const panel = nav.querySelector('.arc-live-reader-correction');
+    assert(panel, `live-reader correction panel missing for ${label}`);
+    assert.match(panel.textContent, /No valid public-safe correction export is available/);
+    assert.strictEqual(panel.querySelectorAll('.arc-progress-item').length, 0, label);
+    assert.doesNotMatch(panel.textContent, /Superseded Test 001 GREEN Claim/);
+  });
+});
+
+test('live-reader correction proof rejects unsafe links', () => {
+  const { nav } = mountArc({
+    beforeNav(win) {
+      win.CIVILIZATION_LIVE_READER_CORRECTION.source.operation_pr_url = 'javascript:alert(1)';
+      win.CIVILIZATION_LIVE_READER_CORRECTION.items[2].source_refs[0].url = 'data:text/html,unsafe';
+    },
+  });
+  const panel = nav.querySelector('.arc-live-reader-correction');
+  assert(panel, 'live-reader correction panel missing');
+  const hrefs = [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href'));
+  assert(!hrefs.some((href) => href && /^(javascript:|data:|\/\/)/i.test(href)), 'unsafe correction href rendered');
+  assert.match(panel.textContent, /transpara-ai\/civilization-operation#30/);
+  assert.match(panel.textContent, /civilization-operation#26/);
+});
+
 test('selecting an item draws dashed dependency lines (both directions) + lists deps', () => {
   const { nav, svg, dom } = mountArc();
   const marker = svg.querySelector('[data-arc-item="civic-ai"]');

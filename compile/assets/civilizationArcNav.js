@@ -166,6 +166,10 @@
     return (typeof window !== "undefined") ? window.CIVILIZATION_PROGRESS_EVIDENCE_SOURCE : null;
   }
 
+  function liveReaderCorrectionEvidence() {
+    return (typeof window !== "undefined") ? window.CIVILIZATION_LIVE_READER_CORRECTION : null;
+  }
+
   function appendSafeLink(parent, href, label, className) {
     var safe = safeHref(href);
     if (!safe) {
@@ -237,7 +241,7 @@
   function ensureScaffold(root) {
     root._arc = root._arc || { collapsed: {}, selectedId: null, groupBy: "tracks", zoom: readZoom() };
     var s = root._arc;
-    if (s.scaffolded && s.frame && s.svg && s.nowPanel && s.detailPanel && s.tooltip && s.toolbar && s.progressPanel && s.legend) {
+    if (s.scaffolded && s.frame && s.svg && s.nowPanel && s.detailPanel && s.tooltip && s.toolbar && s.progressPanel && s.liveReaderPanel && s.legend) {
       return s;
     }
 
@@ -274,6 +278,9 @@
 
     var progressPanel = htmlEl("section", "arc-progress-panel");
     progressPanel.setAttribute("aria-label", "Progress evidence snapshot");
+
+    var liveReaderPanel = htmlEl("section", "arc-live-reader-panel");
+    liveReaderPanel.setAttribute("aria-label", "Live Reader Correction Proof");
 
     // Symbol/colour key. Driven by data.legendItems; rebuilt each render. Sits under
     // the chart so the marker vocabulary (gates, chips, dependency lines) is readable
@@ -312,7 +319,7 @@
     zoomWrap.append(zoomOut, zoomReadout, zoomIn);
     toolbar.appendChild(zoomWrap);
 
-    root.append(toolbar, frame, legend, panels, progressPanel);
+    root.append(toolbar, frame, legend, panels, progressPanel, liveReaderPanel);
 
     s.scaffolded = true;
     s.toolbar = toolbar;
@@ -324,6 +331,7 @@
     s.nowPanel = nowPanel;
     s.detailPanel = detailPanel;
     s.progressPanel = progressPanel;
+    s.liveReaderPanel = liveReaderPanel;
     s.legend = legend;
     s.standalone = standalone;
     return s;
@@ -719,6 +727,159 @@
     }
   }
 
+  function isObject(value) {
+    return value && typeof value === "object" && !Array.isArray(value);
+  }
+
+  function validLiveReaderCorrection(payload) {
+    if (!isObject(payload) || payload.schema_version !== 1 || payload.display_only !== true) return false;
+    if (!payload.privacy || payload.privacy.public_safe !== true || payload.privacy.network_access !== "none") return false;
+    if (!payload.source || payload.source.network_access !== "none") return false;
+    if (!payload.freshness || ["fresh", "fixture", "source_recorded"].indexOf(payload.freshness.state) === -1) return false;
+    var allowedEvidence = {
+      source_recorded: 1, corrected: 1, superseded: 1, stale: 1, missing: 1, unavailable: 1,
+    };
+    var allowedFreshness = {
+      fresh: 1, fixture: 1, source_recorded: 1, stale: 1, missing: 1, unavailable: 1,
+    };
+    var allowedOmitted = { missing: 1, stale: 1, unavailable: 1 };
+    var items = Array.isArray(payload.items) ? payload.items : [];
+    if (!items.length) return false;
+    var byId = {};
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      if (!item || item.display_only !== true || !item.id || !item.limitation) return false;
+      if (!allowedEvidence[item.evidence_state] || !allowedFreshness[item.freshness_state]) return false;
+      byId[item.id] = item;
+    }
+    var corrections = Array.isArray(payload.corrections) ? payload.corrections : [];
+    for (var c = 0; c < corrections.length; c++) {
+      var correction = corrections[c];
+      if (!correction || correction.display_only !== true || !correction.limitation) return false;
+      if (!byId[correction.supersedes_item_id] || !byId[correction.corrected_item_id]) return false;
+    }
+    var omitted = Array.isArray(payload.omitted_sources) ? payload.omitted_sources : [];
+    for (var o = 0; o < omitted.length; o++) {
+      var source = omitted[o];
+      if (!source || !allowedOmitted[source.freshness_state] || !source.reason || !source.public_summary) return false;
+    }
+    return true;
+  }
+
+  function appendLiveReaderSourceRefs(parent, refs) {
+    if (!Array.isArray(refs) || !refs.length) return;
+    var meta = htmlEl("p", "arc-progress-meta");
+    meta.appendChild(htmlEl("span", "arc-detail-meta-key", "source "));
+    refs.forEach(function (ref, idx) {
+      if (idx) meta.appendChild(document.createTextNode(" · "));
+      var label = [ref.repo, ref.ref].filter(Boolean).join(" ");
+      appendSafeLink(meta, ref.url, label || "source", "arc-progress-link");
+    });
+    parent.appendChild(meta);
+  }
+
+  function renderLiveReaderCorrection(root) {
+    var s = root._arc;
+    var panel = s && s.liveReaderPanel;
+    if (!panel) return;
+    clearNode(panel);
+
+    var payload = liveReaderCorrectionEvidence();
+    var section = htmlEl("section", "arc-progress-omitted arc-live-reader-correction");
+    section.setAttribute("aria-label", "Live Reader Correction Proof");
+
+    var header = htmlEl("div", "arc-progress-header");
+    var titleWrap = htmlEl("div", "");
+    titleWrap.appendChild(htmlEl("div", "arc-panel-eyebrow", "operation correction export"));
+    titleWrap.appendChild(htmlEl("h3", "", "Live Reader Correction Proof"));
+    titleWrap.appendChild(htmlEl(
+      "p",
+      "arc-progress-note",
+      "Display-only Event 14 fixture from civilization-operation. It is not live truth, not Gate X closure, and not production authority."
+    ));
+    header.appendChild(titleWrap);
+    section.appendChild(header);
+
+    if (!validLiveReaderCorrection(payload)) {
+      section.appendChild(htmlEl("p", "arc-progress-note", "No valid public-safe correction export is available."));
+      panel.appendChild(section);
+      return;
+    }
+
+    var sourceBox = htmlEl("p", "arc-progress-source");
+    sourceBox.appendChild(document.createTextNode("source "));
+    appendSafeLink(sourceBox, payload.source.operation_pr_url, payload.source.operation_pr || "operation export", "arc-progress-link");
+    if (payload.source.operation_merge_commit) {
+      sourceBox.appendChild(document.createTextNode(" at " + String(payload.source.operation_merge_commit).slice(0, 12)));
+    }
+    section.appendChild(sourceBox);
+
+    var metrics = htmlEl("dl", "arc-progress-metrics");
+    [
+      ["generated", payload.generated_at || "unknown"],
+      ["freshness", payload.freshness.state || "unknown"],
+      ["items", String((payload.items || []).length)],
+      ["corrections", String((payload.corrections || []).length)],
+      ["omitted", String((payload.omitted_sources || []).length)],
+    ].forEach(function (row) {
+      metrics.appendChild(htmlEl("dt", "", row[0]));
+      metrics.appendChild(htmlEl("dd", "", row[1]));
+    });
+    section.appendChild(metrics);
+
+    var grid = htmlEl("div", "arc-progress-grid");
+    (payload.items || []).forEach(function (item) {
+      var card = htmlEl("article", "arc-progress-item");
+      var head = htmlEl("div", "arc-progress-item-head");
+      head.appendChild(htmlEl("strong", "", item.title || item.id || "Correction item"));
+      head.appendChild(htmlEl("span", "arc-progress-chip", [item.evidence_state, item.freshness_state].filter(Boolean).join(" / ")));
+      card.appendChild(head);
+      card.appendChild(htmlEl("p", "arc-progress-summary", item.public_summary || ""));
+      appendLiveReaderSourceRefs(card, item.source_refs);
+      appendList(card, "arc-progress-list", [item.limitation]);
+      grid.appendChild(card);
+    });
+    section.appendChild(grid);
+
+    if (Array.isArray(payload.corrections) && payload.corrections.length) {
+      var corrections = htmlEl("section", "arc-progress-omitted");
+      corrections.appendChild(htmlEl("h4", "", "Corrections"));
+      var list = htmlEl("ul", "");
+      payload.corrections.forEach(function (correction) {
+        var li = htmlEl("li", "");
+        li.appendChild(htmlEl("strong", "", correction.correction_id || "correction"));
+        li.appendChild(document.createTextNode(
+          " - corrected " + (correction.prior_public_state || "prior") +
+          " to " + (correction.corrected_state || "current") +
+          ": " + (correction.correction_reason || "")
+        ));
+        list.appendChild(li);
+      });
+      corrections.appendChild(list);
+      section.appendChild(corrections);
+    }
+
+    if (Array.isArray(payload.omitted_sources) && payload.omitted_sources.length) {
+      var omittedSection = htmlEl("section", "arc-progress-omitted");
+      omittedSection.appendChild(htmlEl("h4", "", "Missing or unavailable sources"));
+      var omittedList = htmlEl("ul", "");
+      payload.omitted_sources.forEach(function (entry) {
+        var li = htmlEl("li", "");
+        li.appendChild(htmlEl("strong", "", entry.title || entry.id || "Omitted source"));
+        li.appendChild(document.createTextNode(
+          " - " + (entry.freshness_state || "unavailable") +
+          " / " + (entry.reason || "omitted") +
+          ": " + (entry.public_summary || "")
+        ));
+        omittedList.appendChild(li);
+      });
+      omittedSection.appendChild(omittedList);
+      section.appendChild(omittedSection);
+    }
+
+    panel.appendChild(section);
+  }
+
   // ---- legend ---------------------------------------------------------------
 
   // Allowlisted swatch shapes — only classes that exist in style.css are emitted; an
@@ -1018,6 +1179,7 @@
     renderDetailPanel(root, data);
     renderLegend(root, data);
     renderProgressEvidence(root);
+    renderLiveReaderCorrection(root);
 
     wireEvents(root, data);
   }
