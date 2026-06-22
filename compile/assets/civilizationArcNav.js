@@ -143,6 +143,21 @@
     return String(value || "").replace(/[-_]+/g, " ");
   }
 
+  // Every item must surface a date line (tooltip + detail). A real ISO date when known;
+  // otherwise an explicit, honest placeholder keyed off the lifecycle state — never a
+  // fabricated date and never a blank. (This reverses the earlier "graceful absence"
+  // behaviour, per the requirement that everything carry a date.) The remaining undated
+  // DONE items are a separate provenance backfill, not a render concern.
+  function dateText(item) {
+    if (item && typeof item.date === "string" && item.date) return item.date;
+    var st = item ? (item.blocked ? "blocked" : item.status) : null;
+    if (st === "active") return "in progress — not yet dated";
+    if (st === "planned") return "planned — not started";
+    if (st === "blocked") return "blocked — not dated";
+    if (st === "future") return "future — not scheduled";
+    return "undated"; // done-but-undated (backfill pending) or unknown state
+  }
+
   function progressEvidence() {
     return (typeof window !== "undefined") ? window.CIVILIZATION_PROGRESS_EVIDENCE : null;
   }
@@ -373,7 +388,7 @@
     if (sprintLabel) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "sprint · " + sprintLabel));
     var ord = s.ordinalById && s.ordinalById[item.id];
     if (ord) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "step " + ord + " of " + s.itemCount));
-    if (item.date) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "date · " + item.date)); // reserved for date-backfill follow-up
+    tip.appendChild(htmlEl("div", "arc-tooltip-meta", "date · " + dateText(item))); // every item carries a date line
     if (item.provenance) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "provenance · " + item.provenance));
     if (item.author) tip.appendChild(htmlEl("div", "arc-tooltip-meta", "actor · @" + item.author));
     // No clickable link in the tooltip — pointer-events:none on .arc-tooltip makes
@@ -534,14 +549,14 @@
       panel.appendChild(boundary);
     }
 
-    // Backfilled completion date + its provenance ref (present only on dated done items;
-    // see the date-ownership backfill). Absent items render no date line — graceful.
-    if (item.date) {
-      var dateMeta = htmlEl("p", "arc-detail-meta arc-detail-date");
-      dateMeta.appendChild(htmlEl("span", "arc-detail-meta-key", "date "));
-      dateMeta.appendChild(document.createTextNode(item.date + (item.ref ? " · " + item.ref : "")));
-      panel.appendChild(dateMeta);
-    }
+    // Every item carries a date line. A real ISO date (+ provenance ref) when known; an
+    // explicit lifecycle placeholder otherwise — never blank, never fabricated.
+    var dateMeta = htmlEl("p", "arc-detail-meta arc-detail-date");
+    dateMeta.appendChild(htmlEl("span", "arc-detail-meta-key", "date "));
+    var hasRealDate = typeof item.date === "string" && item.date;
+    dateMeta.appendChild(document.createTextNode(
+      dateText(item) + (hasRealDate && item.ref ? " · " + item.ref : "")));
+    panel.appendChild(dateMeta);
 
     if (item.note) {
       panel.appendChild(htmlEl("p", "arc-detail-note", item.note));

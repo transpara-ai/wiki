@@ -547,14 +547,21 @@ test('a backfilled date shows in the tooltip + a STRUCTURED detail-panel date li
   assert.match(dateLine.textContent, /docs#138/, 'date line carries the provenance ref');
 });
 
-test('an undated item shows NO date line in tooltip or detail — graceful absence', () => {
+test('every item shows a date line — explicit placeholder when undated, never blank, never fabricated', () => {
+  // Reverses the earlier "graceful absence" rule: the requirement is that EVERYTHING
+  // carries a date line. origin-signal is a reconstructed beat with no backfilled date,
+  // so it must show an explicit placeholder — not a blank, and not an invented ISO date.
   const { nav, svg, dom } = mountArc();
-  // origin-signal is a reconstructed beat with no date; its detail must not fabricate one.
   const m = svg.querySelector('[data-arc-item="origin-signal"]');
   m.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
-  assert.doesNotMatch(nav.querySelector('.arc-tooltip').textContent, /date ·/, 'no tooltip date for an undated item');
+  const tip = nav.querySelector('.arc-tooltip').textContent;
+  assert.match(tip, /date ·/, 'tooltip always carries a date line');
+  assert.doesNotMatch(tip, /date · \d{4}-\d{2}-\d{2}/, 'must NOT fabricate an ISO date for an undated item');
   m.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-  assert.strictEqual(nav.querySelector('.arc-detail-date'), null, 'no detail date line for an undated item');
+  const dateLine = nav.querySelector('.arc-detail-date');
+  assert(dateLine, 'detail panel ALWAYS has a .arc-detail-date line');
+  assert.match(dateLine.textContent, /date\b/, 'date line is labelled');
+  assert.doesNotMatch(dateLine.textContent, /\d{4}-\d{2}-\d{2}/, 'undated item shows no fabricated ISO date');
 });
 
 test('Actor toggle is disabled when no item carries an author (live overlay parked)', () => {
