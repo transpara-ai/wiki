@@ -1980,7 +1980,7 @@
         blocked_reason: null,
         provenance: "reconstructed",
         seq: 13.996,
-        repo: ["civilization-operation","docs"],
+        repo: ["civilization-operation","civilization-wiki","docs"],
         sprint: "stewardship",
         gate: null,
         goal: null,
