@@ -53,13 +53,13 @@ Per Karpathy (and Michael's call): within the **§Corpus scope (allowlist)**, mi
 > earlier `index.md` headers) framed the corpus as *"8,783 markdown files across 73
 > repos."* That was a design-time raw `find -name '*.md'` over the then-current
 > nucbuntu clone directory, not a stable live inventory. After the 2026-06-22
-> canonical root move, the live root is `/Transpara/transpara-ai/repos`; a quick
-> check there found 70 top-level repo directories, 7,999 markdown files including
-> `node_modules`, and 4,326 excluding `node_modules`. It is **not** a count
-> of Civilization sources: ~45 of those repos are Transpara's commercial **product
+> canonical root move, the live root is `/Transpara/transpara-ai/repos`; live
+> repo/file counts are intentionally tracked in reorganization inventory
+> manifests instead of this design note. They are **not** counts of Civilization
+> sources: many repos under the live root are Transpara's commercial **product
 > line** (industrial-data extractors, the `t*` server suite, Excel/ML/analytics,
 > protocol interfaces) — the *business the factory will build*, not the factory's
-> own arc — and most of the file count is `node_modules`, vendored docs, and forks.
+> own arc — and much of the file count is `node_modules`, vendored docs, and forks.
 > The corpus is therefore defined here as an **explicit allowlist**, consistent with
 > `PROVENANCE.md` (which never claimed 73). "Full corpus sweep" means exhausting
 > *this* list, which is bounded and achievable.

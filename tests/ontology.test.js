@@ -69,7 +69,7 @@ test('groupBy repo: 8-repo collection in Civilization→Governance order, each l
   const lanes = O.groupBy(G, 'repo');
   assert.deepStrictEqual(lanes.map(l => l.lane),
     ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'wiki', 'operation']);
-  // the 6 operational repos are the "civilization" group; the 2 civilization-* repos are "governance"
+  // the 6 operational repos are the "civilization" group; wiki and operation are "governance"
   assert.strictEqual(lanes.find(l => l.lane === 'agent').group, 'civilization');
   assert.strictEqual(lanes.find(l => l.lane === 'work').group, 'civilization');
   assert.strictEqual(lanes.find(l => l.lane === 'wiki').group, 'governance');
