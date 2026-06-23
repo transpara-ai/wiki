@@ -64,6 +64,9 @@ deliberate human steps.
 ```
 loginctl enable-linger transpara
 mkdir -p ~/.config/systemd/user
+systemctl --user disable --now civwiki-autodeploy.timer civwiki-inflight.timer 2>/dev/null || true
+mkdir -p ~/.config/systemd/user/retired-civwiki-units
+mv -n ~/.config/systemd/user/civwiki-autodeploy.* ~/.config/systemd/user/civwiki-inflight.* ~/.config/systemd/user/retired-civwiki-units/ 2>/dev/null || true
 cp compile/systemd/wiki-autodeploy.* ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now wiki-autodeploy.timer
