@@ -9,9 +9,9 @@ sources:
   - transpara-ai/hive  # pkg/hive/authority_policy.go — protectedActionRequest, recordAuthorityRequest, authorizeProtectedAction
   - transpara-ai/hive  # pkg/safety/safety.go — ProtectedAction constants, DefaultOutcome, RiskClass
   - transpara-ai/hive  # pkg/hive/factory_authority.go — RaiseDraftPRAuthorityRequest, DraftPRTarget
-  - civilization-wiki/wiki/authority-layer.md  # philosophical lineage: graduated consent, Required/Recommended/Notification
-  - civilization-wiki/wiki/runtime-broker.md  # authority_decision_ref in the RuntimeEnvelope
-  - civilization-wiki/wiki/the-mind-loop.md  # Create/MatchPolicy/Resolve pattern; m.auth.Create("restart", ..., authority.Required)
+  - wiki/wiki/authority-layer.md  # philosophical lineage: graduated consent, Required/Recommended/Notification
+  - wiki/wiki/runtime-broker.md  # authority_decision_ref in the RuntimeEnvelope
+  - wiki/wiki/the-mind-loop.md  # Create/MatchPolicy/Resolve pattern; m.auth.Create("restart", ..., authority.Required)
 confidence:
   sources: primary
   claims: grounded
@@ -151,8 +151,8 @@ Primary source (read this run):
 - `transpara-ai/hive` `pkg/hive/authority_policy.go` — `protectedActionRequest` (L12-26), `authorizeProtectedAction` (L61-85), `recordProtectedActionLocalEmulation` (L87-168), `recordAuthorityRequest` (L170-219 approx), `recordAuthorityExecutionReceipt` (L372-394 approx).
 - `transpara-ai/hive` `pkg/safety/safety.go` — `AuthorityOutcome` constants (L9-13), `ProtectedAction` constants (L19-46), `DefaultOutcome` (L103-110), `RiskClass` (L112-148).
 - `transpara-ai/hive` `pkg/hive/factory_authority.go` — `DraftPRTarget` struct (L15-26), `Scope()` encoding (L31-44).
-- `civilization-wiki/wiki/authority-layer.md` — philosophical lineage; `Required`/`Recommended`/`Notification` levels; `auth.Create` / `MatchPolicy` / `Resolve` pattern quoted from Searles.
-- `civilization-wiki/wiki/runtime-broker.md` — `authority_decision_ref` as mandatory envelope field.
-- `civilization-wiki/wiki/the-mind-loop.md` — the originating `m.auth.Create(ctx, "restart", ..., authority.Required)` call pattern.
+- `wiki/wiki/authority-layer.md` — philosophical lineage; `Required`/`Recommended`/`Notification` levels; `auth.Create` / `MatchPolicy` / `Resolve` pattern quoted from Searles.
+- `wiki/wiki/runtime-broker.md` — `authority_decision_ref` as mandatory envelope field.
+- `wiki/wiki/the-mind-loop.md` — the originating `m.auth.Create(ctx, "restart", ..., authority.Required)` call pattern.
 
 No source conflicts found on this entity. `[[wikilinks]]` to `[[bounded-runtime]]` and `[[execution-receipt]]` are forward references compiled in the same session.

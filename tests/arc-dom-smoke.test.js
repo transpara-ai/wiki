@@ -275,7 +275,7 @@ test('Repo view shows Civilization/Governance group headers, 8 named lanes, no (
     'in-collection groups are marked; got ' + headers.join(' | '));
   const labels = [...nav.querySelectorAll('.arc-track-label')].map(t => t.textContent);
   assert.deepStrictEqual(labels,
-    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'civilization-wiki', 'civilization-operation'],
+    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'wiki', 'operation'],
     'all 8 collection repos render as named lanes; got ' + labels.join(' | '));
   assert.ok(!labels.includes('(other)'), 'the generic (other) bucket lane is gone');
 });
@@ -425,8 +425,8 @@ test('operation progress evidence snapshot renders under the arc', () => {
   assert.doesNotMatch(panel.textContent, /operator_notes|raw_issue_body|Source notes are intentionally not exported|Raw issue text is not exported/);
 
   const hrefs = [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href'));
-  assert(hrefs.includes('https://github.com/transpara-ai/civilization-operation/pull/28'));
-  assert(hrefs.includes('https://github.com/transpara-ai/civilization-operation/issues/26'));
+  assert(hrefs.includes('https://github.com/transpara-ai/operation/pull/28'));
+  assert(hrefs.includes('https://github.com/transpara-ai/operation/issues/26'));
   assert(!hrefs.some((href) => href && href.includes('github.com/transpara-ai/docs')),
     'progress panel must not link private docs repo evidence');
   assert.doesNotMatch(panel.textContent, /transpara-ai\/docs|docs#[0-9]+/i);
@@ -458,7 +458,7 @@ test('operation progress evidence rejects unsafe progress links', () => {
   assert(panel, 'progress evidence panel missing');
   const hrefs = [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href'));
   assert(!hrefs.some((href) => href && /^(javascript:|data:|\/\/)/i.test(href)), 'unsafe progress href rendered');
-  assert.match(panel.textContent, /transpara-ai\/civilization-operation#28/);
+  assert.match(panel.textContent, /transpara-ai\/operation#28/);
   assert.match(panel.textContent, /governing authority on file/);
 });
 
@@ -473,7 +473,7 @@ test('live-reader correction proof renders public-safe correction labels under t
   const panel = nav.querySelector('.arc-live-reader-correction');
   assert(panel, 'live-reader correction panel missing');
   assert.match(panel.textContent, /Live Reader Correction Proof/);
-  assert.match(panel.textContent, /source transpara-ai\/civilization-operation#30/);
+  assert.match(panel.textContent, /source transpara-ai\/operation#30/);
   assert.match(panel.textContent, /generated2026-06-22T15:10:35Z/);
   assert.match(panel.textContent, /freshnessfixture/);
   assert.match(panel.textContent, /Test 001 Remains YELLOW/);
@@ -486,8 +486,8 @@ test('live-reader correction proof renders public-safe correction labels under t
   assert.doesNotMatch(panel.textContent, /No valid public-safe correction export is available/);
 
   const hrefs = [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href'));
-  assert(hrefs.includes('https://github.com/transpara-ai/civilization-operation/pull/30'));
-  assert(hrefs.includes('https://github.com/transpara-ai/civilization-operation/issues/26'));
+  assert(hrefs.includes('https://github.com/transpara-ai/operation/pull/30'));
+  assert(hrefs.includes('https://github.com/transpara-ai/operation/issues/26'));
 });
 
 function assertLiveReaderCorrectionPayload(payload) {
@@ -559,8 +559,8 @@ test('live-reader correction proof rejects unsafe links', () => {
   assert(panel, 'live-reader correction panel missing');
   const hrefs = [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href'));
   assert(!hrefs.some((href) => href && /^(javascript:|data:|\/\/)/i.test(href)), 'unsafe correction href rendered');
-  assert.match(panel.textContent, /transpara-ai\/civilization-operation#30/);
-  assert.match(panel.textContent, /civilization-operation#26/);
+  assert.match(panel.textContent, /transpara-ai\/operation#30/);
+  assert.match(panel.textContent, /operation#26/);
 });
 
 test('selecting an item draws dashed dependency lines (both directions) + lists deps', () => {

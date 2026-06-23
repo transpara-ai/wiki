@@ -22,7 +22,7 @@ index.md → the arc spine + article index
 ## Layout
 
 ```
-civilization-wiki/
+wiki/
   raw/
     searles/            day-1 provocation: the ~45–50 lovyou.ai posts
     transpara/          first-party: docs, df-impl-v11..v16, dark-factory, design iterations
@@ -51,13 +51,15 @@ Per Karpathy (and Michael's call): within the **§Corpus scope (allowlist)**, mi
 
 > ⚠ **Scope correction (2026-06-14).** Draft v0.1 (the Purpose line above, and
 > earlier `index.md` headers) framed the corpus as *"8,783 markdown files across 73
-> repos."* That was a raw `find -name '*.md'` over the entire nucbuntu clone
-> directory (`/Transpara/transpara-ai/data/repos` — **74 repos** today; 9,476
-> markdown files excluding `node_modules`, 15,234 including). It is **not** a count
-> of Civilization sources: ~45 of those repos are Transpara's commercial **product
+> repos."* That was a design-time raw `find -name '*.md'` over the then-current
+> nucbuntu clone directory, not a stable live inventory. After the 2026-06-22
+> canonical root move, the live root is `/Transpara/transpara-ai/repos`; live
+> repo/file counts are intentionally tracked in reorganization inventory
+> manifests instead of this design note. They are **not** counts of Civilization
+> sources: many repos under the live root are Transpara's commercial **product
 > line** (industrial-data extractors, the `t*` server suite, Excel/ML/analytics,
 > protocol interfaces) — the *business the factory will build*, not the factory's
-> own arc — and most of the file count is `node_modules`, vendored docs, and forks.
+> own arc — and much of the file count is `node_modules`, vendored docs, and forks.
 > The corpus is therefore defined here as an **explicit allowlist**, consistent with
 > `PROVENANCE.md` (which never claimed 73). "Full corpus sweep" means exhausting
 > *this* list, which is bounded and achievable.
@@ -100,7 +102,7 @@ Day one — the Searles reading + the first lovyou.ai fork/build (~Feb 2026) —
 
 ## Boundaries
 
-- **Repo:** new `transpara-ai/civilization-wiki`, **private** (internal substrate). Created when we're ready to push, with confirmation first.
+- **Repo:** new `transpara-ai/wiki`, **private** (internal substrate). Created when we're ready to push, with confirmation first.
 - transpara-ai only; never touch `lovyou-ai`/upstream. `upstream_context` quotes public docs as cited context, never re-publishes wholesale.
 - Air-gap friendly: compile runs locally on nucbuntu; only dependency is the LLM.
 

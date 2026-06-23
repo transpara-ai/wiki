@@ -47,8 +47,8 @@ test("homepage arc displays operation progress evidence", async ({ page }) => {
   await expect(panel).not.toContainText(/operator_notes|raw_issue_body/);
   await expect(panel).not.toContainText(/transpara-ai\/docs|docs#[0-9]+/i);
 
-  await expect(panel.locator('a[href="https://github.com/transpara-ai/civilization-operation/pull/28"]')).toBeVisible();
-  await expect(panel.locator('a[href="https://github.com/transpara-ai/civilization-operation/issues/26"]')).toBeVisible();
+  await expect(panel.locator('a[href="https://github.com/transpara-ai/operation/pull/28"]')).toBeVisible();
+  await expect(panel.locator('a[href="https://github.com/transpara-ai/operation/issues/26"]')).toBeVisible();
   await expect(panel.locator('a[href*="github.com/transpara-ai/docs"]')).toHaveCount(0);
 });
 

@@ -12,11 +12,11 @@ tier: investigation
 status: compiled
 last_compiled: 2026-06-13
 sources:
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; Hermes decision row (L80) + per-item note "governed optimizer pattern only" (L163-167); freeze/reopen policy (L41-68)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md  # Batch C — repo-grounded analysis of hermes-agent (L532-655) and hermes-example-plugins (L657+); README-only evidence
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md  # Batch D — repo-grounded analysis of hermes-agent-self-evolution (L75-208); evidence = README.md + PLAN.md
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 inclusion matrix — three distinct Hermes rows (L130, L131, L135); specific rejections (L302, L309)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # closeout — Hermes self-evolution feeds U7/U8 capability-evolution updates (via investigation article cross-ref)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; Hermes decision row (L80) + per-item note "governed optimizer pattern only" (L163-167); freeze/reopen policy (L41-68)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md  # Batch C — repo-grounded analysis of hermes-agent (L532-655) and hermes-example-plugins (L657+); README-only evidence
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md  # Batch D — repo-grounded analysis of hermes-agent-self-evolution (L75-208); evidence = README.md + PLAN.md
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 inclusion matrix — three distinct Hermes rows (L130, L131, L135); specific rejections (L302, L309)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # closeout — Hermes self-evolution feeds U7/U8 capability-evolution updates (via investigation article cross-ref)
   - "GitHub API: repos/transpara-ai/hermes-agent (fork metadata, 2026-06-13 live)"  # isFork=true, parent=NousResearch/hermes-agent, createdAt 2026-05-11T11:32:53Z, description "The agent that grows with you", MIT
   - "GitHub API: repos/transpara-ai/hermes-agent-self-evolution (fork metadata, 2026-06-13 live)"  # isFork=true, parent=NousResearch/hermes-agent-self-evolution, createdAt 2026-05-11T11:32:06Z, description "Evolutionary self-improvement … DSPy + GEPA"
   - "GitHub API: repos/transpara-ai/hermes-example-plugins (fork metadata, 2026-06-13 live)"  # isFork=true, parent=NousResearch/hermes-example-plugins, createdAt 2026-05-13T03:42:39Z, MIT
@@ -147,7 +147,7 @@ So the Hermes optimizer is, in a real sense, one of the reference patterns behin
 
 ## Sources & provenance
 
-- v3.9.1 **External Technology Decision Crosswalk** — `/Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (Hermes decision row L80; per-item note "governed optimizer pattern only" L163-167; freeze/reopen policy L41-68). The authoritative — but coarse, single-row — decision record.
+- v3.9.1 **External Technology Decision Crosswalk** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (Hermes decision row L80; per-item note "governed optimizer pattern only" L163-167; freeze/reopen policy L41-68). The authoritative — but coarse, single-row — decision record.
 - **Phase 4 Batch C** candidate analysis — `…/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md` (`hermes-agent` section L532-655, `hermes-example-plugins` section from L657). Primary evidence for the runtime and plugin repos; explicitly README-only.
 - **Phase 4 Batch D** candidate analysis — `…/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md` (`hermes-agent-self-evolution` section L75-208, inclusion-matrix line L589). Primary evidence for the optimizer; evidence inspected = README.md + PLAN.md; DSPy/GEPA loop L96-108, five-tier PLAN L112-118, risks L184-190, license/AGPL note L194.
 - **Phase 5 inclusion matrix** — `…/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md` (the three distinct Hermes rows L130/L131/L135; the specific rejections L302 and L309). The investigation's own source for the per-item decisions the crosswalk later collapsed.

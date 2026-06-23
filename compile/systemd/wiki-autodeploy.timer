@@ -1,5 +1,5 @@
 [Unit]
-Description=Run the Civilization Wiki auto-deploy poller every 2 minutes
+Description=Run the Wiki auto-deploy poller every 2 minutes
 
 [Timer]
 OnBootSec=2min

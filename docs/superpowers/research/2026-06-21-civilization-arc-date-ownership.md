@@ -18,7 +18,7 @@ real Actor attribution.
   happened — no date possible).
 - **Who owns the dates:** the **source-of-truth repos' GitHub PR/issue history** — overwhelmingly
   `transpara-ai/docs` (governance/gates), plus `work`/`hive`/`site`/`eventgraph` for implementation.
-  `civilization-wiki` owns only the *reconstructed pre-history*, which is "not commit-derived" by its own
+  `wiki` owns only the *reconstructed pre-history*, which is "not commit-derived" by its own
   honesty note and therefore **ownerless for dating**.
 - **Done in this branch:** #1 (tooltip/detail dates) for the Tier-1 done items — honest, graceful blanks
   elsewhere. Dates are baked into `civilizationArcData.js`, render in tooltip/detail, and are covered by
@@ -77,7 +77,7 @@ reconstructed Feb-genesis pre-history with no commit dates.
 |---|---|---|---|
 | `transpara-ai/docs` PR/issue history | 62 docs-owned (governance/gates/events) | `merged_at` of the cited PR | real, precise for implemented Tier-1 refs |
 | `work`/`hive`/`site`/`eventgraph` history | implementation items | `merged_at` of the cited PR | real, precise |
-| `civilization-wiki` (reconstructed narrative) | origin story + design-principle beats | **none** — "not commit-derived" by its own note | n/a (undatable by design) |
+| `wiki` (reconstructed narrative) | origin story + design-principle beats | **none** — "not commit-derived" by its own note | n/a (undatable by design) |
 
 ---
 

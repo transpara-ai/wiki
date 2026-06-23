@@ -1,6 +1,6 @@
 # Civilization Arc — Chronological Tracks (Projection 1, renderer v2) — Design Spec
 
-**Status:** draft v0.2 · **Date:** 2026-06-17 · **Owner:** Michael Saucier · **Authority:** planning (proposal, pending review) · **Repo/branch:** transpara-ai/civilization-wiki @ claude/elegant-swanson-965269
+**Status:** draft v0.2 · **Date:** 2026-06-17 · **Owner:** Michael Saucier · **Authority:** planning (proposal, pending review) · **Repo/branch:** transpara-ai/wiki @ claude/elegant-swanson-965269
 
 > **v0.2 (post-T5 visual review):** revises the x-axis encoding (§2), tooltip content (§5), responsiveness guardrails (§6), and data stance (§8). See §12 for the revision history and rationale.
 

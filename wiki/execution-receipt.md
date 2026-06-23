@@ -9,9 +9,9 @@ sources:
   - transpara-ai/hive  # pkg/hive/authority_policy.go — recordAuthorityExecutionReceipt, protectedActionLocalEmulationResult.ExecutionReceiptID
   - transpara-ai/hive  # pkg/hive/phase3_records.go — PolicyEngineAdapterDecisionContent.ExecutionReceiptRef
   - transpara-ai/hive  # pkg/loop/commit_verification.go — handleOperateResult, attachOperateArtifact, commitVerdict taxonomy
-  - civilization-wiki/wiki/runtime-broker.md  # RuntimeResult fields: artifact_refs, command_log, policy_decision_refs
-  - civilization-wiki/wiki/authority-layer.md  # "every action has a receipt" as a design principle
-  - civilization-wiki/wiki/the-mind-loop.md  # "every action leaves a trail"; mind.claude.completed as receipt pattern
+  - wiki/wiki/runtime-broker.md  # RuntimeResult fields: artifact_refs, command_log, policy_decision_refs
+  - wiki/wiki/authority-layer.md  # "every action has a receipt" as a design principle
+  - wiki/wiki/the-mind-loop.md  # "every action leaves a trail"; mind.claude.completed as receipt pattern
 confidence:
   sources: primary
   claims: grounded
@@ -135,8 +135,8 @@ Primary source (read this run):
 - `transpara-ai/hive` `pkg/hive/authority_policy.go` — `protectedActionLocalEmulationResult` (L51-58), `recordProtectedActionLocalEmulation` (L87-168, specifically the receipt call at L162-166), `recordAuthorityExecutionReceipt` signature and cause-chain construction (L372-394 approx).
 - `transpara-ai/hive` `pkg/loop/commit_verification.go` — `commitVerdict` taxonomy (L13-50 approx), `handleOperateResult` (L173-216 approx), `failOperateTask` (L281 approx), `attachOperateArtifact` (L1761 approx in loop.go), `buildOperateArtifactBody` (L1791 approx in loop.go). Commentary verbatim: "three review rounds confirmed every phrase/verb heuristic is bypassable."
 - `transpara-ai/hive` `pkg/loop/workspace_containment.go` — v10-F2 containment tripwire, threat model commentary (L14-45).
-- `civilization-wiki/wiki/runtime-broker.md` — `RuntimeResult` as evidence-not-verdict; `artifact_refs`, `policy_decision_refs`, `post_run_validation_refs` fields.
-- `civilization-wiki/wiki/the-mind-loop.md` — "every action leaves a trail"; `mind.claude.completed` as the originating receipt pattern.
-- `civilization-wiki/wiki/authority-layer.md` — "every action has a receipt" as a design principle.
+- `wiki/wiki/runtime-broker.md` — `RuntimeResult` as evidence-not-verdict; `artifact_refs`, `policy_decision_refs`, `post_run_validation_refs` fields.
+- `wiki/wiki/the-mind-loop.md` — "every action leaves a trail"; `mind.claude.completed` as the originating receipt pattern.
+- `wiki/wiki/authority-layer.md` — "every action has a receipt" as a design principle.
 
 No source conflicts found on this entity. `[[wikilinks]]` to `[[authority-request]]` and `[[bounded-runtime]]` are forward references compiled in the same session.

@@ -664,7 +664,7 @@
     titleWrap.appendChild(htmlEl(
       "p",
       "arc-progress-note",
-      "Display-only snapshot from civilization-operation. It is not live truth, not gate closure, and not production authority."
+      "Display-only snapshot from operation. It is not live truth, not gate closure, and not production authority."
     ));
     header.appendChild(titleWrap);
 
@@ -795,7 +795,7 @@
     titleWrap.appendChild(htmlEl(
       "p",
       "arc-progress-note",
-      "Display-only Event 14 fixture from civilization-operation. It is not live truth, not Gate X closure, and not production authority."
+      "Display-only Event 14 fixture from operation. It is not live truth, not Gate X closure, and not production authority."
     ));
     header.appendChild(titleWrap);
     section.appendChild(header);

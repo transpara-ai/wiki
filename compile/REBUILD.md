@@ -29,7 +29,7 @@ Re-synthesizing article **content** from sources is the expensive, autonomous-sp
 `dist/` is served on nucbuntu at `:8787`. The cron regenerates it in place; only restart the static server if the host reboots:
 
 ```
-cd /home/transpara/transpara-ai/repos/civilization-wiki/dist && python3 -m http.server 8787 --bind 0.0.0.0
+cd /Transpara/transpara-ai/repos/wiki/dist && python3 -m http.server 8787 --bind 0.0.0.0
 ```
 
 ## Browser verification
@@ -64,10 +64,13 @@ deliberate human steps.
 ```
 loginctl enable-linger transpara
 mkdir -p ~/.config/systemd/user
-cp compile/systemd/civwiki-autodeploy.* ~/.config/systemd/user/
+systemctl --user disable --now civwiki-autodeploy.timer civwiki-inflight.timer 2>/dev/null || true
+mkdir -p ~/.config/systemd/user/retired-civwiki-units
+mv -n ~/.config/systemd/user/civwiki-autodeploy.* ~/.config/systemd/user/civwiki-inflight.* ~/.config/systemd/user/retired-civwiki-units/ 2>/dev/null || true
+cp compile/systemd/wiki-autodeploy.* ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now civwiki-autodeploy.timer
-journalctl --user -u civwiki-autodeploy -f      # logs
+systemctl --user enable --now wiki-autodeploy.timer
+journalctl --user -u wiki-autodeploy -f      # logs
 ```
 A blocked tick (unauthorized / dirty / build-fail) leaves the live site
 untouched and flips the on-page "Auto-deploy blocked" banner.

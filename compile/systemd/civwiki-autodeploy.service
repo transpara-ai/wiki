@@ -1,7 +1,0 @@
-[Unit]
-Description=Civilization Wiki auto-deploy poller (one tick)
-After=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/python3 /home/transpara/transpara-ai/repos/civilization-wiki/compile/autodeploy.py

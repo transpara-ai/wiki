@@ -25,7 +25,7 @@
 | `compile/autodeploy.py` | All poller logic: pure gates (`site_affecting`, `authorized`, `preflight`, `decide`), status/history writers, `deploy`, `run_tick` orchestrator, `main` wiring. |
 | `compile/test_autodeploy.py` | Stdlib-assert tests; `_git_repo()` fixture helper. |
 | `compile/deploy-authorization.example.json` | Inert authorization template (invalid SHA). |
-| `compile/systemd/civwiki-autodeploy.service` / `.timer` | Inert systemd user units. |
+| `compile/systemd/wiki-autodeploy.service` / `.timer` | Inert systemd user units. |
 | `compile/build_site.py` | Modified: bake a client-side `deploy-status.json` fetch (banner + footer) into the page template. |
 | `wiki/deployment-arc.md` | Modified: live deploy-status / recent-deploys widget. |
 | `compile/REBUILD.md` | Modified: install + first-authorization runbook. |
@@ -816,29 +816,29 @@ git commit -m "feat(autodeploy): live deploy-status widget on deployment-arc"
 ### Task 9: inert systemd units + REBUILD runbook
 
 **Files:**
-- Create: `compile/systemd/civwiki-autodeploy.service`
-- Create: `compile/systemd/civwiki-autodeploy.timer`
+- Create: `compile/systemd/wiki-autodeploy.service`
+- Create: `compile/systemd/wiki-autodeploy.timer`
 - Modify: `compile/REBUILD.md`
 
 **Interfaces:** none (shipped inert; not installed).
 
-- [ ] **Step 1: Create the service** — `compile/systemd/civwiki-autodeploy.service`:
+- [ ] **Step 1: Create the service** — `compile/systemd/wiki-autodeploy.service`:
 
 ```ini
 [Unit]
-Description=Civilization Wiki auto-deploy poller (one tick)
+Description=Wiki auto-deploy poller (one tick)
 After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 /home/transpara/transpara-ai/repos/civilization-wiki/compile/autodeploy.py
+ExecStart=/usr/bin/python3 /Transpara/transpara-ai/repos/wiki/compile/autodeploy.py
 ```
 
-- [ ] **Step 2: Create the timer** — `compile/systemd/civwiki-autodeploy.timer`:
+- [ ] **Step 2: Create the timer** — `compile/systemd/wiki-autodeploy.timer`:
 
 ```ini
 [Unit]
-Description=Run the Civilization Wiki auto-deploy poller every 2 minutes
+Description=Run the Wiki auto-deploy poller every 2 minutes
 
 [Timer]
 OnBootSec=2min
@@ -869,10 +869,10 @@ deliberate human steps.
 ```
 loginctl enable-linger transpara
 mkdir -p ~/.config/systemd/user
-cp compile/systemd/civwiki-autodeploy.* ~/.config/systemd/user/
+cp compile/systemd/wiki-autodeploy.* ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now civwiki-autodeploy.timer
-journalctl --user -u civwiki-autodeploy -f      # logs
+systemctl --user enable --now wiki-autodeploy.timer
+journalctl --user -u wiki-autodeploy -f      # logs
 ```
 A blocked tick (unauthorized / dirty / build-fail) leaves the live site
 untouched and flips the on-page "Auto-deploy blocked" banner.
@@ -881,7 +881,7 @@ untouched and flips the on-page "Auto-deploy blocked" banner.
 - [ ] **Step 4: Verify units parse + module imports clean**
 
 ```bash
-python3 -c "import pathlib,configparser as c; [c.ConfigParser(strict=False, delimiters=('=',)).read(p) or print('ok',p) for p in ['compile/systemd/civwiki-autodeploy.service','compile/systemd/civwiki-autodeploy.timer']]"
+python3 -c "import pathlib,configparser as c; [c.ConfigParser(strict=False, delimiters=('=',)).read(p) or print('ok',p) for p in ['compile/systemd/wiki-autodeploy.service','compile/systemd/wiki-autodeploy.timer']]"
 python3 compile/autodeploy.py --help 2>/dev/null; python3 -c "import sys; sys.path.insert(0,'compile'); import autodeploy; print('import ok')"
 python3 compile/test_autodeploy.py    # full suite green
 ```

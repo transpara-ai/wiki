@@ -39,8 +39,8 @@ FIXTURE: dict[str, Any] = {
     "generated_at": "2026-06-22T15:10:35Z",
     "display_only": True,
     "source": {
-        "operation_pr": "transpara-ai/civilization-operation#30",
-        "operation_pr_url": "https://github.com/transpara-ai/civilization-operation/pull/30",
+        "operation_pr": "transpara-ai/operation#30",
+        "operation_pr_url": "https://github.com/transpara-ai/operation/pull/30",
         "operation_merge_commit": "45b3e9f219d7b81c9991c253d2db4f906d6034bc",
         "operation_reviewed_head": "08786bdcfc6034ac877dd5aa2fbb0e7883cb3b85",
         "authority": "governing authority on file",
@@ -100,7 +100,7 @@ FIXTURE: dict[str, Any] = {
             "freshness_state": "stale",
             "source_refs": [
                 {
-                    "repo": "transpara-ai/civilization-operation",
+                    "repo": "transpara-ai/operation",
                     "ref": "fixture/stale-public-claim",
                     "url": "",
                     "commit": "df34112020a10f798a6a10de0670538dd3f23125",
@@ -115,16 +115,16 @@ FIXTURE: dict[str, Any] = {
             "title": "Test 001 Remains YELLOW",
             "kind": "test-state",
             "public_summary": (
-                "civilization-operation issue #26 remains the public tracker that Test 001 "
+                "operation issue #26 remains the public tracker that Test 001 "
                 "is YELLOW pending live evidence and human-gated decisions."
             ),
             "evidence_state": "corrected",
             "freshness_state": "source_recorded",
             "source_refs": [
                 {
-                    "repo": "transpara-ai/civilization-operation",
-                    "ref": "civilization-operation#26",
-                    "url": "https://github.com/transpara-ai/civilization-operation/issues/26",
+                    "repo": "transpara-ai/operation",
+                    "ref": "operation#26",
+                    "url": "https://github.com/transpara-ai/operation/issues/26",
                     "commit": "df34112020a10f798a6a10de0670538dd3f23125",
                     "evidence_class": "open-issue-tracker",
                 }
@@ -144,9 +144,9 @@ FIXTURE: dict[str, Any] = {
             "freshness_state": "stale",
             "source_refs": [
                 {
-                    "repo": "transpara-ai/civilization-wiki",
-                    "ref": "civilization-wiki#23",
-                    "url": "https://github.com/transpara-ai/civilization-wiki/pull/23",
+                    "repo": "transpara-ai/wiki",
+                    "ref": "wiki#23",
+                    "url": "https://github.com/transpara-ai/wiki/pull/23",
                     "commit": "236aef9780d240eb04c3616b847286cdd2d0b756",
                     "evidence_class": "static-display-pr",
                 }
@@ -168,16 +168,16 @@ FIXTURE: dict[str, Any] = {
             "corrected_at": "2026-06-22T15:10:35Z",
             "source_refs": [
                 {
-                    "repo": "transpara-ai/civilization-operation",
-                    "ref": "civilization-operation#26",
-                    "url": "https://github.com/transpara-ai/civilization-operation/issues/26",
+                    "repo": "transpara-ai/operation",
+                    "ref": "operation#26",
+                    "url": "https://github.com/transpara-ai/operation/issues/26",
                     "commit": "df34112020a10f798a6a10de0670538dd3f23125",
                     "evidence_class": "open-issue-tracker",
                 },
                 {
-                    "repo": "transpara-ai/civilization-operation",
-                    "ref": "civilization-operation#30",
-                    "url": "https://github.com/transpara-ai/civilization-operation/pull/30",
+                    "repo": "transpara-ai/operation",
+                    "ref": "operation#30",
+                    "url": "https://github.com/transpara-ai/operation/pull/30",
                     "commit": "45b3e9f219d7b81c9991c253d2db4f906d6034bc",
                     "evidence_class": "public-safe-export-pr",
                 },
@@ -197,7 +197,7 @@ FIXTURE: dict[str, Any] = {
             "freshness_state": "unavailable",
             "public_summary": "No deployed live-reader route evidence is available in this bounded display.",
             "source_ref": "not-collected",
-            "source_repo": "transpara-ai/civilization-wiki",
+            "source_repo": "transpara-ai/wiki",
         },
         {
             "id": "public-correction-deployment-proof",
@@ -206,7 +206,7 @@ FIXTURE: dict[str, Any] = {
             "freshness_state": "missing",
             "public_summary": "No deployed public correction proof is available in this bounded display.",
             "source_ref": "not-provided",
-            "source_repo": "transpara-ai/civilization-wiki",
+            "source_repo": "transpara-ai/wiki",
         },
         {
             "id": "private-runtime-source",

@@ -124,9 +124,9 @@ A wrongly-*skipped* or *refused* deploy = a stale site (visible, recoverable on 
 ## Scheduler (systemd, user-level — NOT activated this iteration)
 
 Repo-tracked unit files under `compile/systemd/`:
-- `civwiki-autodeploy.service` — `Type=oneshot`, `ExecStart=/usr/bin/python3 /home/transpara/transpara-ai/repos/civilization-wiki/compile/autodeploy.py` (the serving checkout), run as the `transpara` user.
-- `civwiki-autodeploy.timer` — `OnBootSec=2min`, `OnUnitActiveSec=2min`, `Persistent=true`, `WantedBy=timers.target`.
-- **Provided but not installed/enabled in this iteration.** `REBUILD.md` documents install as **user units** (`systemctl --user enable --now civwiki-autodeploy.timer`) with `loginctl enable-linger transpara`, the first-authorization step, and `journalctl --user -u civwiki-autodeploy` for logs.
+- `wiki-autodeploy.service` — `Type=oneshot`, `ExecStart=/usr/bin/python3 /Transpara/transpara-ai/repos/wiki/compile/autodeploy.py` (the serving checkout), run as the `transpara` user.
+- `wiki-autodeploy.timer` — `OnBootSec=2min`, `OnUnitActiveSec=2min`, `Persistent=true`, `WantedBy=timers.target`.
+- **Provided but not installed/enabled in this iteration.** `REBUILD.md` documents install as **user units** (`systemctl --user enable --now wiki-autodeploy.timer`) with `loginctl enable-linger transpara`, the first-authorization step, and `journalctl --user -u wiki-autodeploy` for logs.
 
 ## Files
 
@@ -135,7 +135,7 @@ Repo-tracked unit files under `compile/systemd/`:
 | `compile/autodeploy.py` | **new** — poller / evaluator / authorizer / deployer + status + history |
 | `compile/deploy-authorization.example.json` | **new** — inert authorization template (invalid SHA) |
 | `compile/build_site.py` | modify — bake the `deploy-status.json` fetch + banner + footer indicator into the page template |
-| `compile/systemd/civwiki-autodeploy.service` / `.timer` | **new** — unit files (inert) |
+| `compile/systemd/wiki-autodeploy.service` / `.timer` | **new** — unit files (inert) |
 | `compile/test_autodeploy.py` | **new** — stdlib tests |
 | `.gitignore` | modify — ignore `compile/.deployed-sha`, `compile/.autodeploy.lock`, `compile/.deploy-history.json`, `compile/autodeploy.log`, `compile/deploy-authorization.json`, `dist/deploy-status.json` |
 | `compile/REBUILD.md` | modify — document the poller, install, first-authorization, and logs |

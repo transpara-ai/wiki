@@ -1,5 +1,5 @@
 [Unit]
-Description=Refresh the Civilization Wiki live in-flight overlay every 5 minutes
+Description=Refresh the Wiki live in-flight overlay every 5 minutes
 
 [Timer]
 OnBootSec=2min

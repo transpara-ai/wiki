@@ -60,7 +60,7 @@ test('unknown-family gate gets its own row and is placed (not dropped)', () => {
   // Clone items and inject a new gate with unknown family.
   const newGate = {
     id: 'gate-zzz', type: 'gate', status: 'planned', provenance: 'reconstructed',
-    seq: 0.5, sprint: 'origin', repo: ['civilization-wiki'],
+    seq: 0.5, sprint: 'origin', repo: ['wiki'],
     family: 'zzz-new', code: 'ZZZ', label: 'Test unknown family gate', blocked: false,
   };
   const testData = Object.assign({}, data, { items: data.items.concat([newGate]) });
@@ -78,7 +78,7 @@ test('no-family gate falls in (ungated) row and is placed (not dropped)', () => 
   const data = loadData();
   const ungatedGate = {
     id: 'gate-ungated', type: 'gate', status: 'planned', provenance: 'reconstructed',
-    seq: 0.5, sprint: 'origin', repo: ['civilization-wiki'],
+    seq: 0.5, sprint: 'origin', repo: ['wiki'],
     // no family field
     code: 'UNG', label: 'Test ungated gate', blocked: false,
   };
@@ -192,14 +192,14 @@ test('buildLayout groupBy="actor" splits authors into lanes sharing the seq axis
 test('buildLayout groupBy="repo": 8 collection tracks with Civilization/Governance group headers', () => {
   const lay = L.buildLayout(loadData(), { width: 1600, groupBy: 'repo' });
   assert.deepStrictEqual(lay.tracks.map(t => t.label),
-    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'civilization-wiki', 'civilization-operation']);
+    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'wiki', 'operation']);
   assert.deepStrictEqual((lay.groupHeaders || []).map(h => h.label), ['Civilization', 'Governance']);
   // headers run top→down; each sits ABOVE its group's first track
   assert.ok(lay.groupHeaders[0].y < lay.groupHeaders[1].y, 'Civilization header above Governance header');
   const agentTrack = lay.tracks.find(t => t.label === 'agent');
-  const cwTrack = lay.tracks.find(t => t.label === 'civilization-wiki');
+  const cwTrack = lay.tracks.find(t => t.label === 'wiki');
   assert.ok(lay.groupHeaders[0].y <= agentTrack.top, 'Civilization header sits above the agent track');
-  assert.ok(lay.groupHeaders[1].y < cwTrack.top, 'Governance header sits above the civilization-wiki track');
+  assert.ok(lay.groupHeaders[1].y < cwTrack.top, 'Governance header sits above the wiki track');
   // headers add vertical space → repo view is taller than the same data with no headers possible
   assert.ok(lay.contentHeight > 0);
 });

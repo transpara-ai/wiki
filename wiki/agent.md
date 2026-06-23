@@ -7,10 +7,10 @@ last_compiled: 2026-06-13
 sources:
   - path: raw/transpara/dark-factory/Dark Factory - Motive, Goal, Approach.md  # responsibility map, "Selected native core", boundary
   - path: raw/transpara/dark-factory/reunification/2026-06-05-slice-1-first-reunified-order-design.md  # load-bearing-but-unchanged; agent.New/transitions/trust/identity_lifecycle; deferred persistent identity
-  - path: /Transpara/transpara-ai/data/repos/agent/agent.go  # code-is-truth: New(), boot sequence, checkCanEmit, role-agnostic
-  - path: /Transpara/transpara-ai/data/repos/agent/transitions.go  # FSM transitions, OBSERVABLE rollback, Suspend/Resume, ResetIfStuckProcessing
-  - path: /Transpara/transpara-ai/data/repos/agent/trust.go  # RecordVerifiedWork trust accumulation
-  - path: /Transpara/transpara-ai/data/repos/agent/identity_lifecycle.go  # persistent identity register/rotate/revoke, authority-gated, fail-closed
+  - path: /Transpara/transpara-ai/repos/agent/agent.go  # code-is-truth: New(), boot sequence, checkCanEmit, role-agnostic
+  - path: /Transpara/transpara-ai/repos/agent/transitions.go  # FSM transitions, OBSERVABLE rollback, Suspend/Resume, ResetIfStuckProcessing
+  - path: /Transpara/transpara-ai/repos/agent/trust.go  # RecordVerifiedWork trust accumulation
+  - path: /Transpara/transpara-ai/repos/agent/identity_lifecycle.go  # persistent identity register/rotate/revoke, authority-gated, fail-closed
   - path: Open Brain  # chronology: 2026-04-04..06 emitter buildout; spawn lifecycle; first dynamic agent 2026-04-08
 confidence:
   load_bearing_claim: high — hive/go.mod has `github.com/transpara-ai/agent => ../agent`; slice-1 design names agent as load-bearing

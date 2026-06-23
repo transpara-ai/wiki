@@ -1,7 +1,7 @@
 # compile/INFLIGHT.md — live in-flight overlay
 
 `compile/inflight.py` writes `dist/inflight.json`: all open PRs plus PRs merged in the
-last 30 days across the public dark-factory stack (+ civilization-wiki), which the arc
+last 30 days across the public dark-factory stack (+ wiki), which the arc
 page fetches and overlays as live `derived` work at the sequence frontier. The grouping
 toolbar's **Actor** mode splits that live work into per-author lanes.
 
@@ -14,12 +14,15 @@ dark-factory repo set is resolved live from the GitHub `dark-factory` topic (nev
 
 ## Schedule (systemd user timer, 5-min cadence)
 
-Installed as a user timer mirroring `civwiki-autodeploy`. The unit files live in
-`compile/systemd/civwiki-inflight.{service,timer}`:
+Installed as a user timer mirroring `wiki-autodeploy`. The unit files live in
+`compile/systemd/wiki-inflight.{service,timer}`:
 
-    cp compile/systemd/civwiki-inflight.{service,timer} ~/.config/systemd/user/
+    systemctl --user disable --now civwiki-inflight.timer 2>/dev/null || true
+    mkdir -p ~/.config/systemd/user/retired-civwiki-units
+    mv -n ~/.config/systemd/user/civwiki-inflight.* ~/.config/systemd/user/retired-civwiki-units/ 2>/dev/null || true
+    cp compile/systemd/wiki-inflight.{service,timer} ~/.config/systemd/user/
     systemctl --user daemon-reload
-    systemctl --user enable --now civwiki-inflight.timer
+    systemctl --user enable --now wiki-inflight.timer
 
 The timer runs `inflight.py` from the serving checkout every 5 minutes, so the arc's live
 overlay reflects any open/merge across the dark-factory repos within one interval. On an

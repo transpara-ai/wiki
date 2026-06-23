@@ -13,7 +13,7 @@ last_compiled: "2026-06-14"
 sources:
   - raw/searles/all-posts-1.md  # post 1, "20 Primitives and a Late Night", 2026-02-28 [Searles-P1] — hive0 origin, the accidental run, "seventy agents, running autonomously for two days" · https://mattsearles2.substack.com/p/20-primitives-and-a-late-night
   - raw/searles/all-posts-1.md  # post 2, "From 44 to 200", 2026-02-28 [Searles-P2] — full 44-primitive listing in 11 groups; the one-line descriptions; the bridge claim ("endpoint of physical derivation, starting point of mental derivation") · https://mattsearles2.substack.com/p/from-44-to-200
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/Dark Factory - Motive, Goal, Approach.md  # influence register rows at L379-380: "hive0 seventy-agent run — Research input — not independently proven"; "44 primitives / 11 groups — Research input"
+  - /Transpara/transpara-ai/repos/docs/dark-factory/Dark Factory - Motive, Goal, Approach.md  # influence register rows at L379-380: "hive0 seventy-agent run — Research input — not independently proven"; "44 primitives / 11 groups — Research input"
 confidence:
   sources: primary
   claims: asserted

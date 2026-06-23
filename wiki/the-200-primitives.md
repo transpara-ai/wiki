@@ -13,7 +13,7 @@ last_compiled: "2026-06-14"
 sources:
   - raw/searles/all-posts-1.md  # post 2, "From 44 to 200", 2026-02-28 [Searles-P2] — the experiment setup, "The Layers" listing for all 13 derived layers, layer-by-layer descriptions, the strange loop, three irreducibles, permanent tensions, three evaluative axes · https://mattsearles2.substack.com/p/from-44-to-200
   - raw/searles/all-posts-1.md  # post 1, "20 Primitives and a Late Night", 2026-02-28 [Searles-P1] — forward reference: "44 primitives, fed to a Claude Opus instance, would explode into 200 across 14 layers in a single two-hour session" · https://mattsearles2.substack.com/p/20-primitives-and-a-late-night
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/Dark Factory - Motive, Goal, Approach.md  # influence register row at L381: "200 primitives / 14 layers — Research input / product horizon — source itself flags epistemic uncertainty and need for testing"
+  - /Transpara/transpara-ai/repos/docs/dark-factory/Dark Factory - Motive, Goal, Approach.md  # influence register row at L381: "200 primitives / 14 layers — Research input / product horizon — source itself flags epistemic uncertainty and need for testing"
 confidence:
   sources: primary
   claims: asserted

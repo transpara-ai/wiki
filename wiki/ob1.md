@@ -9,10 +9,10 @@ tier: investigation
 status: compiled
 last_compiled: 2026-06-14
 sources:
-  - /Transpara/transpara-ai/data/repos/OB1/README.md  # upstream README mirrored in the fork: "infrastructure layer for your thinking"; one database / one AI gateway / one chat channel; FSL-1.1-MIT; maintainers
-  - /Transpara/transpara-ai/data/repos/OB1/CLAUDE.md  # what the repo is: Supabase + pgvector, one MCP protocol, any AI client; guard rails
-  - /Transpara/transpara-ai/data/repos/OB1/LICENSE.md  # FSL-1.1-MIT, "Copyright 2026 Nate B. Jones"
-  - /Transpara/transpara-ai/data/repos/OB1/sync-upstream.sh  # fork mechanics: upstream = NateBJones-Projects/OB1
+  - /Transpara/transpara-ai/repos/OB1/README.md  # upstream README mirrored in the fork: "infrastructure layer for your thinking"; one database / one AI gateway / one chat channel; FSL-1.1-MIT; maintainers
+  - /Transpara/transpara-ai/repos/OB1/CLAUDE.md  # what the repo is: Supabase + pgvector, one MCP protocol, any AI client; guard rails
+  - /Transpara/transpara-ai/repos/OB1/LICENSE.md  # FSL-1.1-MIT, "Copyright 2026 Nate B. Jones"
+  - /Transpara/transpara-ai/repos/OB1/sync-upstream.sh  # fork mechanics: upstream = NateBJones-Projects/OB1
   - raw/transpara/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # DF-V3.9-EPIC-TECH-CROSSWALK v3.9.1 (status:review): "OpenBrain — pattern-only" row + per-item note
   - raw/transpara/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 12: "OpenBrain: optional cognitive planning pattern only"; Decision 15 (control-role exclusion)
   - raw/transpara/dark-factory/v3.9/09-legacy-coverage-matrix-v3.9.md  # ADR-0004 / ADR-0013 OpenBrain planning boundary entries

@@ -122,7 +122,7 @@ git commit -m "feat(arc): ontology module scaffold + deriveNow"
 // append to tests/ontology.test.js
 test('validateItems accepts a clean settled-prefix set', () => {
   const items = [
-    { id: 'a', type: 'work', status: 'done', provenance: 'reconstructed', seq: 1, sprint: 'origin', repo: ['civilization-wiki'] },
+    { id: 'a', type: 'work', status: 'done', provenance: 'reconstructed', seq: 1, sprint: 'origin', repo: ['wiki'] },
     { id: 'b', type: 'work', status: 'active', provenance: 'derived', seq: 2, sprint: 'hive', repo: ['hive'] },
     { id: 'c', type: 'work', status: 'planned', provenance: 'derived', seq: 3, sprint: 'deploy', repo: ['site'] },
   ];
@@ -314,12 +314,12 @@ Add `visibleDeps: visibleDeps,` to `api`.
 
 **Note:** This is a data transform, not new logic. Convert the 5 lists into one `items[]`. Mapping rules:
 - Each `phases[]` entry → a `sprint` lane id (keep a `sprints[]` list: `{id,label}` from the old phases). Phases are *not* items.
-- Each `markers[]` entry → item `{type:'work', provenance:'reconstructed', status:'done'}` unless it is part of live work (see executionPlan) — most are `done` narrative beats. Set `seq` from the old `x`. `repo` from the marker's domain (map known markers to repos; default `['civilization-wiki']`). `sprint` = the phase whose `[start,end)` contains `x`.
+- Each `markers[]` entry → item `{type:'work', provenance:'reconstructed', status:'done'}` unless it is part of live work (see executionPlan) — most are `done` narrative beats. Set `seq` from the old `x`. `repo` from the marker's domain (map known markers to repos; default `['wiki']`). `sprint` = the phase whose `[start,end)` contains `x`.
 - Each `executionPlan.nearTerm`/`complete` entry → item `{type:'work', provenance:'derived'}` with `status` mapped: `done→done`, `active→active`, `blocked→active`+`blocked:true`+`blocked_reason`, `next/planned→planned`, `future→future`. `repo` = split the `surface` string on commas. `gate` from its `gate`/`href`. `seq` placed just right of the relevant phase.
 - Each `gates[]` entry → item `{type:'gate'}`, `status` from old `status` (`closed→done`, `candidate→active`, `pending→active`+`blocked:true`). `seq` from `x`.
 - Each `risks[]` entry → fold into the item it annotates as `blocked:true`+`note`, OR a `{type:'conflict'}` item if standalone; do NOT emit free-floating past blockers.
 - Each `decisions[]` entry → item `{type:'decision', status:'done'}` at its `seq`.
-- Add the north-star **Goal** item `{type:'goal', status:'active', seq:0, sprint:'origin', repo:['civilization-wiki']}` and link live work via `goal`.
+- Add the north-star **Goal** item `{type:'goal', status:'active', seq:0, sprint:'origin', repo:['wiki']}` and link live work via `goal`.
 
 **CRITICAL:** author the data so the settled prefix holds — every item with `seq < deriveNow(items)` is `done`/`active`. That is what makes `validateItems` pass.
 

@@ -5,7 +5,7 @@
 This packet records local browser-render evidence for selected Civilization Wiki
 narrative, discovery, and visualization surfaces associated with the Test 001
 cross-repo runtime-doctrine drift tabletop tracked by
-`transpara-ai/civilization-operation`.
+`transpara-ai/operation`.
 
 It narrows the earlier missing-render posture. It is not deployment evidence,
 public correction evidence, runtime observation, doctrine authority, live-reader
@@ -16,7 +16,7 @@ evidence, stale-claim adjudication, or Test 001 closure.
 ```text
 finding_id: inc-001-civilization-wiki-local-render-evidence-2026-06-18
 incident: INC-001 / Test 001 Cross-Repo Runtime-Doctrine Drift Tabletop
-surface_repo: transpara-ai/civilization-wiki
+surface_repo: transpara-ai/wiki
 surface_status: LOCAL_RENDER_EVIDENCE_RECORDED
 surface_status_meaning: selected wiki pages rendered in local browser tests; downstream citation still waits for validation, review, and merge
 source_commit: c726cfaaa76eac4a7aee8fa0b2f32df125e8dfb6
@@ -31,7 +31,7 @@ correction, publication, deployment, doctrine change, incident closure, or
 production posture change.
 
 The `source_commit` is the refreshed base commit, after
-`transpara-ai/civilization-wiki#18` merged, containing the wiki sources,
+`transpara-ai/wiki#18` merged, containing the wiki sources,
 renderer, and arc assets under test. The PR that adds this packet contains only
 test and documentation changes. `LOCAL_RENDER_EVIDENCE_RECORDED` is the
 Wiki-side evidence posture recorded by this packet, not a claim that the PR is
@@ -64,6 +64,8 @@ Observed result:
 built 92 articles + index + arc -> /Transpara/transpara-ai/data/repos/civilization-wiki/dist
 2 passed (2.3s)
 ```
+
+The output path above is recorded verbatim from the pre-rename local run.
 
 ## Surface Evidence
 
@@ -120,6 +122,6 @@ require a Chromium download. Therefore the local browser command above is the
 render evidence for this packet, while GitHub CI remains the remote non-browser
 repository gate.
 
-The packet should be cited by `civilization-operation` only after the PR that
+The packet should be cited by `operation` only after the PR that
 adds it has passed focused local browser validation, full local validation,
 GitHub CI, exact-head adversarial review, and has been merged to `origin/main`.

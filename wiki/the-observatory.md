@@ -89,8 +89,8 @@ The implementation binds the nine visualization principles from the Phase 3 plan
 
 ## Sources & provenance
 
-- `/home/transpara/transpara-ai/repos/site/graph/observatory.go` lines 1–1063 — full implementation: `OpsObservatoryData` struct, `handleOpsObservatory`, `buildObsSpend`, `fetchObservatoryTrace`, `buildObsCivilization`, `obsForwardableSSELine`, `phaseCostBars`, and all helper renderers. Primary source — all claims about pointer-type decoding, allowlists, SSE proxy logic, and authority outcome vocabulary are verified against this file.
-- `/home/transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/site-observatory-phase3-plan.md` lines 1–70 — route definition, data contract table, guardrail list, slice plan with PR head SHAs and merge SHAs.
-- `/home/transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/transparency-contract-v0.1.0.md` lines 1–70 — T1–T7 contract terms and satisfaction map.
-- `/home/transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/observability-as-built-recon-v0.1.0.md` lines 1–84 — as-built metrics/trace/API inventory; the "zero visualization" finding that motivated the component.
+- `/Transpara/transpara-ai/repos/site/graph/observatory.go` lines 1–1063 — full implementation: `OpsObservatoryData` struct, `handleOpsObservatory`, `buildObsSpend`, `fetchObservatoryTrace`, `buildObsCivilization`, `obsForwardableSSELine`, `phaseCostBars`, and all helper renderers. Primary source — all claims about pointer-type decoding, allowlists, SSE proxy logic, and authority outcome vocabulary are verified against this file.
+- `/Transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/site-observatory-phase3-plan.md` lines 1–70 — route definition, data contract table, guardrail list, slice plan with PR head SHAs and merge SHAs.
+- `/Transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/transparency-contract-v0.1.0.md` lines 1–70 — T1–T7 contract terms and satisfaction map.
+- `/Transpara/transpara-ai/repos/docs/dark-factory/implementation/visualization/observability-as-built-recon-v0.1.0.md` lines 1–84 — as-built metrics/trace/API inventory; the "zero visualization" finding that motivated the component.
 - `raw/transpara/dark-factory/implementation/overnight-2026-06-13-claude-checkpoint.md` lines 1–57 — review convergence record, open decisions, merge state (site#76 approved, site#77 merged).

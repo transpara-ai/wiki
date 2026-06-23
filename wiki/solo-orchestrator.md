@@ -5,14 +5,14 @@ tier: investigation
 status: compiled
 last_compiled: 2026-06-13
 sources:
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk — NO per-item row for solo-orchestrator (the fail-legible gap); freeze/reopen policy L41-68
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/09-legacy-coverage-matrix-v3.9.md  # v3.9 ratified mapping — solo-orchestrator grouped with gstack/symphony/multica/paperclip (L257)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md  # Phase 4 Batch C — candidate 12 deep-dive, README-only (L880-987)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 inclusion matrix — solo-orchestrator row (L133)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # closeout final inclusion summary — pattern/reference only (L132-148)
-  - /Transpara/transpara-ai/data/repos/docs/dark-factory/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md  # investigation ground rules + scope; solo-orchestrator is candidate 21 (L212-213), Batch C (L415)
-  - /Transpara/transpara-ai/data/repos/solo-orchestrator/README.md  # local fork README (the one internal artifact the investigation inspected); L1-98
-  - /Transpara/transpara-ai/data/repos/solo-orchestrator/LICENSE  # MIT, "Copyright (c) 2026 Karl Raulerson"
+  - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk — NO per-item row for solo-orchestrator (the fail-legible gap); freeze/reopen policy L41-68
+  - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/09-legacy-coverage-matrix-v3.9.md  # v3.9 ratified mapping — solo-orchestrator grouped with gstack/symphony/multica/paperclip (L257)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md  # Phase 4 Batch C — candidate 12 deep-dive, README-only (L880-987)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 inclusion matrix — solo-orchestrator row (L133)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # closeout final inclusion summary — pattern/reference only (L132-148)
+  - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md  # investigation ground rules + scope; solo-orchestrator is candidate 21 (L212-213), Batch C (L415)
+  - /Transpara/transpara-ai/repos/solo-orchestrator/README.md  # local fork README (the one internal artifact the investigation inspected); L1-98
+  - /Transpara/transpara-ai/repos/solo-orchestrator/LICENSE  # MIT, "Copyright (c) 2026 Karl Raulerson"
   - "GitHub API: repos/transpara-ai/solo-orchestrator (fork metadata, 2026-06-13 live)"  # isFork=true, parent=kraulerson/solo-orchestrator, createdAt 2026-05-01T08:59:49Z, license=mit
   - "Upstream context only (not re-published): github.com/kraulerson/solo-orchestrator — fork parent, fetched 2026-06-13"
 confidence:
@@ -105,14 +105,14 @@ Solo Orchestrator is one of the **operator/workflow-UX cluster** the investigati
 
 ## Sources & provenance
 
-- **v3.9.1 External Technology Decision Crosswalk** — `/Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md`. Cited for what it **lacks**: no Solo Orchestrator row exists in the decision table (literal search returns nothing); freeze/reopen policy at L41-68 applied by analogy. This is the document the compile was told to ground in; the gap is the finding.
-- **v3.9 Legacy Coverage Matrix** — `/Transpara/transpara-ai/data/repos/docs/dark-factory/v3.9/09-legacy-coverage-matrix-v3.9.md` (Civilization Landscape Pattern Mapping, L257). The **ratified canonical decision** that does cover Solo Orchestrator: grouped "workflow/operator UX/proof-of-work references only," boundary "no Work/Site/controller replacement."
+- **v3.9.1 External Technology Decision Crosswalk** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md`. Cited for what it **lacks**: no Solo Orchestrator row exists in the decision table (literal search returns nothing); freeze/reopen policy at L41-68 applied by analogy. This is the document the compile was told to ground in; the gap is the finding.
+- **v3.9 Legacy Coverage Matrix** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/09-legacy-coverage-matrix-v3.9.md` (Civilization Landscape Pattern Mapping, L257). The **ratified canonical decision** that does cover Solo Orchestrator: grouped "workflow/operator UX/proof-of-work references only," boundary "no Work/Site/controller replacement."
 - **Phase 4 Batch C** candidate analysis — `…/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md` (candidate 12, L880-987; inclusion-matrix row L1108). Primary source for what the investigation found; explicitly **README-only** ("Primary evidence inspected: README.md").
 - **Phase 5 inclusion / marginal-contribution matrix** — `…/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md` (solo-orchestrator row L133: "Pattern / workflow reference … Include workflow pattern only; translate useful gates if needed").
 - **Investigation closeout** — `…/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md` (final inclusion summary — "pattern/reference only," L142; not listed under "defer").
 - **Investigation kickoff** — `…/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md` (ground rules; candidate 21 / `transpara-ai/solo-orchestrator`, L212-213; Batch C roster L415).
-- **Local fork README** (fork context, not re-published as upstream doc) — `/Transpara/transpara-ai/data/repos/solo-orchestrator/README.md`, L1-98: the framework's self-description, the five phases, the "not vibe coding" framing, and the methodology-vs-tooling separation.
-- **LICENSE** — `/Transpara/transpara-ai/data/repos/solo-orchestrator/LICENSE`: MIT, "Copyright (c) 2026 Karl Raulerson."
+- **Local fork README** (fork context, not re-published as upstream doc) — `/Transpara/transpara-ai/repos/solo-orchestrator/README.md`, L1-98: the framework's self-description, the five phases, the "not vibe coding" framing, and the methodology-vs-tooling separation.
+- **LICENSE** — `/Transpara/transpara-ai/repos/solo-orchestrator/LICENSE`: MIT, "Copyright (c) 2026 Karl Raulerson."
 - **Fork metadata** — GitHub API `repos/transpara-ai/solo-orchestrator`, fetched 2026-06-13: `isFork=true`, `parent=kraulerson/solo-orchestrator`, `createdAt=2026-05-01T08:59:49Z`, `license=mit`, `description="AI-assisted software development methodology for solo builders"`.
 - **Upstream (context only, not re-published)** — `github.com/kraulerson/solo-orchestrator` (https://github.com/kraulerson/solo-orchestrator), confirmed as the fork parent on 2026-06-13.
 

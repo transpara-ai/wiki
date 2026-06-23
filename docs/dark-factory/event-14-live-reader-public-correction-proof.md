@@ -1,15 +1,15 @@
 # Event 14 Live Reader Public Correction Proof
 
-This packet records the `civilization-wiki` display-consumer side of Dark
+This packet records the `wiki` display-consumer side of Dark
 Factory v4.0 Event 14. The display consumes a checked-in public-safe fixture
-derived from the merged `civilization-operation` export lifecycle and renders it
+derived from the merged `operation` export lifecycle and renders it
 under the Civilization arc as display-only correction evidence.
 
 ## Source
 
 - Governing authority: Event 14 AuthorityDecision on file. The public wiki
   display does not publish private governing-repo identifiers.
-- Operation export lifecycle: `transpara-ai/civilization-operation#30`.
+- Operation export lifecycle: `transpara-ai/operation#30`.
 - Operation exact reviewed head:
   `08786bdcfc6034ac877dd5aa2fbb0e7883cb3b85`.
 - Operation merge commit:

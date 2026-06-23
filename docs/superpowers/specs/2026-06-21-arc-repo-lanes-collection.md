@@ -8,7 +8,7 @@ The arc's **Repo view** lays out items in lanes by owning repo. Today the canoni
 hardcoded list of the 6 dark-factory-topic'd repos (`civilizationOntology.js` `REPO_CANON =
 ["agent","docs","eventgraph","hive","site","work"]`); every other repo — and every repo-less item —
 collapses into a single generic `(other)` lane. With the current data, `(other)` is dominated by the 24
-`civilization-wiki` items (civ-wiki was never canonical).
+`wiki` items (wiki was never canonical).
 
 Two problems: (a) the collection is incomplete — it omits the civilization repos; (b) `(other)` hides
 *which* repo/object an item belongs to.
@@ -24,7 +24,7 @@ Two problems: (a) the collection is incomplete — it omits the civilization rep
 
 **Non-goals**
 - No change to other group dimensions (status / sprint / gate / actor).
-- No GitHub repo-topic changes (civ-wiki / civ-operation stay un-topic'd; the collection is now a curated
+- No GitHub repo-topic changes (wiki / operation stay un-topic'd; the collection is now a curated
   code list, intentionally decoupled from the live `dark-factory` topic query).
 - No new live/network behavior; the data + build stay static and air-gap-safe.
 
@@ -37,21 +37,21 @@ Replace the flat `REPO_CANON` with an **ordered group structure**, and derive `R
 ```js
 // All 8 repos are the Transpara-AI Civilization. The two display groups are:
 //   "civilization" = the operational repos (agent…work)
-//   "governance"   = the civilization-wiki/operation meta-layer OVER the civilization
-//     (note: the repos NAMED civilization-* live in the GOVERNANCE group, by design —
-//      do not "fix" this to match repo names.)
+//   "governance"   = the wiki/operation meta-layer OVER the civilization
+//     (note: wiki and operation live in the GOVERNANCE group, by design —
+//      do not "fix" this to match repo topics.)
 // Curated list — intentionally NOT the live `dark-factory` topic query (which returns only the 6).
 var REPO_GROUPS = [
   { key: "civilization", label: "Civilization",
     repos: ["agent", "docs", "eventgraph", "hive", "site", "work"] },
   { key: "governance",   label: "Governance",
-    repos: ["civilization-wiki", "civilization-operation"] },
+    repos: ["wiki", "operation"] },
 ];
 var REPO_CANON = REPO_GROUPS.reduce(function (a, g) { return a.concat(g.repos); }, []);
 ```
 
-Within-group order is **explicit** (the array order), not auto-sorted: `civilization-wiki` (24 items)
-leads `civilization-operation` (0).
+Within-group order is **explicit** (the array order), not auto-sorted: `wiki` (24 items)
+leads `operation` (0).
 
 ### 3.2 `groupByRepo` behavior
 
@@ -105,16 +105,16 @@ distinct from the per-repo `arc-subrow-label`. Headers: `CIVILIZATION`, `GOVERNA
 | `compile/assets/civilizationArcLayout.js` | reserve vertical space for group-header rows; pass group boundaries to draw |
 | `compile/assets/civilizationArcDraw.js` | render group-header rows (label + hairline) on group change |
 | `compile/assets/style.css` | `.arc-group-header` treatment (light + dark) |
-| `tests/ontology.test.js` | grouping/tagging, civ-wiki + civ-operation lanes, outside-naming, **fail-closed no-drop over full domain** |
+| `tests/ontology.test.js` | grouping/tagging, wiki + operation lanes, outside-naming, **fail-closed no-drop over full domain** |
 | `tests/arc-dom-smoke.test.js` | repo view renders `CIVILIZATION` + `GOVERNANCE` headers, 8 lanes, **no `(other)` lane** |
 
 ## 5. Testing
 
 **Unit (`ontology.test.js`):**
 - `REPO_CANON` = union of the two groups (8); group labels are `Civilization` / `Governance`.
-- `groupByRepo(realItems)`: emits exactly the 8 canonical lanes in group order; `civilization-wiki` lane
-  non-empty, `civilization-operation` lane present + empty; **no `(other)` / no outside group**.
-- Multi-membership: an item in `["work","civilization-wiki"]` appears in both lanes.
+- `groupByRepo(realItems)`: emits exactly the 8 canonical lanes in group order; `wiki` lane
+  non-empty, `operation` lane present + empty; **no `(other)` / no outside group**.
+- Multi-membership: an item in `["work","wiki"]` appears in both lanes.
 - **Fail-closed domain sweep**: synthetic items — `["ghost-repo"]` → named `ghost-repo` outside lane
   (group `outside`); `[]` → `"(no repo)"` lane; `["docs","ghost-repo"]` → in **both** `docs` and
   `ghost-repo`. Assert: union of all lane memberships covers every input item id (no drops).
