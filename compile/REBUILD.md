@@ -18,7 +18,7 @@ and run every 15 minutes after boot. It:
 It does **not** call an LLM, **not** commit, **not** push. Run it by hand anytime ("rebuild now"):
 
 ```
-python3 compile/refresh.py
+flock -w 300 compile/.wiki-write.lock python3 compile/refresh.py
 ```
 
 **On-demand "update the table now" is the same command.** `refresh.py` is both
@@ -42,10 +42,15 @@ optionally name the source being superseded, then click **Ingest and rebuild**.
 The endpoint writes uploaded files under `raw/inbox/YYYY-MM-DD/<article>/`,
 appends manifest rows to `raw/inbox/manifest.jsonl`, appends selected source
 references to the target article frontmatter, appends local uploaded documents
-to `raw_documents`, and reruns `compile/build_site.py`. If no target article is
+to `raw_documents`, and reruns `compile/refresh.py` so freshness status and
+`dist/` are updated together. If no target article is
 selected, the first uploaded markdown document creates a provisional
 investigation article so it is visible in the left navigation rather than
 remaining an orphaned source.
+
+Because the browser actions use the full deterministic refresh path, they may
+leave reviewable working-tree diffs in `index.md` and the generated source
+snapshot/status files. The service still never commits or pushes those changes.
 
 This is a **source-registration** path, not an LLM article rewrite path. It does
 not synthesize article prose, does not commit, does not push, and does not

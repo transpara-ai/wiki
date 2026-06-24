@@ -39,9 +39,16 @@ def mirror_sources():
     dst = RAW / "transpara" / "dark-factory"
     dst.mkdir(parents=True, exist_ok=True)
     if DF.exists():
-        sh("rsync", "-a", "--delete", "--prune-empty-dirs",
-           "--include=*/", "--include=*.md", "--exclude=*",
-           str(DF) + "/", str(dst) + "/")
+        try:
+            out = sh("rsync", "-a", "--delete", "--prune-empty-dirs",
+                     "--include=*/", "--include=*.md", "--exclude=*",
+                     str(DF) + "/", str(dst) + "/")
+        except FileNotFoundError as e:
+            print("refresh: source mirror skipped: %s" % e, file=sys.stderr)
+            return
+        if out.returncode != 0:
+            print("refresh: source mirror warning: %s" %
+                  ((out.stderr or out.stdout).strip() or "rsync failed"), file=sys.stderr)
 
 
 def hash_sources():
@@ -101,7 +108,7 @@ def main():
         "stale_articles": stale,
         "note": "deterministic refresh; LLM re-compile is manual (see compile/REBUILD.md); Open Brain deltas not auto-detected",
     }
-    STATUS.write_text(json.dumps(status, indent=2))
+    stats.atomic_write_text(STATUS, json.dumps(status, indent=2))
 
     # Durable, idempotent stats block in the committed index.md (you commit the diff).
     try:
@@ -110,11 +117,15 @@ def main():
         print("refresh: index.md stats block FAILED — %s" % e)
         sys.exit(1)
 
-    # Advance the source-diff baseline only AFTER the durable write succeeds, so a
-    # marker failure never silently consumes a source change (fail-safe ordering).
-    SNAP.write_text(json.dumps(cur, indent=2))
     out = sh("python3", str(ROOT / "compile" / "build_site.py"))
     print(out.stdout.strip() or out.stderr.strip())
+    if out.returncode != 0:
+        sys.exit(out.returncode)
+
+    # Advance the source-diff baseline only after all durable writes and the
+    # rendered site build succeed; otherwise the stale signal must remain live
+    # for the next retry.
+    stats.atomic_write_text(SNAP, json.dumps(cur, indent=2))
     print("refresh: %d articles, %d sources changed, %d stale; index.md %s" %
           (counts["article_count"], status["sources_changed"], len(stale),
            "updated" if index_changed else "unchanged"))

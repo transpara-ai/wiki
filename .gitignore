@@ -4,10 +4,12 @@
 /compile/source-snapshot.json
 /compile/refresh-status.json
 /compile/refresh.log
+*.tmp
 __pycache__/
 
 # local Node/browser verification environment
 /node_modules/
+/.venv/
 /test-results/
 /playwright-report/
 /.cache/

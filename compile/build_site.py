@@ -1405,7 +1405,7 @@ def ingest_page(status):
         '<label>Supersedes<select name="supersedes" id="supersedes"><option value="">No existing source selected</option></select></label>'
         '<label>Note<input name="note" id="source-note" type="text" placeholder="citation update, replacement, or placement note"></label>'
         '<div class="form-actions"><button type="submit">Ingest and rebuild</button>'
-        '<button type="button" id="rebuild-now">Rebuild only</button></div>'
+        '<button type="button" id="rebuild-now">Refresh status and rebuild</button></div>'
         '</form></section>'
         '<section class="ingest-card"><h2>Status</h2><div id="ingest-status" class="ingest-status">Ready.</div></section>'
         '</article>'
@@ -1428,8 +1428,8 @@ def ingest_page(status):
         'var a=articles[target.value];if(!a)return;(a.sources||[]).forEach(function(s){var o=document.createElement("option");o.value=s;o.textContent=s;sup.appendChild(o);});});'
         'form.addEventListener("submit",function(e){e.preventDefault();say("Ingesting...");fetch("/api/ingest",{method:"POST",headers:headers(),body:new FormData(form)})'
         '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(say).catch(function(e){say(e);});});'
-        'rebuild.addEventListener("click",function(){say("Rebuilding...");fetch("/api/rebuild",{method:"POST",headers:headers()})'
-        '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(say).catch(function(e){say(e);});});'
+        'rebuild.addEventListener("click",function(){say("Refreshing status and rebuilding...");fetch("/api/rebuild",{method:"POST",headers:headers()})'
+        '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(function(j){say(j);setTimeout(function(){location.reload();},700);}).catch(function(e){say(e);});});'
         '})();</script>'
     ) % "".join(article_options)
     return tool_page("Wiki Source Ingest", inner, status)

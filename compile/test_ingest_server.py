@@ -337,6 +337,224 @@ def test_source_href_matches_build_site_source_viewer_ids():
     print("ok test_source_href_matches_build_site_source_viewer_ids")
 
 
+def test_rebuild_endpoint_path_runs_refresh_under_server_lock():
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        (root / "compile").mkdir()
+        old_root, old_lock, old_popen = srv.ROOT, srv.LOCK_PATH, srv.subprocess.Popen
+        calls = []
+
+        class Proc:
+            pid = 12345
+            returncode = 0
+
+            def communicate(self, timeout=None):
+                assert timeout == 240
+                return "refresh ok", ""
+
+        def fake_popen(args, **kwargs):
+            calls.append((args, kwargs))
+            assert srv.LOCK_PATH.exists()
+            return Proc()
+
+        try:
+            srv.ROOT = root
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = fake_popen
+            result = srv.run_refresh()
+            assert result["ok"] is True
+            assert len(calls) == 1
+            args, kwargs = calls[0]
+            assert args[-1] == str(root / "compile" / "refresh.py")
+            assert "build_site.py" not in " ".join(args)
+            assert kwargs["cwd"] == str(root)
+            assert kwargs["stdout"] == srv.subprocess.PIPE
+            assert kwargs["stderr"] == srv.subprocess.PIPE
+            assert kwargs["text"] is True
+            assert kwargs["start_new_session"] is True
+        finally:
+            srv.ROOT, srv.LOCK_PATH, srv.subprocess.Popen = old_root, old_lock, old_popen
+    print("ok test_rebuild_endpoint_path_runs_refresh_under_server_lock")
+
+
+def test_rebuild_endpoint_timeout_returns_structured_refresh_failure():
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        body = b""
+        handler = type("FakeHandler", (), {})()
+        handler.path = "/api/rebuild"
+        handler.headers = {
+            "Host": "127.0.0.1:8787",
+            "Origin": "http://127.0.0.1:8787",
+            "Sec-Fetch-Site": "same-origin",
+            "Content-Length": str(len(body)),
+        }
+        handler.client_address = ("127.0.0.1", 12345)
+        handler.server = type("FakeServer", (), {"server_port": 8787})()
+        handler.rfile = io.BytesIO(body)
+        handler.wfile = io.BytesIO()
+        handler.status = None
+        handler.send_response = lambda status: setattr(handler, "status", status)
+        handler.send_header = lambda _name, _value: None
+        handler.end_headers = lambda: None
+        handler.require_allowed_host = lambda: srv.IngestHandler.require_allowed_host(handler)
+        handler.require_authoring = lambda: srv.IngestHandler.require_authoring(handler)
+        old_root, old_lock = srv.ROOT, srv.LOCK_PATH
+        old_popen, old_killpg = srv.subprocess.Popen, srv.os.killpg
+        killed = []
+
+        class Proc:
+            pid = 12345
+
+            def communicate(self, timeout=None):
+                if timeout is not None:
+                    raise srv.subprocess.TimeoutExpired(
+                        "refresh.py", timeout, output="partial", stderr="late")
+                return "partial", "late"
+
+        def fake_popen(_args, **_kwargs):
+            return Proc()
+
+        def fake_killpg(pid, sig):
+            assert srv.LOCK_PATH.exists()
+            killed.append((pid, sig))
+
+        try:
+            srv.ROOT = root
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = fake_popen
+            srv.os.killpg = fake_killpg
+            srv.IngestHandler.do_POST(handler)
+            assert handler.status == 500
+            payload = srv.json.loads(handler.wfile.getvalue().decode("utf-8"))
+            assert payload["refresh"]["ok"] is False
+            assert payload["refresh"]["returncode"] is None
+            assert payload["refresh"]["stdout"] == "partial"
+            assert payload["refresh"]["stderr"] == "late"
+            assert "timed out after 240" in payload["refresh"]["error"]
+            assert killed == [(12345, srv.signal.SIGKILL)]
+        finally:
+            srv.ROOT, srv.LOCK_PATH = old_root, old_lock
+            srv.subprocess.Popen, srv.os.killpg = old_popen, old_killpg
+    print("ok test_rebuild_endpoint_timeout_returns_structured_refresh_failure")
+
+
+def test_rebuild_start_failure_returns_structured_refresh_failure():
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        old_root, old_lock, old_popen = srv.ROOT, srv.LOCK_PATH, srv.subprocess.Popen
+
+        def fake_popen(_args, **_kwargs):
+            raise OSError("spawn failed")
+
+        try:
+            srv.ROOT = root
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = fake_popen
+            result = srv.run_refresh()
+            assert result["ok"] is False
+            assert result["returncode"] is None
+            assert result["stdout"] == ""
+            assert result["stderr"] == "spawn failed"
+            assert result["error"] == "failed to start refresh"
+        finally:
+            srv.ROOT, srv.LOCK_PATH, srv.subprocess.Popen = old_root, old_lock, old_popen
+    print("ok test_rebuild_start_failure_returns_structured_refresh_failure")
+
+
+def test_ingest_endpoint_path_runs_refresh_and_returns_refresh_payload():
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        wiki = root / "wiki"
+        wiki.mkdir()
+        (wiki / "example.md").write_text(
+            "---\n"
+            "entity: Example\n"
+            "tier: investigation\n"
+            "---\n\n"
+            "# Example\n"
+        )
+        body = (
+            "target_slug=example&"
+            "external_urls=https%3A%2F%2Fexample.com%2Fpaper&"
+            "note=citation%20update"
+        ).encode("utf-8")
+        handler = type("FakeHandler", (), {})()
+        handler.headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Length": str(len(body)),
+        }
+        handler.rfile = io.BytesIO(body)
+        handler.wfile = io.BytesIO()
+        handler.status = None
+        handler.send_response = lambda status: setattr(handler, "status", status)
+        handler.send_header = lambda _name, _value: None
+        handler.end_headers = lambda: None
+        old_root, old_wiki, old_raw = srv.ROOT, srv.WIKI, srv.RAW_INBOX
+        old_manifest, old_lock, old_popen = srv.MANIFEST, srv.LOCK_PATH, srv.subprocess.Popen
+        calls = []
+
+        class Proc:
+            pid = 12345
+            returncode = 0
+
+            def communicate(self, timeout=None):
+                assert timeout == 240
+                return "refresh ok", ""
+
+        def fake_popen(args, **kwargs):
+            calls.append((args, kwargs))
+            assert srv.LOCK_PATH.exists()
+            return Proc()
+
+        try:
+            srv.ROOT = root
+            srv.WIKI = wiki
+            srv.RAW_INBOX = root / "raw" / "inbox"
+            srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = fake_popen
+            srv.IngestHandler.handle_ingest(handler)
+            assert handler.status == 200
+            payload = srv.json.loads(handler.wfile.getvalue().decode("utf-8"))
+            assert "refresh" in payload
+            assert "build" not in payload
+            assert payload["refresh"]["ok"] is True
+            assert payload["refresh"]["stdout"] == "refresh ok"
+            assert payload["article_sources_added"] == ["https://example.com/paper"]
+            assert payload["source_hrefs"] == [{
+                "source": "https://example.com/paper",
+                "href": "https://example.com/paper",
+            }]
+            assert len(calls) == 1
+            args, kwargs = calls[0]
+            assert args[-1] == str(root / "compile" / "refresh.py")
+            assert "build_site.py" not in " ".join(args)
+            assert kwargs["cwd"] == str(root)
+            assert kwargs["start_new_session"] is True
+        finally:
+            srv.ROOT, srv.WIKI, srv.RAW_INBOX = old_root, old_wiki, old_raw
+            srv.MANIFEST, srv.LOCK_PATH, srv.subprocess.Popen = old_manifest, old_lock, old_popen
+    print("ok test_ingest_endpoint_path_runs_refresh_and_returns_refresh_payload")
+
+
+def test_refresh_lock_contract_is_owned_by_callers():
+    root = pathlib.Path(__file__).resolve().parents[1]
+    ingest = root / "compile" / "ingest_server.py"
+    refresh = root / "compile" / "refresh.py"
+    systemd = root / "compile" / "systemd" / "transpara-ai-civilization-wiki-refresh.service"
+    ingest_text = ingest.read_text()
+    refresh_text = refresh.read_text()
+    systemd_text = systemd.read_text()
+    assert "fcntl.flock" in ingest_text
+    assert ".wiki-write.lock" not in refresh_text
+    assert "flock(" not in refresh_text
+    assert "/usr/bin/flock" in systemd_text
+    assert "WorkingDirectory=/Transpara/transpara-ai/repos/wiki" in systemd_text
+    assert "compile/.wiki-write.lock" in systemd_text
+    print("ok test_refresh_lock_contract_is_owned_by_callers")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

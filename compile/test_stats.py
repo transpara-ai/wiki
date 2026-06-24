@@ -69,6 +69,16 @@ def test_idempotent_write():
     print("ok test_idempotent_write")
 
 
+def test_atomic_write_text_replaces_file_and_removes_temp():
+    with tempfile.TemporaryDirectory() as d:
+        path = pathlib.Path(d) / "example.txt"
+        path.write_text("old")
+        stats.atomic_write_text(path, "new")
+        assert path.read_text() == "new"
+        assert not (path.parent / ".example.txt.tmp").exists()
+    print("ok test_atomic_write_text_replaces_file_and_removes_temp")
+
+
 def test_honesty_human_rows_untouched():
     with tempfile.TemporaryDirectory() as d:
         root = pathlib.Path(d)

@@ -8,7 +8,7 @@ Serves dist/ like http.server, plus small write endpoints used by ingest.html:
 
 The durable state is still the repository: uploaded documents are written under
 raw/inbox/, optional article references are appended to wiki/<slug>.md
-frontmatter, and compile/build_site.py regenerates dist/.
+frontmatter, and compile/refresh.py regenerates freshness status and dist/.
 """
 import datetime as dt
 import fcntl
@@ -21,6 +21,7 @@ import json
 import os
 import pathlib
 import re
+import signal
 import subprocess
 import sys
 from email import policy
@@ -575,25 +576,57 @@ def create_article_from_source(source, note="", supersedes=""):
     return slug, True
 
 
-def run_build_unlocked():
-    proc = subprocess.run(
-        [sys.executable, str(ROOT / "compile" / "build_site.py")],
-        cwd=str(ROOT),
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
+def run_refresh_unlocked():
+    # Locking is owned by the caller. The systemd timer wraps refresh.py with
+    # /usr/bin/flock on this same lock file; browser authoring uses
+    # wiki_write_lock() before spawning refresh.py. Keeping refresh.py lock-free
+    # avoids self-deadlock while preserving cross-process exclusion.
+    args = [sys.executable, str(ROOT / "compile" / "refresh.py")]
+    try:
+        proc = subprocess.Popen(
+            args,
+            cwd=str(ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            start_new_session=True,
+        )
+        try:
+            stdout, stderr = proc.communicate(timeout=240)
+        except subprocess.TimeoutExpired as e:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            stdout, stderr = proc.communicate()
+            stdout = stdout or (e.stdout.decode("utf-8", "replace") if isinstance(e.stdout, bytes) else (e.stdout or ""))
+            stderr = stderr or (e.stderr.decode("utf-8", "replace") if isinstance(e.stderr, bytes) else (e.stderr or ""))
+            return {
+                "ok": False,
+                "returncode": None,
+                "stdout": stdout[-4000:],
+                "stderr": stderr[-4000:],
+                "error": "refresh timed out after %s seconds" % e.timeout,
+            }
+    except OSError as e:
+        return {
+            "ok": False,
+            "returncode": None,
+            "stdout": "",
+            "stderr": str(e),
+            "error": "failed to start refresh",
+        }
     return {
         "ok": proc.returncode == 0,
         "returncode": proc.returncode,
-        "stdout": proc.stdout[-4000:],
-        "stderr": proc.stderr[-4000:],
+        "stdout": (stdout or "")[-4000:],
+        "stderr": (stderr or "")[-4000:],
     }
 
 
-def run_build():
+def run_refresh():
     with wiki_write_lock():
-        return run_build_unlocked()
+        return run_refresh_unlocked()
 
 
 class IngestHandler(SimpleHTTPRequestHandler):
@@ -645,8 +678,8 @@ class IngestHandler(SimpleHTTPRequestHandler):
             if not self.require_authoring():
                 return
             if self.path == "/api/rebuild":
-                result = run_build()
-                json_response(self, 200 if result["ok"] else 500, {"build": result})
+                result = run_refresh()
+                json_response(self, 200 if result["ok"] else 500, {"refresh": result})
                 return
             if self.path == "/api/ingest":
                 self.handle_ingest()
@@ -679,8 +712,8 @@ class IngestHandler(SimpleHTTPRequestHandler):
                     "note": note,
                     "supersedes": supersedes,
                 })
-            build = run_build_unlocked()
-        json_response(self, 200 if build["ok"] else 500, {
+            refresh = run_refresh_unlocked()
+        json_response(self, 200 if refresh["ok"] else 500, {
             "saved": saved,
             "external_urls": external_urls,
             "created_article": created_article,
@@ -688,7 +721,7 @@ class IngestHandler(SimpleHTTPRequestHandler):
             "article_raw_documents_added": raw_added,
             "article_href": ("%s.html" % target_slug) if target_slug else "",
             "source_hrefs": [{"source": s, "href": source_href(s)} for s in source_refs],
-            "build": build,
+            "refresh": refresh,
         })
 
 

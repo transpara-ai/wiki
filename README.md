@@ -30,6 +30,9 @@ into `raw/inbox/`, append selected article source references, update
 article is selected, and rebuild the generated site. Static full-site search
 includes source documents and repository README pages as first-class results.
 Stage 0 material remains advisory proposal source, not accepted doctrine.
+The browser **Refresh status and rebuild** action uses the same deterministic
+`compile/refresh.py` path as the systemd timer, so the header freshness banner
+is recomputed with the rendered site.
 
 Read-only serving can still use
 `python3 -m http.server --bind 127.0.0.1 --directory dist` for local throwaway

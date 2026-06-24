@@ -10,6 +10,7 @@ refresh-status.json banner, not here.
 """
 import re
 import pathlib
+import os
 
 # Canonical breakdown order. Any tier value NOT listed here, and any article
 # missing a `tier:` field (-> NO_TIER), is surfaced as its own bucket rather
@@ -81,6 +82,14 @@ def render_stats_line(counts):
             "%d — %s" % (counts["article_count"], breakdown))
 
 
+def atomic_write_text(path, text):
+    """Replace a text file atomically from a temp file in the same directory."""
+    path = pathlib.Path(path)
+    tmp = path.with_name(".%s.tmp" % path.name)
+    tmp.write_text(text)
+    os.replace(tmp, path)
+
+
 def _replace_between_markers(text, new_inner):
     """Replace content between the stats markers. Fail-closed: require exactly
     one begin and one end, begin before end; otherwise raise ValueError."""
@@ -127,6 +136,6 @@ def write_index_block(index_path, counts):
     new_text = _replace_between_markers(text, render_stats_line(counts))
     new_text = _set_frontmatter_article_count(new_text, counts["article_count"])
     if new_text != text:
-        index_path.write_text(new_text)
+        atomic_write_text(index_path, new_text)
         return True
     return False
