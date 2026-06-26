@@ -1009,6 +1009,15 @@ def build_investigation_nav(arts, current):
     out = []
     for topic in sorted(grouped, key=str.lower):
         articles = sorted(grouped[topic], key=lambda a: a["title"].lower())
+        if len(articles) == 1:
+            article = articles[0]
+            cls = ' class="current"' if article["slug"] == current else ""
+            # Preserve the count the collapsible topic group showed before collapsing.
+            count = raw_doc_count_for_articles(articles)
+            count_html = '<em>%d</em>' % count if count else ""
+            out.append('<li class="nav-article-row"><a%s href="%s.html" title="%s">%s</a>%s</li>' %
+                       (cls, article["slug"], html.escape(article["title"]), html.escape(topic), count_html))
+            continue
         open_attr = " open" if any(a["slug"] == current for a in articles) else ""
         out.append(
             '<li class="nav-subgroup-item"><details class="nav-subgroup"%s>'
