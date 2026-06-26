@@ -808,6 +808,27 @@ def raw_doc_count_for_articles(articles):
     return len(docs)
 
 
+def article_direct_contribution(article):
+    contribution = fm_val(article_frontmatter(article["slug"]), "civilization_contribution")
+    if re.match(r"^Contributed\b", contribution or "", flags=re.I):
+        return contribution
+    return ""
+
+
+def nav_contribution_marker(articles):
+    contributions = [article_direct_contribution(article) for article in articles]
+    contributions = [c for c in contributions if c]
+    if not contributions:
+        return ""
+    title = "Civilization contribution: c — %s" % contributions[0]
+    if len(contributions) > 1:
+        title = "Civilization contribution: c — %d contributing articles" % len(contributions)
+    return (
+        '<span class="nav-contribution-marker" title="%s" '
+        'aria-label="Civilization contribution marker: c">c</span>'
+    ) % html.escape(title)
+
+
 def source_rel_href(ref):
     href = source_href(ref)
     if href and not href.startswith(("http://", "https://")):
@@ -1015,14 +1036,16 @@ def build_investigation_nav(arts, current):
             # Preserve the count the collapsible topic group showed before collapsing.
             count = raw_doc_count_for_articles(articles)
             count_html = '<em>%d</em>' % count if count else ""
-            out.append('<li class="nav-article-row"><a%s href="%s.html" title="%s">%s</a>%s</li>' %
-                       (cls, article["slug"], html.escape(article["title"]), html.escape(topic), count_html))
+            marker = nav_contribution_marker(articles)
+            out.append('<li class="nav-article-row"><a%s href="%s.html" title="%s">%s</a>%s%s</li>' %
+                       (cls, article["slug"], html.escape(article["title"]), html.escape(topic), marker, count_html))
             continue
         open_attr = " open" if any(a["slug"] == current for a in articles) else ""
+        marker = nav_contribution_marker(articles)
         out.append(
             '<li class="nav-subgroup-item"><details class="nav-subgroup"%s>'
-            '<summary><span>%s</span><em>%d</em></summary><ul>' %
-            (open_attr, html.escape(topic), raw_doc_count_for_articles(articles))
+            '<summary><span>%s</span>%s<em>%d</em></summary><ul>' %
+            (open_attr, html.escape(topic), marker, raw_doc_count_for_articles(articles))
         )
         for article in articles:
             cls = ' class="current"' if article["slug"] == current else ""
@@ -1034,8 +1057,9 @@ def build_investigation_nav(arts, current):
         count = len(raw_doc_refs(fm))
         cls = ' class="current"' if article["slug"] == current else ""
         count_html = '<em>%d</em>' % count if count else ""
-        out.append('<li class="nav-article-row"><a%s href="%s.html">%s</a>%s</li>' %
-                   (cls, article["slug"], html.escape(article["title"]), count_html))
+        marker = nav_contribution_marker([article])
+        out.append('<li class="nav-article-row"><a%s href="%s.html">%s</a>%s%s</li>' %
+                   (cls, article["slug"], html.escape(article["title"]), marker, count_html))
     return "".join(out)
 
 

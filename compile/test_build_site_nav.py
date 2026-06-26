@@ -40,6 +40,25 @@ def test_single_article_topic_counts_match_flat_article_counts():
     print("ok test_single_article_topic_counts_match_flat_article_counts")
 
 
+def test_direct_contribution_marker_uses_only_contributed_values():
+    old_frontmatter = site.article_frontmatter
+    values = {
+        "direct": 'civilization_contribution: "Contributed the governed recall-adapter pattern."\n',
+        "future": 'civilization_contribution: "slated as potential future usage."\n',
+        "reference": 'civilization_contribution: "Not directly included, but used as reference."\n',
+        "missing": "",
+    }
+    try:
+        site.article_frontmatter = lambda slug: values.get(slug, "")
+        assert site.article_direct_contribution({"slug": "direct"}) == "Contributed the governed recall-adapter pattern."
+        assert site.article_direct_contribution({"slug": "future"}) == ""
+        assert site.article_direct_contribution({"slug": "reference"}) == ""
+        assert site.article_direct_contribution({"slug": "missing"}) == ""
+    finally:
+        site.article_frontmatter = old_frontmatter
+    print("ok test_direct_contribution_marker_uses_only_contributed_values")
+
+
 def test_single_article_topics_render_as_direct_rows_and_multi_topics_stay_grouped():
     articles = [
         {"slug": "single-topic", "title": "Single Topic Article", "tier": "investigation"},
@@ -53,22 +72,35 @@ def test_single_article_topics_render_as_direct_rows_and_multi_topics_stay_group
     }
     old_topic = site.investigation_topic_for
     old_count = site.raw_doc_count_for_articles
+    old_contribution = site.article_direct_contribution
     try:
         site.investigation_topic_for = lambda slug, meta: topics.get(slug, "")
         site.raw_doc_count_for_articles = lambda grouped_articles: len(grouped_articles)
+        site.article_direct_contribution = lambda article: (
+            "Contributed a direct Civilization pattern."
+            if article["slug"] in {"single-topic", "multi-topic-a"} else ""
+        )
         nav = site.build_investigation_nav(articles, "single-topic")
     finally:
         site.investigation_topic_for = old_topic
         site.raw_doc_count_for_articles = old_count
+        site.article_direct_contribution = old_contribution
 
     single_row = (
         '<li class="nav-article-row"><a class="current" href="single-topic.html" '
-        'title="Single Topic Article">Single Topic</a><em>1</em></li>'
+        'title="Single Topic Article">Single Topic</a>'
+        '<span class="nav-contribution-marker" title="Civilization contribution: c — '
+        'Contributed a direct Civilization pattern." '
+        'aria-label="Civilization contribution marker: c">c</span><em>1</em></li>'
     )
     assert single_row in nav
     assert '<summary><span>Single Topic</span>' not in nav
     assert '<details class="nav-subgroup"' in nav
-    assert '<summary><span>Multi Topic</span><em>2</em></summary>' in nav
+    assert (
+        '<summary><span>Multi Topic</span><span class="nav-contribution-marker" '
+        'title="Civilization contribution: c — Contributed a direct Civilization pattern." '
+        'aria-label="Civilization contribution marker: c">c</span><em>2</em></summary>'
+    ) in nav
     assert 'href="multi-topic-a.html">Multi Topic A</a>' in nav
     assert 'href="multi-topic-b.html">Multi Topic B</a>' in nav
     print("ok test_single_article_topics_render_as_direct_rows_and_multi_topics_stay_grouped")
