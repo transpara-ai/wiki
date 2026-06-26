@@ -155,6 +155,7 @@ test("investigation pages expose grouped raw documents and contribution boxes", 
   await expect(okf).toHaveText("Google Open Knowledge Format");
   await expect(okf).toHaveAttribute("title", "Google Open Knowledge Format Capability Evaluation");
   await expect(okf.locator("xpath=..").locator("em")).toHaveText("1");
+  await expect(okf.locator("xpath=..").locator(".nav-contribution-marker")).toHaveCount(0);
 
   await page.goto("/hermes-agent.html");
   await expect(page.locator("h1.page-title")).toHaveText("Hermes Agent");
@@ -168,6 +169,10 @@ test("investigation pages expose grouped raw documents and contribution boxes", 
   await expect(hermes).toHaveAttribute("title", "Hermes Agent");
   await expect(hermes).toHaveClass(/current/);
   await expect(hermes.locator("xpath=..").locator("em")).toContainText(/[1-9][0-9]*/);
+  const marker = hermes.locator("xpath=..").locator(".nav-contribution-marker");
+  await expect(marker).toHaveText("c");
+  await expect(marker).toHaveAttribute("aria-label", "Civilization contribution marker: c");
+  await expect(marker).toHaveAttribute("title", /Civilization contribution: c/);
 });
 
 test("OKF browser-ingested research appears as a navigable investigation article", async ({ page }) => {
