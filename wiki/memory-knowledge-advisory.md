@@ -15,6 +15,7 @@ last_compiled: 2026-06-13
 sources:
   - raw/transpara/dark-factory/Dark Factory - Motive, Goal, Approach.md  # §10 "Treat Memory and Knowledge as Advisory", exec summary, decision register [DF-MOTIVE-GOAL-APPROACH v0.1.5]
   - raw/transpara/dark-factory/v3.9/06-memory-knowledge-capability-v3.9.md  # normative spec cited line-by-line by §10 [DF-V3.9-SPEC-006, accepted/canonical]
+  - raw/transpara/dark-factory/archive/v2/adrs/ADR-0006-karpathy-wiki-knowledge-substrate.md  # ADR-0006: historical predecessor in the supersedes chain
 confidence:
   advisory_status: high (normative, accepted spec — DF-V3.9-SPEC-006 is canonical)
   implementation_state: thin — the spec is accepted, but the orientation doc records that Base Slice 0 forbids memory/knowledge use, so the advisory layer is specified rather than demonstrated in the proven control plane (see "Implementation status" below)

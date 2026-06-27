@@ -15,11 +15,17 @@ sources:
   - /Transpara/transpara-ai/repos/solo-orchestrator/LICENSE  # MIT, "Copyright (c) 2026 Karl Raulerson"
   - "GitHub API: repos/transpara-ai/solo-orchestrator (fork metadata, 2026-06-13 live)"  # isFork=true, parent=kraulerson/solo-orchestrator, createdAt 2026-05-01T08:59:49Z, license=mit
   - "Upstream context only (not re-published): github.com/kraulerson/solo-orchestrator — fork parent, fetched 2026-06-13"
+  - "raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.0.0-Solo-Orchestrator-Evaluation-69a6250ee846.md"  # added via wiki browser ingest 2026-06-24
+  - "raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.1.0-Solo-Orchestrator-Evaluation-959878a544d6.md"  # added via wiki browser ingest 2026-06-24
 confidence:
   decision: high — but indirect. Solo Orchestrator has NO individual row in the v3.9.1 crosswalk; its ratified decision is the grouped legacy-matrix line (L257) plus Phase 4/5/closeout. Stated as such below.
   fork_date_and_identity: high — confirmed live via GitHub fork metadata (createdAt 2026-05-01T08:59:49Z, parent kraulerson/solo-orchestrator)
   repo_internals: thin — the investigation inspected only the README ("Primary evidence inspected: README.md"); no code, scripts, or templates were read
   upstream_versioning: contested/context-only — the local fork carries conflicting upstream version labels ("Framework v4.1" in the initial commit vs "v1.0 release" in a sibling commit); upstream's own numbering, carried as context, not load-bearing
+raw_documents:
+  - "raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.0.0-Solo-Orchestrator-Evaluation-69a6250ee846.md"
+  - "raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.1.0-Solo-Orchestrator-Evaluation-959878a544d6.md"
+
 ---
 
 # Solo Orchestrator

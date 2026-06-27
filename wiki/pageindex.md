@@ -14,6 +14,7 @@ sources:
   - raw/transpara/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 matrix: PageIndex class = "Optional adapter / pattern"; marginal contribution; risk; recommendation
   - raw/transpara/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # closeout: PageIndex under optional adapter/subsystem candidates; priority #4; U4 DocumentEvidenceRetriever; rejected as truth/cert authority
   - raw/transpara/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # DF-V3.9-EPIC-TECH-CROSSWALK v3.9.1 — read in full; PageIndex has NO row (the fail-legible crux of this article)
+  - raw/transpara/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 15: external frameworks stay outside control roles
   - https://github.com/VectifyAI/PageIndex  # upstream repo — UPSTREAM CONTEXT ONLY, never re-published, never a PR/push target
   - https://pageindex.ai/blog/pageindex-intro  # upstream intro post — context only; per the study, the live page was not directly fetched (search-indexed text only)
 confidence:

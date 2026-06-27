@@ -9,6 +9,7 @@ sources:
   - PROVENANCE.md  # source manifest: tiers, mirroring status, in-place reads
   - index.md  # front-page narrative frame + arc spine + article index (Run-10 state, 101 articles)
   - raw/open-brain/2026-06.md  # lines 4050–4134: genesis, design decisions, compile runs
+  - raw/transpara/dark-factory/v3.9/06-memory-knowledge-capability-v3.9.md  # DF-V3.9-SPEC-006: LLM Wiki advisory knowledge substrate contract
   - compile/refresh.py  # nightly deterministic refresh logic
   - compile/REBUILD.md  # two-tier rebuild protocol
   - compile/build_site.py  # Wikipedia-style renderer, dark/light theme

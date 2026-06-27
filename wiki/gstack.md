@@ -10,6 +10,7 @@ status: compiled
 last_compiled: 2026-06-13
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; gStack decision row (L83) + per-item note "Decision: pattern-only" (L191-195) + freeze/reopen policy (L41-68)
+  - raw/transpara/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 15: external frameworks stay outside control roles
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md  # Phase 4 Batch D — repo-grounded candidate analysis of transpara-ai/gstack (candidate 7, L343-451; inclusion-matrix row L591; cross-candidate synthesis L653-784)
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # final inclusion summary — gstack as pattern/reference only (L144); U7 CapabilityArtifact + U9 Site operator UX update set (L223,225)
   - /Transpara/transpara-ai/repos/wiki/wiki/civilization-landscape-investigation.md  # the parent investigation: gStack as candidate, pattern-only outcome, U7/U9 attribution (← gStack, Hermes plugins; ← Paperclip/Multica/Symphony/gStack)

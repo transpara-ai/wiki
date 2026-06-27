@@ -14,8 +14,16 @@ sources:
   - raw/transpara/dark-factory/Dark Factory - Motive, Goal, Approach.md  # DF-MOTIVE-GOAL-APPROACH v0.1.5, status draft, updated 2026-06-12 — first-read orientation: motive, goal, approach, flows, responsibility map, decision register, citation handles
   - raw/transpara/dark-factory/README.md  # folder index: start-here pointer, current revision (v3.9 accepted 2026-06-05), archived baselines v3.2–v3.8, v3.0, v3.1, v2, phase record, reorganization + reunification workstreams
   - raw/transpara/dark-factory/v3.9/README.md  # DF-V3.9-README v3.9.0, accepted canonical 2026-06-05 — base rule, Base Slice 0, document set, supersedes chain
+  - raw/transpara/dark-factory/v3.9/02-kernel-schema-and-state-v3.9.md  # DF-V3.9-SPEC-002: EventGraph/kernel schema and state
+  - raw/transpara/dark-factory/v3.9/03-authority-identity-and-sops-v3.9.md  # DF-V3.9-SPEC-003: authority, identity, SOPs
+  - raw/transpara/dark-factory/v3.9/04-production-workflow-and-runtime-v3.9.md  # DF-V3.9-SPEC-004: production workflow and runtime
+  - raw/transpara/dark-factory/v3.9/06-memory-knowledge-capability-v3.9.md  # DF-V3.9-SPEC-006: memory, knowledge, and capability-evolution claims cited by handle
   - raw/transpara/dark-factory/v4.0/README.md  # DF-V4.0-README v4.0.1, status review, updated 2026-06-12 — doctrine shift, v3.9-remains-operative, authorization boundary, doctrine acceptance 2026-06-12
   - raw/transpara/dark-factory/archive/v2/README.md  # Dark Factory v2 historical design baseline, 2026-05-10
+  - raw/transpara/dark-factory/archive/v2/adrs/ADR-0001-eventgraph-kernel-artifact-graph.md  # ADR-0001: EventGraph kernel/artifact graph
+  - raw/transpara/dark-factory/archive/v2/adrs/ADR-0002-work-production-dag.md  # ADR-0002: Work as production DAG
+  - raw/transpara/dark-factory/archive/v2/adrs/ADR-0003-bounded-execution-runtime.md  # ADR-0003: bounded execution runtime
+  - raw/transpara/dark-factory/archive/v2/adrs/ADR-0007-civilization-hive-governance.md  # ADR-0007: Civilization/Hive governance
   - raw/transpara/dark-factory/archive/v3/README.md  # Dark Factory v3.0.0 approved baseline, 2026-05-11 — "The Self-Improving Industrial Intelligence Factory"
 confidence:
   motive_and_chain: high — the human-intent→certified-artifact chain and the ten "no X without Y" invariants are quoted verbatim from the orientation doc's Top-Level Goal and Executive Summary

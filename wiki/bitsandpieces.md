@@ -15,6 +15,7 @@ sources:
   - "GitHub API: repos/transpara-ai/bitsandpieces (live metadata, 2026-06-13) — isFork=false, parent=null, licenseInfo=null, createdAt=2026-03-30T10:28:30Z, description 'Atomic, standalone building blocks stolen from the best open-source AI tooling.'"
   - /Transpara/transpara-ai/repos/wiki/raw/open-brain/2026-06.md  # L4028 — Epic-1 "Investigations" era maps repos paperclip / hermes-agent / bitsandpieces = "Paperclips/Hermes/Atoms"
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk — NO row for bitsandpieces/Atoms; gStack row (pattern-only, L83/L191) is the nearest governed decision
+  - raw/transpara/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 15: external frameworks stay outside control roles
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-13-issue-14-go-module-path-recon.md  # L25 — the only research-checkpoint mention of bitsandpieces ("no go.mod")
   - /Transpara/transpara-ai/repos/docs/dark-factory/archive/v2/atoms-analysis-and-dark-factory.md  # the OTHER "Atoms" (AI product-creation platform) — name-collision source, NOT this repo
   - /Transpara/transpara-ai/repos/docs/dark-factory/archive/v2/adrs/ADR-0005-atoms-production-line-pattern.md  # ADR-0005 "Adopt Atoms as a production-line pattern only" — also the OTHER Atoms

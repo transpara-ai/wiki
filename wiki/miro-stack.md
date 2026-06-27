@@ -14,6 +14,7 @@ status: compiled
 last_compiled: 2026-06-13
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk — rows for "Miro Flow" (L87) and "Miro Thinker" (L88) + per-item notes (L215-258); NO row for MiroEval / MiroRL / MiroMind-M1 (status: review, canonical: false)
+  - raw/transpara/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 15: external frameworks stay outside control roles
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-04-phase-4-batch-b-memory-knowledge-research.md  # Phase 4 Batch B — MiroThinker (§10, L812-928) and MiroFlow (§11, L931-1049) README-grounded deep-dives; Batch B summary table (L1062-1063)
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 matrix — MiroThinker (L124) + MiroFlow (L125) rows, class "Deferred runtime / benchmark"; boundary line (L306)
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md  # closeout — MiroThinker/MiroFlow dual-listed under "pattern/reference only" (L146-147) AND "defer until prerequisite controls exist" (L156-157)
