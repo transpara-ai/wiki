@@ -126,6 +126,27 @@ def test_freshness_reports_rebuilt_articles_without_stale_warning():
     print("ok test_freshness_reports_rebuilt_articles_without_stale_warning")
 
 
+def test_freshness_stale_branch_describes_failed_rebuild():
+    old_meta = site.META
+    try:
+        site.META = {
+            "mempalace": {"title": "MemPalace"},
+            "solo-orchestrator": {"title": "Solo Orchestrator"},
+        }
+        out = site.freshness({
+            "synced": "2026-06-27 02:30",
+            "stale_articles": ["mempalace", "solo-orchestrator"],
+            "changed_articles": ["mempalace", "solo-orchestrator"],
+        })
+        assert "rebuild failed" in out, out
+        assert "compile/refresh.py" in out, out
+        assert "manual re-compile" not in out, out
+        assert "source changes for 2 articles" in out, out
+    finally:
+        site.META = old_meta
+    print("ok test_freshness_stale_branch_describes_failed_rebuild")
+
+
 def test_later_sources_win_for_duplicate_document_aliases():
     old_ref = "raw/inbox/old/TAI-RES-2026-004-v1.0.0-MemPalace.md"
     new_ref = "raw/inbox/new/TAI-RES-2026-004-v1.1.0-MemPalace.md"

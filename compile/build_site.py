@@ -1510,10 +1510,10 @@ def freshness(status):
             changed_text = " · %d rebuilt" % len(changed)
         return '<span class="fresh ok">updated %s · 0 stale%s</span>' % (
             html.escape(synced), changed_text)
-    # "stale" = articles whose cited sources changed but whose bodies have NOT been
-    # re-compiled (the LLM re-compile is manual; see compile/REBUILD.md). Make the chip a
-    # disclosure that names + links each stale article, so the count is actionable rather
-    # than opaque. Native <details>: no JS, keyboard-accessible.
+    # "stale" = a deterministic rebuild failed after refresh.py identified
+    # articles whose declared sources changed. Make the chip name the affected
+    # articles so the retry/fix target is actionable rather than opaque.
+    # Native <details>: no JS, keyboard-accessible.
     n = len(stale)
     links = "".join(
         '<li><a href="%s.html">%s</a></li>' % (html.escape(s), html.escape(title_of(s)))
@@ -1521,14 +1521,15 @@ def freshness(status):
     )
     return (
         '<details class="fresh-details">'
-        '<summary class="fresh warn">updated %s · %d stale</summary>'
-        '<div class="fresh-pop" role="group" aria-label="Stale articles">'
-        '<p class="fresh-pop-head">%d article%s cite repo sources that changed but '
-        'whose pages have not been re-compiled yet:</p>'
+        '<summary class="fresh warn">updated %s · rebuild failed · %d stale</summary>'
+        '<div class="fresh-pop" role="group" aria-label="Articles from failed rebuild">'
+        '<p class="fresh-pop-head">The last deterministic rebuild failed after detecting '
+        'source changes for %d article%s:</p>'
         '<ul class="fresh-pop-list">%s</ul>'
-        '<p class="fresh-pop-foot">Resolving these is a manual re-compile '
-        '(see <code>compile/REBUILD.md</code>) — the 15-minute deterministic refresh tracks '
-        'freshness but does not rewrite article prose.</p>'
+        '<p class="fresh-pop-foot">Fix the build error and rerun '
+        '<code>compile/refresh.py</code>. A successful deterministic rebuild clears this '
+        'list and records the affected articles in <code>changed_articles</code>; LLM prose '
+        'synthesis remains a separate manual Tier 2 decision.</p>'
         '</div></details>'
     ) % (html.escape(synced), n, n, "" if n == 1 else "s", links)
 

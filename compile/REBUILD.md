@@ -11,7 +11,7 @@ and run every 15 minutes after boot. It:
 1. mirrors the first-party dark-factory sources into `raw/transpara/`,
 2. hashes all `raw/` sources and diffs against the last snapshot,
 3. records which articles cite changed sources,
-4. writes `compile/refresh-status.json` — the fail-loud freshness banner the served site shows; after a successful deterministic rebuild `stale_articles` is empty and `changed_articles` records what was rebuilt, while failed rebuilds leave the affected articles in `stale_articles`,
+4. writes `compile/refresh-status.json`; after a successful deterministic rebuild `stale_articles` is empty and `changed_articles` records what was rebuilt, while failed rebuilds exit non-zero, preserve the previously served `dist/`, and leave the affected articles in `stale_articles` for the next successful build or direct status inspection,
 5. **rewrites the generated stats block in `index.md`** (article count + per-tier breakdown, between the `stats:begin`/`stats:end` markers) and its frontmatter `article_count` — the durable, committed stat surface,
 6. regenerates the served site (`dist/`) via `compile/build_site.py`.
 
@@ -90,7 +90,7 @@ article source cited by the wiki can be opened directly.
 
 ## Tier 2 — article re-compile, manual (LLM, on demand)
 
-Re-synthesizing article **content** from sources is the expensive, autonomous-spend step, so it is deliberately manual. When `refresh-status.json` reports `changed_articles`, a successful deterministic rebuild has already registered and served the cited source changes; re-run the LLM compile workflow only when those source changes require new prose synthesis. When `stale_articles` is non-empty, the last deterministic rebuild failed and should be retried/fixed first. Open Brain deltas are not auto-detected by Tier 1 (that needs an LLM/MCP run); a Tier-2 pass picks them up.
+Re-synthesizing article **content** from sources is the expensive, autonomous-spend step, so it is deliberately manual. When `refresh-status.json` reports `changed_articles`, a successful deterministic rebuild has already registered and served the cited source changes; re-run the LLM compile workflow only when those source changes require new prose synthesis. When `stale_articles` is non-empty, the last deterministic rebuild failed and should be retried/fixed first. Because a failed rebuild preserves the previously served `dist/`, that failed state is guaranteed in the command exit code and status JSON, not necessarily in already-served HTML until a later build bakes the status into the page. Open Brain deltas are not auto-detected by Tier 1 (that needs an LLM/MCP run); a Tier-2 pass picks them up.
 
 ## Serving
 
