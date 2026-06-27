@@ -10,10 +10,16 @@ Installed on nucbuntu as a user-level systemd timer for the `transpara` account
 and run every 15 minutes after boot. It:
 1. mirrors the first-party dark-factory sources into `raw/transpara/`,
 2. hashes all `raw/` sources and diffs against the last snapshot,
-3. flags which articles have **stale sources** (their `sources:` cite a changed file),
-4. writes `compile/refresh-status.json` — the fail-loud freshness banner the served site shows,
+3. records which articles cite changed sources,
+4. writes `compile/refresh-status.json`; after a successful deterministic rebuild `stale_articles` is empty and `changed_articles` records what was rebuilt, while failed rebuilds exit non-zero, preserve the previously served `dist/`, and leave the affected articles in `stale_articles` for the next successful build or direct status inspection,
 5. **rewrites the generated stats block in `index.md`** (article count + per-tier breakdown, between the `stats:begin`/`stats:end` markers) and its frontmatter `article_count` — the durable, committed stat surface,
 6. regenerates the served site (`dist/`) via `compile/build_site.py`.
+
+The deterministic build does not clear the live `dist/` tree before generation.
+It overwrites generated files in place, keeps the previous complete site
+servable during the rebuild, and prunes obsolete generated files only after the
+new build has completed successfully. This avoids transient whole-site 404s
+during timer or browser-triggered refreshes.
 
 It does **not** call an LLM, **not** commit, **not** push. Run it by hand anytime ("rebuild now"):
 
@@ -43,7 +49,9 @@ The endpoint writes uploaded files under `raw/inbox/YYYY-MM-DD/<article>/`,
 appends manifest rows to `raw/inbox/manifest.jsonl`, appends selected source
 references to the target article frontmatter, appends local uploaded documents
 to `raw_documents`, and reruns `compile/refresh.py` so freshness status and
-`dist/` are updated together. If no target article is
+`dist/` are updated together. After a successful ingest/rebuild, the ingest page
+reloads the generated shell and restores the completed action result so the
+left navigation and freshness badge are no longer one build behind. If no target article is
 selected, the first uploaded markdown document creates a provisional
 investigation article so it is visible in the left navigation rather than
 remaining an orphaned source.
@@ -56,6 +64,13 @@ This is a **source-registration** path, not an LLM article rewrite path. It does
 not synthesize article prose, does not commit, does not push, and does not
 promote the result beyond the checkout it is serving. If a source update
 requires a substantive article rewrite, that remains Tier 2.
+
+Article sources are also the link contract: every load-bearing source document
+mentioned in article prose should be listed in frontmatter `sources:` or
+`raw_documents`. The compiler turns literal raw paths in code formatting and
+declared document identifiers/titles such as `ADR-0008`, `DF-V3.9-SPEC-006`, and
+`Decision 15` into one-click source links when the referenced document is
+served.
 
 The write endpoints are not a public LAN API. Without
 `CIVWIKI_AUTHORING_TOKEN`, `POST /api/ingest` and `POST /api/rebuild` only allow
@@ -75,7 +90,7 @@ article source cited by the wiki can be opened directly.
 
 ## Tier 2 — article re-compile, manual (LLM, on demand)
 
-Re-synthesizing article **content** from sources is the expensive, autonomous-spend step, so it is deliberately manual. When `refresh-status.json` flags stale articles — or to fold in the deferred long-tail / new Open Brain history — re-run the compile workflow for the affected entities, review, and merge via PR. Open Brain deltas are not auto-detected by Tier 1 (that needs an LLM/MCP run); a Tier-2 pass picks them up.
+Re-synthesizing article **content** from sources is the expensive, autonomous-spend step, so it is deliberately manual. When `refresh-status.json` reports `changed_articles`, a successful deterministic rebuild has already registered and served the cited source changes; re-run the LLM compile workflow only when those source changes require new prose synthesis. When `stale_articles` is non-empty, the last deterministic rebuild failed and should be retried/fixed first. Because a failed rebuild preserves the previously served `dist/`, that failed state is guaranteed in the command exit code and status JSON, not necessarily in already-served HTML until a later build bakes the status into the page. Open Brain deltas are not auto-detected by Tier 1 (that needs an LLM/MCP run); a Tier-2 pass picks them up.
 
 ## Serving
 

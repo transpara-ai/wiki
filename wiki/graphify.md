@@ -12,6 +12,7 @@ last_compiled: 2026-06-13
 sources:
   - raw/open-brain/2026-06.md  # the only first-party record: fork-provenance line "4/11 graphify <- safishamsi" and the Apr–May "Civilization Landscape Investigation" roster placing graphify in "RAG/knowledge (graphify, PageIndex)"
   - raw/transpara/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # DF-V3.9-EPIC-TECH-CROSSWALK v3.9.1 (status: review): searched in full — has NO row for graphify/safishamsi. This is the no-row / fail-legible case.
+  - raw/transpara/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 15: external frameworks stay outside control roles
   - https://github.com/transpara-ai/graphify/blob/v4/README.md  # the forked README (transpara-ai mirror, branch v4, blob sha 77e2857, read 2026-06-13) — UPSTREAM CONTEXT ONLY, not re-published
   - https://github.com/transpara-ai/graphify/blob/v4/LICENSE  # MIT, Copyright (c) 2026 Safi Shamsi (read 2026-06-13)
   - observed pytest artifacts under /var/tmp/pytest-of-transpara/  # graphify-out/{graph.json,graph.html,GRAPH_REPORT.md,manifest.json}, cache/ast/<sha>.json, .graphifyignore, cypher.txt + .graphify_labels.json (Neo4j export) — direct evidence the forked code runs and matches its docs (read 2026-06-13)

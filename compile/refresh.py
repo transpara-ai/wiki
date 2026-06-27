@@ -83,14 +83,14 @@ def main():
             prev = {}
     changed = {k for k, v in cur.items() if prev.get(k) != v}
     arts = article_sources()
-    stale = []
+    changed_articles = []
     if prev:  # first run has no baseline -> nothing "stale" yet
         for slug, cites in arts.items():
             for c in cites:
                 if any(c in ch or ch in c for ch in changed):
-                    stale.append(slug)
+                    changed_articles.append(slug)
                     break
-    stale = sorted(set(stale))
+    changed_articles = sorted(set(changed_articles))
 
     # Single source of stats compute (pure, ground-truth from wiki/ frontmatter).
     counts = stats.compute_counts(ROOT)
@@ -100,15 +100,16 @@ def main():
         print("refresh: %s" % e)
         sys.exit(1)
 
-    status = {
+    final_status = {
         "synced": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "article_count": counts["article_count"],
         "sources_total": len(cur),
         "sources_changed": (len(changed) if prev else 0),
-        "stale_articles": stale,
-        "note": "deterministic refresh; LLM re-compile is manual (see compile/REBUILD.md); Open Brain deltas not auto-detected",
+        "changed_articles": changed_articles,
+        "stale_articles": [],
+        "note": "deterministic refresh completed; source changes are reflected in the rendered site. LLM article synthesis remains manual (see compile/REBUILD.md); Open Brain deltas not auto-detected",
     }
-    stats.atomic_write_text(STATUS, json.dumps(status, indent=2))
+    stats.atomic_write_text(STATUS, json.dumps(final_status, indent=2))
 
     # Durable, idempotent stats block in the committed index.md (you commit the diff).
     try:
@@ -120,14 +121,23 @@ def main():
     out = sh("python3", str(ROOT / "compile" / "build_site.py"))
     print(out.stdout.strip() or out.stderr.strip())
     if out.returncode != 0:
+        failed_status = dict(final_status)
+        failed_status["stale_articles"] = changed_articles
+        failed_status["note"] = (
+            "deterministic refresh failed before the rendered site was updated; "
+            "listed articles still need a successful rebuild. LLM article synthesis "
+            "remains manual (see compile/REBUILD.md); Open Brain deltas not auto-detected"
+        )
+        stats.atomic_write_text(STATUS, json.dumps(failed_status, indent=2))
         sys.exit(out.returncode)
 
     # Advance the source-diff baseline only after all durable writes and the
     # rendered site build succeed; otherwise the stale signal must remain live
     # for the next retry.
     stats.atomic_write_text(SNAP, json.dumps(cur, indent=2))
-    print("refresh: %d articles, %d sources changed, %d stale; index.md %s" %
-          (counts["article_count"], status["sources_changed"], len(stale),
+    print("refresh: %d articles, %d sources changed, 0 stale, %d changed article%s rebuilt; index.md %s" %
+          (counts["article_count"], final_status["sources_changed"], len(changed_articles),
+           "" if len(changed_articles) == 1 else "s",
            "updated" if index_changed else "unchanged"))
 
 

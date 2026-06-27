@@ -312,10 +312,11 @@ test("marker click populates the detail panel", async ({ page }) => {
   await expect(nav).toBeVisible();
   await expect(page.locator("svg.arc-svg")).toBeVisible();
 
-  // Click the first rendered item marker.
-  const firstMarker = page.locator("[data-arc-item]").first();
-  await expect(firstMarker).toBeVisible();
-  await firstMarker.click();
+  // Click a stable named marker. The first timeline markers intentionally sit
+  // close together at default zoom and can overlap at the pointer center.
+  const marker = page.locator('[data-arc-item="c10"]');
+  await expect(marker).toBeVisible();
+  await marker.click();
 
   // Selection is reflected on the nav root.
   await expect(nav).toHaveAttribute("data-has-selection", "true");

@@ -6,6 +6,7 @@ status: compiled
 last_compiled: 2026-06-13
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; Multica decision row (L86) + per-item note (L209-213); freeze/reopen policy (L41-68)
+  - raw/transpara/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 15: external frameworks stay outside control roles
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md  # Phase 4 Batch C — repo-grounded candidate analysis of transpara-ai/multica (section 11, L762-864; cross-cutting findings L1107-1301)
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-civilization-landscape-investigation-kickoff.md  # investigation ground rules, scope; multica = candidate 20 (L209-210); access verified (L266, L276)
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 marginal-contribution matrix — multica row (L132)

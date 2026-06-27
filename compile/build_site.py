@@ -12,8 +12,8 @@ import re
 import json
 import html
 import hashlib
+import functools
 import pathlib
-import shutil
 import subprocess
 import urllib.parse
 import markdown
@@ -38,6 +38,7 @@ PROGRESS_VER = ""
 SITE_NAME = "Transpara-AI Civilization Wiki"
 SOURCE_LINKS = {}
 SOURCE_INDEX = []
+GENERATED_DIST_PATHS = set()
 ALLOWED_SOURCE_ROOTS = [
     ROOT,
     REPOS_ROOT / "wiki",
@@ -605,7 +606,7 @@ def repo_records():
 REPOS = []
 
 
-def to_html(body, link_acc=None):
+def to_html(body, link_acc=None, source_refs=None):
     MD.reset()
     store = []
 
@@ -623,7 +624,10 @@ def to_html(body, link_acc=None):
         return '<a class="wl tbd" title="not yet written (TBD)">%s</a>' % label
 
     out = RUNTOK.sub(emit, MD.convert(WL.sub(grab, body)))
-    out = sanitize_rendered_links(link_source_code_refs(out))
+    out = link_source_code_refs(out)
+    out = link_source_code_alias_refs(out, source_refs or [])
+    out = link_source_alias_refs(out, source_refs or [])
+    out = sanitize_rendered_links(out)
     return out, list(getattr(MD, "toc_tokens", []) or [])
 
 
@@ -673,15 +677,35 @@ def build_toc(tokens):
     return '<div class="toc"><div class="toctitle">Contents</div>%s</div>' % render(tokens)
 
 
-def clean_dist():
+def mark_generated(path):
+    GENERATED_DIST_PATHS.add(path.resolve())
+
+
+def write_dist_text(path, text):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    mark_generated(path)
+
+
+def prepare_dist():
+    source_link_aliases.cache_clear()
+    GENERATED_DIST_PATHS.clear()
     DIST.mkdir(exist_ok=True)
+    SOURCE_DIST.mkdir(parents=True, exist_ok=True)
+
+
+def prune_dist():
     preserve = {"deploy-status.json", "inflight.json"}
-    for p in DIST.iterdir():
-        if p.name in preserve:
-            continue
+    for p in sorted(DIST.rglob("*"), key=lambda x: len(x.parts), reverse=True):
         if p.is_dir():
-            shutil.rmtree(p)
-        else:
+            try:
+                p.rmdir()
+            except OSError:
+                pass
+            continue
+        if p.parent == DIST and p.name in preserve:
+            continue
+        if p.resolve() not in GENERATED_DIST_PATHS:
             p.unlink()
 
 
@@ -847,12 +871,175 @@ def link_source_code_refs(body_html):
     return re.sub(r"<code>(raw/[^<]+?|/Transpara/transpara-ai/[^<]+?)</code>", repl, body_html)
 
 
+def source_doc_id(text):
+    fm, body = split_fm(text or "")
+    doc_id = fm_val(fm, "doc_id") or fm_val(fm, "document_id")
+    if doc_id:
+        return doc_id
+    m = re.search(r"<!--\s*df:artifact\s+id=([A-Za-z0-9_.:-]+)", text or "")
+    if m:
+        return m.group(1)
+    m = re.search(r"^#\s+(ADR-\d{4})\b", body or text or "", flags=re.M)
+    if m:
+        return m.group(1)
+    return ""
+
+
+@functools.lru_cache(maxsize=None)
+def source_link_aliases(ref):
+    ref = source_ref_clean(ref)
+    href = source_rel_href(ref)
+    if not href:
+        return []
+    aliases = set()
+    path = safe_source_path(ref)
+    name = pathlib.PurePosixPath(ref).name
+    stem = pathlib.PurePosixPath(ref).stem
+    if stem:
+        aliases.add(stem)
+    for m in re.findall(r"\bADR-\d{4}\b", name, flags=re.I):
+        aliases.add(m.upper())
+    for m in re.findall(r"\bDF-V\d+(?:\.\d+)?-[A-Z]+-\d{3}\b", name, flags=re.I):
+        aliases.add(m.upper())
+    text = ""
+    if path:
+        try:
+            text = path.read_text(errors="replace")
+        except Exception:
+            text = ""
+    if text:
+        fm, body = split_fm(text)
+        doc_id = source_doc_id(text)
+        if doc_id:
+            aliases.add(doc_id)
+        title = fm_val(fm, "title") or markdown_title(body)
+        if title:
+            aliases.add(title)
+    lower_ref = ref.lower()
+    if "unified-architecture-decisions" in lower_ref:
+        aliases.update({
+            "Decision 15",
+            "DF-V3.9-ADR-001",
+            "v3.9 unified decisions",
+            "v3.9 Unified Architecture Decisions",
+            "Dark Factory v3.9 Unified Architecture Decisions",
+        })
+    if "technology-decision-crosswalk" in lower_ref:
+        aliases.update({
+            "External Technology Decision Crosswalk",
+            "v3.9.1 External Technology Decision Crosswalk",
+            "technology-decision-crosswalk",
+            "DF-V3.9-EPIC-TECH-CROSSWALK",
+        })
+    if "memory-knowledge-capability" in lower_ref:
+        aliases.update({
+            "DF-V3.9-SPEC-006",
+            "memory/knowledge doctrine",
+            "Dark Factory v3.9 Memory Knowledge And Capability Evolution",
+        })
+    # Long or file-like aliases must be considered before short identifiers
+    # such as ADR-0008, otherwise the short replacement can split the title.
+    return [(alias, href) for alias in sorted(aliases, key=len, reverse=True) if alias]
+
+
+def alias_link_map(refs):
+    links = {}
+    for ref in refs:
+        for alias, href in source_link_aliases(ref):
+            # Later refs win so an updated/superseding source listed later in
+            # frontmatter becomes the default target for shared document IDs.
+            links[alias.lower()] = (alias, href)
+    return links
+
+
+def free_text_source_alias(alias):
+    return bool(re.search(
+        r"(?i)\b(ADR-\d{4}|DF-V\d+(?:\.\d+)?-[A-Z0-9_.:-]+|TAI-RES-\d{4}-\d{3}|Decision\s+\d+)\b",
+        alias or "",
+    ))
+
+
+def link_source_code_alias_refs(body_html, refs):
+    links = alias_link_map(refs)
+    if not links:
+        return body_html
+
+    def repl(m):
+        label = html.unescape(m.group(1)).strip()
+        hit = links.get(label.lower())
+        if not hit:
+            return m.group(0)
+        _, href = hit
+        return '<a class="source-code-link" href="%s"><code>%s</code></a>' % (
+            html.escape(href), html.escape(label))
+
+    parts = re.split(r"(<a\b[^>]*>.*?</a>|<pre\b[^>]*>.*?</pre>)",
+                     body_html, flags=re.I | re.S)
+    for i, part in enumerate(parts):
+        if not part or part.startswith("<a") or part.startswith("<pre"):
+            continue
+        parts[i] = re.sub(r"<code>([^<]+)</code>", repl, part)
+    return "".join(parts)
+
+
+def _link_aliases_in_text(text, alias_links):
+    for alias, href in alias_links:
+        escaped_alias = html.escape(alias)
+        if not escaped_alias:
+            continue
+        pat = re.compile(r"(?<![A-Za-z0-9_-])(%s)(?![A-Za-z0-9_-])" % re.escape(escaped_alias), re.I)
+
+        def repl(m):
+            label = m.group(1)
+            return '<a class="source-ref-link" href="%s">%s</a>' % (
+                html.escape(href), label)
+
+        parts = re.split(r"(<a\b[^>]*>.*?</a>)", text, flags=re.I | re.S)
+        for i, part in enumerate(parts):
+            if part.startswith("<a"):
+                continue
+            parts[i] = pat.sub(repl, part)
+        text = "".join(parts)
+    return text
+
+
+def link_source_alias_refs(body_html, refs):
+    alias_links = [
+        (alias, href)
+        for alias, href in alias_link_map(refs).values()
+        if free_text_source_alias(alias)
+    ]
+    if not alias_links:
+        return body_html
+    alias_links.sort(key=lambda x: len(x[0]), reverse=True)
+    parts = re.split(r"(<a\b[^>]*>.*?</a>|<code\b[^>]*>.*?</code>|<pre\b[^>]*>.*?</pre>|<[^>]+>)",
+                     body_html, flags=re.I | re.S)
+    for i, part in enumerate(parts):
+        if not part or part.startswith("<"):
+            continue
+        parts[i] = _link_aliases_in_text(part, alias_links)
+    return "".join(parts)
+
+
 def frontmatter_source_refs():
     refs = set()
     for p in sorted(WIKI.glob("*.md")):
         fm, _ = split_fm(p.read_text())
         for key in ("sources", "raw_documents"):
             refs.update(source_ref_clean(r) for r in fm_list(fm, key) if source_ref_clean(r))
+    return refs
+
+
+def article_source_refs(fm):
+    refs = []
+    seen = set()
+    for key in ("sources", "raw_documents"):
+        for ref in fm_list(fm, key):
+            ref = source_ref_clean(ref)
+            if not ref or ref in seen:
+                continue
+            seen.add(ref)
+            refs.append(ref)
     return refs
 
 
@@ -922,7 +1109,7 @@ def build_source_pages(status):
             text = "Unable to read source: %s" % e
         title = source_title(ref, path)
         body = render_source_document(ref, path, text)
-        (SOURCE_DIST / ("%s.html" % sid)).write_text(simple_page(
+        write_dist_text(SOURCE_DIST / ("%s.html" % sid), simple_page(
             "Source — %s" % title,
             '<h1 class="page-title">%s</h1>%s' %
             (html.escape(title), body),
@@ -1149,12 +1336,16 @@ def build_contribution_box(fm):
     contribution = fm_val(fm, "civilization_contribution")
     if not contribution:
         return ""
+    contribution_html = link_source_alias_refs(
+        link_source_code_alias_refs(html.escape(contribution), article_source_refs(fm)),
+        article_source_refs(fm),
+    )
     return (
         '<aside class="contribution-box" aria-label="Civilization contribution">'
         '<strong>Civilization contribution</strong>'
         '<p>%s</p>'
         '</aside>'
-    ) % html.escape(contribution)
+    ) % contribution_html
 
 
 def build_repo_infobox(repo):
@@ -1310,14 +1501,19 @@ def load_status():
 def freshness(status):
     synced = status.get("synced", "")
     stale = status.get("stale_articles", [])
+    changed = status.get("changed_articles", [])
     if not synced:
         return '<span class="fresh warn">not yet refreshed</span>'
     if not stale:
-        return '<span class="fresh ok">updated %s · 0 stale</span>' % html.escape(synced)
-    # "stale" = articles whose cited sources changed but whose bodies have NOT been
-    # re-compiled (the LLM re-compile is manual; see compile/REBUILD.md). Make the chip a
-    # disclosure that names + links each stale article, so the count is actionable rather
-    # than opaque. Native <details>: no JS, keyboard-accessible.
+        changed_text = ""
+        if changed:
+            changed_text = " · %d rebuilt" % len(changed)
+        return '<span class="fresh ok">updated %s · 0 stale%s</span>' % (
+            html.escape(synced), changed_text)
+    # "stale" = a deterministic rebuild failed after refresh.py identified
+    # articles whose declared sources changed. Make the chip name the affected
+    # articles so the retry/fix target is actionable rather than opaque.
+    # Native <details>: no JS, keyboard-accessible.
     n = len(stale)
     links = "".join(
         '<li><a href="%s.html">%s</a></li>' % (html.escape(s), html.escape(title_of(s)))
@@ -1325,14 +1521,15 @@ def freshness(status):
     )
     return (
         '<details class="fresh-details">'
-        '<summary class="fresh warn">updated %s · %d stale</summary>'
-        '<div class="fresh-pop" role="group" aria-label="Stale articles">'
-        '<p class="fresh-pop-head">%d article%s cite repo sources that changed but '
-        'whose pages have not been re-compiled yet:</p>'
+        '<summary class="fresh warn">updated %s · rebuild failed · %d stale</summary>'
+        '<div class="fresh-pop" role="group" aria-label="Articles from failed rebuild">'
+        '<p class="fresh-pop-head">The last deterministic rebuild failed after detecting '
+        'source changes for %d article%s:</p>'
         '<ul class="fresh-pop-list">%s</ul>'
-        '<p class="fresh-pop-foot">Resolving these is a manual re-compile '
-        '(see <code>compile/REBUILD.md</code>) — the 15-minute deterministic refresh tracks '
-        'freshness but does not rewrite article prose.</p>'
+        '<p class="fresh-pop-foot">Fix the build error and rerun '
+        '<code>compile/refresh.py</code>. A successful deterministic rebuild clears this '
+        'list and records the affected articles in <code>changed_articles</code>; LLM prose '
+        'synthesis remains a separate manual Tier 2 decision.</p>'
         '</div></details>'
     ) % (html.escape(synced), n, n, "" if n == 1 else "s", links)
 
@@ -1446,13 +1643,18 @@ def ingest_page(status):
         'var form=document.getElementById("ingest-form"),status=document.getElementById("ingest-status"),'
         'target=document.getElementById("target-slug"),sup=document.getElementById("supersedes"),rebuild=document.getElementById("rebuild-now"),token=document.getElementById("authoring-token");'
         'var articles={};'
+        'var resultStore="civwiki-last-ingest-result";'
         'function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c];});}'
         'function headers(){var h={};if(token&&token.value)h["X-CivWiki-Authoring-Token"]=token.value;return h;}'
         'function renderResult(j){var parts=[];'
+        'if(j&&j.__restored)parts.push("<p>Last completed action:</p>");'
         'if(j.article_href)parts.push("<p><a href=\\""+esc(j.article_href)+"\\">Open updated article</a></p>");'
         'if(j.source_hrefs&&j.source_hrefs.length){parts.push("<p>Served sources:</p><ul>"+j.source_hrefs.map(function(x){return "<li><a href=\\""+esc(x.href)+"\\">"+esc(x.source)+"</a></li>";}).join("")+"</ul>");}'
         'parts.push("<pre>"+esc(JSON.stringify(j,null,2))+"</pre>");status.innerHTML=parts.join("");}'
         'function say(x){if(typeof x==="string")status.textContent=x;else renderResult(x);}'
+        'function reloadWithResult(j){try{sessionStorage.setItem(resultStore,JSON.stringify(j));}catch(e){}'
+        'say("Refresh completed. Reloading generated page shell...");setTimeout(function(){location.reload();},500);}'
+        'try{var prev=sessionStorage.getItem(resultStore);if(prev){sessionStorage.removeItem(resultStore);prev=JSON.parse(prev);prev.__restored=true;renderResult(prev);}}catch(e){}'
         'function loadArticles(){fetch("/api/articles",{cache:"no-store",headers:headers()}).then(function(r){return r.ok?r.json():null}).then(function(j){'
         'if(!j){say("Authoring API unavailable. Start compile/ingest_server.py to enable browser ingest.");return;}'
         'articles={};j.articles.forEach(function(a){articles[a.slug]=a;});target.dispatchEvent(new Event("change"));}).catch(function(){say("Authoring API unavailable. Start compile/ingest_server.py to enable browser ingest.");});}'
@@ -1460,9 +1662,9 @@ def ingest_page(status):
         'target.addEventListener("change",function(){sup.innerHTML="<option value=\\"\\">No existing source selected</option>";'
         'var a=articles[target.value];if(!a)return;(a.sources||[]).forEach(function(s){var o=document.createElement("option");o.value=s;o.textContent=s;sup.appendChild(o);});});'
         'form.addEventListener("submit",function(e){e.preventDefault();say("Ingesting...");fetch("/api/ingest",{method:"POST",headers:headers(),body:new FormData(form)})'
-        '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(say).catch(function(e){say(e);});});'
+        '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(reloadWithResult).catch(function(e){say(e);});});'
         'rebuild.addEventListener("click",function(){say("Refreshing status and rebuilding...");fetch("/api/rebuild",{method:"POST",headers:headers()})'
-        '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(function(j){say(j);setTimeout(function(){location.reload();},700);}).catch(function(e){say(e);});});'
+        '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(reloadWithResult).catch(function(e){say(e);});});'
         '})();</script>'
     ) % "".join(article_options)
     return tool_page("Wiki Source Ingest", inner, status)
@@ -1520,7 +1722,7 @@ def arc_page(status):
     fm, body = split_fm(p.read_text() if p.exists() else "# Civilization Progress Chart\n")
     body = re.sub(r"^#\s+.*\n", "", body, count=1)
     links = set()
-    body_html, toc_tokens = to_html(body, links)
+    body_html, toc_tokens = to_html(body, links, article_source_refs(fm))
     arc_scripts = (
         '<script defer src="civilizationOntology.js?v=%s"></script>'
         '<script defer src="civilizationArcData.js?v=%s"></script>'
@@ -1545,12 +1747,12 @@ def arc_page(status):
 def build():
     global CSS_VER, SEARCH_VER, ARC_DATA_VER, ARC_LAYOUT_VER, ARC_DRAW_VER, ARC_NAV_VER, ONTO_VER, PROGRESS_VER, REPOS
     REPOS = repo_records()
-    DIST.mkdir(exist_ok=True)
+    prepare_dist()
     status = load_status()
 
     def copy_asset(name):
         asset = (ASSETS / name).read_text()
-        (DIST / name).write_text(asset)
+        write_dist_text(DIST / name, asset)
         return hashlib.md5(asset.encode()).hexdigest()[:8]
 
     def build_search_index():
@@ -1587,10 +1789,9 @@ def build():
             })
         docs.extend(SOURCE_INDEX)
         asset = "window.CIVWIKI_SEARCH_INDEX=" + json.dumps(docs, ensure_ascii=False, separators=(",", ":")) + ";\n"
-        (DIST / "search-index.js").write_text(asset)
+        write_dist_text(DIST / "search-index.js", asset)
         return hashlib.md5(asset.encode()).hexdigest()[:8]
 
-    clean_dist()
     CSS_VER = copy_asset("style.css")
     # First pass populates SOURCE_INDEX for search; second pass refreshes source
     # pages after SEARCH_VER is known so the normal page chrome uses cache-busted JS.
@@ -1609,23 +1810,28 @@ def build():
         meta = META[p.stem]
         body = re.sub(r"^#\s+.*\n", "", body, count=1)
         links = set()
-        body_html, toc_tokens = to_html(body, links)
-        (DIST / ("%s.html" % p.stem)).write_text(
-            page(p.stem, meta["title"], meta, fm, body_html, toc_tokens, links, status))
+        body_html, toc_tokens = to_html(body, links, article_source_refs(fm))
+        write_dist_text(
+            DIST / ("%s.html" % p.stem),
+            page(p.stem, meta["title"], meta, fm, body_html, toc_tokens, links, status),
+        )
         count += 1
     fm, body = split_fm(INDEX.read_text())
     body = re.sub(r"^#\s+.*\n", "", body, count=1)
-    body_html, _ = to_html(body, set())
-    (DIST / "index.html").write_text(
-        page("index", SITE_NAME, {}, "", body_html, [], set(), status, is_home=True))
-    (DIST / "sources.html").write_text(sources_page(status))
-    (DIST / "ingest.html").write_text(ingest_page(status))
-    (DIST / "repos.html").write_text(repos_page(status))
+    body_html, _ = to_html(body, set(), article_source_refs(fm))
+    write_dist_text(
+        DIST / "index.html",
+        page("index", SITE_NAME, {}, "", body_html, [], set(), status, is_home=True),
+    )
+    write_dist_text(DIST / "sources.html", sources_page(status))
+    write_dist_text(DIST / "ingest.html", ingest_page(status))
+    write_dist_text(DIST / "repos.html", repos_page(status))
     for repo in REPOS:
-        (DIST / repo["href"]).write_text(repo_page(repo, status))
+        write_dist_text(DIST / repo["href"], repo_page(repo, status))
     arc_html = arc_page(status)
-    (DIST / "civilization-arc.html").write_text(arc_html)
-    (DIST / "civilization_arc.html").write_text(arc_html)
+    write_dist_text(DIST / "civilization-arc.html", arc_html)
+    write_dist_text(DIST / "civilization_arc.html", arc_html)
+    prune_dist()
     print("built %d articles + %d repo pages + index + arc -> %s" % (count, len(REPOS), DIST))
 
 

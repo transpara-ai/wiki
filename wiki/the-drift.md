@@ -8,6 +8,7 @@ sources:
   - raw/transpara/dark-factory/reunification/2026-06-05-slice-1-first-reunified-order-design.md  # primary: "Why this workstream exists (the drift, in one paragraph)"
   - raw/transpara/dark-factory/reunification/README.md  # workstream framing
   - raw/transpara/dark-factory/Dark Factory - Motive, Goal, Approach.md  # arc context, citation handles, v4.0 doctrine
+  - raw/transpara/dark-factory/archive/v2/adrs/ADR-0007-civilization-hive-governance.md  # ADR-0007: Civilization/Hive governance definition referenced by the drift
   - Open Brain thoughts, 2026-06-05 "Dark Factory drift diagnosis" and "reunification workstream opened" (vocabulary-frequency evidence)
 confidence:
   drift_diagnosis: high (reproducible by grep; recorded in primary design doc and Open Brain)

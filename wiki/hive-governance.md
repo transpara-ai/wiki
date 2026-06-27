@@ -6,6 +6,7 @@ status: compiled
 last_compiled: 2026-06-14
 sources:
   - raw/transpara/dark-factory/Dark Factory - Motive, Goal, Approach.md  # responsibility map ("Hive / governance"); §7 "Govern Protected Actions Fail-Closed"; decision register B; v4.0 §12
+  - raw/transpara/dark-factory/v3.9/03-authority-identity-and-sops-v3.9.md  # DF-V3.9-SPEC-003: protected actions and authority outcomes
   - raw/transpara/dark-factory/civic-roles.md  # the nine civic roles + governance section (status: superseded)
   - raw/transpara/dark-factory/reunification/2026-06-09-deployment-arc.md  # as-built review of the hive repo, 2026-06-09; the "civilization runtime" framing; Phases 1/2/7
   - Open Brain captures (2026-06-05 .. 2026-06-13)  # role-catalog chronology, CanOperate fact, guardian governance gap — see provenance footer

@@ -25,6 +25,8 @@ raw_documents:
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-10-civilization-landscape-investigation-closeout.md
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; Hermes decision row (L80) + per-item note "governed optimizer pattern only" (L163-167); freeze/reopen policy (L41-68)
+  - raw/transpara/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 15: external frameworks stay outside control roles
+  - raw/transpara/dark-factory/archive/v3/adrs/ADR-0010-hermes-self-evolution-governed-optimizer.md  # ADR-0010: Hermes self-evolution governed optimizer posture
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md  # Batch C — repo-grounded analysis of hermes-agent (L532-655) and hermes-example-plugins (L657+); README-only evidence
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md  # Batch D — repo-grounded analysis of hermes-agent-self-evolution (L75-208); evidence = README.md + PLAN.md
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 inclusion matrix — three distinct Hermes rows (L130, L131, L135); specific rejections (L302, L309)

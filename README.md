@@ -32,7 +32,14 @@ includes source documents and repository README pages as first-class results.
 Stage 0 material remains advisory proposal source, not accepted doctrine.
 The browser **Refresh status and rebuild** action uses the same deterministic
 `compile/refresh.py` path as the systemd timer, so the header freshness banner
-is recomputed with the rendered site.
+is recomputed with the rendered site. Successful browser ingest/rebuild actions
+reload the generated shell after the rebuild so the left navigation and
+freshness chip reflect the newly built `dist/` output immediately.
+
+Article source declarations are the wiki's click-through contract. Literal raw
+paths in code formatting and declared source document identifiers/titles
+(`ADR-0008`, `DF-V3.9-SPEC-006`, `Decision 15`, etc.) render as one-click links
+to served source pages when the source document exists in frontmatter.
 
 Read-only serving can still use
 `python3 -m http.server --bind 127.0.0.1 --directory dist` for local throwaway
