@@ -170,8 +170,13 @@ summary.fresh::after{content:"▾";margin-left:6px;font-size:9px;opacity:.75}
 .nav-subgroup[open] > summary::before{content:"⌄"}
 .nav-subgroup summary:hover{background:var(--panel);color:var(--txt)}
 .nav-subgroup ul{margin:1px 0 7px;padding-left:18px}
-.nav-article-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px}
+.nav-article-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:5px}
 .nav-article-row em{font:11px/1 var(--mono);color:var(--faint);padding-right:4px}
+.nav-contribution-marker{display:inline-flex;align-items:center;justify-content:center;min-width:14px;height:14px;
+  padding:0 3px;border:1px solid color-mix(in srgb,var(--t-inv),transparent 45%);border-radius:2px;
+  color:var(--t-inv);background:color-mix(in srgb,var(--t-inv),transparent 88%);
+  font:700 10px/1 var(--mono);text-transform:lowercase;letter-spacing:0}
+.nav-subgroup summary .nav-contribution-marker{flex:0 0 auto}
 .repo-nav-overview{padding:0 0 7px 18px}
 .repo-nav-overview a{display:block;padding:2px 6px;border-radius:3px;color:var(--link);line-height:1.35}
 .repo-nav-overview a:hover{background:var(--panel);text-decoration:none}

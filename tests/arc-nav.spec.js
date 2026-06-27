@@ -150,10 +150,12 @@ test("investigation pages expose grouped raw documents and contribution boxes", 
   expect(closedArrow).toContain("›");
   expect(closedArrow).not.toBe(openArrow);
 
-  const okf = investigations.locator(".nav-subgroup").filter({ hasText: "Google Open Knowledge Format" });
-  await expect(okf.locator("summary")).toContainText("1");
-  await okf.evaluate((el) => { el.open = true; });
-  await expect(okf.locator('a[href="google-open-knowledge-format-capability-evaluation.html"]')).toBeVisible();
+  await expect(investigations.locator(".nav-subgroup").filter({ hasText: "Google Open Knowledge Format" })).toHaveCount(0);
+  const okf = investigations.locator('.nav-article-row a[href="google-open-knowledge-format-capability-evaluation.html"]');
+  await expect(okf).toHaveText("Google Open Knowledge Format");
+  await expect(okf).toHaveAttribute("title", "Google Open Knowledge Format Capability Evaluation");
+  await expect(okf.locator("xpath=..").locator("em")).toHaveText("1");
+  await expect(okf.locator("xpath=..").locator(".nav-contribution-marker")).toHaveCount(0);
 
   await page.goto("/hermes-agent.html");
   await expect(page.locator("h1.page-title")).toHaveText("Hermes Agent");
@@ -161,7 +163,16 @@ test("investigation pages expose grouped raw documents and contribution boxes", 
   await expect
     .poll(() => page.locator(".infobox").locator('a[href^="source/"]').count(), { timeout: 5000 })
     .toBeGreaterThanOrEqual(1);
-  await expect(page.locator('.side-group[data-tier="investigation"] .nav-subgroup').filter({ hasText: "Hermes Agent" }).locator("summary")).toContainText(/[1-9][0-9]*/);
+  await expect(page.locator('.side-group[data-tier="investigation"] .nav-subgroup').filter({ hasText: "Hermes Agent" })).toHaveCount(0);
+  const hermes = page.locator('.side-group[data-tier="investigation"] .nav-article-row a[href="hermes-agent.html"]');
+  await expect(hermes).toHaveText("Hermes Agent");
+  await expect(hermes).toHaveAttribute("title", "Hermes Agent");
+  await expect(hermes).toHaveClass(/current/);
+  await expect(hermes.locator("xpath=..").locator("em")).toContainText(/[1-9][0-9]*/);
+  const marker = hermes.locator("xpath=..").locator(".nav-contribution-marker");
+  await expect(marker).toHaveText("c");
+  await expect(marker).toHaveAttribute("aria-label", "Civilization contribution marker: c");
+  await expect(marker).toHaveAttribute("title", /Civilization contribution: c/);
 });
 
 test("OKF browser-ingested research appears as a navigable investigation article", async ({ page }) => {
