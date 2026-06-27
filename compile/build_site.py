@@ -688,6 +688,7 @@ def write_dist_text(path, text):
 
 
 def prepare_dist():
+    source_link_aliases.cache_clear()
     GENERATED_DIST_PATHS.clear()
     DIST.mkdir(exist_ok=True)
     SOURCE_DIST.mkdir(parents=True, exist_ok=True)
@@ -951,6 +952,13 @@ def alias_link_map(refs):
     return links
 
 
+def free_text_source_alias(alias):
+    return bool(re.search(
+        r"(?i)\b(ADR-\d{4}|DF-V\d+(?:\.\d+)?-[A-Z0-9_.:-]+|TAI-RES-\d{4}-\d{3}|Decision\s+\d+)\b",
+        alias or "",
+    ))
+
+
 def link_source_code_alias_refs(body_html, refs):
     links = alias_link_map(refs)
     if not links:
@@ -996,7 +1004,11 @@ def _link_aliases_in_text(text, alias_links):
 
 
 def link_source_alias_refs(body_html, refs):
-    alias_links = list(alias_link_map(refs).values())
+    alias_links = [
+        (alias, href)
+        for alias, href in alias_link_map(refs).values()
+        if free_text_source_alias(alias)
+    ]
     if not alias_links:
         return body_html
     alias_links.sort(key=lambda x: len(x[0]), reverse=True)
@@ -1489,10 +1501,15 @@ def load_status():
 def freshness(status):
     synced = status.get("synced", "")
     stale = status.get("stale_articles", [])
+    changed = status.get("changed_articles", [])
     if not synced:
         return '<span class="fresh warn">not yet refreshed</span>'
     if not stale:
-        return '<span class="fresh ok">updated %s · 0 stale</span>' % html.escape(synced)
+        changed_text = ""
+        if changed:
+            changed_text = " · %d rebuilt" % len(changed)
+        return '<span class="fresh ok">updated %s · 0 stale%s</span>' % (
+            html.escape(synced), changed_text)
     # "stale" = articles whose cited sources changed but whose bodies have NOT been
     # re-compiled (the LLM re-compile is manual; see compile/REBUILD.md). Make the chip a
     # disclosure that names + links each stale article, so the count is actionable rather

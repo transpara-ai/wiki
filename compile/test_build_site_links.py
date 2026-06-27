@@ -82,6 +82,50 @@ def test_path_shaped_alias_does_not_rewrap_existing_source_code_link():
     print("ok test_path_shaped_alias_does_not_rewrap_existing_source_code_link")
 
 
+def test_generic_source_stems_do_not_link_in_prose():
+    refs = ["index.md", "compile/refresh.py"]
+
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        (root / "compile").mkdir(parents=True, exist_ok=True)
+        (root / "index.md").write_text("---\ntitle: Transpara-AI Civilization Wiki\n---\n# Index\n")
+        (root / "compile" / "refresh.py").write_text("# refresh helper\n")
+        old_root = site.ROOT
+        old_allowed = site.ALLOWED_SOURCE_ROOTS
+        old_links = site.SOURCE_LINKS
+        try:
+            site.ROOT = root
+            site.ALLOWED_SOURCE_ROOTS = [root]
+            site.SOURCE_LINKS = {
+                "index.md": "source/index.html",
+                "compile/refresh.py": "source/refresh.html",
+            }
+            site.source_link_aliases.cache_clear()
+            out = site.link_source_alias_refs(
+                "<p>The index page can refresh the local wiki shell.</p>",
+                refs,
+            )
+            assert "source-ref-link" not in out, out
+        finally:
+            site.ROOT = old_root
+            site.ALLOWED_SOURCE_ROOTS = old_allowed
+            site.SOURCE_LINKS = old_links
+            site.source_link_aliases.cache_clear()
+    print("ok test_generic_source_stems_do_not_link_in_prose")
+
+
+def test_freshness_reports_rebuilt_articles_without_stale_warning():
+    out = site.freshness({
+        "synced": "2026-06-27 02:30",
+        "stale_articles": [],
+        "changed_articles": ["mempalace", "solo-orchestrator"],
+    })
+    assert 'class="fresh ok"' in out, out
+    assert "0 stale" in out, out
+    assert "2 rebuilt" in out, out
+    print("ok test_freshness_reports_rebuilt_articles_without_stale_warning")
+
+
 def test_later_sources_win_for_duplicate_document_aliases():
     old_ref = "raw/inbox/old/TAI-RES-2026-004-v1.0.0-MemPalace.md"
     new_ref = "raw/inbox/new/TAI-RES-2026-004-v1.1.0-MemPalace.md"

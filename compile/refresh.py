@@ -83,14 +83,14 @@ def main():
             prev = {}
     changed = {k for k, v in cur.items() if prev.get(k) != v}
     arts = article_sources()
-    stale = []
+    changed_articles = []
     if prev:  # first run has no baseline -> nothing "stale" yet
         for slug, cites in arts.items():
             for c in cites:
                 if any(c in ch or ch in c for ch in changed):
-                    stale.append(slug)
+                    changed_articles.append(slug)
                     break
-    stale = sorted(set(stale))
+    changed_articles = sorted(set(changed_articles))
 
     # Single source of stats compute (pure, ground-truth from wiki/ frontmatter).
     counts = stats.compute_counts(ROOT)
@@ -105,7 +105,7 @@ def main():
         "article_count": counts["article_count"],
         "sources_total": len(cur),
         "sources_changed": (len(changed) if prev else 0),
-        "changed_articles": stale,
+        "changed_articles": changed_articles,
         "stale_articles": [],
         "note": "deterministic refresh completed; source changes are reflected in the rendered site. LLM article synthesis remains manual (see compile/REBUILD.md); Open Brain deltas not auto-detected",
     }
@@ -122,7 +122,7 @@ def main():
     print(out.stdout.strip() or out.stderr.strip())
     if out.returncode != 0:
         failed_status = dict(final_status)
-        failed_status["stale_articles"] = stale
+        failed_status["stale_articles"] = changed_articles
         failed_status["note"] = (
             "deterministic refresh failed before the rendered site was updated; "
             "listed articles still need a successful rebuild. LLM article synthesis "
@@ -136,8 +136,8 @@ def main():
     # for the next retry.
     stats.atomic_write_text(SNAP, json.dumps(cur, indent=2))
     print("refresh: %d articles, %d sources changed, 0 stale, %d changed article%s rebuilt; index.md %s" %
-          (counts["article_count"], final_status["sources_changed"], len(stale),
-           "" if len(stale) == 1 else "s",
+          (counts["article_count"], final_status["sources_changed"], len(changed_articles),
+           "" if len(changed_articles) == 1 else "s",
            "updated" if index_changed else "unchanged"))
 
 
