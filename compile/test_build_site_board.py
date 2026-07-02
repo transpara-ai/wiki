@@ -150,6 +150,15 @@ def test_narrative_article_moved_and_linked():
     html_out = site.build_board(REAL_FM)
     assert 'href="arc-origin-narrative.html"' in html_out, \
         "the board links to the narrative"
+    # CFAR 2a-r1 P1: compile/refresh.py rewrites the stats block in INDEX.md
+    # and hard-fails without exactly one marker pair — the live 15-min
+    # refresh loop and the ingest/rebuild endpoint both run that path
+    index_text = (ROOT / "index.md").read_text()
+    assert index_text.count("stats:begin") == 1 and \
+        index_text.count("stats:end") == 1, \
+        "index.md must keep exactly one stats marker pair for refresh.py"
+    assert "stats:begin" not in body, \
+        "the archived narrative must not carry live stats markers"
     print("ok test_narrative_article_moved_and_linked")
 
 
@@ -184,6 +193,21 @@ def test_home_board_accessibility():
     assert 'class="board-sr"' in html_out, \
         "a visually-hidden one-sentence summary must lead the board"
     assert "aria-label=" in html_out, "the centerpiece needs an aria-label"
+    # CFAR 2a-r1 P2: the aria-label and hidden summary derive from the
+    # PARSED pillars — frontmatter edits must reach screen readers too
+    fm = good_fm(board_pillars=(
+        "board_pillars:\n"
+        '  - "Zeta Wall|obj a|6|accountable-ai-architecture|purple"\n'
+        '  - "Provenance|obj b||primitive-basis|teal"\n'
+        '  - "Governed autonomy|obj c||hive-governance|amber"\n'
+        '  - "One civilization|obj d|1|the-civilization|coral"'))
+    edited = site.build_board(fm)
+    aria = re.search(r'aria-label="([^"]+)"', edited).group(1)
+    assert "Zeta Wall" in aria, \
+        "aria-label must announce the frontmatter pillar names"
+    sr = re.search(r'class="board-sr">([^<]+)<', edited).group(1)
+    assert "Zeta Wall" in sr, \
+        "the hidden summary must announce the frontmatter pillar names"
     for m in re.finditer(r'<a class="board-tile[^>]*>(.*?)</a>', html_out,
                          re.S):
         text = re.sub(r"<[^>]+>", "", m.group(1)).strip()

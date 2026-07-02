@@ -1765,13 +1765,14 @@ def build_board(fm):
         return ('<div class="board-wall board-wall-%s board-%s">%s</div>'
                 % (pos, color, name))
 
+    pillar_names = ", ".join(n for n, _o, _h, _s, _c in pillars)
+    aria = html.escape(
+        "Concentric membrane: the human holds top authority; the four "
+        "objectives — %s — enclose the agents' work on all sides; work "
+        "leaves only as certified or rejected." % pillar_names)
     centerpiece = (
-        '<div class="board-membrane" role="img" aria-label="Concentric '
-        'membrane: the human holds top authority; the four objectives — '
-        'accountability, provenance, governed autonomy, one civilization — '
-        'enclose the agents\' work on all sides; work leaves only as '
-        'certified or rejected.">'
-        '<div class="board-membrane-label">human · top authority ↓</div>'
+        ('<div class="board-membrane" role="img" aria-label="%s">' % aria)
+        + '<div class="board-membrane-label">human · top authority ↓</div>'
         '<div class="board-frame">'
         + wall("top", pillars[0][4]) + wall("left", pillars[3][4])
         + '<div class="board-core">'
@@ -1796,13 +1797,14 @@ def build_board(fm):
         '<a href="%s.html">%s</a>' % (slug, html.escape(label))
         for label, slug in inheritance)
 
+    summary = html.escape(
+        "The thesis of the Transpara-AI Civilization arc: agents work "
+        "inside a human-governed membrane of %s; work leaves only as "
+        "certified or rejected." % pillar_names)
     return (
         '<div class="board">'
-        '<p class="board-sr">The thesis of the Transpara-AI Civilization arc: '
-        'agents work inside a human-governed membrane of accountability, '
-        'provenance, governed autonomy, and one civilization; work leaves '
-        'only as certified or rejected.</p>'
-        '<header class="board-hero">'
+        + ('<p class="board-sr">%s</p>' % summary)
+        + '<header class="board-hero">'
         '<div class="board-eyebrow">%s</div>'
         '<h2 class="board-claim">%s</h2>'
         '<p class="board-subtitle">%s</p>'
