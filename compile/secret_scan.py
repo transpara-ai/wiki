@@ -285,13 +285,19 @@ BR_KEYS = {"type", "canonical_path", "blob_sha256", "reason", "owner",
            "reviewed_by", "reviewed_on", "expires_on"}
 
 
+def _utc_today():
+    # the allowlist date contract is UTC (§3.1.1); date.today() is local-tz
+    # and disagrees with CI near midnight (CFAR F6)
+    return datetime.datetime.now(datetime.timezone.utc).date()
+
+
 def _validate_dates(entry, lineno):
     try:
         reviewed = datetime.date.fromisoformat(entry["reviewed_on"])
         expires = datetime.date.fromisoformat(entry["expires_on"])
     except (ValueError, TypeError):
         raise ScanError("allowlist line %d: bad ISO date" % lineno)
-    today = datetime.date.today()
+    today = _utc_today()
     if reviewed > today:
         # a future review date would let expires_on extend the 180-day
         # validity window arbitrarily far from today (CFAR F1)

@@ -26,6 +26,10 @@ SCANNER = pathlib.Path(__file__).resolve().parent / "secret_scan.py"
 PYTHON = sys.executable
 ZERO_SHA = "0" * 40
 
+
+def utc_today():
+    return datetime.datetime.now(datetime.timezone.utc).date()
+
 _rng = random.Random(20260702)
 
 
@@ -95,8 +99,8 @@ def fp_entry(rule_id, path, blob_bytes, match_text, byte_offset, **over):
         "reason": "test fixture",
         "owner": "test",
         "reviewed_by": "test",
-        "reviewed_on": datetime.date.today().isoformat(),
-        "expires_on": (datetime.date.today() + datetime.timedelta(days=30)).isoformat(),
+        "reviewed_on": utc_today().isoformat(),
+        "expires_on": (utc_today() + datetime.timedelta(days=30)).isoformat(),
     }
     entry.update(over)
     return entry
@@ -110,8 +114,8 @@ def br_entry(path, blob_bytes, **over):
         "reason": "test fixture",
         "owner": "test",
         "reviewed_by": "test",
-        "reviewed_on": datetime.date.today().isoformat(),
-        "expires_on": (datetime.date.today() + datetime.timedelta(days=30)).isoformat(),
+        "reviewed_on": utc_today().isoformat(),
+        "expires_on": (utc_today() + datetime.timedelta(days=30)).isoformat(),
     }
     entry.update(over)
     return entry
@@ -264,6 +268,13 @@ def test_scanner_timeout_fails_closed():
         assert proc.returncode != 0, "timeout must fail closed"
         out = (proc.stdout + proc.stderr).lower()
         assert "timeout" in out or "timed out" in out
+    # CFAR F5: the hook's bound is the scanner's portable in-process
+    # --max-seconds — a hard dependency on coreutils `timeout` would falsely
+    # block every commit on macOS/BSD clones
+    hook = (WIKI_ROOT / ".githooks" / "pre-commit").read_text()
+    assert "--max-seconds" in hook, "hook must bound the scan in-process"
+    assert not re.search(r"(?m)^\s*(if\s+)?timeout\s", hook), \
+        "hook must not depend on the non-portable coreutils timeout binary"
     print("ok test_scanner_timeout_fails_closed")
 
 
@@ -590,7 +601,7 @@ def test_push_event_zero_base_blocks():
 # ------------------------------------------------------------------ AC10
 
 def test_allowlist_schema_and_expiry_enforced():
-    today = datetime.date.today()
+    today = utc_today()
     k = gen_aws_key()
     content = "clean file, no secrets\n"
     bad_lists = [
@@ -628,6 +639,33 @@ def test_allowlist_schema_and_expiry_enforced():
             assert proc.returncode != 0, \
                 "invalid allowlist #%d must block even a clean stage" % i
     print("ok test_allowlist_schema_and_expiry_enforced")
+
+
+def test_allowlist_dates_compared_in_utc():
+    # CFAR F6: the allowlist contract says dates are UTC; date.today() uses
+    # the local timezone, so a valid UTC-dated entry could falsely block (or
+    # an expired one falsely clear) near midnight. Pick a TZ on the far side
+    # of UTC for the current UTC hour so local-date semantics would fail NOW.
+    utc_today = datetime.datetime.now(datetime.timezone.utc).date()
+    if datetime.datetime.now(datetime.timezone.utc).hour < 12:
+        tz = "Etc/GMT+12"   # local = UTC-12 -> local date is yesterday
+        reviewed, expires = utc_today, utc_today + datetime.timedelta(days=30)
+    else:
+        tz = "Etc/GMT-13"   # local = UTC+13 -> local date is tomorrow
+        reviewed, expires = utc_today - datetime.timedelta(days=30), utc_today
+    k = gen_aws_key()
+    content = "a = '%s'\n" % k
+    blob = content.encode("utf-8")
+    with tempfile.TemporaryDirectory() as d:
+        root = _staged_secret_repo(d, content)
+        write_allowlist(root, [fp_entry(
+            "aws-access-key-id", "cfg.py", blob, k, content.index(k),
+            reviewed_on=reviewed.isoformat(), expires_on=expires.isoformat())])
+        proc = run_scanner(["--staged"], root, env={"TZ": tz})
+        assert proc.returncode == 0, \
+            "a valid UTC-dated entry must validate in any local timezone:\n%s%s" \
+            % (proc.stdout, proc.stderr)
+    print("ok test_allowlist_dates_compared_in_utc")
 
 
 if __name__ == "__main__":
