@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-SECRET-SCAN-HOOK
 title: Secret-Scan Pre-Commit Hook + CI Gate — Design Packet
 doc_type: design
-version: 0.3.0
+version: 0.4.0
 status: draft
 canonical: false
 created: 2026-07-01
@@ -50,12 +50,14 @@ and air-gap-native, matching the repo's stdlib-Python + "no pytest, air-gap
 friendly" pattern. It runs in two explicit **modes** and is wired to two surfaces:
 
 - **`--staged`** — scans the staged index; used by the git hook `.githooks/pre-commit` (installed via `git config core.hooksPath .githooks`, documented in a one-line setup step + README), so the hook is shared and reviewable, not a private `.git/hooks` file.
-- **`--changed-against <base>`** — scans **every blob introduced anywhere in the PR's commit history**, not just the final diff; used by the **CI job** in `.github/workflows/ci.yml` (the enforced gate). CI has no staged index, so it never assumes one. Exact git semantics (CFADA-r2 B1):
+- **`--changed-against <base>`** — scans **every (path, blob) occurrence introduced anywhere in the PR's commit history**, not just the final diff; used by **CI**. CI has no staged index, so it never assumes one. Exact git semantics (CFADA-r2 B1, r3 B1/B3/B6):
   - **Base ref**: CI passes the PR base explicitly (`origin/${{ github.base_ref }}`); the scan domain is `merge-base(<base>, HEAD) .. HEAD`.
-  - **Blob enumeration**: for **every commit** in that range, `git diff-tree -r --no-renames` (rename detection **off**) collects every added/modified blob SHA; the scanner scans the **union of all distinct blobs**, so a secret committed then removed before the final diff is still caught (named test `test_secret_added_then_removed_in_history_blocked`).
-  - **Fetch requirement**: the CI job checks out with `fetch-depth: 0`. If the base ref, the merge-base, or any enumerated blob is unresolvable (shallow clone, missing ref, failed `cat-file`) ⇒ **block** (AC9), never a reduced-domain scan.
+  - **Occurrence enumeration**: for **every commit** in that range, `git diff-tree -r -m --no-renames <commit>` — `-m` diffs **merge commits against each parent**, so content introduced by a merge or conflict resolution is enumerated too (CFADA-r3 B1; named test `test_secret_in_merge_commit_blocked`); rename detection **off**. The scan/report unit is the **`(canonical_path, blob_sha256)` occurrence** — identical blob content at two paths is two findings, each needing its own §3.1 clearance; blob-level dedup is permitted only as an internal scanning optimization, never for finding identity or allowlist evaluation (CFADA-r3 B3). A secret committed then removed before the final diff is still caught (named test `test_secret_added_then_removed_in_history_blocked`).
+  - **Non-blob entries deny by default (CFADA-r3 B6)**: a gitlink (mode `160000` submodule pointer) or any `.gitmodules` change ⇒ **block** — submodule content is not scannable by this design and is **not permitted** in this repo's scan domain (no clearance lane in v1; named test `test_gitlink_blocks`). Symlink entries (mode `120000`) are scanned as text (their blob is the target path).
+  - **Fetch requirement**: the CI checkout uses `fetch-depth: 0`. If the base ref, the merge-base, or any enumerated blob is unresolvable (shallow clone, missing ref, failed `cat-file`) ⇒ **block** (AC9), never a reduced-domain scan.
+  - **Enforcement wiring (CFADA-r3 B2)**: the scan runs as a **step inside the existing required `Build & Test` job** in `.github/workflows/ci.yml` — verified live 2026-07-02: `main` protection requires exactly `Build & Test` + `cross-family-adversarial-review`, so a *separate* job would not be a required check and could not block a merge. No branch-protection/settings change is needed or authorized (§7).
 
-Both modes **fail closed on any `git` subprocess error** (a failed `diff`/`cat-file` ⇒ block, never pass). The scanner reads a **fail-closed fingerprint allowlist** (§3.1). **Outcome vocabulary is closed and enumerated**: every scanned blob resolves to exactly `pass` (scanned clean), `allowlisted` (every finding cleared by a valid §3.1 fingerprint), or `block`. There is **no `skip` outcome** anywhere in the scanner (CFADA-r2 B3 removed the last one); any input the scanner cannot positively scan is `block`.
+Both modes **fail closed on any `git` subprocess error** (a failed `diff`/`cat-file` ⇒ block, never pass). The scanner reads a **fail-closed allowlist** (§3.1: text `fingerprint` + binary/oversized `blob_review`). **Outcome vocabulary is closed and enumerated**: every scanned `(canonical_path, blob_sha256)` occurrence resolves to exactly `pass` (scanned clean), `allowlisted` (cleared by a valid §3.1 entry of the applicable type), or `block`. There is **no `skip` outcome** anywhere in the scanner (CFADA-r2 B3 removed the last one); any input the scanner cannot positively scan is `block`.
 
 **Alternative considered — vendoring the `gitleaks` binary:** a more battle-tested
 ruleset, but it is not installed and needs per-platform air-gap vendoring. Deferred
@@ -65,14 +67,18 @@ gitleaks lean on the finding that gitleaks is absent and the repo is stdlib-Pyth
 
 ### 3.1 Allowlist model (fail-closed — no ignore lanes, no skip outcome)
 
-Per CFADA-r1 C3 and CFADA-r2 B2/B3/M1, there are **no blanket path ignores for
-tracked text**, **no skip outcome for any input class**, and the fingerprint
-clears **exactly one finding**, never a blob.
+Per CFADA-r1 C3, CFADA-r2 B2/B3/M1, and CFADA-r3 B4, there are **no blanket path
+ignores for tracked text** and **no skip outcome for any input class**.
+`compile/.secretsallow` holds exactly **two record types with honestly distinct
+scopes** — a text-finding `fingerprint` (clears **exactly one finding**) and a
+`blob_review` attestation (clears **one whole unscannable blob at one path**,
+and says so):
 
-- **False positives** are cleared **only** by a **per-finding fingerprint** entry in `compile/.secretsallow`. The key is `rule_id + canonical_path + blob_sha256 + match_sha256` where `match_sha256` is the SHA-256 of the **exact matched byte span** (CFADA-r2 B2). One entry clears one finding: a second finding of the *same rule in the same blob* has a different `match_sha256` and **stays blocking** (named test `test_allowlist_entry_does_not_cover_sibling_findings`). Because the entry also pins the blob SHA, **editing the file re-flags everything** — the allowlist can never silently cover new content.
-- **Allowlist governance (CFADA-r2 M1)**: every entry additionally requires `reason + owner + reviewed_by + reviewed_on + expires_on` (ISO dates; max validity 180 days, renewable only by re-review). The scanner **validates the schema on every run**: a malformed, incomplete, or **expired** entry ⇒ the scan **blocks** with an allowlist-validation error (an entry that cannot be proven valid clears nothing *and* is never silently dropped; named test `test_allowlist_schema_and_expiry_enforced`, AC10).
-- **Binary blobs** (null-byte detected) **block by default** (CFADA-r2 B3): binary content cannot be positively text-scanned, and a reasoned skip is a fail-open lane — a null-byte file with an embedded token would escape. Message: *"binary content cannot be text-scanned — review manually and clear by fingerprint"*. Clearance is only a §3.1 fingerprint entry (per-blob `match_sha256` = SHA-256 of the whole blob, since no text span exists); any new binary content re-flags. The scanner still pattern-scans binary bytes and **reports** what it finds as reviewer evidence, but the report is advisory — the outcome is `block` regardless.
-- **Oversized blobs** (> 1 MiB) **block**: "too large to scan — review manually and clear by fingerprint" (same per-blob fingerprint clearance as binary).
+- **`fingerprint` (text findings only)**: clears one false positive. Key: `rule_id + canonical_path + blob_sha256 + match_sha256` where `match_sha256` is the SHA-256 of the **exact matched byte span** (CFADA-r2 B2). One entry clears one finding: a second finding of the *same rule in the same blob* has a different `match_sha256` and **stays blocking** (named test `test_allowlist_entry_does_not_cover_sibling_findings`); the same blob at a **different path** is a different occurrence and stays blocking (CFADA-r3 B3). Because the entry pins the blob SHA, **editing the file re-flags everything**.
+- **`blob_review` (binary/oversized only — explicitly blob-scoped, CFADA-r3 B4)**: a human attestation *"I reviewed this exact blob at this path in full and it contains no secrets"*. Key: `canonical_path + blob_sha256`. It is **not** a per-finding fingerprint and the design does not pretend it is: its scope is the entire attested blob, which is precisely what the reviewer attests to. It never applies to text blobs (a text blob with findings can only be cleared finding-by-finding; named test `test_blob_review_rejected_for_text_blobs`). Any content change re-blocks (new blob SHA).
+- **Allowlist governance (CFADA-r2 M1)**: **both** record types additionally require `reason + owner + reviewed_by + reviewed_on + expires_on` (ISO dates; max validity 180 days, renewable only by re-review). The scanner **validates the schema on every run**: a malformed, incomplete, unknown-type, or **expired** entry ⇒ the scan **blocks** with an allowlist-validation error (an entry that cannot be proven valid clears nothing *and* is never silently dropped; named test `test_allowlist_schema_and_expiry_enforced`, AC10).
+- **Binary blobs** (null-byte detected) **block by default** (CFADA-r2 B3): binary content cannot be positively text-scanned, and a reasoned skip is a fail-open lane. Message: *"binary content cannot be text-scanned — review manually and attest with a blob_review entry"*. The scanner still pattern-scans binary bytes and **reports** what it finds as reviewer evidence, but the report is advisory — without a valid `blob_review` entry the outcome is `block` regardless.
+- **Oversized blobs** (> 1 MiB) **block**: "too large to scan — review manually and attest with a blob_review entry".
 - Generated files (e.g. `package-lock.json`) **are scanned**; a real false positive there is cleared by fingerprint, not by ignoring the path.
 - The **entropy heuristic is conservative** (min length + high threshold, defined in §3.2) and always subordinate to the explicit pattern rules — patterns are the primary signal, entropy is a backstop.
 - **CI is the enforcement of record**; the local hook is fast feedback. A contributor who has not run the hooks-setup is still gated by CI.
@@ -90,17 +96,43 @@ extensible.
 across lines. JSON-shaped rules use **whitespace-tolerant** regexes (`\s*`
 around `:`), never exact-fragment matching.
 
-| Rule id | Exact grammar (Python `re`) | Positive fixture (runtime-generated **from this grammar**) | Negative (stated near-miss) |
-|---|---|---|---|
-| `private-key` | `-----BEGIN [A-Z ]*PRIVATE KEY( BLOCK)?-----` (multi-line) | generated PEM header + base64 body | prose containing "private key" (no armor) |
-| `aws-access-key-id` | `\b(AKIA\|ASIA)[0-9A-Z]{16}\b` | `"AKIA"` + 16 chars from `[0-9A-Z]` | 20-char uppercase word failing the prefix |
-| `github-token` | classic `\bgh[pousr]_[A-Za-z0-9]{36,255}\b` **and** fine-grained `\bgithub_pat_[A-Za-z0-9_]{22,255}\b` | one of each, generated per branch | `ghp_short`, bare `github_pat` in prose |
-| `slack-token` | `\bxox[baprs]-[A-Za-z0-9-]{10,}\b` | `"xoxb-"` + 24 valid chars | `xox` substring, `xoxq-…` (invalid class) |
-| `openai-sk-key` | `\bsk-(proj-\|svcacct-\|admin-)?[A-Za-z0-9_-]{20,}\b` | `"sk-proj-"` + 32 valid chars | `sk-` + 8 chars (below floor) |
-| `gcp-sa-json` | `"type"\s*:\s*"service_account"` **and** `"private_key"\s*:\s*"` in the same blob (whitespace/newline tolerant) | synthetic pretty-printed **and** minified SA JSON | config JSON with `service_account` but no `private_key` |
-| `jwt` | `\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b` | three generated base64url segments | base64 text without the two dots |
-| `generic-assignment` | `(?i)\b(api[_-]?key\|secret\|token\|passwd\|password)\b\s*[:=]\s*["']?` + **candidate**: length ≥ 16, charset `[A-Za-z0-9+/=_-]`, Shannon entropy ≥ 3.5 bits/char, and **not a placeholder** (empty, `<…>`, `$VAR`, `{{…}}`, `changeme`, `example`, `xxx…`) | `api_key = "` + random 24-char base64 | `password = ""`, `token = "$TOKEN"`, `secret: changeme` |
-| `high-entropy` (backstop) | token length ≥ 32, charset `[A-Za-z0-9+/=_-]`, Shannon entropy ≥ 4.5 bits/char, not matched by any rule above | random 40-char base64 (entropy ≈ 6) | UUID / 40-hex git SHA (hex charset caps at 4.0 bits/char) |
+**Exact grammars (Python `re`, verbatim — this fenced block is the authoritative
+contract; CFADA-r3 B5 moved it out of the markdown table, whose `\|` cell
+escaping corrupted alternations):**
+
+```text
+private-key         -----BEGIN [A-Z ]*PRIVATE KEY( BLOCK)?-----
+                    (re.MULTILINE; matches anywhere in the blob)
+aws-access-key-id   \b(AKIA|ASIA)[0-9A-Z]{16}\b
+github-token        \bgh[pousr]_[A-Za-z0-9]{36,255}\b
+github-token        \bgithub_pat_[A-Za-z0-9_]{22,255}\b
+slack-token         \bxox[baprs]-[A-Za-z0-9-]{10,}\b
+openai-sk-key       \bsk-(proj-|svcacct-|admin-)?[A-Za-z0-9_-]{20,}\b
+gcp-sa-json         "type"\s*:\s*"service_account"
+                    AND (same blob)  "private_key"\s*:\s*"
+jwt                 \beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b
+generic-assignment  (?i)\b(api[_-]?key|secret|token|passwd|password)\b\s*[:=]\s*["']?
+                    THEN candidate predicate on the following token:
+                    len >= 16, charset [A-Za-z0-9+/=_-], Shannon entropy >= 3.5 bits/char,
+                    not a placeholder (empty, <...>, $VAR, {{...}}, changeme, example, xxx...)
+high-entropy        candidate token [A-Za-z0-9+/=_-]{32,} not matched by any rule above,
+                    Shannon entropy >= 4.5 bits/char
+```
+
+A rule with two lines (`github-token`) is the union of both regexes under one
+`rule_id`. `gcp-sa-json` fires only when **both** regexes match the same blob.
+
+| Rule id | Positive fixture (runtime-generated **from the grammar above**) | Negative (stated near-miss) |
+|---|---|---|
+| `private-key` | generated PEM header + base64 body | prose containing "private key" (no armor) |
+| `aws-access-key-id` | `"AKIA"` + 16 chars from `[0-9A-Z]` | 20-char uppercase word failing the prefix |
+| `github-token` | one classic + one fine-grained, generated per branch | `ghp_short`, bare `github_pat` in prose |
+| `slack-token` | `"xoxb-"` + 24 valid chars | `xox` substring, `xoxq-…` (invalid class) |
+| `openai-sk-key` | `"sk-proj-"` + 32 valid chars | `sk-` + 8 chars (below floor) |
+| `gcp-sa-json` | synthetic pretty-printed **and** minified SA JSON | config JSON with `service_account` but no `private_key` |
+| `jwt` | three generated base64url segments | base64 text without the two dots |
+| `generic-assignment` | `api_key = "` + random 24-char base64 | `password = ""`, `token = "$TOKEN"`, `secret: changeme` |
+| `high-entropy` | random 40-char base64 (entropy ≈ 6) | UUID / 40-hex git SHA (hex charset caps at 4.0 bits/char) |
 
 **Coverage claim (honest scope):** each rule detects exactly its grammar column.
 Token formats outside these grammars (e.g. Azure, Stripe, Twilio) are **not
@@ -114,24 +146,33 @@ Each carries a `verification_method` and `risk_class`.
 |---|-----------|---------------------|------------|
 | AC1 | Staged file with a planted secret → pre-commit exits non-zero, commit blocked | test: plant a runtime-synthetic key, attempt commit, assert blocked | high (security) |
 | AC2 | Clean staged content → hook passes, commit succeeds | test: clean content commits | low |
-| AC3 | A PR **any of whose commits** introduced a secret → CI job fails, **even if the final diff no longer contains it** (`--changed-against` scans the union of blobs across `merge-base..HEAD`, §3) | ci job + tests: runtime fixture in final diff **and** the added-then-removed history case | high (security) |
+| AC3 | A PR **any of whose commits — including merge commits** — introduced a secret → CI fails, **even if the final diff no longer contains it**; the scan runs as a **step inside the required `Build & Test` job**, so its failure blocks merge without any settings change (§3) | ci step in the required job + tests: final-diff fixture, added-then-removed history case, merge-commit case | high (security) |
 | AC4 | Scanner missing / errors / times out → **fail-closed** (block) | test: simulate missing/erroring scanner, assert block | high (fail-safe) |
 | AC5 | Scan runs with no network (stdlib only) | test/inspection: stdlib-only imports; no sockets | medium (air-gap) |
-| AC6 | Allowlist clears **exactly one finding**: a sibling finding (same rule, same blob, different match) **stays blocking**; editing an allowlisted blob re-flags it; scanner + config secret-free | multi-hit test (two findings in one blob, allowlist one, assert other blocks); edit-reflag test; scanner scans its own tree clean | high (security) |
-| AC7 | Edge inputs fail-closed: empty stage passes only as provably-empty domain; binary, oversized, unreadable blob → **block** (clearable only by fingerprint). **No skip outcome exists**; outcome domain = {pass, allowlisted, block} | domain tests over every input class → assert block or proven-pass, never a reasoned skip | high (fail-safe) |
+| AC6 | A text `fingerprint` clears **exactly one finding at one path**: a sibling finding (same rule, same blob, different match) **stays blocking**, and the same blob at a **different path** stays blocking; a `blob_review` never applies to a text blob; editing any allowlisted content re-flags it; scanner + config secret-free | multi-hit test; different-path test; blob_review-on-text rejection test; edit-reflag test; scanner scans its own tree clean | high (security) |
+| AC7 | Edge inputs fail-closed: empty stage passes only as provably-empty domain; binary, oversized, unreadable blob → **block** (clearable only by an explicit `blob_review` attestation); **gitlink / `.gitmodules` change → block, no clearance lane**. **No skip outcome exists**; outcome domain = {pass, allowlisted, block} | domain tests over every input class (incl. gitlink) → assert block or proven-pass, never a reasoned skip | high (fail-safe) |
 | AC8 | Every §3.2 rule has a passing positive AND negative fixture, **generated from that rule's stated grammar** — a fixture satisfied via a different rule does not count | per-rule tests asserting the finding's `rule_id` equals the rule under test | high (security) |
 | AC9 | Any `git` subprocess error (in either mode: unresolvable base/merge-base, shallow history, failed `cat-file`/`diff-tree`) → **fail closed** (block), never a reduced-domain scan | test: simulate `git` failure + shallow-clone case, assert block | high (fail-safe) |
 | AC10 | Allowlist schema is validated on every run: malformed, incomplete, or **expired** entry → scan **blocks** with a validation error (invalid entries can neither clear findings nor be silently dropped) | test: malformed + expired entries each assert block | high (fail-safe) |
 
-## 5. Named TestCases
+## 5. Named TestCases — one-to-one AC map (CFADA-r3 M1)
 
-`test_planted_secret_blocked` · `test_clean_passes` · `test_scanner_error_fails_closed` ·
-`test_allowlist_fingerprint_reflags_on_edit` · `test_ci_changed_against_blocks_on_secret` ·
-`test_secret_added_then_removed_in_history_blocked` ·
-`test_allowlist_entry_does_not_cover_sibling_findings` ·
-`test_binary_blob_blocks` · `test_allowlist_schema_and_expiry_enforced` ·
-`test_edge_cases_fail_safe` · `test_git_error_fails_closed` · `test_each_rule_positive_and_negative`
-(stdlib-assert style, matching `compile/test_*.py`; gated in `npm run verify` + CI).
+Stdlib-assert style, matching `compile/test_*.py`; gated in `npm run verify` + CI.
+**Every AC clause maps to a named test; a clause without a test is an unproven
+gate (§6 rolls it up as not-satisfied).**
+
+| AC | Named test(s) |
+|---|---|
+| AC1 | `test_planted_secret_blocked` |
+| AC2 | `test_clean_passes` |
+| AC3 | `test_ci_changed_against_blocks_on_secret` · `test_secret_added_then_removed_in_history_blocked` · `test_secret_in_merge_commit_blocked` · `test_scan_step_lives_in_required_build_and_test_job` (asserts the ci.yml wiring) |
+| AC4 | `test_scanner_error_fails_closed` |
+| AC5 | `test_stdlib_only_no_network` (import allowlist over `secret_scan.py`: stdlib modules only, no `socket`/`urllib`/`http` usage) |
+| AC6 | `test_allowlist_entry_does_not_cover_sibling_findings` · `test_allowlist_entry_does_not_cover_other_paths` · `test_blob_review_rejected_for_text_blobs` · `test_allowlist_fingerprint_reflags_on_edit` · `test_scanner_tree_scans_clean` |
+| AC7 | `test_edge_cases_fail_safe` (empty stage / unreadable) · `test_binary_blob_blocks` · `test_oversized_blob_blocks` · `test_gitlink_blocks` |
+| AC8 | `test_each_rule_positive_and_negative` (asserts the finding's `rule_id` equals the rule under test) |
+| AC9 | `test_git_error_fails_closed` · `test_shallow_clone_or_missing_base_fails_closed` |
+| AC10 | `test_allowlist_schema_and_expiry_enforced` |
 
 **Test-data self-trip avoidance:** test secrets are synthetic and **generated at
 test runtime** (never committed), so the scanner never flags its own fixtures and
@@ -148,7 +189,7 @@ input and red on a planted secret. Any unproven criterion ⇒ not satisfied
 
 ## 7. Authorization packet (for the AuthorityDecision gate — grants nothing yet)
 
-- **Bounded scope:** add `compile/secret_scan.py`, `compile/.secretsallow` (fingerprint format), `.githooks/pre-commit`, its tests, a one-line hooks-setup step, and a `secret-scan` job in `.github/workflows/ci.yml` — in **transpara-ai/wiki only**.
+- **Bounded scope:** add `compile/secret_scan.py`, `compile/.secretsallow` (fingerprint + blob_review formats), `.githooks/pre-commit`, its tests, a one-line hooks-setup step, and a **secret-scan step inside the existing required `Build & Test` job** in `.github/workflows/ci.yml` (CFADA-r3 B2: a separate job would not be a required check and could not block a merge) — in **transpara-ai/wiki only**.
 - **Allowed repo:** `transpara-ai/wiki`. **Forbidden:** every other repo; branch-protection / ruleset / settings changes; git-history rewrite; remediation of any *pre-existing* secret (separate concern).
 - **Autonomy level:** propose — **draft PR only**; no merge; no push without an explicit ask.
 - **Stop conditions:** if a fail-closed *offline* scanner cannot be achieved; if the false-positive rate forces a blanket disable to keep commits workable.
@@ -185,12 +226,26 @@ Authorizes nothing. No implementation before the AuthorityDecision. No CI/branch
 
 ## Appendix — CFADA round 2 (Codex · cross-family) → repaired at v0.3.0
 
-> Reviewer family: Codex/OpenAI. Reviewed head `524fc13` (v0.2.0). Verdict: **FAIL — 4 blockers, 1 major** (C1 verified; C2/C3/C4 partial). Root class across all four: an outcome lane not provably deny-by-default. v0.3.0 fixes the class — the outcome vocabulary is closed to {pass, allowlisted, block}; `skip` no longer exists. Re-review pending on v0.3.0.
+> Reviewer family: Codex/OpenAI. Reviewed head `524fc13` (v0.2.0). Verdict: **FAIL — 4 blockers, 1 major** (C1 verified; C2/C3/C4 partial). Root class across all four: an outcome lane not provably deny-by-default. v0.3.0 closed the outcome vocabulary to {pass, allowlisted, block}. Round 3 (below) judged the B1–B4 repairs still partial; completed at v0.4.0.
 
 | # | Finding | Disposition (v0.3.0) |
 |---|---------|----------------------|
-| B1 | CI scan domain lets PR-history secrets escape (add-then-remove before final diff) | **FIXED** — §3: scan domain = union of blobs across every commit in `merge-base(<base>, HEAD)..HEAD`, rename detection off, `fetch-depth: 0`, unresolvable ⇒ block; AC3 + `test_secret_added_then_removed_in_history_blocked` |
-| B2 | Fingerprint keyed per blob, not per finding — one allowed false positive covers an unreviewed sibling secret | **FIXED** — §3.1: key gains `match_sha256` (SHA-256 of the exact matched byte span); AC6 + `test_allowlist_entry_does_not_cover_sibling_findings` |
-| B3 | Binary "skip-with-reason" is a reasoned pass — fail-open input class | **FIXED** — §3.1: binary blobs **block** by default, clearable only by fingerprint after manual review; pattern-scan output is advisory evidence, never an outcome; AC7 + `test_binary_blob_blocks`; `skip` removed from the outcome domain entirely |
-| B4 | Detector contract imprecise — AC8 passable while claimed coverage misses real formats | **FIXED** — §3.2: exact anchored regexes, normalization rules, whitespace-tolerant JSON, honest rule names (`aws-access-key-id`, `github-token`, `openai-sk-key`), defined entropy thresholds, grammar-bound fixtures (AC8), explicit coverage claim + §7(b) residual |
-| M1 | Allowlist erosion named but ungoverned | **FIXED** — §3.1: mandatory `reviewed_by`/`reviewed_on`/`expires_on` (≤ 180 days), schema validated every run, malformed/expired ⇒ block; AC10 + `test_allowlist_schema_and_expiry_enforced` |
+| B1 | CI scan domain lets PR-history secrets escape (add-then-remove before final diff) | v0.3.0: history-union scan domain, `fetch-depth: 0`, unresolvable ⇒ block. *r3 judged partial (merge commits escaped `diff-tree`; blob dedup erased paths) → completed v0.4.0 per r3-B1/B3* |
+| B2 | Fingerprint keyed per blob, not per finding — one allowed false positive covers an unreviewed sibling secret | v0.3.0: key gains `match_sha256` + sibling test. *r3 judged partial (blob-union dedup contradicted the path-bound key) → completed v0.4.0 per r3-B3* |
+| B3 | Binary "skip-with-reason" is a reasoned pass — fail-open input class | v0.3.0: binary blocks by default; `skip` removed from the outcome domain. *r3 judged partial (whole-blob "fingerprint" clearance recreated the lane under a new name) → completed v0.4.0 per r3-B4 (`blob_review` record, honestly blob-scoped)* |
+| B4 | Detector contract imprecise — AC8 passable while claimed coverage misses real formats | **FIXED** — §3.2: exact anchored regexes, normalization rules, whitespace-tolerant JSON, honest rule names (`aws-access-key-id`, `github-token`, `openai-sk-key`), defined entropy thresholds, grammar-bound fixtures (AC8), explicit coverage claim + §7(b) residual. *r3 judged the fix partial (table `\|` escapes corrupted the regexes) → completed v0.4.0 per r3-B5* |
+| M1 | Allowlist erosion named but ungoverned | **FIXED, r3-verified** — §3.1: mandatory `reviewed_by`/`reviewed_on`/`expires_on` (≤ 180 days), schema validated every run, malformed/expired ⇒ block; AC10 + `test_allowlist_schema_and_expiry_enforced` |
+
+## Appendix — CFADA round 3 (Codex · cross-family) → repaired at v0.4.0
+
+> Reviewer family: Codex/OpenAI. Reviewed head `bcd040a` (v0.3.0). Verdict: **FAIL — 6 blockers, 1 major** (M1 verified; B1–B4 repairs judged partial). Round 3 verified claims against the **live repo** (branch protection, ci.yml). Re-review pending on v0.4.0.
+
+| # | Finding | Disposition (v0.4.0) |
+|---|---------|----------------------|
+| R3-B1 | Merge commits escape `git diff-tree -r` (emits no blobs without merge handling) — a secret introduced in a merge/conflict resolution evades AC3 | **FIXED** — §3: `-m` diffs merge commits against **each parent**; named test `test_secret_in_merge_commit_blocked` |
+| R3-B2 | CI gate not actually enforced: §7 forbade settings changes, live `main` protection requires only `Build & Test` + `cross-family-adversarial-review`, so a *separate* `secret-scan` job could never block a merge | **FIXED** — §3/§7: the scan is a **step inside the required `Build & Test` job**; live protection verified 2026-07-02; wiring asserted by `test_scan_step_lives_in_required_build_and_test_job` |
+| R3-B3 | Distinct-blob union contradicts path-bound allowlist keys — one reviewed path could cover identical content at an unreviewed path | **FIXED** — §3: scan/report unit = `(canonical_path, blob_sha256)` **occurrence**; blob dedup allowed only as internal optimization; AC6 + `test_allowlist_entry_does_not_cover_other_paths` |
+| R3-B4 | Binary/oversized whole-blob "fingerprint" was the skip lane renamed — one entry cleared arbitrary unscanned blob content while claiming per-finding scope | **FIXED** — §3.1: two **honestly distinct record types**: text `fingerprint` (per-finding) vs `blob_review` (whole-blob human attestation, explicitly scoped as such, never valid for text blobs); `test_blob_review_rejected_for_text_blobs` |
+| R3-B5 | "Exact Python `re`" grammars contained markdown `\|` escapes = literal pipes — stated fixtures could not match the stated grammar | **FIXED** — §3.2: grammars moved verbatim into a fenced code block (the authoritative contract); table now carries fixtures only |
+| R3-B6 | Gitlinks (mode `160000`) / `.gitmodules` are not blobs — a submodule pointer bypasses the blob scanner | **FIXED** — §3: gitlink or `.gitmodules` change ⇒ **block**, no clearance lane in v1; AC7 + `test_gitlink_blocks`; symlinks scanned as text |
+| R3-M1 | AC5/AC7/AC9 clauses broader than the named tests — no one-to-one AC→test map | **FIXED** — §5 rebuilt as an explicit AC→test table; new named tests for no-network, oversized, shallow-clone/missing-base |
