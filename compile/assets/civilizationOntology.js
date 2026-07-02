@@ -9,6 +9,33 @@
     "actor", "phase", "event", "decision", "conflict",
     "policy", "invariant", "resource", "capability"];
   var PROVENANCE = ["reconstructed", "derived"];
+  // Item 2b: deny-by-default item schema. Any key not in this set is a
+  // validation ERROR — the lane the parallel status fields used is closed
+  // for the whole class (design packet §2.3).
+  var ITEM_KEYS = ["id", "code", "ref", "date", "type", "label", "status",
+    "blocked", "blocked_reason", "blocked_criterion", "criteria",
+    "provenance", "seq", "repo", "sprint", "gate", "goal", "family",
+    "deps", "note", "href", "evidence_links", "author"];
+  var BLOCKED_REASONS = ["gate", "resource", "authority", "recovery",
+    "dependency"];
+  var CRITERION_KEYS = ["id", "label", "status", "blocked", "blocked_reason",
+    "ref"];
+
+  // Total fail-closed rollup over VALID criteria (design packet §2.1):
+  // all done => done; any active => active; any planned => planned; else
+  // future. Invalid input never reaches here — validateItems rejects it.
+  function rollupCriteria(criteria) {
+    var allDone = true, anyActive = false, anyPlanned = false, anyBlocked = false;
+    for (var i = 0; i < criteria.length; i++) {
+      var c = criteria[i];
+      if (c.status !== "done") allDone = false;
+      if (c.status === "active") anyActive = true;
+      if (c.status === "planned") anyPlanned = true;
+      if (c.blocked === true) anyBlocked = true;
+    }
+    var status = allDone ? "done" : anyActive ? "active" : anyPlanned ? "planned" : "future";
+    return { status: status, blocked: anyBlocked };
+  }
   var STATUS_LANES = ["done", "active", "blocked", "planned", "future"];
   // Fixed lane order for the "gate" grouping, which lanes by gate FAMILY.
   // Lanes not in this list are appended alphabetically, before "(ungated)".
@@ -77,6 +104,57 @@
       if (typeof it.seq === "number" && !isNaN(it.seq) && it.seq < now && !SETTLED[it.status]) {
         errors.push(where + ": status '" + it.status + "' at seq " + it.seq +
           " is left of now (" + now + ") — past items must be done/active");
+      }
+      // Item 2b — deny-by-default schema: unknown keys are errors.
+      Object.keys(it).forEach(function (k) {
+        if (ITEM_KEYS.indexOf(k) === -1) errors.push(where + ": unknown key '" + k + "'");
+      });
+      // blocked overlay facets: reason non-null exactly when blocked; enum-valued.
+      if (it.blocked === true) {
+        if (BLOCKED_REASONS.indexOf(it.blocked_reason) === -1) {
+          errors.push(where + ": blocked items need an enum blocked_reason, got '" + it.blocked_reason + "'");
+        }
+      } else if (it.blocked_reason != null) {
+        errors.push(where + ": blocked_reason must be null unless blocked");
+      }
+      if (it.blocked_criterion != null && (it.blocked !== true || it.blocked_reason == null)) {
+        errors.push(where + ": blocked_criterion only alongside a non-null blocked_reason on a blocked item");
+      }
+      // gates carry criteria; stored status/blocked must equal the rollup.
+      if (it.type === "gate") {
+        if (!Array.isArray(it.criteria) || it.criteria.length === 0) {
+          errors.push(where + ": gates require non-empty criteria[]");
+        } else {
+          var critsValid = true;
+          it.criteria.forEach(function (c, ci) {
+            var cw = where + ".criteria[" + ci + "]";
+            if (!c || typeof c !== "object") { errors.push(cw + ": not an object"); critsValid = false; return; }
+            Object.keys(c).forEach(function (k) {
+              if (CRITERION_KEYS.indexOf(k) === -1) { errors.push(cw + ": unknown key '" + k + "'"); critsValid = false; }
+            });
+            if (!c.id) { errors.push(cw + ": missing id"); critsValid = false; }
+            if (STATUS_ORDER.indexOf(c.status) === -1) { errors.push(cw + ": invalid status '" + c.status + "'"); critsValid = false; }
+            if (c.blocked === true) {
+              if (BLOCKED_REASONS.indexOf(c.blocked_reason) === -1) { errors.push(cw + ": blocked criterion needs an enum blocked_reason"); critsValid = false; }
+            } else if (c.blocked_reason != null) {
+              errors.push(cw + ": blocked_reason must be null unless blocked"); critsValid = false;
+            }
+          });
+          if (critsValid) {
+            var want = rollupCriteria(it.criteria);
+            if (it.status !== want.status) {
+              errors.push(where + ": stored status '" + it.status + "' contradicts the criteria rollup '" + want.status + "'");
+            }
+            if ((it.blocked === true) !== want.blocked) {
+              errors.push(where + ": stored blocked=" + it.blocked + " contradicts the criteria rollup blocked=" + want.blocked);
+            }
+            if (it.blocked_criterion != null && !it.criteria.some(function (c) { return c.id === it.blocked_criterion; })) {
+              errors.push(where + ": blocked_criterion '" + it.blocked_criterion + "' names no criterion");
+            }
+          }
+        }
+      } else if (it.criteria != null) {
+        errors.push(where + ": criteria[] is a gate facet only");
       }
     });
     return { ok: errors.length === 0, errors: errors };
@@ -227,6 +305,7 @@
   }
 
   var api = {
+    rollupCriteria: rollupCriteria,
     STATUS_ORDER: STATUS_ORDER, NODE_TYPES: NODE_TYPES, PROVENANCE: PROVENANCE,
     SETTLED: SETTLED, REPO_GROUPS: REPO_GROUPS, REPO_CANON: REPO_CANON,
     deriveNow: deriveNow, validateItems: validateItems,

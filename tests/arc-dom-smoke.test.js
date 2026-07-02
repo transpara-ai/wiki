@@ -107,14 +107,18 @@ function assertData(data) {
   assert(data.executionPlan, "execution plan missing");
   assert(/^\d{4}-\d{2}-\d{2}$/.test(data.executionPlan.updated), "execution plan date must be ISO");
 
-  // Gate K is closed by the pre-go-live waiver (docs#138) — done, not blocked —
-  // while the go-live revalidation residual stays machine-readable on the dot.
+  // Item 2b split: gate-k is the DONE pre-live closeout (waiver docs#138);
+  // gate-k-go-live is the honest blocked gate for the unmet go-live scope.
   const gateK = data.items.find((it) => it.id === "gate-k");
   assert(gateK, "gate-k item missing");
   assert.strictEqual(gateK.status, "done");
   assert.strictEqual(gateK.blocked, false);
-  assert.strictEqual(gateK.boundary_status, "pre-live-closed-go-live-blocked");
-  assert.strictEqual(gateK.go_live_revalidation, "blocked");
+  assert.strictEqual(gateK.boundary_status, undefined);
+  const gateKGo = data.items.find((it) => it.id === "gate-k-go-live");
+  assert(gateKGo, "gate-k-go-live item missing");
+  assert.strictEqual(gateKGo.status, "planned");
+  assert.strictEqual(gateKGo.blocked, true);
+  assert.strictEqual(gateKGo.blocked_reason, "gate");
   assert(
     O.groupBy(data.items, "status").some((lane) =>
       lane.lane === "done" && lane.items.some((it) => it.id === "gate-k")
@@ -161,7 +165,7 @@ test('tooltip shows sprint + ordinal step + provenance', () => {
   marker.dispatchEvent(new root.ownerDocument.defaultView.MouseEvent('mouseover', { bubbles: true }));
   const tip = root.querySelector('.arc-tooltip');
   assert.strictEqual(tip.hidden, false);
-  assert.match(tip.textContent, /step \d+ of 120/);
+  assert.match(tip.textContent, /step \d+ of 121/);
   assert.match(tip.textContent, /sprint ·/);
 });
 
@@ -399,11 +403,12 @@ test('Gate K renders as cleared-by-waiver (done) with go-live residual surfaced 
   gate.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
   const detail = nav.querySelector('.arc-detail-panel');
   assert.match(detail.textContent, /Done/);
-  // The waiver closed Gate K, but the go-live revalidation residual must still be surfaced.
+  // Item 2b split: the panel shows the honest criteria line and points at the
+  // gate-k-go-live dependent that carries the unmet go-live scope.
   assert.match(detail.textContent, /go-live/i);
-  assert.match(detail.textContent, /boundary/i);
-  assert.match(detail.textContent, /pre live closed go live blocked/i);
-  assert.match(detail.textContent, /go-live revalidation blocked/i);
+  assert.match(detail.textContent, /criteria/i);
+  assert.match(detail.textContent, /pre-live loop-hardening closeout \(waiver\) done/i);
+  assert.match(detail.textContent, /Gate-K·go-live/);
   assert.match(detail.textContent, /private merge evidence was rechecked/i);
   assert.doesNotMatch(detail.textContent, /\b[0-9a-f]{40}\b/i);
   const evidenceHrefs = [...detail.querySelectorAll('.arc-detail-evidence-link')]
@@ -595,12 +600,12 @@ test('drawDeps anchors a line to EVERY placement of a duplicated multi-lane item
     'a dep line must reach BOTH copies of X (y=10 and y=50), not just the last; got ' + [...ys].join(','));
 });
 
-test('now-panel surfaces the Gate-K go-live hard stop even though the gate is no longer blocked', () => {
+test('now-panel surfaces the gate-k-go-live hard stop (Item 2b split: a real blocked gate)', () => {
   const { nav } = mountArc();
   const np = nav.querySelector('.arc-now-panel').textContent;
-  assert.match(np, /Gate-K/, 'the go-live hard-stop gate is surfaced in the focus panel');
-  assert.match(np, /go-live/i, 'the go-live revalidation residual is named, not hidden behind a click');
-  assert.match(np, /2026-06-17/, 'the focus gate (Gate-K) date is shown in the now-panel, not just on hover');
+  assert.match(np, /Gate-K·go-live/, 'the go-live hard-stop gate is surfaced in the focus panel');
+  assert.match(np, /go-live/i, 'the go-live revalidation scope is named, not hidden behind a click');
+  assert.match(np, /blocked/i, 'the hard stop reads as blocked — never as done/all-clear');
 });
 
 test('standalone wheel: dominant-horizontal pans the frame (not hijacked into zoom); vertical zooms', () => {
