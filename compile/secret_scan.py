@@ -65,6 +65,12 @@ class ScanError(Exception):
     """Any condition that must fail closed."""
 
 
+class _Timeout(BaseException):
+    """--max-seconds expiry. BaseException on purpose: the fail-closed
+    `except Exception` wrappers (e.g. in git()) must never swallow a timeout
+    and re-label it — the alarm can fire at any bytecode boundary."""
+
+
 @dataclass
 class Finding:
     rule_id: str
@@ -469,10 +475,6 @@ def run(mode_args):
     for path, oid in occs:
         outcomes.append(scan_occurrence(root, path, oid, allowlist))
     return report(outcomes)
-
-
-class _Timeout(Exception):
-    pass
 
 
 def main(argv=None):
