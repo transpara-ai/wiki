@@ -109,7 +109,12 @@
       Object.keys(it).forEach(function (k) {
         if (ITEM_KEYS.indexOf(k) === -1) errors.push(where + ": unknown key '" + k + "'");
       });
-      // blocked overlay facets: reason non-null exactly when blocked; enum-valued.
+      // blocked overlay facets: boolean-or-absent (a string-truthy value
+      // would diverge the === rollup from the renderer's truthiness —
+      // CFAR 2b-r1 F2); reason non-null exactly when blocked; enum-valued.
+      if (it.blocked !== undefined && typeof it.blocked !== "boolean") {
+        errors.push(where + ": blocked must be a boolean, got '" + it.blocked + "'");
+      }
       if (it.blocked === true) {
         if (BLOCKED_REASONS.indexOf(it.blocked_reason) === -1) {
           errors.push(where + ": blocked items need an enum blocked_reason, got '" + it.blocked_reason + "'");
@@ -133,6 +138,9 @@
               if (CRITERION_KEYS.indexOf(k) === -1) { errors.push(cw + ": unknown key '" + k + "'"); critsValid = false; }
             });
             if (!c.id) { errors.push(cw + ": missing id"); critsValid = false; }
+            if (c.blocked !== undefined && typeof c.blocked !== "boolean") {
+              errors.push(cw + ": blocked must be a boolean, got '" + c.blocked + "'"); critsValid = false;
+            }
             if (STATUS_ORDER.indexOf(c.status) === -1) { errors.push(cw + ": invalid status '" + c.status + "'"); critsValid = false; }
             if (c.blocked === true) {
               if (BLOCKED_REASONS.indexOf(c.blocked_reason) === -1) { errors.push(cw + ": blocked criterion needs an enum blocked_reason"); critsValid = false; }

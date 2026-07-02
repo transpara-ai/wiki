@@ -42,6 +42,9 @@ def pr_to_item(pr, repo):
         "label": pr.get("title") or ("%s#%s" % (repo, number)),
         "status": status,
         "blocked": bool(pr.get("isDraft")) and status == "active",
+        # the ontology requires an enum reason exactly when blocked — a
+        # draft PR is work the review gate has not admitted yet
+        "blocked_reason": ("gate" if (bool(pr.get("isDraft")) and status == "active") else None),
         "provenance": "derived",
         "repo": [repo],
         "sprint": LIVE_SPRINT,

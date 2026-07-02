@@ -516,3 +516,25 @@ test('parallel status vocabulary is gone', () => {
       banned + ' must not appear as a field in the arc items region');
   }
 });
+
+test('blocked must be boolean — string-truthy diverges rollup from renderer', () => {
+  // the lane: string-truthy blocked with a NULL reason slips both branches —
+  // rollup sees unblocked (===), the renderer sees blocked (truthiness)
+  // (CFAR 2b-r1 F2, class-swept to the item level too)
+  const it = gate({ blocked: 'true', blocked_reason: null });
+  assert.strictEqual(O.validateItems([it]).ok, false, 'string item.blocked must be rejected');
+  const crits = [{ id: 'c0', label: 'c', status: 'planned', blocked: 'true', blocked_reason: null }];
+  const g = gate({ criteria: crits, status: 'planned', blocked: false, blocked_reason: null, date: undefined, provenance: 'derived' });
+  assert.strictEqual(O.validateItems([g]).ok, false, 'string criterion.blocked must be rejected');
+});
+
+test('inflight-shaped live items validate (draft blockers carry an enum reason)', () => {
+  const live = {
+    id: 'pr-hive-1', code: 'hive#1', type: 'work', label: 'x', status: 'active',
+    blocked: true, blocked_reason: 'gate', provenance: 'derived',
+    repo: ['hive'], sprint: 'implementation', href: 'https://x', author: 'a',
+    note: 'draft · @a', seq: 1,
+  };
+  const r = O.validateItems([live]);
+  assert.strictEqual(r.ok, true, (r.errors || []).join('; '));
+});

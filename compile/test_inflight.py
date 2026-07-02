@@ -101,6 +101,18 @@ def test_items_dedup_by_id():
     print("ok test_items_dedup_by_id")
 
 
+def test_draft_blocker_carries_enum_reason():
+    draft = {"number": 4, "title": "d", "url": "u", "state": "OPEN",
+             "isDraft": True, "author": {"login": "a"}}
+    it = inflight.pr_to_item(draft, "site")
+    assert it["blocked"] is True and it["blocked_reason"] == "gate"
+    merged = {"number": 9, "title": "m", "url": "u", "state": "MERGED",
+              "isDraft": False, "author": {"login": "a"}}
+    it2 = inflight.pr_to_item(merged, "docs")
+    assert it2["blocked"] is False and it2["blocked_reason"] is None
+    print("ok test_draft_blocker_carries_enum_reason")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
