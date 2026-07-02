@@ -263,6 +263,11 @@ def enumerate_tree(root, rev):
         meta, _, raw_path = field.partition(b"\t")
         mode, _objtype, oid = meta.decode("utf-8", "strict").split(" ")
         path = _decode_path(raw_path)
+        if path.rsplit("/", 1)[-1] == ".gitmodules":
+            blocks.append(Outcome(path, "block", False,
+                                  ".gitmodules present — submodules are not "
+                                  "permitted in the scan domain"))
+            continue
         if mode == GITLINK_MODE:
             blocks.append(Outcome(path, "block", False,
                                   "gitlink (mode 160000) — not scannable"))

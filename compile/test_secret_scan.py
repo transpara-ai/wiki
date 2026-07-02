@@ -432,6 +432,12 @@ def test_gitmodules_change_blocks():
         proc = run_scanner(["--staged"], root)
         assert proc.returncode != 0, \
             ".gitmodules change must block independently of any gitlink"
+        # tree mode is the evidence surface — a committed .gitmodules must
+        # block there too, not fall through to a text scan
+        sh(["git", "commit", "-q", "-m", "modules"], root)
+        proc = run_scanner(["--tree", "HEAD"], root)
+        assert proc.returncode != 0, \
+            ".gitmodules present in a scanned tree must block"
     print("ok test_gitmodules_change_blocks")
 
 
