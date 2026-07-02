@@ -130,7 +130,7 @@ Rationale (recorded because it reverses a deliberate prior choice): the codebase
 
 - **Authority record.** Every Replace and Remove (and each authorized recompile) appends to an **ingest-operation ledger** mirroring `compile/.deploy-history.json`: `{ ts, operation, target, actor, superseded[], affected_edges[], authorized_by, result }`. This is the audit fold; it is the same shape whether backed by files now or the EventGraph later.
 - **Provenance.** Superseded raw and retired topics are recorded in `PROVENANCE.md` (tier/date/origin retained) — nothing is un-provenanced by removal.
-- **Secret-scrub (non-negotiable, existing doctrine).** Any new raw entering `raw/` on a Replace passes the existing secret scan **before commit**; the operation fails closed if the scan fails.
+- **Secret-scrub (non-negotiable, existing doctrine).** Any new raw entering on a Replace is scanned **before it is written or rendered, not merely before commit**: the upload payload is scanned in quarantine (in-memory or a non-served staging path), and on any finding the operation is **refused with nothing written to `raw/` and no rebuild triggered** — the current ingest flow writes to `raw/inbox/` and renders `dist/source/*.html` immediately, so a commit-time-only gate would save and locally serve the secret before failing. The commit-time scan remains as the second layer.
 - **Loopback-only.** These operations extend the existing authoring surface, which stays bound to `127.0.0.1:8787` and same-origin/token-gated — never LAN-exposed. No change to the trust boundary.
 
 ---
