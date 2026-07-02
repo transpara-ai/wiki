@@ -1928,6 +1928,10 @@ def arc_page(status):
 
 def build():
     global CSS_VER, SEARCH_VER, ARC_DATA_VER, ARC_LAYOUT_VER, ARC_DRAW_VER, ARC_NAV_VER, ONTO_VER, PROGRESS_VER, REPOS
+    # fail closed BEFORE any dist mutation: a malformed board must never
+    # leave the served site partially updated (CFAR 2a-r6); the index
+    # render below re-runs build_board on the same fm
+    build_board(split_fm(INDEX.read_text())[0])
     REPOS = repo_records()
     prepare_dist()
     status = load_status()

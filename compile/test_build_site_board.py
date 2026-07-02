@@ -272,6 +272,35 @@ def test_home_board_in_dist():
     print("ok test_home_board_in_dist")
 
 
+def test_home_board_validated_before_any_dist_write():
+    # CFAR 2a-r6: a malformed board must fail the build BEFORE the first
+    # dist write — the refresh/autodeploy path must never serve a
+    # partially updated site
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        tmp = pathlib.Path(d)
+        bad_index = tmp / "index.md"
+        bad_index.write_text("---\n%s\n---\n\n# t\n\nbody\n"
+                             % good_fm(board_hero=None))
+        out = tmp / "dist"
+        old_index, old_dist = site.INDEX, site.DIST
+        try:
+            site.INDEX, site.DIST = bad_index, out
+            try:
+                site.build()
+            except site.BoardError:
+                pass
+            else:
+                raise AssertionError("build() must fail closed on a bad board")
+            written = list(out.rglob("*")) if out.exists() else []
+            assert not written, \
+                "no dist content may be written before board validation " \
+                "(found %d entries)" % len(written)
+        finally:
+            site.INDEX, site.DIST = old_index, old_dist
+    print("ok test_home_board_validated_before_any_dist_write")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
