@@ -64,7 +64,7 @@ Today's `append_frontmatter_list_items()` path: save upload to `raw/inbox/`, app
 **Decision (owner, 2026-07-01):** Replace both **swaps the raw and recompiles immediately.** It decomposes into two steps by cost and reversibility:
 
 1. **Swap raw (deterministic, instant, air-gap-safe, always runs):** append `SourceSuperseded(old)` + `SourceAdded(new)`; the old raw is tombstoned (retained, marked non-authoritative); the new raw is ingested. This half **never fails open** and **never needs the network**.
-2. **Recompile prose (LLM, authority-gated, §5):** one authorized click re-derives *that one article* from its new authoritative raw set. While it runs, the freshness banner honestly shows `recompiling`. Offline/unauthorized → the article is marked `stale`; the swap already happened, so the page is honestly-stale, never silently-wrong.
+2. **Recompile prose (LLM, authority-gated, §5):** the **same single confirm authorizes both the swap and the recompile** — with no valid authorization the operation is refused before any raw is touched (§8; no swap ever precedes authority). While the authorized recompile runs, the freshness banner honestly shows `recompiling`. If, *after the authorized swap*, the engine is offline/unreachable/errors → the article is marked `stale`; the swap was authorized, so the page is honestly-stale, never silently-wrong.
 
 ### 3.3 Remove — cascading reconciliation (not a delete)
 
@@ -75,7 +75,7 @@ Today's `append_frontmatter_list_items()` path: save upload to `raw/inbox/`, app
 3. **Reconciliation (Layer 2, §4.2 — authority-gated):** for each inbound article, the recompile engine attempts **in-context re-resolution**: can the article stand with T gone (re-point or cleanly drop the reference)?
    - **Reconcilable** → recompile the dependent cleanly; edge → `valid` or `cleanly-removed`.
    - **Truly broken** (nothing in the new state validly satisfies the old link) → the reference stays `dangling-pending` (visibly marked) **and the link-source's raw is enqueued for reprocessing** (owner's model, 2026-07-01).
-4. **Run to closure:** reconciliation expands until **zero `dangling-pending` edges remain**. In practice this rarely passes direct dependents (a recompiled article is built from valid raw against the live article set, so it does not mint new dangling edges), but the *rule* is closure, not a hop-count.
+4. **Run to closure:** the reconciliation pass completes when **zero *unqueued* `dangling-pending` edges remain** — every inbound edge is `valid`, `cleanly-removed`, or `dangling-pending`-**and-enqueued** for reprocessing (the truly-broken case above is *supposed* to remain pending; closure means nothing is pending *outside* the queue). The queue drains through subsequent authorized reprocessing runs, each re-entering this loop; integrity holds throughout because a queued pending edge renders as pending (§4.3), never live. In practice closure rarely passes direct dependents (a recompiled article is built from valid raw against the live article set, so it does not mint new dangling edges), but the *rule* is closure, not a hop-count.
 
 A topic never just *vanishes*: **tombstone, not hard-delete** (provenance-footed + fail-legible doctrine).
 
