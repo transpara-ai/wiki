@@ -501,7 +501,18 @@ def _parse_entry(line, lineno, fingerprints, blob_reviews):
 # ------------------------------------------------------------ occurrence
 
 def scan_occurrence(root, path, oid, allowlist):
-    """Classify one (path, blob) occurrence per the §3.1 input-class table."""
+    """Classify one (path, blob) occurrence per the §3.1 input-class table.
+    The PATHNAME is a scan unit of its own — a credential can live in the
+    tracked path with clean file content (CFAR F14). Path findings are
+    NON-CLEARABLE: an allowlist entry would have to embed the secret-bearing
+    path inside .secretsallow, which the scanner would then flag, and
+    clearing that changes .secretsallow's own blob — a self-referential
+    regress. The remediation for a secret in a path is a rename."""
+    path_findings = tuple(scan_text(path))
+    if path_findings:
+        return Outcome(path, "block", False,
+                       "%d finding(s) in the pathname itself — non-clearable;"
+                       " rename the path" % len(path_findings), path_findings)
     try:
         size = blob_size(root, oid)
     except ScanError as exc:

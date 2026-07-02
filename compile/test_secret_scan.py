@@ -145,6 +145,26 @@ def test_planted_secret_blocked():
     print("ok test_planted_secret_blocked")
 
 
+def test_secret_in_pathname_blocked():
+    # CFAR F14: a credential can live in the tracked PATH with clean file
+    # content — the pathname is a scan unit of its own, and path findings
+    # are NON-CLEARABLE: an allowlist entry would embed the secret-bearing
+    # path in .secretsallow (self-referential regress); remediation is a
+    # rename, not an attestation
+    k = gen_aws_key()
+    rel = "cfg/%s/note.txt" % k
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        (root / "cfg" / k).mkdir(parents=True)
+        (root / rel).write_text("clean content\n")
+        sh(["git", "add", rel], root)
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, "secret in the pathname must block"
+        assert "pathname" in proc.stdout + proc.stderr
+        assert "rename" in (proc.stdout + proc.stderr).lower()
+    print("ok test_secret_in_pathname_blocked")
+
+
 def test_clean_passes():
     with tempfile.TemporaryDirectory() as d:
         root = make_repo(d)
