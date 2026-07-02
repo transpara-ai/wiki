@@ -59,16 +59,18 @@ A Gate carries **acceptance `criteria[]`** (which is what a gate *is*). Each cri
   - lifecycle: `done` **only if every** criterion is `done` (the permissive
     outcome is the *proven* branch); `active` if any criterion is `active`;
     else `planned`/`future`;
-  - overlay: `blocked: true` (with the blocking criterion as `blocked_reason`)
-    if **any** criterion carries the blocked overlay — the overlay propagates
-    without ever replacing the lifecycle value.
+  - overlay: `blocked: true` with `blocked_reason` staying **enum-valued**
+    (`{gate, resource, authority, recovery, dependency}`) and a separate
+    `blocked_criterion` evidence pointer naming the criterion — if **any**
+    criterion carries the blocked overlay, it propagates without ever
+    replacing the lifecycle value or degrading the enum to free text.
 
 This makes the Gate-K contradiction **structurally impossible** — you cannot author `done` while a criterion is unmet. (Mirrors Item 1's edge-state machine: prove the permissive branch, fail closed on everything else, no `default:` that completes.)
 
 ### 2.5 Distinct scopes → distinct gates (owner, 2026-07-01)
 Genuinely different acceptance scopes become **separate gates**, each with its own criteria and derived status:
 - `Gate-K (pre-live)` → `done`, **behind** the frontier;
-- `Gate-K (go-live)` → `blocked`, **ahead** = literally *"what's next."*
+- `Gate-K (go-live)` → lifecycle `planned` **with `blocked: true` overlay** (never `status: "blocked"` — the overlay rule applies to examples too), **ahead** = literally *"what's next."*
 
 The frontier reads cleanly and no single gate juggles two states.
 
@@ -84,7 +86,7 @@ evidence: { basis: derived | reconstructed | asserted,
 So `active` visibly means either *"observed 2 min ago via PR#84"* or *"hand-asserted, last confirmed weeks ago."* Per-piece fail-loud honesty — the stale-while-green problem is structurally gone. (`reconstructed` reuses the ontology's `provenance` facet; the Feb genesis is stamped `reconstructed`, never dressed as derived.)
 
 ### 2.7 Referential integrity enforced (fail-closed)
-The `civilizationOntology.js` validator is tightened to **fail the build** on: any `item.phase` not in `phases[]`; any `item.gate`/`dep` not resolving; any parallel-status field present; any gate without `criteria[]`. **One** source of truth for gate families (delete the duplicate). The `now`-frontier is **derived** (the boundary after the last `done`/`active` piece; `next` = the nearest `planned`/`blocked` gate ahead), never hand-placed. (Same referential-integrity invariant as Item 1.)
+The `civilizationOntology.js` validator is tightened to **fail the build** on: any `item.phase` not in `phases[]`; any `item.gate`/`dep` not resolving; any parallel-status field present; any gate without `criteria[]`. **One** source of truth for gate families (delete the duplicate). The `now`-frontier is **derived** (the boundary after the last `done`/`active` piece; `next` = the nearest `planned` gate ahead, or the nearest gate carrying the `blocked` overlay, never hand-placed. (Same referential-integrity invariant as Item 1.)
 
 ---
 
@@ -114,7 +116,7 @@ The `civilizationOntology.js` validator is tightened to **fail the build** on: a
 ## 5. Fail-safe analysis (prove the gate can't fail open across the domain)
 
 Per CLAUDE.md — test the whole input space, not the reported case:
-- **Derived rollup:** for every combination of criteria states, assert gate status = the fail-closed rollup (`done` **only** when all `done`; `blocked` dominates; unknown/absent criterion → **not** `done`). No combination yields a fail-open `done`.
+- **Derived rollup:** for every combination of criteria states, assert the fail-closed rollup: lifecycle `done` **only** when all criteria `done`; the `blocked` **overlay** dominates (propagates whenever any criterion carries it); unknown/absent criterion → **not** `done`. No combination yields a fail-open `done`.
 - **Referential integrity:** orphan `phase`/`gate`/`dep` refs → build **fails** (not a silent pass). A gate with no `criteria[]` → build fails.
 - **Parallel-status rejection:** presence of any deleted field (`boundary_status`, etc.) → validation **fails** (prevents regrowth of the convolution).
 - **Freshness honesty:** a piece whose evidence is older than a threshold renders `stale`/`dated`, never plain-current; a `reconstructed` piece never renders as `derived`.
