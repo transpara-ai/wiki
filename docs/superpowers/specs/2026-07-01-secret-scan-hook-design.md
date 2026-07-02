@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-SECRET-SCAN-HOOK
 title: Secret-Scan Pre-Commit Hook + CI Gate — Design Packet
 doc_type: design
-version: 0.6.0
+version: 0.6.1
 status: draft
 canonical: false
 created: 2026-07-01
@@ -53,7 +53,7 @@ friendly" pattern. It runs in two explicit **modes** and is wired to two surface
 - **`--changed-against <base>`** — scans **every (path, blob) occurrence introduced anywhere in the PR's commit history**, not just the final diff; used by **CI**. CI has no staged index, so it never assumes one. Exact git semantics (CFADA-r2 B1, r3 B1/B3/B6):
   - **Base ref, per trigger event (CFADA-r4 M2 — the required `Build & Test` job runs on both `pull_request` and `push`)**: on **`pull_request`** events CI passes the PR base explicitly (`origin/${{ github.base_ref }}`); the scan domain is `merge-base(<base>, HEAD) .. HEAD` — this is the **preventive** gate. On **`push`** events (`main`) the base is `${{ github.event.before }}`; if it is all-zeros or unresolvable ⇒ **block** (AC9). The push-path scan is **detective, not preventive** (the push has already landed; a red required check on `main` is the loud alarm) — stated honestly, with the admin direct-push residual named in §7(f).
   - **Occurrence enumeration**: for **every commit** in that range, `git diff-tree -r -m --no-renames <commit>` — `-m` diffs **merge commits against each parent**, so content introduced by a merge or conflict resolution is enumerated too (CFADA-r3 B1; named test `test_secret_in_merge_commit_blocked`); rename detection **off**. The scan/report unit is the **`(canonical_path, blob_sha256)` occurrence** — identical blob content at two paths is two findings, each needing its own §3.1 clearance; blob-level dedup is permitted only as an internal scanning optimization, never for finding identity or allowlist evaluation (CFADA-r3 B3). A secret committed then removed before the final diff is still caught (named test `test_secret_added_then_removed_in_history_blocked`).
-  - **Non-blob entries deny by default (CFADA-r3 B6)**: a gitlink (mode `160000` submodule pointer) or any `.gitmodules` change ⇒ **block** — submodule content is not scannable by this design and is **not permitted** in this repo's scan domain (no clearance lane in v1; named test `test_gitlink_blocks`). Symlink entries (mode `120000`) are scanned as text (their blob is the target path).
+  - **Non-blob entries deny by default (CFADA-r3 B6)**: a gitlink (mode `160000` submodule pointer) or any `.gitmodules` change ⇒ **block** — submodule content is not scannable by this design and is **not permitted** in this repo's scan domain (no clearance lane in v1; named tests `test_gitlink_blocks` + `test_gitmodules_change_blocks`, §5). Symlink entries (mode `120000`) are scanned as text (their blob is the target path).
   - **Fetch requirement**: the CI checkout uses `fetch-depth: 0`. If the base ref, the merge-base, or any enumerated blob is unresolvable (shallow clone, missing ref, failed `cat-file`) ⇒ **block** (AC9), never a reduced-domain scan.
   - **Enforcement wiring (CFADA-r3 B2)**: the scan runs as a **step inside the existing required `Build & Test` job** in `.github/workflows/ci.yml` — verified live 2026-07-02: `main` protection requires exactly `Build & Test` + `cross-family-adversarial-review`, so a *separate* job would not be a required check and could not block a merge. No branch-protection/settings change is needed or authorized (§7).
 
@@ -94,6 +94,18 @@ with honestly distinct scopes**:
 - Generated files (e.g. `package-lock.json`) **are scanned**; a real false positive there is cleared by fingerprint, not by ignoring the path.
 - The **entropy heuristic is conservative** (min length + high threshold, defined in §3.2) and always subordinate to the explicit pattern rules — patterns are the primary signal, entropy is a backstop.
 - **CI is the enforcement of record**; the local hook is fast feedback. A contributor who has not run the hooks-setup is still gated by CI.
+
+#### 3.1.1 `.secretsallow` concrete grammar & identity normalization (CFADA-r6 M1)
+
+- **File syntax**: UTF-8 **JSON Lines** — one JSON object per non-empty line, parsed with stdlib `json`. Empty lines are permitted; **any other line that does not parse to an object of a known `type` ⇒ allowlist-validation error ⇒ block** (AC10). JSON has no comments; none are allowed.
+- **Record shapes** (exact keys, no extras — an unknown or missing key ⇒ validation error):
+  - `{"type":"fingerprint","rule_id":…,"canonical_path":…,"blob_sha256":…,"match_sha256":…,"byte_offset":…,"reason":…,"owner":…,"reviewed_by":…,"reviewed_on":…,"expires_on":…}`
+  - `{"type":"blob_review","canonical_path":…,"blob_sha256":…,"reason":…,"owner":…,"reviewed_by":…,"reviewed_on":…,"expires_on":…}`
+- **`canonical_path`**: the path exactly as git emits it with `-z` (raw, unquoted), decoded UTF-8 **strict** — a path that fails strict decoding ⇒ block; repo-root-relative, POSIX separators, no leading `./`.
+- **Span convention** (deterministic across platforms): matching runs over `scan_text = blob_bytes.decode("utf-8", errors="replace")`; for a match at character span `[start, end)`, `match_sha256 = sha256(scan_text[start:end].encode("utf-8"))` and `byte_offset = len(scan_text[:start].encode("utf-8"))`.
+- **Composite/predicate rules report one defined span each**: `gcp-sa-json` → the span of the `"private_key"\s*:\s*"` match (one finding per blob); `generic-assignment` and `high-entropy` → the span of the **candidate token**, not the key prefix.
+- **Duplicate identity** (two records with the same full identity key) ⇒ validation error ⇒ block — duplicates are never silently tolerated.
+- **Dates**: ISO-8601 `YYYY-MM-DD`, compared in UTC; `expires_on` earlier than the current UTC date ⇒ expired ⇒ block (AC10).
 
 ### 3.2 Detector contract — minimum ruleset (test-first, concrete grammars)
 
@@ -169,9 +181,13 @@ Each carries a `verification_method` and `risk_class`.
 
 ## 5. Named TestCases — one-to-one AC map (CFADA-r3 M1)
 
-Stdlib-assert style, matching `compile/test_*.py`; gated in `npm run verify` + CI.
-**Every AC clause maps to a named test; a clause without a test is an unproven
-gate (§6 rolls it up as not-satisfied).**
+Stdlib-assert style; all named tests live in **`compile/test_secret_scan.py`**,
+which must be **explicitly enumerated in `package.json`'s `verify` script**
+(the live script enumerates Python test files one by one — an un-enumerated
+file silently never runs; CFADA-r6 M2). The wiring test
+`test_scan_step_lives_in_required_build_and_test_job` asserts this enumeration
+alongside the ci.yml assertions. **Every AC clause maps to a named test; a
+clause without a test is an unproven gate (§6 rolls it up as not-satisfied).**
 
 | AC | Named test(s) |
 |---|---|
@@ -203,7 +219,7 @@ clean input and red on a planted secret. Any unproven criterion ⇒ not satisfie
 
 ## 7. Authorization packet (for the AuthorityDecision gate — grants nothing yet)
 
-- **Bounded scope:** add `compile/secret_scan.py`, `compile/.secretsallow` (fingerprint + blob_review formats), `.githooks/pre-commit`, its tests, a one-line hooks-setup step, and — inside `.github/workflows/ci.yml` only — a **secret-scan step inside the existing required `Build & Test` job** (CFADA-r3 B2: a separate job would not be a required check and could not block a merge) **plus the checkout change to `fetch-depth: 0` and a `timeout-minutes` bound on the scan step** (CFADA-r4 M1/B2: the history scan needs full history; naming the edit here so the implementer is not trapped between a shallow-blocked scanner and reduced-domain temptation) — in **transpara-ai/wiki only**.
+- **Bounded scope:** add `compile/secret_scan.py`, `compile/.secretsallow` (fingerprint + blob_review formats), `.githooks/pre-commit`, its tests, a one-line hooks-setup step, and — inside `.github/workflows/ci.yml` only — a **secret-scan step inside the existing required `Build & Test` job** (CFADA-r3 B2: a separate job would not be a required check and could not block a merge) **plus the checkout change to `fetch-depth: 0` and a `timeout-minutes` bound on the scan step** (CFADA-r4 M1/B2: the history scan needs full history; naming the edit here so the implementer is not trapped between a shallow-blocked scanner and reduced-domain temptation), **plus the one-line `package.json` `verify`-script enumeration of `compile/test_secret_scan.py`** (CFADA-r6 M2: the live verify script names test files explicitly — without this edit the new tests would silently never run) — in **transpara-ai/wiki only**.
 - **Allowed repo:** `transpara-ai/wiki`. **Forbidden:** every other repo; branch-protection / ruleset / settings changes; git-history rewrite; remediation of any *pre-existing* secret (separate concern).
 - **Autonomy level:** propose — **draft PR only**; no merge; no push without an explicit ask.
 - **Stop conditions:** if a fail-closed *offline* scanner cannot be achieved; if the false-positive rate forces a blanket disable to keep commits workable.
@@ -284,3 +300,13 @@ Authorizes nothing. No implementation before the AuthorityDecision. No CI/branch
 | R5-B1 | Fingerprint key collapses **identical** sibling findings: the same matched bytes at two offsets in one blob share one `match_sha256`, so one entry cleared both — falsifying "exactly one finding" | **FIXED** — §3.1: key gains `byte_offset` (stable: the entry pins the immutable blob SHA); AC6 + `test_duplicate_identical_matches_need_separate_entries` |
 | R5-M1 | `.gitmodules` block clause had no independent named test (§5 mapped AC7 only to `test_gitlink_blocks`) | **FIXED** — §5 AC7 row adds `test_gitmodules_change_blocks`, scoped independently of any gitlink entry |
 | R5-N1 | §6 clean-tree rollup said "removed or a **fingerprint** allowlist entry", contradicting the valid `blob_review` lane for binary/oversized | **FIXED** — §6: "cleared by the applicable valid §3.1 allowlist record"; also names the required-job wiring explicitly |
+
+## Appendix — CFADA round 6 (Codex · cross-family) → **PASS**, majors repaired at v0.6.1
+
+> Reviewer family: Codex/OpenAI. Reviewed head `0fe9ef1` (v0.6.0). Verdict: **PASS — 0 blockers**, 2 majors, 1 minor; all round-5 repairs verified. The majors carry no fail-open lane; repaired at v0.6.1 anyway so the packet reaches the AuthorityDecision gate with nothing known-open.
+
+| # | Finding | Disposition (v0.6.1) |
+|---|---------|----------------------|
+| R6-M1 | `.secretsallow` grammar and identity normalization under-specified (file syntax, duplicate records, path derivation, span convention for composite detectors) — no fail-open lane (invalid entries block) but AC6/AC10 too implementer-dependent | **FIXED** — §3.1.1: JSON-Lines grammar with exact record shapes (unknown/missing key ⇒ block), `-z` raw-path strict-UTF-8 derivation, deterministic char→byte span convention, per-composite-rule reported spans, duplicate identity ⇒ block, UTC date comparison |
+| R6-M2 | `npm run verify` gating depended on an unnamed edit surface — live `package.json` enumerates test files explicitly, so the new tests could exist yet silently never run | **FIXED** — §5 names `compile/test_secret_scan.py` + the `verify`-script enumeration (asserted by the wiring test); §7 scope names the one-line `package.json` edit |
+| R6-N1 | §3 non-blob parenthetical still named only `test_gitlink_blocks` | **FIXED** — §3 names both tests |
