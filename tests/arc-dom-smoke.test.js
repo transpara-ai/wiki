@@ -409,6 +409,7 @@ test('Gate K renders as cleared-by-waiver (done) with go-live residual surfaced 
   assert.match(detail.textContent, /criteria/i);
   assert.match(detail.textContent, /pre-live loop-hardening closeout \(waiver\) done/i);
   assert.match(detail.textContent, /Gate-K·go-live/);
+
   assert.match(detail.textContent, /private merge evidence was rechecked/i);
   assert.doesNotMatch(detail.textContent, /\b[0-9a-f]{40}\b/i);
   const evidenceHrefs = [...detail.querySelectorAll('.arc-detail-evidence-link')]
@@ -416,6 +417,14 @@ test('Gate K renders as cleared-by-waiver (done) with go-live residual surfaced 
   assert(evidenceHrefs.includes("gate-k.html"));
   assert(!evidenceHrefs.some((href) => href && href.includes("github.com/transpara-ai/docs")),
     "Gate K detail must not link private docs repo evidence");
+
+  // CFAR 2b-r5: the undated hard-stop gate keeps its provenance visible
+  const goLiveDot = svg.querySelector('[data-arc-item="gate-k-go-live"]');
+  assert(goLiveDot, "gate-k-go-live marker missing");
+  goLiveDot.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  const goLiveDetail = nav.querySelector('.arc-detail-panel');
+  assert.match(goLiveDetail.textContent, /docs#138/,
+    'an undated gate still renders its provenance ref');
 });
 
 test('operation progress evidence snapshot renders under the arc', () => {

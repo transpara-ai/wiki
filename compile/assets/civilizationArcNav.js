@@ -566,9 +566,10 @@
     // explicit lifecycle placeholder otherwise — never blank, never fabricated.
     var dateMeta = htmlEl("p", "arc-detail-meta arc-detail-date");
     dateMeta.appendChild(htmlEl("span", "arc-detail-meta-key", "date "));
-    var hasRealDate = typeof item.date === "string" && item.date;
+    // the provenance ref renders whether or not the item is dated — an
+    // undated blocked gate must not lose its evidence pointer (CFAR 2b-r5)
     dateMeta.appendChild(document.createTextNode(
-      dateText(item) + (hasRealDate && item.ref ? " · " + item.ref : "")));
+      dateText(item) + (item.ref ? " · " + item.ref : "")));
     panel.appendChild(dateMeta);
 
     if (item.note) {
