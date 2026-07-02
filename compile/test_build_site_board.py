@@ -104,6 +104,13 @@ def test_home_board_fails_closed_on_bad_frontmatter():
             '  - "One civilization|discipline turned inward|1|the-civilization|coral"'))),
         ("dangling slug", good_fm(board_narrative_link=
                                   "board_narrative_link: no-such-article")),
+        ("duplicate wall color (would silently mislabel the centerpiece)",
+         good_fm(board_pillars=(
+            "board_pillars:\n"
+            '  - "Accountability|six questions|6|accountable-ai-architecture|teal"\n'
+            '  - "Provenance|nothing unsourced||primitive-basis|teal"\n'
+            '  - "Governed autonomy|auditable membrane||hive-governance|amber"\n'
+            '  - "One civilization|discipline turned inward|1|the-civilization|coral"'))),
     ]
     for name, fm in cases:
         try:

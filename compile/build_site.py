@@ -1728,6 +1728,10 @@ def build_board(fm):
             raise BoardError("unknown board wall color %r (allowed: %s)"
                              % (color, ", ".join(BOARD_WALL_COLORS)))
         pillars.append((name, objective, hook, _board_slug(slug, name), color))
+    colors = [c for _n, _o, _h, _s, c in pillars]
+    if len(set(colors)) != 4:
+        raise BoardError("board pillar wall colors must be distinct (the "
+                         "centerpiece maps walls by color): %s" % colors)
     inheritance = []
     for item in fm_list(fm, "board_inheritance"):
         label, slug = _board_fields(item, 2, "inheritance item")
