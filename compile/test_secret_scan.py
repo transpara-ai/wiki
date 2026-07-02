@@ -160,8 +160,13 @@ def test_secret_in_pathname_blocked():
         sh(["git", "add", rel], root)
         proc = run_scanner(["--staged"], root)
         assert proc.returncode != 0, "secret in the pathname must block"
-        assert "pathname" in proc.stdout + proc.stderr
-        assert "rename" in (proc.stdout + proc.stderr).lower()
+        out = proc.stdout + proc.stderr
+        assert "pathname" in out
+        assert "rename" in out.lower()
+        # CFAR F15: the report must not copy the credential-bearing path
+        # into hook/CI logs — matched spans are redacted
+        assert k not in out, "the matched path secret must never be printed"
+        assert "<redacted:" in out
     print("ok test_secret_in_pathname_blocked")
 
 

@@ -510,7 +510,9 @@ def scan_occurrence(root, path, oid, allowlist):
     regress. The remediation for a secret in a path is a rename."""
     path_findings = tuple(scan_text(path))
     if path_findings:
-        return Outcome(path, "block", False,
+        # report under a REDACTED path — printing the pathname verbatim
+        # would copy the credential into hook/CI logs (CFAR F15)
+        return Outcome(redact_spans(path, path_findings), "block", False,
                        "%d finding(s) in the pathname itself — non-clearable;"
                        " rename the path" % len(path_findings), path_findings)
     try:
@@ -563,6 +565,19 @@ def scan_occurrence(root, path, oid, allowlist):
         return Outcome(path, "allowlisted", True,
                        "all findings cleared by fingerprints", tuple(findings))
     return Outcome(path, "pass", False, "scanned clean")
+
+
+def redact_spans(text, findings):
+    """Replace matched spans with <redacted:rule_id> for display (CFAR F15)."""
+    out, last = [], 0
+    for f in sorted(findings, key=lambda f: f.start):
+        if f.start < last:
+            continue  # overlapping span already covered
+        out.append(text[last:f.start])
+        out.append("<redacted:%s>" % f.rule_id)
+        last = f.end
+    out.append(text[last:])
+    return "".join(out)
 
 
 # ------------------------------------------------------------------ report
