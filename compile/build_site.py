@@ -1728,8 +1728,12 @@ def board_search_text(fm):
     parts = []
     for key in ("board_eyebrow", "board_hero", "board_subtitle",
                 "board_method", "board_guardrail"):
-        raw, _ = split_inline_comment(fm_val(fm, key))
-        parts.append(raw.strip().strip('"').strip("'").replace("|", " "))
+        try:
+            # reuse the renderer's own scalar parser: fm_val pre-strips the
+            # leading quote, which defeats quote-aware comment detection
+            parts.append(board_scalar(fm, key).replace("|", " "))
+        except BoardError:
+            pass  # lenient here; build_board enforces
     for key in ("board_pillars", "board_inheritance"):
         parts.extend(item.replace("|", " ") for item in fm_list(fm, key))
     return re.sub(r"\s+", " ", " ".join(p for p in parts if p)).strip()
