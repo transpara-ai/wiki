@@ -634,6 +634,16 @@ def test_allowlist_schema_and_expiry_enforced():
         # duplicate identity
         json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0)) + "\n"
         + json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0)) + "\n",
+        # duplicate JSON key inside one record (CFAR F10): json.loads keeps
+        # the last value silently — the reviewed record would differ from
+        # the identity the scanner trusts
+        json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0)).replace(
+            '"canonical_path": "x.py"',
+            '"canonical_path": "reviewed.py", "canonical_path": "x.py"') + "\n",
+        # non-canonical date spelling (CFAR F11): fromisoformat accepts
+        # compact forms; the documented grammar is exactly YYYY-MM-DD
+        json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0,
+                            reviewed_on=today.strftime("%Y%m%d"))) + "\n",
     ]
     with tempfile.TemporaryDirectory() as d:
         root = make_repo(d)

@@ -304,7 +304,28 @@ def _utc_today():
     return datetime.datetime.now(datetime.timezone.utc).date()
 
 
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _no_duplicate_keys(pairs):
+    # json.loads silently keeps the last value for a repeated key — the
+    # reviewed record would then differ from the identity the scanner
+    # trusts (CFAR F10)
+    obj = {}
+    for key, value in pairs:
+        if key in obj:
+            raise ValueError("duplicate key %r" % key)
+        obj[key] = value
+    return obj
+
+
 def _validate_dates(entry, lineno):
+    for key in ("reviewed_on", "expires_on"):
+        if not isinstance(entry[key], str) or not DATE_RE.match(entry[key]):
+            # fromisoformat also accepts compact/week forms; the documented
+            # grammar is exactly YYYY-MM-DD (CFAR F11)
+            raise ScanError("allowlist line %d: %s must be YYYY-MM-DD"
+                            % (lineno, key))
     try:
         reviewed = datetime.date.fromisoformat(entry["reviewed_on"])
         expires = datetime.date.fromisoformat(entry["expires_on"])
@@ -364,9 +385,10 @@ def parse_allowlist(text):
         if not line.strip():
             continue
         try:
-            entry = json.loads(line)
-        except json.JSONDecodeError:
-            raise ScanError("allowlist line %d: not valid JSON" % lineno)
+            entry = json.loads(line, object_pairs_hook=_no_duplicate_keys)
+        except (json.JSONDecodeError, ValueError):
+            raise ScanError("allowlist line %d: not valid JSON (or duplicate "
+                            "key)" % lineno)
         if not isinstance(entry, dict):
             raise ScanError("allowlist line %d: not an object" % lineno)
         etype = entry.get("type")
