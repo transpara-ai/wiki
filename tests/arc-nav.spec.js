@@ -1,16 +1,17 @@
 const { test, expect } = require("@playwright/test");
 
-test("homepage is article-first and does not mount the progress chart", async ({ page }) => {
+test("homepage is the vision board and does not mount the progress chart", async ({ page }) => {
   await page.goto("/index.html");
 
   await expect(page.locator("h1.page-title")).toHaveText("Transpara-AI Civilization Wiki");
   const body = page.locator("article.body");
-  await expect(body).toContainText("The Transpara-AI Civilization Wiki is the memory and interpretation layer");
-  await expect(body).toContainText("The epiphany was this");
-  await expect(body).toContainText("Front-page authority boundary");
+  // Item 2a: the board replaced the essay (essay lives in arc-origin-narrative)
+  await expect(body.locator(".board-claim")).toContainText("inside the graph");
+  await expect(body.locator(".board-tile")).toHaveCount(4);
+  await expect(body.locator(".board-guardrail")).toContainText("distrust it");
+  await expect(body.locator('a[href="arc-origin-narrative.html"]').first()).toBeVisible();
   await expect(body.locator('a[href="primitive-basis.html"]').first()).toBeVisible();
-  await expect(body.locator('a[href="the-20-primitives.html"]').first()).toBeVisible();
-  await expect(body.locator('a[href="civilization-institutional-substrate.html"]')).toBeVisible();
+  await expect(body).not.toContainText("The Transpara-AI Civilization Wiki is the memory and interpretation layer");
   await expect(body.locator("table").first().locator('a[href="civilization-arc.html"]')).toHaveCount(0);
   await expect(body.locator("table").first().locator('a[href="sakana-ai-evaluation.html"]')).toHaveCount(0);
   await expect(body.locator("table").first().locator('a[href="hermes-agent.html"]')).toHaveCount(0);
