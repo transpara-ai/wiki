@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-SECRET-SCAN-HOOK
 title: Secret-Scan Pre-Commit Hook + CI Gate — Design Packet
 doc_type: design
-version: 0.5.0
+version: 0.6.0
 status: draft
 canonical: false
 created: 2026-07-01
@@ -86,7 +86,7 @@ performed scan** — `blob_review` exists only for readable content the scanner
 clearable by anything. `compile/.secretsallow` holds exactly **two record types
 with honestly distinct scopes**:
 
-- **`fingerprint` (scannable-text findings only)**: clears one false positive. Key: `rule_id + canonical_path + blob_sha256 + match_sha256` where `match_sha256` is the SHA-256 of the **exact matched byte span** (CFADA-r2 B2). One entry clears one finding: a second finding of the *same rule in the same blob* has a different `match_sha256` and **stays blocking** (named test `test_allowlist_entry_does_not_cover_sibling_findings`); the same blob at a **different path** is a different occurrence and stays blocking (CFADA-r3 B3). Because the entry pins the blob SHA, **editing the file re-flags everything**.
+- **`fingerprint` (scannable-text findings only)**: clears one false positive. Key: `rule_id + canonical_path + blob_sha256 + match_sha256 + byte_offset` where `match_sha256` is the SHA-256 of the **exact matched byte span** (CFADA-r2 B2) and `byte_offset` is the match's **start offset within the blob** (CFADA-r5 B1 — offsets are stable because the entry pins the immutable blob SHA). One entry clears **exactly one occurrence of one finding**: a sibling finding of the *same rule in the same blob* — including the **identical matched bytes appearing at a second offset** — **stays blocking** (named tests `test_allowlist_entry_does_not_cover_sibling_findings`, `test_duplicate_identical_matches_need_separate_entries`); the same blob at a **different path** is a different occurrence and stays blocking (CFADA-r3 B3). Because the entry pins the blob SHA, **editing the file re-flags everything**.
 - **`blob_review` (binary/oversized classes only — explicitly blob-scoped, CFADA-r3 B4)**: a human attestation *"I reviewed this exact blob at this path in full and it contains no secrets"*. Key: `canonical_path + blob_sha256`. It is **not** a per-finding fingerprint and the design does not pretend it is: its scope is the entire attested blob, which is precisely what the reviewer attests to. It is **rejected** for the scannable-text class (a text-scanned blob's findings can only be cleared finding-by-finding; named test `test_blob_review_rejected_for_text_blobs`) and can never clear the unreadable class. Any content change re-blocks (new blob SHA).
 - **Allowlist governance (CFADA-r2 M1)**: **both** record types additionally require `reason + owner + reviewed_by + reviewed_on + expires_on` (ISO dates; max validity 180 days, renewable only by re-review). The scanner **validates the schema on every run**: a malformed, incomplete, unknown-type, or **expired** entry ⇒ the scan **blocks** with an allowlist-validation error (an entry that cannot be proven valid clears nothing *and* is never silently dropped; named test `test_allowlist_schema_and_expiry_enforced`, AC10).
 - **Binary blobs** (null-byte detected) **block by default** (CFADA-r2 B3): binary content cannot be positively text-scanned, and a reasoned skip is a fail-open lane. Message: *"binary content cannot be text-scanned — review manually and attest with a blob_review entry"*. The scanner still pattern-scans binary bytes and **reports** what it finds as reviewer evidence, but the report is advisory — without a valid `blob_review` entry the outcome is `block` regardless.
@@ -161,7 +161,7 @@ Each carries a `verification_method` and `risk_class`.
 | AC3 | A PR **any of whose commits — including merge commits** — introduced a secret → CI fails, **even if the final diff no longer contains it**; the scan runs as a **step inside the required `Build & Test` job**, so its failure blocks merge without any settings change (§3) | ci step in the required job + tests: final-diff fixture, added-then-removed history case, merge-commit case | high (security) |
 | AC4 | Scanner missing / errors / **times out** → **fail-closed** (block) | tests: simulate missing scanner, erroring scanner, **and hung scanner under the bounded timeout** — each asserts block | high (fail-safe) |
 | AC5 | Scan runs with no network (stdlib only) | test/inspection: stdlib-only imports; no sockets | medium (air-gap) |
-| AC6 | A text `fingerprint` clears **exactly one finding at one path**: a sibling finding (same rule, same blob, different match) **stays blocking**, and the same blob at a **different path** stays blocking; a `blob_review` never applies to a text blob; editing any allowlisted content re-flags it; scanner + config secret-free | multi-hit test; different-path test; blob_review-on-text rejection test; edit-reflag test; scanner scans its own tree clean | high (security) |
+| AC6 | A text `fingerprint` clears **exactly one occurrence of one finding at one path**: a sibling finding (same rule, same blob — different match **or identical match at a different offset**) **stays blocking**, and the same blob at a **different path** stays blocking; a `blob_review` never applies to a text blob; editing any allowlisted content re-flags it; scanner + config secret-free | multi-hit test; duplicate-identical-match test; different-path test; blob_review-on-text rejection test; edit-reflag test; scanner scans its own tree clean | high (security) |
 | AC7 | Edge inputs fail-closed per the §3.1 input-class table: empty stage passes only as provably-empty domain; **binary / oversized** → block, clearable only by `blob_review`; **unreadable → block, non-clearable** (CFADA-r4 B1); **gitlink / `.gitmodules` change → block, no clearance lane**. **No skip outcome exists**; outcome domain = {pass, allowlisted, block} | domain tests over every §3.1 input class (incl. gitlink, unreadable-non-clearable) → assert block or proven-pass, never a reasoned skip | high (fail-safe) |
 | AC8 | Every §3.2 rule has a passing positive AND negative fixture, **generated from that rule's stated grammar** — a fixture satisfied via a different rule does not count | per-rule tests asserting the finding's `rule_id` equals the rule under test | high (security) |
 | AC9 | Any `git` subprocess error (in either mode: unresolvable base/merge-base, shallow history, failed `cat-file`/`diff-tree`) → **fail closed** (block), never a reduced-domain scan | test: simulate `git` failure + shallow-clone case, assert block | high (fail-safe) |
@@ -180,8 +180,8 @@ gate (§6 rolls it up as not-satisfied).**
 | AC3 | `test_ci_changed_against_blocks_on_secret` · `test_secret_added_then_removed_in_history_blocked` · `test_secret_in_merge_commit_blocked` · `test_scan_step_lives_in_required_build_and_test_job` (asserts the ci.yml wiring **including the `fetch-depth: 0` checkout and per-event base semantics**, CFADA-r4 M1/M2) |
 | AC4 | `test_scanner_error_fails_closed` · `test_scanner_timeout_fails_closed` (CFADA-r4 B2) |
 | AC5 | `test_stdlib_only_no_network` (import allowlist over `secret_scan.py`: stdlib modules only, no `socket`/`urllib`/`http` usage) |
-| AC6 | `test_allowlist_entry_does_not_cover_sibling_findings` · `test_allowlist_entry_does_not_cover_other_paths` · `test_blob_review_rejected_for_text_blobs` · `test_allowlist_fingerprint_reflags_on_edit` · `test_scanner_tree_scans_clean` |
-| AC7 | `test_edge_cases_fail_safe` (empty stage) · `test_binary_blob_blocks` · `test_oversized_blob_blocks` · `test_gitlink_blocks` · `test_unreadable_blob_non_clearable` (CFADA-r4 B1) |
+| AC6 | `test_allowlist_entry_does_not_cover_sibling_findings` · `test_duplicate_identical_matches_need_separate_entries` (CFADA-r5 B1) · `test_allowlist_entry_does_not_cover_other_paths` · `test_blob_review_rejected_for_text_blobs` · `test_allowlist_fingerprint_reflags_on_edit` · `test_scanner_tree_scans_clean` |
+| AC7 | `test_edge_cases_fail_safe` (empty stage) · `test_binary_blob_blocks` · `test_oversized_blob_blocks` · `test_gitlink_blocks` (gitlink mode `160000` entries) · `test_gitmodules_change_blocks` (CFADA-r5 M1 — `.gitmodules` file changes, independently of any gitlink) · `test_unreadable_blob_non_clearable` (CFADA-r4 B1) |
 | AC8 | `test_each_rule_positive_and_negative` (asserts the finding's `rule_id` equals the rule under test) |
 | AC9 | `test_git_error_fails_closed` · `test_shallow_clone_or_missing_base_fails_closed` · `test_push_event_zero_base_blocks` (CFADA-r4 M2) |
 | AC10 | `test_allowlist_schema_and_expiry_enforced` |
@@ -194,9 +194,11 @@ fail-open ignored path).
 ## 6. Gate — "satisfied only when"
 
 Satisfied **only when**: AC1–AC10 all pass with committed test evidence, **and** the
-scanner runs clean over the existing repo tree (every finding either removed or a
-fingerprint allowlist entry), **and** the CI job is demonstrably green on clean
-input and red on a planted secret. Any unproven criterion ⇒ not satisfied
+scanner runs clean over the existing repo tree (every finding or block either
+removed or cleared by the **applicable valid §3.1 allowlist record** — text
+`fingerprint` or binary/oversized `blob_review`; CFADA-r5 N1), **and** the
+secret-scan step inside the required `Build & Test` job is demonstrably green on
+clean input and red on a planted secret. Any unproven criterion ⇒ not satisfied
 (fail-closed rollup).
 
 ## 7. Authorization packet (for the AuthorityDecision gate — grants nothing yet)
@@ -272,3 +274,13 @@ Authorizes nothing. No implementation before the AuthorityDecision. No CI/branch
 | R4-B2 | Timeout fail-closed claim (R4/AC4) unverifiable — no named timeout test, no mechanism | **FIXED** — §3: hook + CI step invoke the scanner under a bounded timeout; any abnormal termination incl. timeout kill ⇒ block; CI `timeout-minutes` fails the required job by Actions semantics; AC4 + `test_scanner_timeout_fails_closed` |
 | R4-M1 | `fetch-depth: 0` required by §3 but not authorized by §7 — build trap between a shallow-blocked scanner and reduced-domain temptation | **FIXED** — §7 bounded scope names the checkout `fetch-depth: 0` edit + the `timeout-minutes` bound; wiring test asserts both |
 | R4-M2 | `github.base_ref` is PR-only, but the required `Build & Test` job also runs on `push` to `main` — no scan domain defined for the push path | **FIXED** — §3: per-event base semantics — `pull_request` ⇒ `origin/${{ github.base_ref }}` (preventive); `push` ⇒ `${{ github.event.before }}`, all-zeros/unresolvable ⇒ block (detective, stated honestly); §7(f) names the `enforce_admins: false` admin direct-push residual; `test_push_event_zero_base_blocks` |
+
+## Appendix — CFADA round 5 (Codex · cross-family) → repaired at v0.6.0
+
+> Reviewer family: Codex/OpenAI. Reviewed head `6a84be4` (v0.5.0). Verdict: **FAIL — 1 blocker, 1 major, 1 minor**; all four round-4 repairs **verified**. Re-review pending on v0.6.0.
+
+| # | Finding | Disposition (v0.6.0) |
+|---|---------|----------------------|
+| R5-B1 | Fingerprint key collapses **identical** sibling findings: the same matched bytes at two offsets in one blob share one `match_sha256`, so one entry cleared both — falsifying "exactly one finding" | **FIXED** — §3.1: key gains `byte_offset` (stable: the entry pins the immutable blob SHA); AC6 + `test_duplicate_identical_matches_need_separate_entries` |
+| R5-M1 | `.gitmodules` block clause had no independent named test (§5 mapped AC7 only to `test_gitlink_blocks`) | **FIXED** — §5 AC7 row adds `test_gitmodules_change_blocks`, scoped independently of any gitlink entry |
+| R5-N1 | §6 clean-tree rollup said "removed or a **fingerprint** allowlist entry", contradicting the valid `blob_review` lane for binary/oversized | **FIXED** — §6: "cleared by the applicable valid §3.1 allowlist record"; also names the required-job wiring explicitly |
