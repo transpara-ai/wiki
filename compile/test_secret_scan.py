@@ -117,11 +117,15 @@ def br_entry(path, blob_bytes, **over):
     return entry
 
 
-def write_allowlist(root, entries):
+def write_allowlist(root, entries, stage=True):
     p = pathlib.Path(root) / "compile"
     p.mkdir(exist_ok=True)
     (p / ".secretsallow").write_text(
         "".join(json.dumps(e) + "\n" for e in entries))
+    if stage:
+        # the review record must travel with the commit it clears (CFAR F2):
+        # staged-mode scans read the INDEX copy of the allowlist
+        sh(["git", "add", "compile/.secretsallow"], root)
 
 
 # ------------------------------------------------------------- AC1 / AC2
@@ -348,6 +352,33 @@ def test_blob_review_rejected_for_text_blobs():
     print("ok test_blob_review_rejected_for_text_blobs")
 
 
+def test_allowlist_snapshot_matches_scan_mode():
+    k = gen_aws_key()
+    content = "a = '%s'\n" % k
+    blob = content.encode("utf-8")
+    entry = fp_entry("aws-access-key-id", "cfg.py", blob, k, content.index(k))
+    with tempfile.TemporaryDirectory() as d:
+        # staged mode: an UNSTAGED working-tree allowlist must not clear a
+        # staged secret — the review record would not travel with the commit
+        root = _staged_secret_repo(d, content)
+        write_allowlist(root, [entry], stage=False)
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, \
+            "unstaged allowlist must not clear a staged secret"
+        sh(["git", "add", "compile/.secretsallow"], root)
+        assert run_scanner(["--staged"], root).returncode == 0
+    with tempfile.TemporaryDirectory() as d:
+        # tree mode: the allowlist snapshot comes from the scanned tree,
+        # never from the (possibly dirty) working tree
+        root = _staged_secret_repo(d, content)
+        sh(["git", "commit", "-q", "--no-verify", "-m", "secret only"], root)
+        write_allowlist(root, [entry], stage=False)
+        proc = run_scanner(["--tree", "HEAD"], root)
+        assert proc.returncode != 0, \
+            "working-tree allowlist must not clear a committed-tree finding"
+    print("ok test_allowlist_snapshot_matches_scan_mode")
+
+
 def test_allowlist_fingerprint_reflags_on_edit():
     k = gen_aws_key()
     content = "a = '%s'\n" % k
@@ -563,6 +594,10 @@ def test_allowlist_schema_and_expiry_enforced():
         # validity window > 180 days
         json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0,
                             expires_on=(today + datetime.timedelta(days=200)).isoformat())) + "\n",
+        # future-dated review (CFAR F1): would extend validity years from now
+        json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0,
+                            reviewed_on=(today + datetime.timedelta(days=10)).isoformat(),
+                            expires_on=(today + datetime.timedelta(days=40)).isoformat())) + "\n",
         # duplicate identity
         json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0)) + "\n"
         + json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0)) + "\n",
@@ -574,6 +609,7 @@ def test_allowlist_schema_and_expiry_enforced():
         for i, bad in enumerate(bad_lists):
             (root / "compile").mkdir(exist_ok=True)
             (root / "compile" / ".secretsallow").write_text(bad)
+            sh(["git", "add", "compile/.secretsallow"], root)
             proc = run_scanner(["--staged"], root)
             assert proc.returncode != 0, \
                 "invalid allowlist #%d must block even a clean stage" % i

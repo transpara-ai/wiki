@@ -105,7 +105,8 @@ with honestly distinct scopes**:
 - **Span convention** (deterministic across platforms): matching runs over `scan_text = blob_bytes.decode("utf-8", errors="replace")`; for a match at character span `[start, end)`, `match_sha256 = sha256(scan_text[start:end].encode("utf-8"))` and `byte_offset = len(scan_text[:start].encode("utf-8"))`.
 - **Composite/predicate rules report one defined span each**: `gcp-sa-json` → the span of the `"private_key"\s*:\s*"` match (one finding per blob); `generic-assignment` and `high-entropy` → the span of the **candidate token**, not the key prefix.
 - **Duplicate identity** (two records with the same full identity key) ⇒ validation error ⇒ block — duplicates are never silently tolerated.
-- **Dates**: ISO-8601 `YYYY-MM-DD`, compared in UTC; `expires_on` earlier than the current UTC date ⇒ expired ⇒ block (AC10).
+- **Dates**: ISO-8601 `YYYY-MM-DD`, compared in UTC; `expires_on` earlier than the current UTC date ⇒ expired ⇒ block; **`reviewed_on` later than the current date ⇒ block** (CFAR F1: a future review date would extend the 180-day window arbitrarily far from today) (AC10).
+- **Snapshot rule (CFAR F2)**: the allowlist is read from the **snapshot being scanned, never the working tree** — `--staged` reads the **index** copy (the review record must travel with the commit it clears), `--changed-against` reads `HEAD`'s copy, `--tree <rev>` reads `<rev>`'s copy. Absent from the snapshot = empty allowlist; a git error while reading ⇒ block. Named test `test_allowlist_snapshot_matches_scan_mode`.
 
 ### 3.2 Detector contract — minimum ruleset (test-first, concrete grammars)
 
@@ -196,7 +197,7 @@ clause without a test is an unproven gate (§6 rolls it up as not-satisfied).**
 | AC3 | `test_ci_changed_against_blocks_on_secret` · `test_secret_added_then_removed_in_history_blocked` · `test_secret_in_merge_commit_blocked` · `test_scan_step_lives_in_required_build_and_test_job` (asserts the ci.yml wiring **including the `fetch-depth: 0` checkout and per-event base semantics**, CFADA-r4 M1/M2) |
 | AC4 | `test_scanner_error_fails_closed` · `test_scanner_timeout_fails_closed` (CFADA-r4 B2) |
 | AC5 | `test_stdlib_only_no_network` (import allowlist over `secret_scan.py`: stdlib modules only, no `socket`/`urllib`/`http` usage) |
-| AC6 | `test_allowlist_entry_does_not_cover_sibling_findings` · `test_duplicate_identical_matches_need_separate_entries` (CFADA-r5 B1) · `test_allowlist_entry_does_not_cover_other_paths` · `test_blob_review_rejected_for_text_blobs` · `test_allowlist_fingerprint_reflags_on_edit` · `test_scanner_tree_scans_clean` |
+| AC6 | `test_allowlist_entry_does_not_cover_sibling_findings` · `test_duplicate_identical_matches_need_separate_entries` (CFADA-r5 B1) · `test_allowlist_entry_does_not_cover_other_paths` · `test_blob_review_rejected_for_text_blobs` · `test_allowlist_fingerprint_reflags_on_edit` · `test_allowlist_snapshot_matches_scan_mode` (CFAR F2) · `test_scanner_tree_scans_clean` |
 | AC7 | `test_edge_cases_fail_safe` (empty stage) · `test_binary_blob_blocks` · `test_oversized_blob_blocks` · `test_gitlink_blocks` (gitlink mode `160000` entries) · `test_gitmodules_change_blocks` (CFADA-r5 M1 — `.gitmodules` file changes, independently of any gitlink) · `test_unreadable_blob_non_clearable` (CFADA-r4 B1) |
 | AC8 | `test_each_rule_positive_and_negative` (asserts the finding's `rule_id` equals the rule under test) |
 | AC9 | `test_git_error_fails_closed` · `test_shallow_clone_or_missing_base_fails_closed` · `test_push_event_zero_base_blocks` (CFADA-r4 M2) |

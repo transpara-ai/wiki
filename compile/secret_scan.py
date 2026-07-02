@@ -292,6 +292,11 @@ def _validate_dates(entry, lineno):
     except (ValueError, TypeError):
         raise ScanError("allowlist line %d: bad ISO date" % lineno)
     today = datetime.date.today()
+    if reviewed > today:
+        # a future review date would let expires_on extend the 180-day
+        # validity window arbitrarily far from today (CFAR F1)
+        raise ScanError("allowlist line %d: reviewed_on is in the future"
+                        % lineno)
     if expires < today:
         raise ScanError("allowlist line %d: entry expired %s"
                         % (lineno, entry["expires_on"]))
@@ -308,11 +313,30 @@ def _require_str(entry, keys, lineno):
                             % (lineno, key))
 
 
-def load_allowlist(path):
-    if not path.exists():
+ALLOWLIST_PATH = "compile/.secretsallow"
+
+
+def load_allowlist_snapshot(root, mode_args):
+    """Read the allowlist from the snapshot being scanned, never the working
+    tree (CFAR F2): staged mode reads the INDEX copy (the review record must
+    travel with the commit it clears); changed-against reads HEAD's copy;
+    tree mode reads the target tree's copy. Absent from the snapshot = empty
+    allowlist; any git error while reading fails closed via git()."""
+    if mode_args.staged:
+        listing = git(root, "ls-files", "--cached", "--", ALLOWLIST_PATH)
+        if not listing.strip():
+            return Allowlist([], [])
+        return parse_allowlist(git(root, "show", ":0:" + ALLOWLIST_PATH))
+    rev = "HEAD" if mode_args.changed_against is not None else mode_args.tree
+    listing = git(root, "ls-tree", rev, "--", ALLOWLIST_PATH)
+    if not listing.strip():
         return Allowlist([], [])
+    return parse_allowlist(git(root, "show", "%s:%s" % (rev, ALLOWLIST_PATH)))
+
+
+def parse_allowlist(text):
     fingerprints, blob_reviews = [], []
-    for lineno, line in enumerate(path.read_text("utf-8").splitlines(), 1):
+    for lineno, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
         try:
@@ -427,7 +451,7 @@ def report(outcomes, out=sys.stdout):
 
 def run(mode_args):
     root = repo_root(pathlib.Path.cwd())
-    allowlist = load_allowlist(root / "compile" / ".secretsallow")
+    allowlist = load_allowlist_snapshot(root, mode_args)
     if mode_args.staged:
         blocks, occs = enumerate_staged(root)
     elif mode_args.changed_against is not None:
