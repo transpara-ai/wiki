@@ -45,7 +45,8 @@ GCP_KEY_RE = re.compile(r'"private_key"\s*:\s*"')
 JWT_RE = re.compile(
     r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b")
 ASSIGN_PREFIX_RE = re.compile(
-    r"(?i)\b(?:api[_-]?key|secret|token|passwd|password)\b\s*[:=]\s*[\"']?")
+    r"(?i)\b(?:[A-Za-z0-9]+[_-])*(?:api[_-]?key|secret|token|passwd|password)"
+    r"\b[\"']?\s*[:=]\s*[\"']?")  # covers SERVICE_TOKEN= and {"api_key": (CFAR F7)
 CANDIDATE_RE = re.compile(r"[A-Za-z0-9+/=_-]{16,}")
 ENTROPY_TOKEN_RE = re.compile(r"[A-Za-z0-9+/=_-]{32,}")
 ASSIGN_MIN_ENTROPY = 3.5

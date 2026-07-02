@@ -136,7 +136,9 @@ openai-sk-key       \bsk-(proj-|svcacct-|admin-)?[A-Za-z0-9_-]{20,}\b
 gcp-sa-json         "type"\s*:\s*"service_account"
                     AND (same blob)  "private_key"\s*:\s*"
 jwt                 \beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b
-generic-assignment  (?i)\b(api[_-]?key|secret|token|passwd|password)\b\s*[:=]\s*["']?
+generic-assignment  (?i)\b([A-Za-z0-9]+[_-])*(api[_-]?key|secret|token|passwd|password)\b["']?\s*[:=]\s*["']?
+                    (compound env-style keys like SERVICE_TOKEN= and quoted
+                    JSON keys like {"api_key": are covered — CFAR F7)
                     THEN candidate predicate on the following token:
                     len >= 16, charset [A-Za-z0-9+/=_-], Shannon entropy >= 3.5 bits/char,
                     not a placeholder (empty, <...>, $VAR, {{...}}, changeme, example, xxx...)

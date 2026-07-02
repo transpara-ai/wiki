@@ -542,8 +542,13 @@ def test_each_rule_positive_and_negative():
                                 gen_token(B64URL, 12)),
          "base64 text without dots eyJhbGciOiJIUzI1NiJ9only\n"),
         ("generic-assignment",
-         'api_key = "%s"\n' % gen_token(B64, 24, min_entropy=3.5),
-         'password = ""\ntoken = "$TOKEN"\nsecret: changeme\n'),
+         # three realistic shapes: plain assignment, quoted JSON key, and a
+         # compound env-style key (CFAR F7)
+         'api_key = "%s"\n{"api_key":"%s"}\nSERVICE_TOKEN=%s\n'
+         % (gen_token(B64, 24, min_entropy=3.5),
+            gen_token(B64, 24, min_entropy=3.5),
+            gen_token(B64, 24, min_entropy=3.5)),
+         'password = ""\ntoken = "$TOKEN"\nsecret: changeme\n{"token":""}\n'),
         ("high-entropy",
          "blob %s\n" % gen_token(B64, 40, min_entropy=4.5),
          "sha 0123456789abcdef0123456789abcdef01234567 and "
@@ -553,9 +558,12 @@ def test_each_rule_positive_and_negative():
     assert rule_ids == set(secret_scan.RULE_IDS), \
         "test table must cover exactly the design ruleset"
     for rule_id, positive, negative in cases:
-        hits = {f.rule_id for f in secret_scan.scan_text(positive)}
+        hits = [f.rule_id for f in secret_scan.scan_text(positive)]
         assert rule_id in hits, \
             "%s positive fixture did not fire (got %s)" % (rule_id, hits)
+        if rule_id == "generic-assignment":
+            assert hits.count(rule_id) == 3, \
+                "all three assignment shapes must fire (got %s)" % hits
         misses = {f.rule_id for f in secret_scan.scan_text(negative)}
         assert rule_id not in misses, \
             "%s negative fixture fired falsely" % rule_id
