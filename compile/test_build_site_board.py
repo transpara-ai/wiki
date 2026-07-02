@@ -121,12 +121,22 @@ def test_home_board_fails_closed_on_bad_frontmatter():
             '  - "Governed autonomy|auditable membrane||hive-governance|amber"\n'
             '  - "One civilization|discipline turned inward|1|the-civilization|coral"'))),
     ]
-    for name, fm in cases:
-        try:
-            site.build_board(fm)
-        except site.BoardError:
-            continue
-        raise AssertionError("board must fail closed on: %s" % name)
+    # CFAR 2a-r5: a board target whose FILE exists but whose stem is not
+    # slug-shaped must be rejected BEFORE raw href interpolation — the
+    # existence-only check was an attribute-injection lane
+    weird = ROOT / "wiki" / 'inj"ect.md'
+    weird.write_text("---\ntier: concept\n---\n# x\n")
+    cases.append(("non-slug target (attribute injection)", good_fm(
+        board_narrative_link='board_narrative_link: inj"ect')))
+    try:
+        for name, fm in cases:
+            try:
+                site.build_board(fm)
+            except site.BoardError:
+                continue
+            raise AssertionError("board must fail closed on: %s" % name)
+    finally:
+        weird.unlink()
     print("ok test_home_board_fails_closed_on_bad_frontmatter")
 
 
@@ -223,6 +233,12 @@ def test_home_board_accessibility():
     sr = re.search(r'class="board-sr">([^<]+)<', edited).group(1)
     assert "Zeta Wall" in sr, \
         "the hidden summary must announce the frontmatter pillar names"
+    # CFAR 2a-r5: stripped authoring comments must not leak into the
+    # public search index
+    commented = good_fm(
+        board_hero='board_hero: "Public claim" # INTERNALNOTE7 do not ship')
+    assert "INTERNALNOTE7" not in site.board_search_text(commented), \
+        "search indexing must strip scalar comments like the renderer does"
     for m in re.finditer(r'<a class="board-tile[^>]*>(.*?)</a>', html_out,
                          re.S):
         text = re.sub(r"<[^>]+>", "", m.group(1)).strip()

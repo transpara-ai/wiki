@@ -1705,7 +1705,16 @@ def _board_fields(item, n, what, optional=()):
     return fields
 
 
+BOARD_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+
 def _board_slug(slug, what):
+    # slug grammar FIRST (allowlist): an existing file with a non-slug stem
+    # would reach raw href interpolation — an attribute/scheme injection
+    # lane (CFAR 2a-r5)
+    if not BOARD_SLUG_RE.match(slug):
+        raise BoardError("%s target is not a valid wiki slug ([a-z0-9-]): "
+                         "%r" % (what, slug))
     if not (WIKI / ("%s.md" % slug)).exists():
         raise BoardError("%s links to a slug that does not exist in wiki/: "
                          "%r" % (what, slug))
@@ -1719,7 +1728,8 @@ def board_search_text(fm):
     parts = []
     for key in ("board_eyebrow", "board_hero", "board_subtitle",
                 "board_method", "board_guardrail"):
-        parts.append(fm_val(fm, key).replace("|", " "))
+        raw, _ = split_inline_comment(fm_val(fm, key))
+        parts.append(raw.strip().strip('"').strip("'").replace("|", " "))
     for key in ("board_pillars", "board_inheritance"):
         parts.extend(item.replace("|", " ") for item in fm_list(fm, key))
     return re.sub(r"\s+", " ", " ".join(p for p in parts if p)).strip()
