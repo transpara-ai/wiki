@@ -633,6 +633,49 @@ def test_each_rule_positive_and_negative():
 
 # ------------------------------------------------------------------- AC9
 
+def test_overlapping_longer_token_fully_found_and_redacted():
+    # CFAR F19: a high-entropy token that merely OVERLAPS a shorter rule
+    # match (e.g. an AKIA prefix with a random suffix) must still produce
+    # its own finding — suppression is only for full containment — and
+    # redaction must cover the UNION of spans, never print the suffix
+    # (a 20-char token caps at log2(20)~4.32 bits/char; the 4.5 floor
+    # applies to the 40-char combined token, checked below)
+    def _mk():
+        # the dash separator lets the AWS \b match while the WHOLE token
+        # (dash included) is one contiguous entropy-charset run — codex's
+        # exact overlap shape
+        return gen_aws_key() + "-" + gen_token(
+            B64.replace("+", "a").replace("/", "b"), 19)
+    long_tok = _mk()
+    while secret_scan.shannon_entropy(long_tok) < 4.5:
+        long_tok = _mk()
+    text = "ref %s end" % long_tok
+    findings = secret_scan.scan_text(text)
+    rules = sorted(f.rule_id for f in findings)
+    assert "aws-access-key-id" in rules and "high-entropy" in rules, rules
+    spans = [(f.start, f.end) for f in findings]
+    assert (text.index(long_tok), text.index(long_tok) + len(long_tok)) in spans, \
+        "the full overlapping token needs its own finding"
+    redacted = secret_scan.redact_spans(text, findings)
+    assert long_tok[-10:] not in redacted, \
+        "redaction must cover the union of overlapping spans"
+    print("ok test_overlapping_longer_token_fully_found_and_redacted")
+
+
+def test_multiple_gcp_keys_all_reported():
+    # CFAR F20: every private_key field in a service-account blob is its
+    # own finding — one ratified fingerprint must not shadow the others
+    sa_type = '"type": "service_' + 'account"'
+    sa_pk = '"private_' + 'key": "'
+    text = '{%s, %sAAA", "second_%sBBB"}\n' % (sa_type, sa_pk, sa_pk)
+    findings = [f for f in secret_scan.scan_text(text)
+                if f.rule_id == "gcp-sa-json"]
+    assert len(findings) == 2, \
+        "each private_key field needs its own finding (got %d)" % len(findings)
+    assert findings[0].byte_offset != findings[1].byte_offset
+    print("ok test_multiple_gcp_keys_all_reported")
+
+
 def test_git_error_fails_closed():
     with tempfile.TemporaryDirectory() as d:
         proc = run_scanner(["--changed-against", "main"], d)  # not a repo
