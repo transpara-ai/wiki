@@ -122,8 +122,8 @@
       } else if (it.blocked_reason != null) {
         errors.push(where + ": blocked_reason must be null unless blocked");
       }
-      if (it.blocked_criterion != null && (it.blocked !== true || it.blocked_reason == null)) {
-        errors.push(where + ": blocked_criterion only alongside a non-null blocked_reason on a blocked item");
+      if (it.blocked_criterion != null && (it.type !== "gate" || it.blocked !== true || it.blocked_reason == null)) {
+        errors.push(where + ": blocked_criterion only on a blocked GATE with a non-null blocked_reason");
       }
       // gates carry criteria; stored status/blocked must equal the rollup.
       if (it.type === "gate") {
@@ -156,8 +156,8 @@
             if ((it.blocked === true) !== want.blocked) {
               errors.push(where + ": stored blocked=" + it.blocked + " contradicts the criteria rollup blocked=" + want.blocked);
             }
-            if (it.blocked_criterion != null && !it.criteria.some(function (c) { return c.id === it.blocked_criterion; })) {
-              errors.push(where + ": blocked_criterion '" + it.blocked_criterion + "' names no criterion");
+            if (it.blocked_criterion != null && !it.criteria.some(function (c) { return c.id === it.blocked_criterion && c.blocked === true; })) {
+              errors.push(where + ": blocked_criterion '" + it.blocked_criterion + "' must name a criterion that is actually blocked");
             }
           }
         }

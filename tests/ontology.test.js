@@ -538,3 +538,23 @@ test('inflight-shaped live items validate (draft blockers carry an enum reason)'
   const r = O.validateItems([live]);
   assert.strictEqual(r.ok, true, (r.errors || []).join('; '));
 });
+
+test('blocked_criterion is gate-only and must name a BLOCKED criterion', () => {
+  // non-gate carrying the gate-only pointer (CFAR 2b-r2)
+  const work = { id: 'w', type: 'work', status: 'active', blocked: true,
+    blocked_reason: 'gate', blocked_criterion: 'x', provenance: 'derived',
+    seq: 1, sprint: 's', repo: ['r'] };
+  assert.strictEqual(O.validateItems([work]).ok, false,
+    'blocked_criterion on a non-gate must be rejected');
+  // pointer at an unblocked criterion of a multi-criterion gate
+  const g = gate({
+    criteria: [
+      { id: 'c0', label: 'c0', status: 'done', blocked: false, blocked_reason: null },
+      { id: 'c1', label: 'c1', status: 'planned', blocked: true, blocked_reason: 'gate' },
+    ],
+    status: 'planned', blocked: true, blocked_reason: 'gate',
+    blocked_criterion: 'c0', date: undefined, provenance: 'derived',
+  });
+  assert.strictEqual(O.validateItems([g]).ok, false,
+    'blocked_criterion must name a criterion that is actually blocked');
+});
