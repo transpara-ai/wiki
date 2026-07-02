@@ -215,7 +215,7 @@ def _decode_path(raw):
     try:
         return raw.decode("utf-8", "strict")
     except UnicodeDecodeError:
-        raise ScanError("path is not valid UTF-8 — fail closed: %r" % raw)
+        raise ScanError("path is not valid UTF-8 — fail closed (sha256=%s…)" % hashlib.sha256(raw).hexdigest()[:16])
 
 
 def parse_raw_records(payload):
@@ -248,19 +248,19 @@ def occurrences_from_records(records):
     for new_mode, new_oid, status, path in records:
         name = path.rsplit("/", 1)[-1]
         if name == ".gitmodules":
-            blocks.append(Outcome(path, "block", False,
+            blocks.append(Outcome(display_path(path), "block", False,
                                   ".gitmodules change — submodules are not "
                                   "permitted in the scan domain"))
             continue
         if new_mode == GITLINK_MODE:
-            blocks.append(Outcome(path, "block", False,
+            blocks.append(Outcome(display_path(path), "block", False,
                                   "gitlink (mode 160000) — submodule content "
                                   "is not scannable"))
             continue
         if status == "D":
             continue  # a deletion introduces no content (domain, not outcome)
         if ZERO_SHA_RE.match(new_oid):
-            blocks.append(Outcome(path, "block", False,
+            blocks.append(Outcome(display_path(path), "block", False,
                                   "unresolvable staged object — fail closed"))
             continue
         occs.append((path, new_oid))
@@ -304,12 +304,12 @@ def enumerate_tree(root, rev):
         mode, _objtype, oid = meta.decode("utf-8", "strict").split(" ")
         path = _decode_path(raw_path)
         if path.rsplit("/", 1)[-1] == ".gitmodules":
-            blocks.append(Outcome(path, "block", False,
+            blocks.append(Outcome(display_path(path), "block", False,
                                   ".gitmodules present — submodules are not "
                                   "permitted in the scan domain"))
             continue
         if mode == GITLINK_MODE:
-            blocks.append(Outcome(path, "block", False,
+            blocks.append(Outcome(display_path(path), "block", False,
                                   "gitlink (mode 160000) — not scannable"))
             continue
         occs.append((path, oid))
@@ -578,6 +578,13 @@ def redact_spans(text, findings):
         last = f.end
     out.append(text[last:])
     return "".join(out)
+
+
+def display_path(path):
+    """Every path we PRINT goes through pathname redaction — non-blob
+    blockers (gitlink, .gitmodules, zero-sha) construct Outcomes before
+    scan_occurrence's pathname pass runs (CFAR F16, same class as F15)."""
+    return redact_spans(path, scan_text(path))
 
 
 # ------------------------------------------------------------------ report

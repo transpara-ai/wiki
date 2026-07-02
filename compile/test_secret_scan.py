@@ -507,14 +507,37 @@ def test_oversized_blob_blocks():
 
 
 def test_gitlink_blocks():
+    k = gen_aws_key()
     with tempfile.TemporaryDirectory() as d:
         root = make_repo(d)
         head = sh(["git", "rev-parse", "HEAD"], root).stdout.strip()
+        # the gitlink path itself carries a credential: the block report
+        # must not echo it (CFAR F16 — same class as F15)
         sh(["git", "update-index", "--add", "--cacheinfo",
-            "160000,%s,vendor/sub" % head], root)
+            "160000,%s,vendor/%s/sub" % (head, k)], root)
         proc = run_scanner(["--staged"], root)
         assert proc.returncode != 0, "gitlink (mode 160000) must block"
+        out = proc.stdout + proc.stderr
+        assert k not in out, "gitlink path secret must never be printed"
+        assert "<redacted:" in out
     print("ok test_gitlink_blocks")
+
+
+def test_undecodable_path_blocks_without_echo():
+    # CFAR F17: a non-UTF-8 filename fails closed, and the raw bytes —
+    # possibly credential-shaped — are identified by hash, never echoed
+    k = gen_aws_key()
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        raw_name = k.encode("ascii") + b"_\xff.txt"
+        with open(os.path.join(d.encode("utf-8"), raw_name), "wb") as fh:
+            fh.write(b"clean\n")
+        sh(["git", "add", "-A"], root)
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, "undecodable path must fail closed"
+        out = proc.stdout + proc.stderr
+        assert k not in out, "raw path bytes must never be echoed"
+    print("ok test_undecodable_path_blocks_without_echo")
 
 
 def test_gitmodules_change_blocks():
