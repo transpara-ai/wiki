@@ -1,0 +1,15 @@
+#!/bin/sh
+# Fail-closed secret scan of the staged index.
+# Design: docs/superpowers/specs/2026-07-01-secret-scan-hook-design.md
+# Any non-zero outcome — findings, scanner missing, error, timeout kill —
+# blocks the commit. CI (the required Build & Test job) is the gate of record.
+set -u
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+SCANNER="$SCRIPT_DIR/../compile/secret_scan.py"
+if timeout "${SECRET_SCAN_TIMEOUT_SECONDS:-120}" \
+    python3 "$SCANNER" --staged --max-seconds "${SECRET_SCAN_TIMEOUT_SECONDS:-120}"; then
+  exit 0
+fi
+echo "pre-commit: secret scan did not pass (findings, error, or timeout) — commit blocked" >&2
+echo "pre-commit: see compile/secret_scan.py --help and compile/.secretsallow" >&2
+exit 1

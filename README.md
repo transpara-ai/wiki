@@ -19,6 +19,15 @@ A [Karpathy-style LLM wiki](https://gist.github.com/karpathy/442a6bf555914893e98
 - **Fail-legible** — articles state source conflicts and mark asserted-vs-proven claims; gaps are `TBD`, never invented.
 - **Compounding** — pre-compiled, cross-linked entity pages re-derived from sources (not RAG-per-query).
 
+## Setup
+
+One-time, per clone — enables the fail-closed pre-commit secret scan
+(`compile/secret_scan.py`; CI enforces the same scan on every PR regardless):
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ## Status
 
 Run 10 service hardening: **101 articles**, served source pages, a browser

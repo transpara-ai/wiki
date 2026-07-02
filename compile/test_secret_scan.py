@@ -1,0 +1,582 @@
+#!/usr/bin/env python3
+"""Stdlib-assert tests for compile/secret_scan.py — the fail-closed secret scanner.
+
+Design packet: docs/superpowers/specs/2026-07-01-secret-scan-hook-design.md
+(AC1-AC10; one named test per AC clause, per the section-5 map).
+Test secrets are synthetic and generated at runtime — never committed (AC8 note).
+"""
+import ast
+import datetime
+import hashlib
+import json
+import os
+import pathlib
+import random
+import re
+import string
+import subprocess
+import sys
+import tempfile
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import secret_scan  # noqa: E402
+
+WIKI_ROOT = pathlib.Path(__file__).resolve().parents[1]
+SCANNER = pathlib.Path(__file__).resolve().parent / "secret_scan.py"
+PYTHON = sys.executable
+ZERO_SHA = "0" * 40
+
+_rng = random.Random(20260702)
+
+
+# ---------------------------------------------------------------- helpers
+
+def sh(args, cwd, env=None, check=True):
+    e = dict(os.environ)
+    if env:
+        e.update(env)
+    proc = subprocess.run(args, cwd=str(cwd), env=e,
+                          capture_output=True, text=True)
+    if check and proc.returncode != 0:
+        raise AssertionError("command failed: %r\n%s\n%s"
+                             % (args, proc.stdout, proc.stderr))
+    return proc
+
+
+def make_repo(root):
+    root = pathlib.Path(root)
+    sh(["git", "init", "-q", "-b", "main"], root)
+    sh(["git", "config", "user.email", "test@test"], root)
+    sh(["git", "config", "user.name", "test"], root)
+    (root / "seed.txt").write_text("hello\n")
+    sh(["git", "add", "seed.txt"], root)
+    sh(["git", "commit", "-q", "-m", "seed"], root)
+    return root
+
+
+def run_scanner(args, cwd, env=None):
+    e = dict(os.environ)
+    if env:
+        e.update(env)
+    return subprocess.run([PYTHON, str(SCANNER)] + args, cwd=str(cwd),
+                          env=e, capture_output=True, text=True)
+
+
+# Fixture alphabets and armor strings are COMPOSED at runtime so that no
+# committed source literal matches a detector (design §5: fixtures are never
+# committed; the scanner must scan its own tree clean without self-entries).
+UPPER = string.ascii_uppercase
+ALNUM = string.ascii_uppercase + string.ascii_lowercase + string.digits
+B64 = ALNUM + "+/"
+B64URL = ALNUM + "-_"
+PEM_HEAD = "-----BEGIN RSA " + "PRIVATE KEY-----"
+PEM_TAIL = "-----END RSA " + "PRIVATE KEY-----"
+
+
+def gen_aws_key():
+    return "AKIA" + "".join(_rng.choices(UPPER + string.digits, k=16))
+
+
+def gen_token(charset, length, min_entropy=0.0):
+    while True:
+        tok = "".join(_rng.choices(charset, k=length))
+        if secret_scan.shannon_entropy(tok) >= min_entropy:
+            return tok
+
+
+def fp_entry(rule_id, path, blob_bytes, match_text, byte_offset, **over):
+    entry = {
+        "type": "fingerprint",
+        "rule_id": rule_id,
+        "canonical_path": path,
+        "blob_sha256": hashlib.sha256(blob_bytes).hexdigest(),
+        "match_sha256": hashlib.sha256(match_text.encode("utf-8")).hexdigest(),
+        "byte_offset": byte_offset,
+        "reason": "test fixture",
+        "owner": "test",
+        "reviewed_by": "test",
+        "reviewed_on": datetime.date.today().isoformat(),
+        "expires_on": (datetime.date.today() + datetime.timedelta(days=30)).isoformat(),
+    }
+    entry.update(over)
+    return entry
+
+
+def br_entry(path, blob_bytes, **over):
+    entry = {
+        "type": "blob_review",
+        "canonical_path": path,
+        "blob_sha256": hashlib.sha256(blob_bytes).hexdigest(),
+        "reason": "test fixture",
+        "owner": "test",
+        "reviewed_by": "test",
+        "reviewed_on": datetime.date.today().isoformat(),
+        "expires_on": (datetime.date.today() + datetime.timedelta(days=30)).isoformat(),
+    }
+    entry.update(over)
+    return entry
+
+
+def write_allowlist(root, entries):
+    p = pathlib.Path(root) / "compile"
+    p.mkdir(exist_ok=True)
+    (p / ".secretsallow").write_text(
+        "".join(json.dumps(e) + "\n" for e in entries))
+
+
+# ------------------------------------------------------------- AC1 / AC2
+
+def test_planted_secret_blocked():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        sh(["git", "config", "core.hooksPath", str(WIKI_ROOT / ".githooks")], root)
+        (root / "config.py").write_text("aws_id = '%s'\n" % gen_aws_key())
+        sh(["git", "add", "config.py"], root)
+        proc = sh(["git", "commit", "-m", "x"], root, check=False)
+        assert proc.returncode != 0, "commit with planted secret must be blocked"
+    print("ok test_planted_secret_blocked")
+
+
+def test_clean_passes():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        sh(["git", "config", "core.hooksPath", str(WIKI_ROOT / ".githooks")], root)
+        (root / "notes.md").write_text("nothing secret here\n")
+        sh(["git", "add", "notes.md"], root)
+        proc = sh(["git", "commit", "-m", "x"], root, check=False)
+        assert proc.returncode == 0, \
+            "clean commit must pass: %s%s" % (proc.stdout, proc.stderr)
+    print("ok test_clean_passes")
+
+
+# ------------------------------------------------------------------- AC3
+
+def test_ci_changed_against_blocks_on_secret():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        sh(["git", "checkout", "-q", "-b", "feat"], root)
+        (root / "leak.txt").write_text("key: %s\n" % gen_aws_key())
+        sh(["git", "add", "leak.txt"], root)
+        sh(["git", "commit", "-q", "-m", "leak"], root)
+        proc = run_scanner(["--changed-against", "main"], root)
+        assert proc.returncode != 0, "PR diff with secret must block"
+    print("ok test_ci_changed_against_blocks_on_secret")
+
+
+def test_secret_added_then_removed_in_history_blocked():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        sh(["git", "checkout", "-q", "-b", "feat"], root)
+        (root / "leak.txt").write_text("key: %s\n" % gen_aws_key())
+        sh(["git", "add", "leak.txt"], root)
+        sh(["git", "commit", "-q", "-m", "add secret"], root)
+        (root / "leak.txt").write_text("clean now\n")
+        sh(["git", "add", "leak.txt"], root)
+        sh(["git", "commit", "-q", "-m", "remove secret"], root)
+        proc = run_scanner(["--changed-against", "main"], root)
+        assert proc.returncode != 0, \
+            "secret in PR history (removed before final diff) must still block"
+    print("ok test_secret_added_then_removed_in_history_blocked")
+
+
+def test_secret_in_merge_commit_blocked():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        # two branches editing the same file -> conflicting merge
+        sh(["git", "checkout", "-q", "-b", "left"], root)
+        (root / "seed.txt").write_text("left\n")
+        sh(["git", "commit", "-q", "-am", "left"], root)
+        sh(["git", "checkout", "-q", "main"], root)
+        sh(["git", "checkout", "-q", "-b", "feat"], root)
+        (root / "seed.txt").write_text("right\n")
+        sh(["git", "commit", "-q", "-am", "right"], root)
+        proc = sh(["git", "merge", "left"], root, check=False)
+        assert proc.returncode != 0, "expected a conflict"
+        # resolve the conflict by introducing a secret in the merge commit
+        (root / "seed.txt").write_text("resolved: %s\n" % gen_aws_key())
+        sh(["git", "add", "seed.txt"], root)
+        sh(["git", "commit", "-q", "-m", "merge with secret resolution"], root)
+        # then remove it again so the final diff is clean
+        (root / "seed.txt").write_text("resolved cleanly\n")
+        sh(["git", "commit", "-q", "-am", "clean up"], root)
+        proc = run_scanner(["--changed-against", "main"], root)
+        assert proc.returncode != 0, \
+            "secret introduced by a merge-commit resolution must block"
+    print("ok test_secret_in_merge_commit_blocked")
+
+
+def test_scan_step_lives_in_required_build_and_test_job():
+    ci = (WIKI_ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    build_test = ci[ci.index("name: Build & Test"):]
+    assert "fetch-depth: 0" in build_test, \
+        "required job must check out full history for the history scan"
+    assert re.search(r"secret_scan\.py\s+--changed-against", build_test), \
+        "secret-scan step must live inside the required Build & Test job"
+    scan_at = build_test.index("secret_scan.py")
+    step_start = build_test.rfind("- name:", 0, scan_at)
+    step_text = build_test[step_start:scan_at + 200]
+    assert "timeout-minutes" in step_text, "scan step needs a timeout bound"
+    assert "github.base_ref" in build_test, "pull_request base semantics missing"
+    assert "github.event.before" in build_test, "push base semantics missing"
+    pkg = json.loads((WIKI_ROOT / "package.json").read_text())
+    assert "compile/test_secret_scan.py" in pkg["scripts"]["test:py"], \
+        "tests must be enumerated in the verify script or they never run"
+    print("ok test_scan_step_lives_in_required_build_and_test_job")
+
+
+# ------------------------------------------------------------------- AC4
+
+def test_scanner_error_fails_closed():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        (root / "f.txt").write_text("clean\n")
+        sh(["git", "add", "f.txt"], root)
+        # git made unavailable -> the scanner must block, not pass
+        proc = run_scanner(["--staged"], root, env={"PATH": ""})
+        assert proc.returncode != 0, "scanner error must fail closed"
+    print("ok test_scanner_error_fails_closed")
+
+
+def test_scanner_timeout_fails_closed():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        (root / "f.txt").write_text("clean\n")
+        sh(["git", "add", "f.txt"], root)
+        proc = run_scanner(["--staged", "--max-seconds", "0.000001"], root)
+        assert proc.returncode != 0, "timeout must fail closed"
+        out = (proc.stdout + proc.stderr).lower()
+        assert "timeout" in out or "timed out" in out
+    print("ok test_scanner_timeout_fails_closed")
+
+
+# ------------------------------------------------------------------- AC5
+
+def test_stdlib_only_no_network():
+    allowed = {
+        "argparse", "dataclasses", "datetime", "hashlib", "json", "math",
+        "os", "pathlib", "re", "signal", "subprocess", "sys",
+    }
+    tree = ast.parse(SCANNER.read_text())
+    imported = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.update(a.name.split(".")[0] for a in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            imported.add((node.module or "").split(".")[0])
+    assert imported <= allowed, "unexpected imports: %s" % (imported - allowed)
+    forbidden = {"socket", "urllib", "http", "requests", "ssl", "asyncio"}
+    assert not (imported & forbidden)
+    print("ok test_stdlib_only_no_network")
+
+
+# ------------------------------------------------------------------- AC6
+
+def _staged_secret_repo(d, content, path="cfg.py"):
+    root = make_repo(d)
+    (root / path).write_text(content)
+    sh(["git", "add", path], root)
+    return root
+
+
+def test_allowlist_entry_does_not_cover_sibling_findings():
+    k1, k2 = gen_aws_key(), gen_aws_key()
+    content = "a = '%s'\nb = '%s'\n" % (k1, k2)
+    blob = content.encode("utf-8")
+    with tempfile.TemporaryDirectory() as d:
+        root = _staged_secret_repo(d, content)
+        write_allowlist(root, [fp_entry("aws-access-key-id", "cfg.py", blob,
+                                        k1, content.index(k1))])
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, "sibling finding (k2) must stay blocking"
+        write_allowlist(root, [
+            fp_entry("aws-access-key-id", "cfg.py", blob, k1, content.index(k1)),
+            fp_entry("aws-access-key-id", "cfg.py", blob, k2, content.index(k2)),
+        ])
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode == 0, \
+            "both findings cleared -> pass: %s%s" % (proc.stdout, proc.stderr)
+    print("ok test_allowlist_entry_does_not_cover_sibling_findings")
+
+
+def test_duplicate_identical_matches_need_separate_entries():
+    k = gen_aws_key()
+    content = "a = '%s'\nb = '%s'\n" % (k, k)
+    blob = content.encode("utf-8")
+    off1 = content.index(k)
+    off2 = content.index(k, off1 + 1)
+    with tempfile.TemporaryDirectory() as d:
+        root = _staged_secret_repo(d, content)
+        write_allowlist(root, [fp_entry("aws-access-key-id", "cfg.py", blob, k, off1)])
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, \
+            "identical match at a second offset must stay blocking"
+        write_allowlist(root, [
+            fp_entry("aws-access-key-id", "cfg.py", blob, k, off1),
+            fp_entry("aws-access-key-id", "cfg.py", blob, k, off2),
+        ])
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+    print("ok test_duplicate_identical_matches_need_separate_entries")
+
+
+def test_allowlist_entry_does_not_cover_other_paths():
+    k = gen_aws_key()
+    content = "a = '%s'\n" % k
+    blob = content.encode("utf-8")
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        for p in ("one.py", "two.py"):
+            (root / p).write_text(content)
+        sh(["git", "add", "one.py", "two.py"], root)
+        write_allowlist(root, [fp_entry("aws-access-key-id", "one.py", blob,
+                                        k, content.index(k))])
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, \
+            "identical blob at an unreviewed path must stay blocking"
+    print("ok test_allowlist_entry_does_not_cover_other_paths")
+
+
+def test_blob_review_rejected_for_text_blobs():
+    k = gen_aws_key()
+    content = "a = '%s'\n" % k
+    with tempfile.TemporaryDirectory() as d:
+        root = _staged_secret_repo(d, content)
+        write_allowlist(root, [br_entry("cfg.py", content.encode("utf-8"))])
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, \
+            "blob_review must never clear a text-scanned blob"
+    print("ok test_blob_review_rejected_for_text_blobs")
+
+
+def test_allowlist_fingerprint_reflags_on_edit():
+    k = gen_aws_key()
+    content = "a = '%s'\n" % k
+    blob = content.encode("utf-8")
+    with tempfile.TemporaryDirectory() as d:
+        root = _staged_secret_repo(d, content)
+        write_allowlist(root, [fp_entry("aws-access-key-id", "cfg.py", blob,
+                                        k, content.index(k))])
+        assert run_scanner(["--staged"], root).returncode == 0
+        edited = "# comment\n" + content
+        (root / "cfg.py").write_text(edited)
+        sh(["git", "add", "cfg.py"], root)
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, "edited blob must re-flag"
+    print("ok test_allowlist_fingerprint_reflags_on_edit")
+
+
+def test_scanner_tree_scans_clean():
+    proc = run_scanner(["--tree", "HEAD"], WIKI_ROOT)
+    assert proc.returncode == 0, \
+        "the wiki tree (scanner + config included) must scan clean:\n%s%s" \
+        % (proc.stdout, proc.stderr)
+    print("ok test_scanner_tree_scans_clean")
+
+
+# ------------------------------------------------------------------- AC7
+
+def test_edge_cases_fail_safe():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)  # nothing staged
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode == 0, "provably-empty stage passes"
+    print("ok test_edge_cases_fail_safe")
+
+
+def test_binary_blob_blocks():
+    payload = b"\x00\x01binary" + gen_aws_key().encode() + b"\x00"
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        (root / "blob.bin").write_bytes(payload)
+        sh(["git", "add", "blob.bin"], root)
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, "binary blob must block by default"
+        write_allowlist(root, [br_entry("blob.bin", payload)])
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode == 0, \
+            "blob_review clears binary: %s%s" % (proc.stdout, proc.stderr)
+    print("ok test_binary_blob_blocks")
+
+
+def test_oversized_blob_blocks():
+    payload = (b"x" * 1024 + b"\n") * 1025  # > 1 MiB, pure text
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        (root / "big.txt").write_bytes(payload)
+        sh(["git", "add", "big.txt"], root)
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, "oversized blob must block by default"
+        write_allowlist(root, [br_entry("big.txt", payload)])
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+    print("ok test_oversized_blob_blocks")
+
+
+def test_gitlink_blocks():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        head = sh(["git", "rev-parse", "HEAD"], root).stdout.strip()
+        sh(["git", "update-index", "--add", "--cacheinfo",
+            "160000,%s,vendor/sub" % head], root)
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, "gitlink (mode 160000) must block"
+    print("ok test_gitlink_blocks")
+
+
+def test_gitmodules_change_blocks():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        (root / ".gitmodules").write_text(
+            '[submodule "s"]\n\tpath = s\n\turl = ../s\n')
+        sh(["git", "add", ".gitmodules"], root)
+        proc = run_scanner(["--staged"], root)
+        assert proc.returncode != 0, \
+            ".gitmodules change must block independently of any gitlink"
+    print("ok test_gitmodules_change_blocks")
+
+
+def test_unreadable_blob_non_clearable():
+    fake_sha = "deadbeef" * 5
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        # a blob_review for the path cannot matter: content hash is unknowable
+        allow = secret_scan.Allowlist([], [])
+        outcome = secret_scan.scan_occurrence(
+            pathlib.Path(root), "ghost.txt", fake_sha, allow)
+        assert outcome.outcome == "block"
+        assert outcome.clearable is False, \
+            "unreadable content must never be clearable"
+    print("ok test_unreadable_blob_non_clearable")
+
+
+# ------------------------------------------------------------------- AC8
+
+def test_each_rule_positive_and_negative():
+    priv = PEM_HEAD + "\n" + gen_token(B64, 64) + "\n" + PEM_TAIL + "\n"
+    # composed so the committed source never contains a matching literal
+    sa_type = '"type": "service_' + 'account"'
+    sa_pk = '"private_' + 'key": '
+    bare_pem = "-----BEGIN " + "PRIVATE KEY-----"
+    sa_json = ('{%s, %s"%s\\n%s"}\n'
+               % (sa_type, sa_pk, bare_pem, gen_token(B64, 40)))
+    sa_negative = "{%s, \"note\": \"no key material\"}\n" % sa_type
+    cases = [
+        ("private-key", priv, 'prose containing the words private key\n'),
+        ("aws-access-key-id", "id = %s\n" % gen_aws_key(),
+         "SOMEUPPERCASEWORDHERE20\n"),
+        ("github-token",
+         "t1 = ghp_%s\nt2 = github_pat_%s\n"
+         % (gen_token(ALNUM, 40), gen_token(ALNUM + "_", 30)),
+         "ghp_short and github_pat in prose\n"),
+        ("slack-token",
+         "s = xoxb-%s\n" % gen_token(ALNUM + "-", 24),
+         "xox substring and xoxq-0123456789abc\n"),
+        ("openai-sk-key",
+         "k = sk-proj-%s\n" % gen_token(B64URL, 32),
+         "short sk-abc123 in prose\n"),
+        ("gcp-sa-json", sa_json, sa_negative),
+        ("jwt",
+         "j = eyJ%s.%s.%s\n" % (gen_token(B64URL, 12), gen_token(B64URL, 12),
+                                gen_token(B64URL, 12)),
+         "base64 text without dots eyJhbGciOiJIUzI1NiJ9only\n"),
+        ("generic-assignment",
+         'api_key = "%s"\n' % gen_token(B64, 24, min_entropy=3.5),
+         'password = ""\ntoken = "$TOKEN"\nsecret: changeme\n'),
+        ("high-entropy",
+         "blob %s\n" % gen_token(B64, 40, min_entropy=4.5),
+         "sha 0123456789abcdef0123456789abcdef01234567 and "
+         "uuid 123e4567-e89b-12d3-a456-426614174000\n"),
+    ]
+    rule_ids = {r for r, _, _ in cases}
+    assert rule_ids == set(secret_scan.RULE_IDS), \
+        "test table must cover exactly the design ruleset"
+    for rule_id, positive, negative in cases:
+        hits = {f.rule_id for f in secret_scan.scan_text(positive)}
+        assert rule_id in hits, \
+            "%s positive fixture did not fire (got %s)" % (rule_id, hits)
+        misses = {f.rule_id for f in secret_scan.scan_text(negative)}
+        assert rule_id not in misses, \
+            "%s negative fixture fired falsely" % rule_id
+    print("ok test_each_rule_positive_and_negative")
+
+
+# ------------------------------------------------------------------- AC9
+
+def test_git_error_fails_closed():
+    with tempfile.TemporaryDirectory() as d:
+        proc = run_scanner(["--changed-against", "main"], d)  # not a repo
+        assert proc.returncode != 0, "non-repo must fail closed"
+    print("ok test_git_error_fails_closed")
+
+
+def test_shallow_clone_or_missing_base_fails_closed():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        proc = run_scanner(["--changed-against", "no-such-ref"], root)
+        assert proc.returncode != 0, "missing base must fail closed"
+        for i in range(3):
+            (root / "f.txt").write_text("v%d\n" % i)
+            sh(["git", "add", "f.txt"], root)
+            sh(["git", "commit", "-q", "-m", "c%d" % i], root)
+        first = sh(["git", "rev-list", "--max-parents=0", "HEAD"], root).stdout.strip()
+        shallow = pathlib.Path(d) / "shallow"
+        sh(["git", "clone", "-q", "--depth", "1",
+            "file://" + str(root), str(shallow)], d)
+        proc = run_scanner(["--changed-against", first], shallow)
+        assert proc.returncode != 0, \
+            "unresolvable history in a shallow clone must fail closed"
+    print("ok test_shallow_clone_or_missing_base_fails_closed")
+
+
+def test_push_event_zero_base_blocks():
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        proc = run_scanner(["--changed-against", ZERO_SHA], root)
+        assert proc.returncode != 0, "all-zeros push base must fail closed"
+    print("ok test_push_event_zero_base_blocks")
+
+
+# ------------------------------------------------------------------ AC10
+
+def test_allowlist_schema_and_expiry_enforced():
+    today = datetime.date.today()
+    k = gen_aws_key()
+    content = "clean file, no secrets\n"
+    bad_lists = [
+        "not json at all\n",
+        json.dumps({"type": "mystery"}) + "\n",
+        # missing keys
+        json.dumps({"type": "fingerprint", "rule_id": "aws-access-key-id"}) + "\n",
+        # extra key
+        json.dumps(dict(fp_entry("aws-access-key-id", "x.py", b"x", k, 0),
+                        extra="nope")) + "\n",
+        # expired
+        json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0,
+                            reviewed_on=(today - datetime.timedelta(days=90)).isoformat(),
+                            expires_on=(today - datetime.timedelta(days=1)).isoformat())) + "\n",
+        # validity window > 180 days
+        json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0,
+                            expires_on=(today + datetime.timedelta(days=200)).isoformat())) + "\n",
+        # duplicate identity
+        json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0)) + "\n"
+        + json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0)) + "\n",
+    ]
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        (root / "clean.txt").write_text(content)
+        sh(["git", "add", "clean.txt"], root)
+        for i, bad in enumerate(bad_lists):
+            (root / "compile").mkdir(exist_ok=True)
+            (root / "compile" / ".secretsallow").write_text(bad)
+            proc = run_scanner(["--staged"], root)
+            assert proc.returncode != 0, \
+                "invalid allowlist #%d must block even a clean stage" % i
+    print("ok test_allowlist_schema_and_expiry_enforced")
+
+
+if __name__ == "__main__":
+    fns = [v for k, v in sorted(globals().items())
+           if k.startswith("test_") and callable(v)]
+    for fn in fns:
+        fn()
+    print("\nall %d secret-scan tests passed" % len(fns))

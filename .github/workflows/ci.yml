@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # full history: the secret scan covers every commit in the PR range
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
@@ -24,6 +27,20 @@ jobs:
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: Install Node deps (jsdom for the DOM smoke test)
         run: npm ci
+      - name: Secret scan (every blob introduced in the PR/push range)
+        timeout-minutes: 10
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          set -eu
+          case "$EVENT_NAME" in
+            pull_request) BASE="origin/${BASE_REF}" ;;
+            push)         BASE="${EVENT_BEFORE}" ;;
+            *) echo "secret-scan: unknown event ${EVENT_NAME} — fail closed"; exit 1 ;;
+          esac
+          python3 compile/secret_scan.py --changed-against "$BASE"
       - name: Stats unit tests (deterministic, stdlib only)
         run: python3 compile/test_stats.py
       - name: Build static wiki
