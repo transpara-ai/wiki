@@ -130,8 +130,9 @@ def scan_text(text):
     for m in OPENAI_RE.finditer(text):
         findings.append(_mk_finding("openai-sk-key", text, *m.span()))
     if GCP_TYPE_RE.search(text):
-        m = GCP_KEY_RE.search(text)
-        if m:
+        # every private_key field is its own finding — one ratified
+        # fingerprint must not shadow the others (post-merge CFAR F20)
+        for m in GCP_KEY_RE.finditer(text):
             findings.append(_mk_finding("gcp-sa-json", text, *m.span()))
     for m in JWT_RE.finditer(text):
         findings.append(_mk_finding("jwt", text, *m.span()))
@@ -150,8 +151,9 @@ def scan_text(text):
         s, e = m.span()
         if e - s < BACKSTOP_MIN_LEN:
             continue
-        if any(s < te and ts < e for ts, te in taken):
-            continue  # already matched by a rule above (§3.2)
+        if any(ts <= s and e <= te for ts, te in taken):
+            continue  # fully covered by a rule above; a merely OVERLAPPING
+            # longer token is its own finding (post-merge CFAR F19)
         if shannon_entropy(m.group()) >= BACKSTOP_MIN_ENTROPY:
             findings.append(_mk_finding("high-entropy", text, s, e))
     return findings
@@ -566,14 +568,22 @@ def scan_occurrence(root, path, oid, allowlist):
 
 
 def redact_spans(text, findings):
-    """Replace matched spans with <redacted:rule_id> for display (CFAR F15)."""
+    """Replace matched spans with <redacted:rule_id> for display (CFAR F15).
+    Overlapping spans are merged so the UNION is redacted — a partially
+    overlapping longer token must never leak its tail (post-merge F19)."""
+    merged = []
+    for f in sorted(findings, key=lambda f: (f.start, f.end)):
+        if merged and f.start <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], f.end)
+            if f.rule_id not in merged[-1][2]:
+                merged[-1][2].append(f.rule_id)
+        else:
+            merged.append([f.start, f.end, [f.rule_id]])
     out, last = [], 0
-    for f in sorted(findings, key=lambda f: f.start):
-        if f.start < last:
-            continue  # overlapping span already covered
-        out.append(text[last:f.start])
-        out.append("<redacted:%s>" % f.rule_id)
-        last = f.end
+    for s0, e0, rules in merged:
+        out.append(text[last:s0])
+        out.append("<redacted:%s>" % "+".join(rules))
+        last = e0
     out.append(text[last:])
     return "".join(out)
 

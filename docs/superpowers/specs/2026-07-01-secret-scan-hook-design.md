@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-SECRET-SCAN-HOOK
 title: Secret-Scan Pre-Commit Hook + CI Gate — Design Packet
 doc_type: design
-version: 0.6.1
+version: 0.6.2
 status: draft
 canonical: false
 created: 2026-07-01
@@ -313,3 +313,12 @@ Authorizes nothing. No implementation before the AuthorityDecision. No CI/branch
 | R6-M1 | `.secretsallow` grammar and identity normalization under-specified (file syntax, duplicate records, path derivation, span convention for composite detectors) — no fail-open lane (invalid entries block) but AC6/AC10 too implementer-dependent | **FIXED** — §3.1.1: JSON-Lines grammar with exact record shapes (unknown/missing key ⇒ block), `-z` raw-path strict-UTF-8 derivation, deterministic char→byte span convention, per-composite-rule reported spans, duplicate identity ⇒ block, UTC date comparison |
 | R6-M2 | `npm run verify` gating depended on an unnamed edit surface — live `package.json` enumerates test files explicitly, so the new tests could exist yet silently never run | **FIXED** — §5 names `compile/test_secret_scan.py` + the `verify`-script enumeration (asserted by the wiring test); §7 scope names the one-line `package.json` edit |
 | R6-N1 | §3 non-blob parenthetical still named only `test_gitlink_blocks` | **FIXED** — §3 names both tests |
+
+## Appendix — post-merge CFAR findings (specs-PR review spillover) → fixed at v0.6.2
+
+> During the docs-only PR #42 review, Codex re-audited the merged scanner and found two precision defects. Fixed test-first on `feat/scanner-finding-precision`.
+
+| # | Finding | Disposition (v0.6.2) |
+|---|---|---|
+| F19 | overlap suppression dropped a longer high-entropy token overlapping a shorter match — redaction leaked the tail, and a short-match fingerprint could shadow the longer token | containment-only suppression; `redact_spans` merges overlapping intervals (union); `test_overlapping_longer_token_fully_found_and_redacted` |
+| F20 | `gcp-sa-json` used `search()` — only the first `private_key` field got a finding; one ratified fingerprint cleared unreviewed siblings | `finditer()` — one finding per field; `test_multiple_gcp_keys_all_reported` |
