@@ -7,6 +7,7 @@ build_board(fm) BEFORE page(is_home=True); page() stays a dumb frame.
 """
 import pathlib
 import re
+import subprocess
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -233,9 +234,12 @@ def test_home_board_accessibility():
 
 def test_home_board_in_dist():
     dist_index = ROOT / "dist" / "index.html"
-    assert dist_index.exists(), \
-        "dist/index.html missing — run `npm run build` before test:py " \
-        "(CI builds first; the gate must see the emitted page)"
+    if not dist_index.exists():
+        # keep bare `npm run test:py` runnable from a clean checkout
+        # (dist/ is gitignored); CI has already built by this point
+        subprocess.run([sys.executable, str(ROOT / "compile" / "build_site.py")],
+                       cwd=str(ROOT), check=True, capture_output=True)
+    assert dist_index.exists(), "the build must emit dist/index.html"
     emitted = dist_index.read_text()
     assert 'class="board-hero"' in emitted and 'class="board-guardrail"' in emitted, \
         "the emitted home page must carry the board"
