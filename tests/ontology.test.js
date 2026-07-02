@@ -569,3 +569,21 @@ test('a blocked gate must carry blocked_criterion (CFAR 2b-r3)', () => {
   assert.strictEqual(O.validateItems([g]).ok, false,
     'the machine-readable hard-stop pointer is mandatory on a blocked gate');
 });
+
+test('criterion ids are unique and criterion refs are dereferenceable (CFAR 2b-r4)', () => {
+  // duplicate criterion ids make blocked_criterion ambiguous
+  const dup = gate({
+    criteria: [
+      { id: 'x', label: 'a', status: 'planned', blocked: true, blocked_reason: 'gate' },
+      { id: 'x', label: 'b', status: 'done', blocked: false, blocked_reason: null },
+    ],
+    status: 'planned', blocked: true, blocked_reason: 'gate',
+    blocked_criterion: 'x', date: undefined, provenance: 'derived',
+  });
+  assert.strictEqual(O.validateItems([dup]).ok, false, 'duplicate criterion ids must be rejected');
+  // criterion refs get the same repo#123 guarantee as item refs
+  const badRef = gate({
+    criteria: [{ id: 'c0', label: 'c', status: 'done', blocked: false, blocked_reason: null, ref: 'PR-138' }],
+  });
+  assert.strictEqual(O.validateItems([badRef]).ok, false, 'malformed criterion ref must be rejected');
+});

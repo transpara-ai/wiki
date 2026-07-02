@@ -131,6 +131,7 @@
           errors.push(where + ": gates require non-empty criteria[]");
         } else {
           var critsValid = true;
+          var critIds = {};
           it.criteria.forEach(function (c, ci) {
             var cw = where + ".criteria[" + ci + "]";
             if (!c || typeof c !== "object") { errors.push(cw + ": not an object"); critsValid = false; return; }
@@ -138,6 +139,11 @@
               if (CRITERION_KEYS.indexOf(k) === -1) { errors.push(cw + ": unknown key '" + k + "'"); critsValid = false; }
             });
             if (!c.id) { errors.push(cw + ": missing id"); critsValid = false; }
+            else if (critIds[c.id]) { errors.push(cw + ": duplicate criterion id '" + c.id + "' — the blocked_criterion pointer would be ambiguous"); critsValid = false; }
+            else { critIds[c.id] = true; }
+            if (c.ref != null && !/^[a-z][a-z0-9-]*#\d+$/.test(c.ref)) {
+              errors.push(cw + ": ref must look like 'repo#123', got '" + c.ref + "'"); critsValid = false;
+            }
             if (c.blocked !== undefined && typeof c.blocked !== "boolean") {
               errors.push(cw + ": blocked must be a boolean, got '" + c.blocked + "'"); critsValid = false;
             }
