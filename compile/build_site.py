@@ -1670,6 +1670,150 @@ def ingest_page(status):
     return tool_page("Wiki Source Ingest", inner, status)
 
 
+# ---------------------------------------------------------------- vision board
+
+BOARD_WALL_COLORS = ("purple", "teal", "amber", "coral")
+
+
+class BoardError(Exception):
+    """Fail-closed board authoring error: the build must stop, never render a
+    partial board or fall back to the essay (design packet §3)."""
+
+
+def board_scalar(fm, key):
+    m = re.search(r"^%s:[ \t]*(.*)$" % re.escape(key), fm, re.M)
+    if not m:
+        raise BoardError("board frontmatter missing required key: %s" % key)
+    value, _ = split_inline_comment(m.group(1))
+    value = value.strip().strip('"').strip("'")
+    if not value:
+        raise BoardError("board frontmatter key %s is empty (after comment "
+                         "stripping)" % key)
+    return value
+
+
+def _board_fields(item, n, what):
+    fields = item.split("|")
+    if len(fields) != n:
+        raise BoardError("%s needs exactly %d pipe-delimited fields (literal "
+                         "'|' is banned in field copy): %r" % (what, n, item))
+    return [f.strip() for f in fields]
+
+
+def _board_slug(slug, what):
+    if not (WIKI / ("%s.md" % slug)).exists():
+        raise BoardError("%s links to a slug that does not exist in wiki/: "
+                         "%r" % (what, slug))
+    return slug
+
+
+def build_board(fm):
+    """Compose the front-page vision board from index.md frontmatter,
+    validating fail-closed (design packet §3/§4). Returns board HTML that the
+    caller passes into page(is_home=True); page() stays a dumb frame."""
+    eyebrow = html.escape(board_scalar(fm, "board_eyebrow"))
+    hero = html.escape(board_scalar(fm, "board_hero"))
+    subtitle = html.escape(board_scalar(fm, "board_subtitle"))
+    narrative = _board_slug(board_scalar(fm, "board_narrative_link"),
+                            "board_narrative_link")
+    pillars = []
+    raw_pillars = fm_list(fm, "board_pillars")
+    if len(raw_pillars) != 4:
+        raise BoardError("board_pillars needs exactly 4 entries, got %d"
+                         % len(raw_pillars))
+    for item in raw_pillars:
+        name, objective, hook, slug, color = _board_fields(item, 5,
+                                                           "board pillar")
+        if color not in BOARD_WALL_COLORS:
+            raise BoardError("unknown board wall color %r (allowed: %s)"
+                             % (color, ", ".join(BOARD_WALL_COLORS)))
+        pillars.append((name, objective, hook, _board_slug(slug, name), color))
+    inheritance = []
+    for item in fm_list(fm, "board_inheritance"):
+        label, slug = _board_fields(item, 2, "inheritance item")
+        inheritance.append((label, _board_slug(slug, label)))
+    if not inheritance:
+        raise BoardError("board_inheritance must not be empty")
+    method_nodes = [n.strip() for n in
+                    board_scalar(fm, "board_method").split("→") if n.strip()]
+    if not method_nodes:
+        raise BoardError("board_method has no pipeline nodes")
+    guard_text, guard_slug = _board_fields(
+        board_scalar(fm, "board_guardrail"), 2, "board_guardrail")
+    guard_slug = _board_slug(guard_slug, "guardrail")
+
+    chips = []
+    for i, node in enumerate(method_nodes):
+        cls = "board-chip"
+        if "gate" in node.lower():
+            cls += " board-gate"
+        if i == len(method_nodes) - 1:
+            cls += " board-certified"
+        chips.append('<span class="%s">%s</span>' % (cls, html.escape(node)))
+    half = (len(chips) + 1) // 2
+    pipeline = ('<div class="board-pipeline-row">%s</div>'
+                '<div class="board-pipeline-row">%s</div>'
+                % ("".join(chips[:half]), "".join(chips[half:])))
+
+    walls = {c: (n, ) for n, _o, _h, _s, c in pillars}
+    def wall(pos, color):
+        name = html.escape(walls[color][0])
+        return ('<div class="board-wall board-wall-%s board-%s">%s</div>'
+                % (pos, color, name))
+
+    centerpiece = (
+        '<div class="board-membrane" role="img" aria-label="Concentric '
+        'membrane: the human holds top authority; the four objectives — '
+        'accountability, provenance, governed autonomy, one civilization — '
+        'enclose the agents\' work on all sides; work leaves only as '
+        'certified or rejected.">'
+        '<div class="board-membrane-label">human · top authority ↓</div>'
+        '<div class="board-frame">'
+        + wall("top", pillars[0][4]) + wall("left", pillars[3][4])
+        + '<div class="board-core">'
+          '<div class="board-core-caption">agents at work — every action '
+          'leaves evidence</div>' + pipeline +
+          '<div class="board-core-exit">work leaves the membrane only as '
+          'certified-or-rejected</div></div>'
+        + wall("right", pillars[1][4]) + wall("bottom", pillars[2][4])
+        + "</div></div>")
+
+    tiles = "".join(
+        '<a class="board-tile board-%s" href="%s.html">'
+        '<span class="board-tile-hook">%s</span>'
+        '<span class="board-tile-name">%s</span>'
+        '<span class="board-tile-obj">%s</span>'
+        '<span class="board-tile-cta">read the article →</span></a>'
+        % (color, slug, html.escape(hook) if hook else "◆",
+           html.escape(name), html.escape(objective))
+        for name, objective, hook, slug, color in pillars)
+
+    strip = " <span class=\"board-arrow\">→</span> ".join(
+        '<a href="%s.html">%s</a>' % (slug, html.escape(label))
+        for label, slug in inheritance)
+
+    return (
+        '<div class="board">'
+        '<p class="board-sr">The thesis of the Transpara-AI Civilization arc: '
+        'agents work inside a human-governed membrane of accountability, '
+        'provenance, governed autonomy, and one civilization; work leaves '
+        'only as certified or rejected.</p>'
+        '<header class="board-hero">'
+        '<div class="board-eyebrow">%s</div>'
+        '<h2 class="board-claim">%s</h2>'
+        '<p class="board-subtitle">%s</p>'
+        '<p class="board-narrative"><a href="%s.html">Read the full origin '
+        'narrative →</a></p></header>'
+        '%s'
+        '<nav class="board-tiles" aria-label="The four objectives">%s</nav>'
+        '<div class="board-inheritance">inherited, not owned: %s</div>'
+        '<footer class="board-guardrail"><a href="%s.html">Cult test</a> — '
+        '%s</footer>'
+        "</div>"
+        % (eyebrow, hero, subtitle, narrative, centerpiece, tiles, strip,
+           guard_slug, html.escape(guard_text)))
+
+
 def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home=False, extra_head="", main_class="content"):
     sidebar = build_sidebar(slug if not is_home else "")
     infobox = "" if is_home else build_infobox(meta, fm)
@@ -1819,9 +1963,10 @@ def build():
     fm, body = split_fm(INDEX.read_text())
     body = re.sub(r"^#\s+.*\n", "", body, count=1)
     body_html, _ = to_html(body, set(), article_source_refs(fm))
+    board_html = build_board(fm)  # fail-closed: a bad board stops the build
     write_dist_text(
         DIST / "index.html",
-        page("index", SITE_NAME, {}, "", body_html, [], set(), status, is_home=True),
+        page("index", SITE_NAME, {}, "", board_html + body_html, [], set(), status, is_home=True),
     )
     write_dist_text(DIST / "sources.html", sources_page(status))
     write_dist_text(DIST / "ingest.html", ingest_page(status))
