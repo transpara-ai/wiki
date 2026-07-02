@@ -28,7 +28,7 @@
 
 | Hook | What it does | Priority |
 |---|---|---|
-| **Pre-commit secret-scan** (`gitleaks`, offline) | Closes the biggest gap; the scrub is mandatory and currently absent. No network → air-gap-safe. Wire to pre-commit **and** CI, with a test that a planted secret is caught. | **P0** |
+| **Pre-commit secret-scan** | ~~P0 gap~~ **DONE 2026-07-02** — shipped as a pure-Python stdlib scanner (not gitleaks; see resolved question below) wired to pre-commit **and** the required CI job, planted-secret tests included (PR #41, refined #43). No action remains. | ~~P0~~ done |
 | **Fail-legible lint** (pre-commit) | Blocks committing an article with unsourced claims or a bare contested number on the front page. Makes the doctrine mechanical. | P1 |
 | **Build-verify** (pre-push) | Runs `npm run verify` + `compile/check_links.py` so a broken build / red link never lands. | P1 |
 
@@ -48,7 +48,7 @@
 
 ## 5. Prioritization — the first three to wire
 
-1. **Offline secret-scan pre-commit hook** (P0) — closes a doctrine hole; ~20 min; air-gap-trivial. *Highest leverage item in this memo.*
+1. ~~Offline secret-scan pre-commit hook (P0)~~ — **DONE 2026-07-02** via PR #41/#43; skip to item 2.
 2. **`recompile-article` skill** (P0) — unblocks Item 1's Replace/Remove.
 3. **GitHub MCP as the Item-2b evidence source** (P0) — makes derived status real.
 
@@ -62,6 +62,6 @@ Everything else is enhancement. Note the pattern: `recompile-article` *is* Item 
 - Replace the anti-RAG reading model with retrieval (any index is authoring-time only).
 
 ## 7. Open questions
-1. Secret-scanner choice — `gitleaks` (recommended, single Go binary, offline) vs `trufflehog`?
+1. ~~Secret-scanner choice~~ — **RESOLVED 2026-07-02**: pure-Python stdlib scanner (`compile/secret_scan.py`); gitleaks was rejected in the design loop (absent binary, per-platform air-gap vendoring; see the secret-scan design packet).
 2. Do the skills/hooks live in the wiki repo, or graduate into `claude-toolbox`/`claude-plugin` for reuse across repos? (Recommend: prototype in-repo, graduate once stable.)
 3. Local corpus-index MCP — worth the complexity now, or defer until the compile step actually strains on entity-linking at scale?
