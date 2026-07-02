@@ -9,7 +9,7 @@
 ## 0. Grounding (what the wiki has today)
 
 - **No project-local Claude tooling.** The wiki's `.claude/` holds only `worktrees/` — no committed skills, hooks, or `.mcp.json`. Every workflow (compile, ingest, recompile) is ad-hoc.
-- **CI has no secret-scan.** `.github/workflows/ci.yml` exists; nothing scans for secrets — yet the secret-scrub is *non-negotiable* (CLAUDE.md + `DESIGN.md` §Ingestion). This is a live hole.
+- **CI secret-scan: CLOSED 2026-07-02.** (This memo originally flagged the absence as a live P0 hole.) The gate now exists: `compile/secret_scan.py` + `.githooks/pre-commit` + a scan step inside the required `Build & Test` job, with a base-ratified allowlist — merged via PR #41 and refined in #43. Do **not** re-plan this item from this memo.
 - **In-org ecosystem to draw from:** `transpara-ai/claude-toolbox` (agents/hooks/skills/scripts) and `transpara-ai/claude-plugin` (mcp-servers/practices/skills/templates). "Incorporate" can mean *wire these in*, not build from zero.
 - **Air-gap line:** authoring runs on nucbuntu (networked — `inflight.py` already uses `gh`); the **served static site must stay fully offline.** Authoring-side tools may use the network; anything that ships to a deployment target must have an offline path.
 

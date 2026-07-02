@@ -53,10 +53,15 @@ Every piece uses the single lifecycle: **`future → planned → active → done
 ### 2.4 Status is DERIVED, fail-closed — never asserted (the Gate-K cure)
 A Gate carries **acceptance `criteria[]`** (which is what a gate *is*). Each criterion has a state and an evidence basis (§2.5). **Gate status is a fail-closed rollup:**
 
-- `done` **only if every** criterion is `done` (the permissive outcome is the *proven* branch);
-- `blocked` if **any** criterion is `blocked` (blocked wins);
-- `active` if any criterion is `active` and none blocked;
-- else `planned`/`future`.
+- lifecycle status and the blocked overlay are **derived separately** (the
+  single-vocabulary rule applies to the rollup too — `blocked` is never a
+  lifecycle value, here or anywhere):
+  - lifecycle: `done` **only if every** criterion is `done` (the permissive
+    outcome is the *proven* branch); `active` if any criterion is `active`;
+    else `planned`/`future`;
+  - overlay: `blocked: true` (with the blocking criterion as `blocked_reason`)
+    if **any** criterion carries the blocked overlay — the overlay propagates
+    without ever replacing the lifecycle value.
 
 This makes the Gate-K contradiction **structurally impossible** — you cannot author `done` while a criterion is unmet. (Mirrors Item 1's edge-state machine: prove the permissive branch, fail closed on everything else, no `default:` that completes.)
 
