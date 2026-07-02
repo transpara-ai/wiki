@@ -19,6 +19,7 @@ import datetime
 import hashlib
 import json
 import math
+import os
 import pathlib
 import re
 import signal
@@ -159,9 +160,14 @@ def scan_text(text):
 # ------------------------------------------------------------ git plumbing
 
 def git(root, *args, binary=False):
+    env = dict(os.environ)
+    # a partial/promisor clone would lazily FETCH missing blobs over the
+    # network during cat-file — the no-network contract requires a missing
+    # object to block instead (CFAR F8; honored by git >= 2.42)
+    env["GIT_NO_LAZY_FETCH"] = "1"
     try:
         proc = subprocess.run(["git"] + list(args), cwd=str(root),
-                              capture_output=True)
+                              capture_output=True, env=env)
     except Exception as exc:  # missing git, empty PATH, OS error — block
         raise ScanError("git unavailable: %s" % exc)
     if proc.returncode != 0:

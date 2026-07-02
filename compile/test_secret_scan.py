@@ -649,6 +649,33 @@ def test_allowlist_schema_and_expiry_enforced():
     print("ok test_allowlist_schema_and_expiry_enforced")
 
 
+def test_partial_clone_missing_blob_blocks_without_fetch():
+    # CFAR F8: in a blob-filtered (promisor) clone, git lazily fetches
+    # missing blobs over the network — the scanner must block on the missing
+    # object instead (GIT_NO_LAZY_FETCH), or the no-network contract breaks.
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        sh(["git", "config", "uploadpack.allowfilter", "true"], root)
+        base = sh(["git", "rev-parse", "HEAD"], root).stdout.strip()
+        (root / "f.txt").write_text("v1 middle version\n")
+        sh(["git", "add", "f.txt"], root)
+        sh(["git", "commit", "-q", "-m", "v1"], root)
+        (root / "f.txt").write_text("v2 final version\n")
+        sh(["git", "add", "f.txt"], root)
+        sh(["git", "commit", "-q", "-m", "v2"], root)
+        partial = pathlib.Path(d) / "partial"
+        sh(["git", "clone", "-q", "--filter=blob:none",
+            "file://" + str(root), str(partial)], d)
+        # v1's blob is not in the partial clone (only v2 was checked out);
+        # scanning the range must NOT fetch it — it must fail closed
+        proc = run_scanner(["--changed-against", base], partial)
+        assert proc.returncode != 0, \
+            "missing promisor blob must block, not lazy-fetch over the network"
+        out = (proc.stdout + proc.stderr).lower()
+        assert "unreadable" in out or "block" in out
+    print("ok test_partial_clone_missing_blob_blocks_without_fetch")
+
+
 def test_allowlist_dates_compared_in_utc():
     # CFAR F6: the allowlist contract says dates are UTC; date.today() uses
     # the local timezone, so a valid UTC-dated entry could falsely block (or
