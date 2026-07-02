@@ -214,14 +214,28 @@ def test_scan_step_lives_in_required_build_and_test_job():
     build_test = ci[ci.index("name: Build & Test"):]
     assert "fetch-depth: 0" in build_test, \
         "required job must check out full history for the history scan"
-    assert re.search(r"secret_scan\.py\s+--changed-against", build_test), \
+    assert "--changed-against" in build_test, \
         "secret-scan step must live inside the required Build & Test job"
-    scan_at = build_test.index("secret_scan.py")
+    scan_at = build_test.index("--changed-against")
     step_start = build_test.rfind("- name:", 0, scan_at)
     step_text = build_test[step_start:scan_at + 200]
     assert "timeout-minutes" in step_text, "scan step needs a timeout bound"
     assert "github.base_ref" in build_test, "pull_request base semantics missing"
     assert "github.event.before" in build_test, "push base semantics missing"
+    # CFAR F3: the executed scanner must be extracted from the TRUSTED base
+    # ref, not the PR head — a PR editing secret_scan.py must not be able to
+    # neuter the gate that scans it (bootstrap fallback only when the base
+    # predates the scanner)
+    assert re.search(r"git show \"?\$\{?BASE\}?\"?:compile/secret_scan\.py",
+                     step_text), \
+        "scanner must be extracted from the trusted base ref"
+    assert "secret_scan_trusted" in step_text, \
+        "trusted scanner copy must be what CI executes"
+    # CFAR F4: the gate runs before any dependency install executes
+    # untrusted lifecycle code (scanner is stdlib-only, needs no installs)
+    for install_marker in ("pip install", "npm ci"):
+        assert step_start < build_test.index(install_marker), \
+            "secret scan must run before '%s'" % install_marker
     pkg = json.loads((WIKI_ROOT / "package.json").read_text())
     assert "compile/test_secret_scan.py" in pkg["scripts"]["test:py"], \
         "tests must be enumerated in the verify script or they never run"

@@ -17,16 +17,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install Python deps
-        run: |
-          python3 -m venv .venv
-          .venv/bin/python -m pip install -r requirements.txt
-          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
-      - name: Install Node deps (jsdom for the DOM smoke test)
-        run: npm ci
+      # The secret scan runs BEFORE any dependency install (CFAR F4: no
+      # untrusted install-time code before the gate; the scanner is
+      # stdlib-only) and executes a scanner copy extracted from the TRUSTED
+      # base ref, not the PR head (CFAR F3: a PR editing secret_scan.py must
+      # not be able to neuter the gate that scans it).
       - name: Secret scan (every blob introduced in the PR/push range)
         timeout-minutes: 10
         env:
@@ -40,7 +35,23 @@ jobs:
             push)         BASE="${EVENT_BEFORE}" ;;
             *) echo "secret-scan: unknown event ${EVENT_NAME} — fail closed"; exit 1 ;;
           esac
-          python3 compile/secret_scan.py --changed-against "$BASE"
+          if git cat-file -e "${BASE}:compile/secret_scan.py" 2>/dev/null; then
+            git show "${BASE}:compile/secret_scan.py" > "${RUNNER_TEMP}/secret_scan_trusted.py"
+          else
+            # bootstrap only: the trusted base predates the scanner
+            cp compile/secret_scan.py "${RUNNER_TEMP}/secret_scan_trusted.py"
+          fi
+          python3 "${RUNNER_TEMP}/secret_scan_trusted.py" --changed-against "$BASE"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Python deps
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install -r requirements.txt
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Install Node deps (jsdom for the DOM smoke test)
+        run: npm ci
       - name: Stats unit tests (deterministic, stdlib only)
         run: python3 compile/test_stats.py
       - name: Build static wiki
