@@ -184,6 +184,33 @@ def read_blob(root, oid):
     return git(root, "cat-file", "blob", oid, binary=True)
 
 
+def blob_size(root, oid):
+    return int(git(root, "cat-file", "-s", oid).strip())
+
+
+def stream_blob_sha256(root, oid):
+    """Hash a blob without materializing it (CFAR F12: oversized blobs are
+    decided from size alone; content is streamed only to verify a
+    blob_review attestation)."""
+    env = dict(os.environ)
+    env["GIT_NO_LAZY_FETCH"] = "1"
+    try:
+        proc = subprocess.Popen(["git", "cat-file", "blob", oid],
+                                cwd=str(root), stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, env=env)
+        digest = hashlib.sha256()
+        for chunk in iter(lambda: proc.stdout.read(1 << 20), b""):
+            digest.update(chunk)
+        proc.stdout.close()
+        if proc.wait() != 0:
+            raise ScanError("git cat-file failed for %s" % oid)
+        return digest.hexdigest()
+    except ScanError:
+        raise
+    except Exception as exc:
+        raise ScanError("git unavailable: %s" % exc)
+
+
 def _decode_path(raw):
     try:
         return raw.decode("utf-8", "strict")
@@ -370,9 +397,24 @@ def load_allowlist_snapshot(root, mode_args):
             return Allowlist([], [])
         return parse_allowlist(git(root, "show", ":0:" + ALLOWLIST_PATH))
     if mode_args.changed_against is not None:
-        rev = mode_args.changed_against
-    else:
-        rev = mode_args.tree
+        # HEAD's copy is STRICT-validated (an expired/malformed entry
+        # anywhere in the PR's own allowlist blocks — expiry keeps forcing
+        # renewal repo-wide) but NEVER used for clearance (CFAR F9);
+        # clearance comes from the BASE copy, parsed leniently so the
+        # renewal PR itself is not wedged by the bad base entry (CFAR F13).
+        head_listing = git(root, "ls-tree", "HEAD", "--", ALLOWLIST_PATH)
+        if head_listing.strip():
+            parse_allowlist(git(root, "show", "HEAD:" + ALLOWLIST_PATH))
+        base = mode_args.changed_against
+        base_listing = git(root, "ls-tree", base, "--", ALLOWLIST_PATH)
+        if not base_listing.strip():
+            return Allowlist([], [])
+        allow, voids = parse_allowlist_lenient(
+            git(root, "show", "%s:%s" % (base, ALLOWLIST_PATH)))
+        for msg in voids:
+            print("VOID base allowlist entry (clears nothing): %s" % msg)
+        return allow
+    rev = mode_args.tree
     listing = git(root, "ls-tree", rev, "--", ALLOWLIST_PATH)
     if not listing.strip():
         return Allowlist([], [])
@@ -380,57 +422,80 @@ def load_allowlist_snapshot(root, mode_args):
 
 
 def parse_allowlist(text):
-    fingerprints, blob_reviews = [], []
+    """Strict parse: any invalid entry fails the whole scan (AC10)."""
+    allow, _voids = _parse_allowlist_impl(text, strict=True)
+    return allow
+
+
+def parse_allowlist_lenient(text):
+    """Lenient parse for the BASE copy in changed-against mode (CFAR F13):
+    invalid/expired entries are VOID — they clear nothing and are reported
+    loudly — but do not wedge the scan, so the PR that renews them can pass.
+    The head copy is still strict-validated by the caller."""
+    return _parse_allowlist_impl(text, strict=False)
+
+
+def _parse_allowlist_impl(text, strict):
+    fingerprints, blob_reviews, voids = [], [], []
     for lineno, line in enumerate(text.splitlines(), 1):
         if not line.strip():
             continue
         try:
-            entry = json.loads(line, object_pairs_hook=_no_duplicate_keys)
-        except (json.JSONDecodeError, ValueError):
-            raise ScanError("allowlist line %d: not valid JSON (or duplicate "
-                            "key)" % lineno)
-        if not isinstance(entry, dict):
-            raise ScanError("allowlist line %d: not an object" % lineno)
-        etype = entry.get("type")
-        if etype == "fingerprint":
-            if set(entry) != FP_KEYS:
-                raise ScanError("allowlist line %d: fingerprint keys must be "
-                                "exactly %s" % (lineno, sorted(FP_KEYS)))
-            _require_str(entry, FP_KEYS - {"byte_offset"}, lineno)
-            if entry["rule_id"] not in RULE_IDS:
-                raise ScanError("allowlist line %d: unknown rule_id %r"
-                                % (lineno, entry["rule_id"]))
-            offset = entry["byte_offset"]
-            if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
-                raise ScanError("allowlist line %d: byte_offset must be a "
-                                "non-negative integer" % lineno)
-            for key in ("blob_sha256", "match_sha256"):
-                if not SHA256_RE.match(entry[key]):
-                    raise ScanError("allowlist line %d: %s is not hex sha256"
-                                    % (lineno, key))
-            _validate_dates(entry, lineno)
-            identity = (entry["rule_id"], entry["canonical_path"],
-                        entry["blob_sha256"], entry["match_sha256"], offset)
-            if identity in fingerprints:
-                raise ScanError("allowlist line %d: duplicate identity" % lineno)
-            fingerprints.append(identity)
-        elif etype == "blob_review":
-            if set(entry) != BR_KEYS:
-                raise ScanError("allowlist line %d: blob_review keys must be "
-                                "exactly %s" % (lineno, sorted(BR_KEYS)))
-            _require_str(entry, BR_KEYS, lineno)
-            if not SHA256_RE.match(entry["blob_sha256"]):
-                raise ScanError("allowlist line %d: blob_sha256 is not hex "
-                                "sha256" % lineno)
-            _validate_dates(entry, lineno)
-            identity = (entry["canonical_path"], entry["blob_sha256"])
-            if identity in blob_reviews:
-                raise ScanError("allowlist line %d: duplicate identity" % lineno)
-            blob_reviews.append(identity)
-        else:
-            raise ScanError("allowlist line %d: unknown type %r — fail closed"
-                            % (lineno, etype))
-    return Allowlist(fingerprints, blob_reviews)
+            _parse_entry(line, lineno, fingerprints, blob_reviews)
+        except ScanError as exc:
+            if strict:
+                raise
+            voids.append(str(exc))
+    return Allowlist(fingerprints, blob_reviews), voids
+
+
+def _parse_entry(line, lineno, fingerprints, blob_reviews):
+    try:
+        entry = json.loads(line, object_pairs_hook=_no_duplicate_keys)
+    except (json.JSONDecodeError, ValueError):
+        raise ScanError("allowlist line %d: not valid JSON (or duplicate "
+                        "key)" % lineno)
+    if not isinstance(entry, dict):
+        raise ScanError("allowlist line %d: not an object" % lineno)
+    etype = entry.get("type")
+    if etype == "fingerprint":
+        if set(entry) != FP_KEYS:
+            raise ScanError("allowlist line %d: fingerprint keys must be "
+                            "exactly %s" % (lineno, sorted(FP_KEYS)))
+        _require_str(entry, FP_KEYS - {"byte_offset"}, lineno)
+        if entry["rule_id"] not in RULE_IDS:
+            raise ScanError("allowlist line %d: unknown rule_id %r"
+                            % (lineno, entry["rule_id"]))
+        offset = entry["byte_offset"]
+        if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+            raise ScanError("allowlist line %d: byte_offset must be a "
+                            "non-negative integer" % lineno)
+        for key in ("blob_sha256", "match_sha256"):
+            if not SHA256_RE.match(entry[key]):
+                raise ScanError("allowlist line %d: %s is not hex sha256"
+                                % (lineno, key))
+        _validate_dates(entry, lineno)
+        identity = (entry["rule_id"], entry["canonical_path"],
+                    entry["blob_sha256"], entry["match_sha256"], offset)
+        if identity in fingerprints:
+            raise ScanError("allowlist line %d: duplicate identity" % lineno)
+        fingerprints.append(identity)
+    elif etype == "blob_review":
+        if set(entry) != BR_KEYS:
+            raise ScanError("allowlist line %d: blob_review keys must be "
+                            "exactly %s" % (lineno, sorted(BR_KEYS)))
+        _require_str(entry, BR_KEYS, lineno)
+        if not SHA256_RE.match(entry["blob_sha256"]):
+            raise ScanError("allowlist line %d: blob_sha256 is not hex "
+                            "sha256" % lineno)
+        _validate_dates(entry, lineno)
+        identity = (entry["canonical_path"], entry["blob_sha256"])
+        if identity in blob_reviews:
+            raise ScanError("allowlist line %d: duplicate identity" % lineno)
+        blob_reviews.append(identity)
+    else:
+        raise ScanError("allowlist line %d: unknown type %r — fail closed"
+                        % (lineno, etype))
 
 
 # ------------------------------------------------------------ occurrence
@@ -438,19 +503,32 @@ def parse_allowlist(text):
 def scan_occurrence(root, path, oid, allowlist):
     """Classify one (path, blob) occurrence per the §3.1 input-class table."""
     try:
+        size = blob_size(root, oid)
+    except ScanError as exc:
+        return Outcome(path, "block", False,
+                       "unreadable blob — non-clearable (%s)" % exc)
+    if size > MAX_BLOB_BYTES:
+        # decided from size alone — never materialized (CFAR F12); content is
+        # only streamed to verify an existing blob_review attestation
+        if any(p == path for p, _ in allowlist.blob_reviews):
+            try:
+                digest = stream_blob_sha256(root, oid)
+            except ScanError as exc:
+                return Outcome(path, "block", False,
+                               "unreadable blob — non-clearable (%s)" % exc)
+            if (path, digest) in allowlist.blob_reviews:
+                return Outcome(path, "allowlisted", True,
+                               "oversized blob cleared by blob_review")
+        return Outcome(path, "block", True,
+                       "oversized (> 1 MiB) — too large to scan; review "
+                       "manually and attest with a blob_review entry")
+    try:
         blob = read_blob(root, oid)
     except ScanError as exc:
         return Outcome(path, "block", False,
                        "unreadable blob — non-clearable (%s)" % exc)
     blob_sha256 = hashlib.sha256(blob).hexdigest()
     reviewed = (path, blob_sha256) in allowlist.blob_reviews
-    if len(blob) > MAX_BLOB_BYTES:
-        if reviewed:
-            return Outcome(path, "allowlisted", True,
-                           "oversized blob cleared by blob_review")
-        return Outcome(path, "block", True,
-                       "oversized (> 1 MiB) — too large to scan; review "
-                       "manually and attest with a blob_review entry")
     if b"\x00" in blob:
         advisory = scan_text(blob.decode("utf-8", "replace"))
         if reviewed:

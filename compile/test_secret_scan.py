@@ -465,6 +465,19 @@ def test_oversized_blob_blocks():
         write_allowlist(root, [br_entry("big.txt", payload)])
         proc = run_scanner(["--staged"], root)
         assert proc.returncode == 0, proc.stdout + proc.stderr
+        # CFAR F12: without a blob_review candidate the oversized block must
+        # be decided from the size alone — the content is never materialized
+        # (a multi-GB accident must block cheaply, not OOM the hook)
+        oid = sh(["git", "rev-parse", ":big.txt"], root).stdout.strip()
+        real_read = secret_scan.read_blob
+        secret_scan.read_blob = lambda *_a, **_k: (_ for _ in ()).throw(
+            AssertionError("oversized content must not be materialized"))
+        try:
+            out = secret_scan.scan_occurrence(
+                root, "big.txt", oid, secret_scan.Allowlist([], []))
+        finally:
+            secret_scan.read_blob = real_read
+        assert out.outcome == "block" and "oversized" in out.reason
     print("ok test_oversized_blob_blocks")
 
 
@@ -692,6 +705,42 @@ def test_ci_does_not_trust_pr_head_allowlist():
             "a base-ratified entry must clear the finding: %s%s" \
             % (proc.stdout, proc.stderr)
     print("ok test_ci_does_not_trust_pr_head_allowlist")
+
+
+def test_expired_base_entry_does_not_wedge_renewal():
+    # CFAR F13: an expired entry in the BASE allowlist must not block the
+    # very PR that renews it (permanent wedge); but a PR that inherits the
+    # expired entry unfixed in its HEAD copy still blocks — expiry keeps
+    # forcing renewal repo-wide, with the renewal PR as the escape hatch.
+    k = gen_aws_key()
+    expired = fp_entry("aws-access-key-id", "gone.py", b"old", k, 0,
+                       reviewed_on=(utc_today() - datetime.timedelta(days=90)).isoformat(),
+                       expires_on=(utc_today() - datetime.timedelta(days=1)).isoformat())
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        write_allowlist(root, [expired])
+        sh(["git", "commit", "-q", "--no-verify", "-m", "base with expired entry"], root)
+        # ordinary PR inheriting the expired entry -> blocks (forcing function)
+        sh(["git", "checkout", "-q", "-b", "ordinary"], root)
+        (root / "notes.md").write_text("clean change\n")
+        sh(["git", "add", "notes.md"], root)
+        sh(["git", "commit", "-q", "--no-verify", "-m", "clean change"], root)
+        proc = run_scanner(["--changed-against", "main"], root)
+        assert proc.returncode != 0, \
+            "a PR inheriting an expired head allowlist must block"
+        # the renewal PR fixes the entry -> passes (no wedge)
+        sh(["git", "checkout", "-q", "main"], root)
+        sh(["git", "checkout", "-q", "-b", "renewal"], root)
+        renewed = dict(expired,
+                       reviewed_on=utc_today().isoformat(),
+                       expires_on=(utc_today() + datetime.timedelta(days=30)).isoformat())
+        write_allowlist(root, [renewed])
+        sh(["git", "commit", "-q", "--no-verify", "-m", "renew allowlist"], root)
+        proc = run_scanner(["--changed-against", "main"], root)
+        assert proc.returncode == 0, \
+            "the renewal PR must be able to pass: %s%s" \
+            % (proc.stdout, proc.stderr)
+    print("ok test_expired_base_entry_does_not_wedge_renewal")
 
 
 def test_partial_clone_missing_blob_blocks_without_fetch():
