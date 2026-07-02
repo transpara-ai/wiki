@@ -156,6 +156,9 @@
             if ((it.blocked === true) !== want.blocked) {
               errors.push(where + ": stored blocked=" + it.blocked + " contradicts the criteria rollup blocked=" + want.blocked);
             }
+            if (it.blocked === true && it.blocked_criterion == null) {
+              errors.push(where + ": a blocked gate must name its blocked criterion (blocked_criterion)");
+            }
             if (it.blocked_criterion != null && !it.criteria.some(function (c) { return c.id === it.blocked_criterion && c.blocked === true; })) {
               errors.push(where + ": blocked_criterion '" + it.blocked_criterion + "' must name a criterion that is actually blocked");
             }

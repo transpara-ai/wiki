@@ -558,3 +558,14 @@ test('blocked_criterion is gate-only and must name a BLOCKED criterion', () => {
   assert.strictEqual(O.validateItems([g]).ok, false,
     'blocked_criterion must name a criterion that is actually blocked');
 });
+
+test('a blocked gate must carry blocked_criterion (CFAR 2b-r3)', () => {
+  const g = gate({
+    criteria: [{ id: 'c0', label: 'c0', status: 'planned', blocked: true, blocked_reason: 'gate' }],
+    status: 'planned', blocked: true, blocked_reason: 'gate',
+    date: undefined, provenance: 'derived',
+  });
+  delete g.blocked_criterion;
+  assert.strictEqual(O.validateItems([g]).ok, false,
+    'the machine-readable hard-stop pointer is mandatory on a blocked gate');
+});
