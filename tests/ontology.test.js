@@ -278,7 +278,8 @@ test('executionPlan row statuses mirror canonical item statuses', () => {
 // --- date backfill: fail-closed contract rule (date ⇒ ISO + done; ref well-formed) ---
 function datedItem(over) {
   return Object.assign({ id: 'a', type: 'gate', status: 'done', provenance: 'derived',
-    seq: 1, sprint: 's', repo: ['docs'] }, over || {});
+    seq: 1, sprint: 's', repo: ['docs'],
+    criteria: [{ id: 'closeout', label: 'closeout', status: 'done', blocked: false, blocked_reason: null }] }, over || {});
 }
 test('validateItems FAILS CLOSED on a non-ISO date', () => {
   const r = O.validateItems([datedItem({ date: '6/17/2026' })]);
@@ -330,7 +331,7 @@ const BAKED = {
   domain: { start: 0, end: 15 },
   items: [
     { id: 'h1',  code: 'H1',  type: 'work', status: 'done',    provenance: 'reconstructed', seq: 1,    sprint: 'origin',     repo: ['wiki'] },
-    { id: 'now', code: 'NOW', type: 'gate', status: 'active',  provenance: 'reconstructed', seq: 13.9, sprint: 'deployment', repo: ['docs'] },
+    { id: 'now', code: 'NOW', type: 'gate', status: 'active',  provenance: 'reconstructed', seq: 13.9, sprint: 'deployment', repo: ['docs'], criteria: [{ id: 'closeout', label: 'closeout', status: 'active', blocked: false, blocked_reason: null }] },
     { id: 'p1',  code: 'P1',  type: 'work', status: 'planned', provenance: 'derived',       seq: 14.0, sprint: 'deployment', repo: ['site'] },
     { id: 'f1',  code: 'F1',  type: 'work', status: 'future',  provenance: 'derived',       seq: 15.0, sprint: 'stewardship', repo: ['site'] },
   ],
@@ -380,4 +381,209 @@ test('laneOf actor groups by author; missing author → (unknown)', () => {
   assert.strictEqual(
     O.groupBy([liveItem(), { id: 'b', author: null }], 'actor').map(l => l.lane).sort().join(','),
     '(unknown),x');
+});
+
+// ---- Item 2b: deny-by-default schema + gate criteria rollup (AC1-AC7) ----
+
+function gate(over) {
+  return Object.assign({
+    id: 'g', type: 'gate', status: 'done', blocked: false, blocked_reason: null,
+    provenance: 'reconstructed', seq: 1, sprint: 'origin', repo: ['wiki'],
+    criteria: [{ id: 'closeout', label: 'closeout', status: 'done', blocked: false, blocked_reason: null }],
+  }, over);
+}
+
+test('unknown item keys are rejected', () => {
+  const r = O.validateItems([gate({ boundary_status: 'sneaky' })]);
+  assert.strictEqual(r.ok, false);
+  assert.ok(r.errors.some((e) => e.includes('unknown key')), r.errors.join('; '));
+});
+
+test('gates require criteria', () => {
+  for (const bad of [undefined, [], [{ id: 'x', label: 'x', status: 'nonsense', blocked: false, blocked_reason: null }]]) {
+    const r = O.validateItems([gate({ criteria: bad, status: 'done' })]);
+    assert.strictEqual(r.ok, false, 'criteria=' + JSON.stringify(bad));
+  }
+});
+
+test('gate rollup equality is enforced across the domain', () => {
+  const statuses = ['future', 'planned', 'active', 'done'];
+  const rollup = (crits) => {
+    if (crits.every((c) => c.status === 'done')) return 'done';
+    if (crits.some((c) => c.status === 'active')) return 'active';
+    if (crits.some((c) => c.status === 'planned')) return 'planned';
+    return 'future';
+  };
+  const combos = [];
+  for (const s of statuses) for (const b of [false, true]) combos.push([{ s, b }]);
+  for (const s1 of statuses) for (const b1 of [false, true])
+    for (const s2 of statuses) for (const b2 of [false, true])
+      combos.push([{ s: s1, b: b1 }, { s: s2, b: b2 }]);
+  assert.strictEqual(combos.length, 8 + 64);
+  for (const combo of combos) {
+    const crits = combo.map((c, i) => ({
+      id: 'c' + i, label: 'c' + i, status: c.s, blocked: c.b,
+      blocked_reason: c.b ? 'gate' : null,
+    }));
+    const wantStatus = rollup(crits);
+    const wantBlocked = crits.some((c) => c.blocked);
+    // seq placement: settled items may sit anywhere; unsettled must be right of now.
+    const it = gate({
+      criteria: crits, status: wantStatus, blocked: wantBlocked,
+      blocked_reason: wantBlocked ? 'gate' : null,
+      blocked_criterion: wantBlocked ? crits.find((c) => c.blocked).id : null,
+      date: undefined, provenance: 'derived',
+    });
+    const ok = O.validateItems([it]);
+    assert.strictEqual(ok.ok, true, JSON.stringify(combo) + ' -> ' + (ok.errors || []).join('; '));
+    // every mismatched stored status must be rejected
+    for (const wrong of statuses.filter((s) => s !== wantStatus)) {
+      const bad = O.validateItems([gate({
+        criteria: crits, status: wrong, blocked: wantBlocked,
+        blocked_reason: wantBlocked ? 'gate' : null,
+        blocked_criterion: wantBlocked ? crits.find((c) => c.blocked).id : null,
+        date: undefined, provenance: 'derived',
+      })]);
+      assert.strictEqual(bad.ok, false, 'stored ' + wrong + ' vs rollup ' + wantStatus);
+    }
+    // blocked overlay mismatch rejected
+    const badBlocked = O.validateItems([gate({
+      criteria: crits, status: wantStatus, blocked: !wantBlocked,
+      blocked_reason: !wantBlocked ? 'gate' : null,
+      blocked_criterion: !wantBlocked ? crits[0].id : null,
+      date: undefined, provenance: 'derived',
+    })]);
+    assert.strictEqual(badBlocked.ok, false, 'blocked overlay mismatch must fail');
+  }
+});
+
+test('blocked overlay facets are validated', () => {
+  // non-null reason on an unblocked item
+  assert.strictEqual(O.validateItems([gate({ blocked_reason: 'gate' })]).ok, false);
+  // blocked without a reason
+  const crits = [{ id: 'c0', label: 'c', status: 'planned', blocked: true, blocked_reason: 'gate' }];
+  assert.strictEqual(O.validateItems([gate({
+    criteria: crits, status: 'planned', blocked: true, blocked_reason: null, date: undefined, provenance: 'derived',
+  })]).ok, false);
+  // reason outside the enum
+  assert.strictEqual(O.validateItems([gate({
+    criteria: crits, status: 'planned', blocked: true, blocked_reason: 'vibes', date: undefined, provenance: 'derived',
+  })]).ok, false);
+  // blocked_criterion must name a real criterion
+  assert.strictEqual(O.validateItems([gate({
+    criteria: crits, status: 'planned', blocked: true, blocked_reason: 'gate',
+    blocked_criterion: 'no-such-criterion', date: undefined, provenance: 'derived',
+  })]).ok, false);
+});
+
+const fs = require('node:fs');
+const path = require('node:path');
+function loadArcData() {
+  const file = path.join(__dirname, '..', 'compile', 'assets', 'civilizationArcData.js');
+  const src = fs.readFileSync(file, 'utf8');
+  const sandbox = { window: {} };
+  new Function('window', src)(sandbox.window);
+  return { data: sandbox.window.CIVILIZATION_ARC_DATA, src };
+}
+
+test('gate-k split is honest and frontier stable', () => {
+  const { data } = loadArcData();
+  const gk = data.items.find((i) => i.id === 'gate-k');
+  const gkGo = data.items.find((i) => i.id === 'gate-k-go-live');
+  assert.ok(gk && gkGo, 'both gate-k and gate-k-go-live must exist');
+  assert.strictEqual(gk.status, 'done');
+  assert.ok(gk.date, 'the pre-live closeout keeps its date');
+  assert.strictEqual(gkGo.status, 'planned');
+  assert.strictEqual(gkGo.blocked, true);
+  assert.strictEqual(gkGo.blocked_reason, 'gate');
+  assert.ok(gkGo.deps.includes('gate-k'));
+  assert.ok(!gkGo.date, 'an unmet gate carries no date');
+  const now = O.deriveNow(data.items);
+  assert.ok(gkGo.seq > now, 'the unmet gate sits right of the frontier');
+});
+
+test('real arc data passes the tightened validator', () => {
+  const { data } = loadArcData();
+  const r = O.validateItems(data.items);
+  assert.strictEqual(r.ok, true, (r.errors || []).slice(0, 5).join('; '));
+});
+
+test('parallel status vocabulary is gone', () => {
+  const { src } = loadArcData();
+  const itemsRegion = src.slice(0, src.indexOf('CIVILIZATION_LIVE_READER_CORRECTION'));
+  for (const banned of ['boundary_status', 'go_live_revalidation']) {
+    assert.ok(!itemsRegion.includes(banned + ':'),
+      banned + ' must not appear as a field in the arc items region');
+  }
+});
+
+test('blocked must be boolean — string-truthy diverges rollup from renderer', () => {
+  // the lane: string-truthy blocked with a NULL reason slips both branches —
+  // rollup sees unblocked (===), the renderer sees blocked (truthiness)
+  // (CFAR 2b-r1 F2, class-swept to the item level too)
+  const it = gate({ blocked: 'true', blocked_reason: null });
+  assert.strictEqual(O.validateItems([it]).ok, false, 'string item.blocked must be rejected');
+  const crits = [{ id: 'c0', label: 'c', status: 'planned', blocked: 'true', blocked_reason: null }];
+  const g = gate({ criteria: crits, status: 'planned', blocked: false, blocked_reason: null, date: undefined, provenance: 'derived' });
+  assert.strictEqual(O.validateItems([g]).ok, false, 'string criterion.blocked must be rejected');
+});
+
+test('inflight-shaped live items validate (draft blockers carry an enum reason)', () => {
+  const live = {
+    id: 'pr-hive-1', code: 'hive#1', type: 'work', label: 'x', status: 'active',
+    blocked: true, blocked_reason: 'gate', provenance: 'derived',
+    repo: ['hive'], sprint: 'implementation', href: 'https://x', author: 'a',
+    note: 'draft · @a', seq: 1,
+  };
+  const r = O.validateItems([live]);
+  assert.strictEqual(r.ok, true, (r.errors || []).join('; '));
+});
+
+test('blocked_criterion is gate-only and must name a BLOCKED criterion', () => {
+  // non-gate carrying the gate-only pointer (CFAR 2b-r2)
+  const work = { id: 'w', type: 'work', status: 'active', blocked: true,
+    blocked_reason: 'gate', blocked_criterion: 'x', provenance: 'derived',
+    seq: 1, sprint: 's', repo: ['r'] };
+  assert.strictEqual(O.validateItems([work]).ok, false,
+    'blocked_criterion on a non-gate must be rejected');
+  // pointer at an unblocked criterion of a multi-criterion gate
+  const g = gate({
+    criteria: [
+      { id: 'c0', label: 'c0', status: 'done', blocked: false, blocked_reason: null },
+      { id: 'c1', label: 'c1', status: 'planned', blocked: true, blocked_reason: 'gate' },
+    ],
+    status: 'planned', blocked: true, blocked_reason: 'gate',
+    blocked_criterion: 'c0', date: undefined, provenance: 'derived',
+  });
+  assert.strictEqual(O.validateItems([g]).ok, false,
+    'blocked_criterion must name a criterion that is actually blocked');
+});
+
+test('a blocked gate must carry blocked_criterion (CFAR 2b-r3)', () => {
+  const g = gate({
+    criteria: [{ id: 'c0', label: 'c0', status: 'planned', blocked: true, blocked_reason: 'gate' }],
+    status: 'planned', blocked: true, blocked_reason: 'gate',
+    date: undefined, provenance: 'derived',
+  });
+  delete g.blocked_criterion;
+  assert.strictEqual(O.validateItems([g]).ok, false,
+    'the machine-readable hard-stop pointer is mandatory on a blocked gate');
+});
+
+test('criterion ids are unique and criterion refs are dereferenceable (CFAR 2b-r4)', () => {
+  // duplicate criterion ids make blocked_criterion ambiguous
+  const dup = gate({
+    criteria: [
+      { id: 'x', label: 'a', status: 'planned', blocked: true, blocked_reason: 'gate' },
+      { id: 'x', label: 'b', status: 'done', blocked: false, blocked_reason: null },
+    ],
+    status: 'planned', blocked: true, blocked_reason: 'gate',
+    blocked_criterion: 'x', date: undefined, provenance: 'derived',
+  });
+  assert.strictEqual(O.validateItems([dup]).ok, false, 'duplicate criterion ids must be rejected');
+  // criterion refs get the same repo#123 guarantee as item refs
+  const badRef = gate({
+    criteria: [{ id: 'c0', label: 'c', status: 'done', blocked: false, blocked_reason: null, ref: 'PR-138' }],
+  });
+  assert.strictEqual(O.validateItems([badRef]).ok, false, 'malformed criterion ref must be rejected');
 });

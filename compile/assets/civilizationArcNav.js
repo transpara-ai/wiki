@@ -214,9 +214,12 @@
     return {
       nowSeq: nowSeq,
       currentGate: pick(function (it) { return it.blocked && it.type === "gate"; }),
-      // Post-waiver: a closed gate can still hold the go-live hard stop. Surface it so the
-      // focus panel never reads "all clear" while go_live_revalidation is blocked.
-      goLiveGate: pick(function (it) { return it.type === "gate" && it.go_live_revalidation === "blocked"; }),
+      // Post-waiver: the unmet go-live scope is its own blocked gate (Item 2b split).
+      // Surface it so the focus panel never reads "all clear" while it stands.
+      goLiveGate: pick(function (it) {
+        return it.type === "gate" && it.blocked === true &&
+          (it.criteria || []).some(function (c) { return c.blocked === true; });
+      }),
       blockingWork: pick(function (it) {
         return it.blocked && it.type === "work" && it.provenance === "derived";
       }),
@@ -447,8 +450,8 @@
       panel.appendChild(head);
       panel.appendChild(htmlEl("p", "arc-now-label", gate.label || ""));
     } else if (goLive) {
-      // No fully-blocked gate, but a closed gate still holds the go-live hard stop
-      // (go_live_revalidation: "blocked"). Surface it as the focus, not "all clear".
+      // A blocked gate holds an unmet acceptance scope (a blocked criterion,
+      // e.g. gate-k-go-live). Surface it as the focus, not "all clear".
       head.appendChild(htmlEl("span", "arc-now-code", goLive.code || goLive.id || "gate"));
       head.appendChild(htmlEl("span", "arc-badge arc-badge-blocked", "go-live blocked"));
       panel.appendChild(head);
@@ -547,12 +550,14 @@
     meta.appendChild(document.createTextNode(statusLabel(status)));
     panel.appendChild(meta);
 
-    if (item.boundary_status || item.go_live_revalidation) {
+    if (Array.isArray(item.criteria) && item.criteria.length) {
       var boundary = htmlEl("p", "arc-detail-meta");
-      boundary.appendChild(htmlEl("span", "arc-detail-meta-key", "boundary "));
-      var parts = [];
-      if (item.boundary_status) parts.push(fieldLabel(item.boundary_status));
-      if (item.go_live_revalidation) parts.push("go-live revalidation " + fieldLabel(item.go_live_revalidation));
+      boundary.appendChild(htmlEl("span", "arc-detail-meta-key", "criteria "));
+      var parts = item.criteria.map(function (c) {
+        var bit = (c.label || c.id) + " " + fieldLabel(c.status);
+        if (c.blocked) bit += " (blocked" + (c.blocked_reason ? ": " + c.blocked_reason : "") + ")";
+        return bit;
+      });
       boundary.appendChild(document.createTextNode(parts.join(" · ")));
       panel.appendChild(boundary);
     }
@@ -561,9 +566,10 @@
     // explicit lifecycle placeholder otherwise — never blank, never fabricated.
     var dateMeta = htmlEl("p", "arc-detail-meta arc-detail-date");
     dateMeta.appendChild(htmlEl("span", "arc-detail-meta-key", "date "));
-    var hasRealDate = typeof item.date === "string" && item.date;
+    // the provenance ref renders whether or not the item is dated — an
+    // undated blocked gate must not lose its evidence pointer (CFAR 2b-r5)
     dateMeta.appendChild(document.createTextNode(
-      dateText(item) + (hasRealDate && item.ref ? " · " + item.ref : "")));
+      dateText(item) + (item.ref ? " · " + item.ref : "")));
     panel.appendChild(dateMeta);
 
     if (item.note) {
