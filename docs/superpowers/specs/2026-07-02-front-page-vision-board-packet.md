@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-FRONT-PAGE-BOARD
 title: Front-Page Vision Board — TLC Design Packet (Item 2a)
 doc_type: design
-version: 0.3.0
+version: 0.3.1
 status: draft
 canonical: false
 created: 2026-07-02
@@ -12,7 +12,7 @@ steward: Claude (Fable 5)
 authority: planning
 tlc_stage: design
 source_of_intent:
-  - docs/superpowers/specs/2026-07-01-front-page-vision-board-design.md (the v0.1 brainstorm spec, published via PR #42; content spine, visual direction, and fail-legible rules locked with the owner 2026-07-01)
+  - docs/superpowers/specs/2026-07-01-front-page-vision-board-design.md (the v0.1 brainstorm spec; content spine, visual direction, and fail-legible rules locked with the owner 2026-07-01; pinned to PR #42 head c2aea9372ce6824993076c0a91e195a9f16c74fd — this arc merges only after #42 makes it canonical on main; CFADA2A-R2-M1)
   - operator directive 2026-07-02 — program-level AuthorityDecision "complete this wiki refactor without further intervention … use the TLC process" (Open Brain marker wiki-refactor-overnight-GO; autonomous decisions reviewable after the fact)
 intake_channel: A (human request)
 ---
@@ -45,7 +45,11 @@ intake_channel: A (human request)
 ## 3. Data schema (flat, matching the existing `fm_val`/`fm_list` parser)
 
 `index.md` frontmatter gains flat keys — no nested YAML (the repo's parser is
-deliberately simple):
+deliberately simple). **Scalar comment hazard (CFADA2A-R2-M2):** the live
+`fm_val` does NOT strip inline comments (only `fm_list` does), so the board
+reader uses a dedicated scalar helper that applies `split_inline_comment`
+and then **fails closed on an empty required value**; the schema below is
+normative WITHOUT the illustrative comments:
 
 ```yaml
 board_eyebrow: "..."                # mono eyebrow line
@@ -90,7 +94,7 @@ visible; a half-board that looks finished is not.)
 | AC1 | home page contains hero, centerpiece (`role="img"`), 4 pillar tiles as resolving links, inheritance strip, Cult-Test footer | `test_home_board_renders_all_sections` |
 | AC2 | every board link target exists in `wiki/` and renders as a live (not red) link | `test_home_board_links_resolve` |
 | AC3 | fail-legible regression: home page emits **no** unqualified "14 invariants" hero token | `test_home_board_no_contested_hero_number` |
-| AC4 | missing/malformed board frontmatter or a dangling slug ⇒ build **fails loudly** (no partial board, no essay fallback) | `test_home_board_fails_closed_on_bad_frontmatter` |
+| AC4 | missing/malformed board frontmatter, a dangling slug, a scalar reduced to empty by comment-stripping, or an empty required value ⇒ build **fails loudly** (no partial board, no essay fallback; CFADA2A-R2-M2) | `test_home_board_fails_closed_on_bad_frontmatter` |
 | AC5 | air-gap relative to a **pinned baseline**: the board introduces **no additional** `<script>` beyond the pre-existing chrome set, no `url(http…)` in `.board-` CSS rules, and no external font/icon references anywhere on the home page (CFADA-r1 M4) | `test_home_board_airgap_and_no_js` |
 | AC6 | the narrative article exists, carries the moved essay, and the board links to it | `test_narrative_article_moved_and_linked` |
 | AC7 | chrome/article behavior unchanged except the R6 additive derivations; existing python suites stay green; **the Playwright home specs (`tests/arc-nav.spec.js` et al.) are updated in-scope** — they currently assert the old essay text and would otherwise contradict the gate (CFADA-r1 B3) | existing suites + updated browser specs |
@@ -134,3 +138,12 @@ Any unproven criterion ⇒ not satisfied.
 | M2 | accessibility clauses uncovered | AC10 + `test_home_board_accessibility` |
 | M3 | pipe delimiter ambiguous for literal pipes | delimiter contract: `|` banned in field copy, named build error |
 | M4 | no-JS assertion unscoped vs existing chrome scripts | AC5 pinned-baseline formulation |
+
+## Appendix — CFADA round 2 (Codex) → PASS, majors repaired at v0.3.1
+
+> Reviewed head `65c057f` (v0.3.0). Verdict: **PASS — 0 blockers, 2 majors**; all round-1 repairs verified.
+
+| # | Finding | Disposition (v0.3.1) |
+|---|---|---|
+| R2-M1 | source-of-intent cites a spec that exists only on unmerged PR #42 | pinned to #42 head `c2aea93…`; arc merge ordered after #42 |
+| R2-M2 | schema examples carried inline comments `fm_val` would swallow into values | dedicated board scalar helper with `split_inline_comment` + empty-required fails closed; AC4 extended |
