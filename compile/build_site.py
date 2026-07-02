@@ -1692,12 +1692,17 @@ def board_scalar(fm, key):
     return value
 
 
-def _board_fields(item, n, what):
+def _board_fields(item, n, what, optional=()):
     fields = item.split("|")
     if len(fields) != n:
         raise BoardError("%s needs exactly %d pipe-delimited fields (literal "
                          "'|' is banned in field copy): %r" % (what, n, item))
-    return [f.strip() for f in fields]
+    fields = [f.strip() for f in fields]
+    for i, f in enumerate(fields):
+        if not f and i not in optional:
+            raise BoardError("%s field %d is empty — required board copy "
+                             "must not be blank (fail-closed)" % (what, i + 1))
+    return fields
 
 
 def _board_slug(slug, what):
@@ -1722,8 +1727,8 @@ def build_board(fm):
         raise BoardError("board_pillars needs exactly 4 entries, got %d"
                          % len(raw_pillars))
     for item in raw_pillars:
-        name, objective, hook, slug, color = _board_fields(item, 5,
-                                                           "board pillar")
+        name, objective, hook, slug, color = _board_fields(
+            item, 5, "board pillar", optional=(2,))  # only the hook may be blank
         if color not in BOARD_WALL_COLORS:
             raise BoardError("unknown board wall color %r (allowed: %s)"
                              % (color, ", ".join(BOARD_WALL_COLORS)))

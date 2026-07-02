@@ -104,6 +104,14 @@ def test_home_board_fails_closed_on_bad_frontmatter():
             '  - "One civilization|discipline turned inward|1|the-civilization|coral"'))),
         ("dangling slug", good_fm(board_narrative_link=
                                   "board_narrative_link: no-such-article")),
+        ("empty required pillar objective", good_fm(board_pillars=(
+            "board_pillars:\n"
+            '  - "Accountability||6|accountable-ai-architecture|purple"\n'
+            '  - "Provenance|nothing unsourced||primitive-basis|teal"\n'
+            '  - "Governed autonomy|auditable membrane||hive-governance|amber"\n'
+            '  - "One civilization|discipline turned inward|1|the-civilization|coral"'))),
+        ("empty guardrail text", good_fm(
+            board_guardrail='board_guardrail: "|the-cult-test"')),
         ("duplicate wall color (would silently mislabel the centerpiece)",
          good_fm(board_pillars=(
             "board_pillars:\n"
@@ -157,6 +165,12 @@ def test_narrative_article_moved_and_linked():
     assert index_text.count("stats:begin") == 1 and \
         index_text.count("stats:end") == 1, \
         "index.md must keep exactly one stats marker pair for refresh.py"
+    # CFAR 2a-r2: the committed generated block must carry the real count
+    # (a zero count would render as durable generated truth)
+    m = re.search(r"frontmatter\):\*\* (\d+)", index_text)
+    real_count = len(list((ROOT / "wiki").glob("*.md")))
+    assert m and int(m.group(1)) == real_count, \
+        "committed stats block must match wiki/*.md count (%d)" % real_count
     assert "stats:begin" not in body, \
         "the archived narrative must not carry live stats markers"
     print("ok test_narrative_article_moved_and_linked")
