@@ -464,8 +464,7 @@ def _parse_entry(line, lineno, fingerprints, blob_reviews):
                             "exactly %s" % (lineno, sorted(FP_KEYS)))
         _require_str(entry, FP_KEYS - {"byte_offset"}, lineno)
         if entry["rule_id"] not in RULE_IDS:
-            raise ScanError("allowlist line %d: unknown rule_id %r"
-                            % (lineno, entry["rule_id"]))
+            raise ScanError("allowlist line %d: unknown rule_id (value not echoed)" % lineno)
         offset = entry["byte_offset"]
         if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
             raise ScanError("allowlist line %d: byte_offset must be a "
@@ -494,8 +493,7 @@ def _parse_entry(line, lineno, fingerprints, blob_reviews):
             raise ScanError("allowlist line %d: duplicate identity" % lineno)
         blob_reviews.append(identity)
     else:
-        raise ScanError("allowlist line %d: unknown type %r — fail closed"
-                        % (lineno, etype))
+        raise ScanError("allowlist line %d: unknown type (value not echoed) — fail closed" % lineno)
 
 
 # ------------------------------------------------------------ occurrence

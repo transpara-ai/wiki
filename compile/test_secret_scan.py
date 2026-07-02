@@ -705,6 +705,10 @@ def test_allowlist_schema_and_expiry_enforced():
         # compact forms; the documented grammar is exactly YYYY-MM-DD
         json.dumps(fp_entry("aws-access-key-id", "x.py", b"x", k, 0,
                             reviewed_on=today.strftime("%Y%m%d"))) + "\n",
+        # secret-shaped values in rejected fields (CFAR F18): the validation
+        # error must not echo them into hook/CI logs
+        json.dumps({"type": k}) + "\n",
+        json.dumps(fp_entry(k, "x.py", b"x", k, 0)) + "\n",
     ]
     with tempfile.TemporaryDirectory() as d:
         root = make_repo(d)
@@ -717,6 +721,8 @@ def test_allowlist_schema_and_expiry_enforced():
             proc = run_scanner(["--staged"], root)
             assert proc.returncode != 0, \
                 "invalid allowlist #%d must block even a clean stage" % i
+            assert k not in proc.stdout + proc.stderr, \
+                "rejected allowlist value #%d echoed into logs" % i
     print("ok test_allowlist_schema_and_expiry_enforced")
 
 
