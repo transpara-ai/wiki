@@ -336,9 +336,11 @@ ALLOWLIST_PATH = "compile/.secretsallow"
 
 
 def load_allowlist_snapshot(root, mode_args):
-    """Read the allowlist from the snapshot being scanned, never the working
-    tree (CFAR F2): staged mode reads the INDEX copy (the review record must
-    travel with the commit it clears); changed-against reads HEAD's copy;
+    """Read the allowlist from a snapshot, never the working tree (CFAR F2):
+    staged mode reads the INDEX copy (the review record must travel with the
+    commit it clears); changed-against mode reads the BASE ref's copy — only
+    entries already merged (human-ratified) can clear CI findings, so a PR
+    cannot add a secret and self-allowlist it in the same change (CFAR F9);
     tree mode reads the target tree's copy. Absent from the snapshot = empty
     allowlist; any git error while reading fails closed via git()."""
     if mode_args.staged:
@@ -346,7 +348,10 @@ def load_allowlist_snapshot(root, mode_args):
         if not listing.strip():
             return Allowlist([], [])
         return parse_allowlist(git(root, "show", ":0:" + ALLOWLIST_PATH))
-    rev = "HEAD" if mode_args.changed_against is not None else mode_args.tree
+    if mode_args.changed_against is not None:
+        rev = mode_args.changed_against
+    else:
+        rev = mode_args.tree
     listing = git(root, "ls-tree", rev, "--", ALLOWLIST_PATH)
     if not listing.strip():
         return Allowlist([], [])

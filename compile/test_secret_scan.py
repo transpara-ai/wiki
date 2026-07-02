@@ -649,6 +649,41 @@ def test_allowlist_schema_and_expiry_enforced():
     print("ok test_allowlist_schema_and_expiry_enforced")
 
 
+def test_ci_does_not_trust_pr_head_allowlist():
+    # CFAR F9 (P1): a PR must not be able to add a secret AND a matching
+    # allowlist entry in the same change — changed-against mode trusts only
+    # the BASE ref's allowlist (entries ratify by merging), never HEAD's.
+    k = gen_aws_key()
+    content = "a = '%s'\n" % k
+    blob = content.encode("utf-8")
+    entry = fp_entry("aws-access-key-id", "cfg.py", blob, k, content.index(k))
+    with tempfile.TemporaryDirectory() as d:
+        root = make_repo(d)
+        sh(["git", "checkout", "-q", "-b", "feat"], root)
+        (root / "cfg.py").write_text(content)
+        write_allowlist(root, [entry])
+        sh(["git", "add", "cfg.py"], root)
+        sh(["git", "commit", "-q", "--no-verify", "-m", "secret + self-allowlist"], root)
+        proc = run_scanner(["--changed-against", "main"], root)
+        assert proc.returncode != 0, \
+            "a PR-head allowlist entry must not clear the PR's own secret"
+    with tempfile.TemporaryDirectory() as d:
+        # the ratified flow: the entry is already merged on the BASE —
+        # then it clears the finding in a follow-up PR
+        root = make_repo(d)
+        write_allowlist(root, [entry])
+        sh(["git", "commit", "-q", "--no-verify", "-m", "ratified allowlist"], root)
+        sh(["git", "checkout", "-q", "-b", "feat"], root)
+        (root / "cfg.py").write_text(content)
+        sh(["git", "add", "cfg.py"], root)
+        sh(["git", "commit", "-q", "--no-verify", "-m", "content"], root)
+        proc = run_scanner(["--changed-against", "main"], root)
+        assert proc.returncode == 0, \
+            "a base-ratified entry must clear the finding: %s%s" \
+            % (proc.stdout, proc.stderr)
+    print("ok test_ci_does_not_trust_pr_head_allowlist")
+
+
 def test_partial_clone_missing_blob_blocks_without_fetch():
     # CFAR F8: in a blob-filtered (promisor) clone, git lazily fetches
     # missing blobs over the network — the scanner must block on the missing
