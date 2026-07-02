@@ -1712,6 +1712,19 @@ def _board_slug(slug, what):
     return slug
 
 
+def board_search_text(fm):
+    """Lenient plain-text extraction of the board copy for the home search
+    document (search_text only carries aliases + body; the board lives in
+    frontmatter — CFAR 2a-r4). Validation stays build_board's job."""
+    parts = []
+    for key in ("board_eyebrow", "board_hero", "board_subtitle",
+                "board_method", "board_guardrail"):
+        parts.append(fm_val(fm, key).replace("|", " "))
+    for key in ("board_pillars", "board_inheritance"):
+        parts.extend(item.replace("|", " ") for item in fm_list(fm, key))
+    return re.sub(r"\s+", " ", " ".join(p for p in parts if p)).strip()
+
+
 def build_board(fm):
     """Compose the front-page vision board from index.md frontmatter,
     validating fail-closed (design packet §3/§4). Returns board HTML that the
@@ -1917,7 +1930,8 @@ def build():
             "slug": "index",
             "title": SITE_NAME,
             "tier": "front page",
-            "text": search_text(fm, body)[:12000],
+            "text": ("%s %s" % (board_search_text(fm),
+                                search_text(fm, body)))[:12000],
         })
         for p in sorted(WIKI.glob("*.md")):
             fm, body = split_fm(p.read_text())

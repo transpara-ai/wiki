@@ -243,6 +243,16 @@ def test_home_board_in_dist():
     emitted = dist_index.read_text()
     assert 'class="board-hero"' in emitted and 'class="board-guardrail"' in emitted, \
         "the emitted home page must carry the board"
+    # CFAR 2a-r4: topbar search must find visible board copy IN THE HOME
+    # DOCUMENT itself (a hit in some source page does not count)
+    import json as _json
+    sidx = (ROOT / "dist" / "search-index.js").read_text()
+    docs = _json.loads(sidx[sidx.index("=") + 1:].rstrip(";\n"))
+    home = next(d for d in docs if d["slug"] == "index")
+    assert "certified-or-rejected" in home["text"], \
+        "the home search document must include the board method text"
+    assert "six questions every material action answers" in home["text"], \
+        "the home search document must include pillar objectives"
     print("ok test_home_board_in_dist")
 
 
