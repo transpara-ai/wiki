@@ -347,6 +347,11 @@
       }
       colB.appendChild(head);
       colB.appendChild(htmlEl("p", "arc-now-label", gate.label || ""));
+      // the gate's OWN provenance — e.g. gate-k-go-live's only evidence is
+      // its gate-level ref; criteria may carry none (evidence-honesty rule)
+      var gateEvidence = htmlEl("div", "arc-gate-evidence");
+      gateEvidence.appendChild(evidenceStamp(gate, null));
+      colB.appendChild(gateEvidence);
       if (Array.isArray(gate.criteria) && gate.criteria.length) {
         var crits = htmlEl("ul", "arc-gate-criteria");
         gate.criteria.forEach(function (c) {

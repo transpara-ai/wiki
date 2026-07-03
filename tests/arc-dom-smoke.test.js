@@ -151,6 +151,11 @@ test('next gate is gate-k-go-live with criteria checklist and recomputed rollup'
   const badge = panel.querySelector(".arc-badge-blocked");
   assert(badge, "blocked badge missing");
   assert.match(badge.textContent, /blocked · gate/);
+  // the gate's own provenance must render (its criterion carries no ref —
+  // the gate-level ref docs#138 is the panel's only evidence pointer)
+  const gateStamp = panel.querySelector(".arc-gate-evidence .arc-evidence");
+  assert(gateStamp, "next-gate panel must stamp the gate's own evidence");
+  assert.match(gateStamp.textContent, /docs#138/);
   const crits = [...panel.querySelectorAll(".arc-gate-criterion")];
   assert.strictEqual(crits.length, 1, "gate-k-go-live has one criterion");
   assert.match(crits[0].textContent, /go-live boundary revalidation/);
