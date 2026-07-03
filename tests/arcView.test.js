@@ -121,6 +121,23 @@ test('currentPhase deny-path when no settled item exists', () => {
   assert.deepStrictEqual(r, { ok: false, reason: 'no-settled' });
 });
 
+test('currentPhase uses the same {work,gate} allowlist as the phase rollup', () => {
+  // a settled goal/decision at the max seq must not drag the frontier onto a
+  // phase the spine itself renders as future with 0 pieces (D1/D2 must agree)
+  const items = [
+    it({ id: 'w', seq: 5, sprint: 'p1' }),
+    it({ id: 'g', type: 'goal', status: 'active', seq: 9, sprint: 'p2' }),
+    it({ id: 'd', type: 'decision', status: 'done', seq: 8, sprint: 'p2' }),
+  ];
+  const r = V.currentPhase(items, SPRINTS);
+  assert.strictEqual(r.ok, true);
+  assert.strictEqual(r.sprintId, 'p1');
+  assert.strictEqual(r.item.id, 'w');
+  // pieces-only also governs the no-settled deny-path
+  const onlyDemoted = [it({ id: 'g2', type: 'goal', status: 'active', seq: 1 })];
+  assert.deepStrictEqual(V.currentPhase(onlyDemoted, SPRINTS), { ok: false, reason: 'no-settled' });
+});
+
 test('currentPhase deny-path on ambiguous same-seq cross-sprint frontier', () => {
   const items = [
     it({ id: 'a', seq: 10, sprint: 'p1' }),

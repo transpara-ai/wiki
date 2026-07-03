@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-ARC-2B-VISUAL
 title: Arc 2b-visual — Now-Panel + Phase Spine, Retire the Six-Mode Engine (TLC Design Packet)
 doc_type: design
-version: 0.3.1
+version: 0.3.2
 status: draft
 canonical: false
 created: 2026-07-03
@@ -93,7 +93,10 @@ All consume `CivOntology` (`deriveNow`, `rollupCriteria`, `validateItems`,
   nothing beats an all-types fallback, which would reintroduce the
   perpetual-goal poison for goal-only phases.
 - **D2 — `currentPhase(bakedItems, sprints)`**: the sprint of the
-  **baked** frontier item (argmax seq over `SETTLED` status). Anchored to
+  **baked** frontier item — argmax seq over `SETTLED` status **among the
+  same `{work, gate}` piece allowlist D1 uses** (ready-CFAR r3: a settled
+  goal/decision at the max seq must never mark a phase the spine renders as
+  future with 0 pieces — D1 and D2 may never disagree on valid input). Anchored to
   baked items per §1; live overlay never moves the phase read. **Ambiguity is
   a deny-path, not a tie-break** (CFADA-r1 B2 — array order is valid-input
   ambiguity, not determinism): if two or more settled items share the max seq

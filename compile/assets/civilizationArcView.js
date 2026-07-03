@@ -57,10 +57,14 @@
   //   no-settled          — valid all-planned/future input has no frontier
   //   ambiguous-frontier  — settled max-seq items name different sprints
   //   unknown-sprint      — the frontier sprint is not in sprints[]
+  // Frontier candidates use the SAME {work, gate} allowlist as the phase
+  // rollup — a settled goal/decision at the max seq must never mark a phase
+  // the spine itself renders as future with 0 pieces (ready-CFAR r3).
   function currentPhase(items, sprints) {
     var settled = [];
     (items || []).forEach(function (it) {
-      if (it && O.SETTLED[it.status] && typeof it.seq === "number" && !isNaN(it.seq)) settled.push(it);
+      if (it && PIECE_TYPES[it.type] === 1 && O.SETTLED[it.status] &&
+          typeof it.seq === "number" && !isNaN(it.seq)) settled.push(it);
     });
     if (!settled.length) return { ok: false, reason: "no-settled" };
     var max = -Infinity;
