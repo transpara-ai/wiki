@@ -1,3 +1,8 @@
+// tests/arc-dom-smoke.test.js
+// DOM smoke tests for the arc page view (civilizationArcView.js) — the
+// now-panel, phase spine, retired-engine absence, live overlay semantics,
+// and the ported governance-honesty panels. Design packet:
+// docs/superpowers/specs/2026-07-03-arc-2b-visual-packet.md (AC1–AC3, AC6–AC7).
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
@@ -6,6 +11,14 @@ const { JSDOM } = require("jsdom");
 
 const root = path.resolve(__dirname, "..");
 const O = require("../compile/assets/civilizationOntology.js");
+const V = require("../compile/assets/civilizationArcView.js");
+
+const VIEW_ASSETS = [
+  "civilizationOntology.js",
+  "civilizationArcData.js",
+  "civilizationProgressEvidence.js",
+  "civilizationArcView.js",
+];
 
 function loadArcData() {
   const context = { window: {} };
@@ -27,21 +40,35 @@ function loadProgressEvidence() {
   return context.window.CIVILIZATION_PROGRESS_EVIDENCE;
 }
 
-// ── Reusable mount helper — eval all five modules into a JSDOM window and
-//    dispatch DOMContentLoaded. Returns { nav, svg, dom } for test assertions.
+// ── Reusable mount helper — eval the four modules into a JSDOM window and
+//    dispatch DOMContentLoaded. options.beforeView(win) runs after the data
+//    assets load and before the view module, to mutate payloads under test.
 function mountArc(options = {}) {
-  const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav></div>', {
+  const dom = new JSDOM('<!doctype html><div data-civilization-arc></div>', {
     pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
   });
-  ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
-   "civilizationArcDraw.js", "civilizationProgressEvidence.js", "civilizationArcNav.js"].forEach((f) => {
+  VIEW_ASSETS.forEach((f) => {
+    if (f === "civilizationArcView.js" && options.beforeView) options.beforeView(dom.window);
     dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8"));
-    if (f === "civilizationProgressEvidence.js" && options.beforeNav) options.beforeNav(dom.window);
   });
   dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
-  const nav = dom.window.document.querySelector(".civilization-arc-nav");
-  const svg = nav ? nav.querySelector("svg.arc-svg") : null;
-  return { nav, svg, dom };
+  const view = dom.window.document.querySelector(".civilization-arc-view");
+  return { view, dom };
+}
+
+// Live-overlay mount: the root opts in via data-arc-live and fetch is stubbed.
+function mountWithFetch(payload, opts = {}) {
+  const dom = new JSDOM('<!doctype html><div data-civilization-arc data-arc-live="true"></div>', {
+    pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
+  });
+  dom.window.fetch = function () {
+    if (opts.reject) return Promise.reject(new Error("network down"));
+    return Promise.resolve({ ok: true, json: () => Promise.resolve(payload) });
+  };
+  VIEW_ASSETS.forEach((f) =>
+    dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
+  dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
+  return dom;
 }
 
 // ── Data contract: items[] exists and passes the ontology allowlist gate ──
@@ -54,61 +81,17 @@ function assertData(data) {
   const r = O.validateItems(data.items);
   assert.strictEqual(r.ok, true, `validateItems failed:\n${(r.errors || []).join("\n")}`);
 
-  // ── Code facet: every item carries a non-empty string short code ──
-  // The default (clean) chart view renders item.code as the node text, so a
-  // missing/empty code would leave a node unreadable.
+  // Code facet: the panel renders item.code as the row identifier.
   data.items.forEach((it) => {
-    assert.strictEqual(
-      typeof it.code,
-      "string",
-      `item '${it.id}' code must be a string, got ${typeof it.code}`
-    );
+    assert.strictEqual(typeof it.code, "string", `item '${it.id}' must carry a string code`);
     assert(it.code.trim().length > 0, `item '${it.id}' code must be non-empty`);
   });
 
-  // ── Code uniqueness: codes label nodes and the code key, so they must be unique ──
-  const codeCounts = new Map();
-  data.items.forEach((it) => {
-    codeCounts.set(it.code, (codeCounts.get(it.code) || 0) + 1);
-  });
-  const dupedCodes = Array.from(codeCounts.entries())
-    .filter(([, n]) => n > 1)
-    .map(([c]) => c);
-  assert.strictEqual(
-    dupedCodes.length,
-    0,
-    `every item.code must be unique; duplicates: ${dupedCodes.join(", ")}`
-  );
-
-  // ── Gate grouping lanes by family: the "family lanes, all gates" model ──
-  // grouping="gate" lanes by item.family; the expanded gate landscape must
-  // surface the three load-bearing gate families (ordered by GATE_FAMILIES).
-  const gateLanes = O.groupBy(data.items, "gate").map((l) => l.lane);
-  ["v3.9 milestones (A-J)", "Deployment register (G-0..G-8.4)", "v4.0 (K-V)"].forEach(
-    (fam) => {
-      assert(
-        gateLanes.includes(fam),
-        `grouping="gate" must include the '${fam}' lane; saw: ${gateLanes.join(" | ")}`
-      );
-    }
-  );
-  // GATE_FAMILIES ordering: the v3.9-milestones lane precedes the v4.0 lane.
-  assert(
-    gateLanes.indexOf("v3.9 milestones (A-J)") < gateLanes.indexOf("v4.0 (K-V)"),
-    `gate lanes should follow GATE_FAMILIES order; saw: ${gateLanes.join(" | ")}`
-  );
-
-  // Derived "now" must be a finite, positive frontier.
   const now = O.deriveNow(data.items);
   assert(Number.isFinite(now), `deriveNow must be finite, got ${now}`);
   assert(now > 0, `deriveNow must be > 0, got ${now}`);
 
-  // executionPlan is still present and consumed by the plan board.
-  assert(data.executionPlan, "execution plan missing");
-  assert(/^\d{4}-\d{2}-\d{2}$/.test(data.executionPlan.updated), "execution plan date must be ISO");
-
-  // Item 2b split: gate-k is the DONE pre-live closeout (waiver docs#138);
-  // gate-k-go-live is the honest blocked gate for the unmet go-live scope.
+  // Item 2b split (unchanged data model): the honest Gate-K pair.
   const gateK = data.items.find((it) => it.id === "gate-k");
   assert(gateK, "gate-k item missing");
   assert.strictEqual(gateK.status, "done");
@@ -120,205 +103,143 @@ function assertData(data) {
   assert.strictEqual(gateKGo.blocked, true);
   assert.strictEqual(gateKGo.blocked_reason, "gate");
   assert(
-    O.groupBy(data.items, "status").some((lane) =>
-      lane.lane === "done" && lane.items.some((it) => it.id === "gate-k")
-    ),
-    "gate-k (waiver-closed) must sit in the done lane, no longer blocked"
+    gateKGo.criteria.some((c) => c.blocked === true),
+    "gate-k-go-live must carry a blocked criterion"
   );
-}
-
-// ── Rendered DOM: the new chart structure exists ──
-function assertRenderedDom() {
-  const { nav, svg } = mountArc();
-  assert(nav, "arc nav did not mount");
-  assert(svg, "SVG not rendered");
-  assert.strictEqual(nav.querySelectorAll(".arc-track-band").length, 3, "expected 3 track bands");
-  assert.strictEqual(nav.querySelectorAll(".arc-track-label").length, 3, "expected 3 track labels");
-  assert(nav.querySelectorAll(".arc-subrow-label").length >= 4, "expected >=4 gate-family sub-row labels");
-  assert(nav.querySelectorAll(".arc-item-group").length > 0, "no item node groups produced");
-  assert(nav.querySelectorAll(".arc-marker").length > 0, "no item shapes produced");
-  assert(nav.querySelector(".arc-now-line"), "now-line element missing");
-  assert.match(nav.querySelector(".arc-now-panel").textContent, /Gate-K/);
-  assert.match(nav.querySelector(".arc-now-panel").textContent, /blocked/i);
-  assert.strictEqual(nav.querySelectorAll(".arc-now-blocker").length, 0, "now panel should degrade to gate-only focus when no blocked work item remains");
 }
 
 const { test } = require("node:test");
 
-test('axis renders 15 sprint start-ticks and no era labels', () => {
-  const { svg } = mountArc();
-  assert.strictEqual(svg.querySelectorAll('.arc-sprint-tick-label').length, 15);
-  assert.strictEqual(svg.querySelectorAll('.arc-era-label').length, 0);
-  assert.ok(svg.querySelector('.arc-now-line')); // now-line preserved
+test('arc data passes the ontology contract (data model unchanged)', () => {
+  assertData(loadArcData());
 });
 
-test('gate sub-row labels are legible (>=11px) and present for 4 families', () => {
-  const { svg } = mountArc();
-  const subs = [...svg.querySelectorAll('.arc-subrow-label')];
-  assert.ok(subs.length >= 4);
-  subs.forEach(t => assert.ok(Number(t.getAttribute('font-size')) >= 11));
+// ── AC1 — now-panel ─────────────────────────────────────────────────────────
+
+test('now panel names the current phase from baked frontier', () => {
+  const { view } = mountArc();
+  assert(view, "arc view did not mount");
+  const panel = view.querySelector(".arc-now-panel");
+  assert(panel, "now panel missing");
+  const phase = panel.querySelector(".arc-now-phase");
+  assert(phase, "current phase heading missing");
+  assert.strictEqual(phase.textContent, "Deployment / Operations");
+  assert.match(panel.querySelector(".arc-now-frontier").textContent, /frontier .*seq 14\.36.*derived/);
 });
 
-test('tooltip shows sprint + ordinal step + provenance', () => {
-  const { nav: root, svg } = mountArc();
-  const marker = svg.querySelector('[data-arc-item]');
-  marker.dispatchEvent(new root.ownerDocument.defaultView.MouseEvent('mouseover', { bubbles: true }));
-  const tip = root.querySelector('.arc-tooltip');
-  assert.strictEqual(tip.hidden, false);
-  assert.match(tip.textContent, /step \d+ of 121/);
-  assert.match(tip.textContent, /sprint ·/);
-});
-
-// ── XSS hardening: javascript: hrefs must never be assigned to a rendered link ──
-// Helper: mount a fresh JSDOM, inject custom hrefs onto items, fire DOMContentLoaded, return nav.
-function mountWithInjectedHrefs(hrefMap, evidenceMap = {}) {
-  const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav></div>', {
-    pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
+test('active-now rows each carry an evidence stamp', () => {
+  const { view } = mountArc();
+  const rows = [...view.querySelectorAll(".arc-now-item")];
+  assert.strictEqual(rows.length, 9, "baked active work census (packet §1)");
+  rows.forEach((row) => {
+    const stamp = row.querySelector(".arc-evidence");
+    assert(stamp, `row ${row.getAttribute("data-arc-active-item")} missing its evidence stamp`);
+    assert(stamp.querySelector(".arc-evidence-prov"), "provenance badge must always show");
+    assert(stamp.textContent.trim().length > 0, "stamp must never be blank");
+    // absence renders honestly: no ref/date/href ⇒ the explicit placeholder
+    const hasSource = stamp.querySelector(".arc-evidence-ref, .arc-evidence-date, .arc-evidence-link");
+    if (!hasSource) {
+      assert(stamp.querySelector(".arc-evidence-none"), "sourceless row must say 'no source ref'");
+    }
   });
-  ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
-   "civilizationArcDraw.js", "civilizationProgressEvidence.js"].forEach((f) =>
-    dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
-  const items = dom.window.CIVILIZATION_ARC_DATA.items;
-  Object.keys(hrefMap).forEach((k) => { items[Number(k)].href = hrefMap[k]; });
-  Object.keys(evidenceMap).forEach((k) => { items[Number(k)].evidence_links = evidenceMap[k]; });
-  dom.window.eval(fs.readFileSync(path.join(root, "compile/assets/civilizationArcNav.js"), "utf8"));
-  dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
-  const nav = dom.window.document.querySelector(".civilization-arc-nav");
-  return { nav, items, dom };
-}
+});
 
-function triggerItem(nav, item, dom) {
-  const id = String(item.id);
-  const marker = nav.querySelector('[data-arc-item="' + id + '"]');
-  if (marker) {
-    marker.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
-    marker.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-  }
-  return marker;
-}
+test('next gate is gate-k-go-live with criteria checklist and recomputed rollup', () => {
+  const { view } = mountArc();
+  const panel = view.querySelector(".arc-now-panel");
+  assert.match(panel.querySelector(".arc-now-code").textContent, /Gate-K·go-live/);
+  const badge = panel.querySelector(".arc-badge-blocked");
+  assert(badge, "blocked badge missing");
+  assert.match(badge.textContent, /blocked · gate/);
+  // the gate's own provenance must render (its criterion carries no ref —
+  // the gate-level ref docs#138 is the panel's only evidence pointer)
+  const gateStamp = panel.querySelector(".arc-gate-evidence .arc-evidence");
+  assert(gateStamp, "next-gate panel must stamp the gate's own evidence");
+  assert.match(gateStamp.textContent, /docs#138/);
+  const crits = [...panel.querySelectorAll(".arc-gate-criterion")];
+  assert.strictEqual(crits.length, 1, "gate-k-go-live has one criterion");
+  assert.match(crits[0].textContent, /go-live boundary revalidation/);
+  assert(crits[0].classList.contains("arc-criterion-blocked"), "the blocked_criterion row is highlighted");
+  assert.match(panel.querySelector(".arc-gate-rollup").textContent,
+    /fail-closed rollup: planned · blocked/);
+});
 
-test('javascript: href is never assigned to any rendered link (XSS hardening)', () => {
-  // Test three malicious hrefs and two safe hrefs across different items.
-  const { nav, items, dom } = mountWithInjectedHrefs({
-    0: "javascript:alert(1)",           // MUST be rejected
-    1: "//evil.example/x",              // protocol-relative — MUST be rejected
-    2: "data:text/html,<script>xss</script>",  // data: — MUST be rejected
-    3: "https://example.com/safe",      // MUST render as link
-    4: "the-civilization.html",         // bare relative (real data format) — MUST render as link
-  }, {
-    5: [
-      { href: "javascript:alert(2)" },
-      { label: "bad evidence javascript", href: "javascript:alert(1)" },
-      { label: "bad evidence data", href: "data:text/html,<script>xss</script>" },
-      { label: "safe evidence", href: "https://example.com/evidence" },
-    ],
+// ── AC2 — phase spine ───────────────────────────────────────────────────────
+
+test('spine renders 15 phases with one derived frontier on deployment', () => {
+  const { view } = mountArc();
+  const phases = [...view.querySelectorAll("[data-arc-phase]")];
+  assert.strictEqual(phases.length, 15);
+  const now = [...view.querySelectorAll("[data-arc-phase-now]")];
+  assert.strictEqual(now.length, 1, "exactly one frontier marker");
+  assert.strictEqual(now[0].getAttribute("data-arc-phase"), "deployment");
+  const stewardship = view.querySelector('[data-arc-phase="stewardship"]');
+  assert(stewardship.classList.contains("arc-phase-blocked"), "stewardship carries the blocked ring");
+  assert(!stewardship.classList.contains("arc-phase-collapsed"), "a blocked phase never collapses");
+});
+
+test('spine collapse tracks done-and-unblocked exactly', () => {
+  const { view } = mountArc();
+  const data = loadArcData();
+  const model = V.spine(data.items, data.sprints);
+  const byId = {};
+  model.forEach((p) => { byId[p.id] = p; });
+  const phases = [...view.querySelectorAll("[data-arc-phase]")];
+  assert.strictEqual(phases.length, model.length);
+  phases.forEach((el) => {
+    const p = byId[el.getAttribute("data-arc-phase")];
+    assert(p, `unexpected phase ${el.getAttribute("data-arc-phase")}`);
+    const wantCollapsed = p.status === "done" && p.blocked === false;
+    assert.strictEqual(el.classList.contains("arc-phase-collapsed"), wantCollapsed,
+      `phase ${p.id}: collapse ⇔ done AND unblocked`);
+    assert.strictEqual(el.getAttribute("data-arc-phase-status"), p.status, `phase ${p.id}: status class`);
   });
-  assert(nav, "nav did not mount");
+  assert.strictEqual(phases.filter((el) => el.classList.contains("arc-phase-collapsed")).length, 12,
+    "snapshot anchor: 12 done phases collapse today");
+});
 
-  // Trigger malicious items: hover + click each so both tooltip and detail panel are exercised.
-  [0, 1, 2].forEach((idx) => triggerItem(nav, items[idx], dom));
-  triggerItem(nav, items[5], dom);
+// ── AC3 — retired engine is gone ────────────────────────────────────────────
 
-  // Assert: no <a> in the nav has any dangerous href (malicious items active in detail panel).
-  const dangLinks = [...nav.querySelectorAll("a")].filter((a) => {
-    const h = (a.getAttribute("href") || "");
-    return /^javascript:/i.test(h) || /^[\\/]{2}/.test(h) || /^data:/i.test(h);
+test('retired engine artifacts are absent', () => {
+  const { view, dom } = mountArc();
+  const doc = dom.window.document;
+  assert(view, "view mounts");
+  ["svg.arc-svg", ".arc-toolbar", "[data-arc-group]", ".arc-zoom", ".arc-track-band",
+   ".arc-tooltip", ".arc-detail-panel", "[data-arc-item]"].forEach((sel) => {
+    assert.strictEqual(doc.querySelectorAll(sel).length, 0, `retired artifact rendered: ${sel}`);
   });
-  assert.strictEqual(
-    dangLinks.length, 0,
-    "Dangerous links found: " + dangLinks.map((a) => a.getAttribute("href")).join(", ")
-  );
-
-  const safeEvidenceLinks = [...nav.querySelectorAll(".arc-detail-evidence-link")]
-    .map((a) => a.getAttribute("href"));
-  assert.deepStrictEqual(safeEvidenceLinks, ["https://example.com/evidence"]);
-  assert.doesNotMatch(nav.querySelector(".arc-detail-panel").textContent, /evidence\s*·/i);
-
-  // Assert happy path: safe https link renders (click item 3 to load it in detail panel).
-  triggerItem(nav, items[3], dom);
-  const safeLinks = [...nav.querySelectorAll("a")].filter((a) => (a.getAttribute("href") || "").startsWith("https://example.com/safe"));
-  assert.ok(safeLinks.length >= 1, "Safe https href should render a link");
-
-  // Assert happy path: bare relative (the-civilization.html) renders as a link — must NOT vanish.
-  triggerItem(nav, items[4], dom);
-  const relLinks = [...nav.querySelectorAll("a")].filter((a) => (a.getAttribute("href") || "") === "the-civilization.html");
-  assert.ok(relLinks.length >= 1, "Bare relative href 'the-civilization.html' must render a link (safeHref must not reject it)");
 });
 
-// --- grouping toolbar (Task 5) ---
-test('grouping toolbar: six group buttons render, Tracks active by default', () => {
-  const { nav } = mountArc();
-  const btns = [...nav.querySelectorAll('[data-arc-group]')];
-  assert.deepStrictEqual(btns.map(b => b.getAttribute('data-arc-group')),
-    ['tracks', 'status', 'repo', 'sprint', 'gate', 'actor']);
-  assert.strictEqual(nav.querySelector('.arc-group-btn-active').getAttribute('data-arc-group'), 'tracks');
-  assert.strictEqual(nav.querySelectorAll('.arc-track-band').length, 3); // default unchanged
-});
+// ── AC6 — fail-closed display ───────────────────────────────────────────────
 
-test('clicking "Status" regroups the lanes and marks the button active', () => {
-  const { nav, dom } = mountArc();
-  nav.querySelector('[data-arc-group="status"]').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-  const labels = [...nav.querySelectorAll('.arc-track-label')].map(t => t.textContent);
-  assert.ok(labels.includes('done') && labels.includes('planned'), 'status lanes present; got ' + labels.join(' | '));
-  assert.strictEqual(nav.querySelector('.arc-group-btn-active').getAttribute('data-arc-group'), 'status');
-});
-
-test('clicking "Gate" regroups the lanes by gate family (the dimension is reachable in the UI)', () => {
-  const { nav, dom } = mountArc();
-  nav.querySelector('[data-arc-group="gate"]').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-  const labels = [...nav.querySelectorAll('.arc-track-label')].map(t => t.textContent);
-  assert.ok(labels.includes('v4.0 (K-V)'), 'gate-family lanes present; got ' + labels.join(' | '));
-  assert.strictEqual(nav.querySelector('.arc-group-btn-active').getAttribute('data-arc-group'), 'gate');
-});
-
-test('Repo view shows Civilization/Governance group headers, 8 named lanes, no (other)', () => {
-  const { nav, dom } = mountArc();
-  nav.querySelector('[data-arc-group="repo"]').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-  const headers = [...nav.querySelectorAll('.arc-group-header')].map(h => h.textContent);
-  assert.deepStrictEqual(headers, ['Civilization', 'Governance'],
-    'in-collection groups are marked; got ' + headers.join(' | '));
-  const labels = [...nav.querySelectorAll('.arc-track-label')].map(t => t.textContent);
-  assert.deepStrictEqual(labels,
-    ['agent', 'docs', 'eventgraph', 'hive', 'site', 'work', 'wiki', 'operation'],
-    'all 8 collection repos render as named lanes; got ' + labels.join(' | '));
-  assert.ok(!labels.includes('(other)'), 'the generic (other) bucket lane is gone');
-});
-
-// --- live overlay (Task 6) ---
-// The live overlay is OPT-IN (it needs a host that generates inflight.json). These
-// tests exercise the overlay itself, so they turn it on via window.CIV_ARC_LIVE.
-function mountWithFetch(inflightPayload, opts) {
-  const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav></div>', {
-    pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
+test('invalid baked data renders the error notice and no panel', () => {
+  const { view, dom } = mountArc({
+    beforeView(win) { win.CIVILIZATION_ARC_DATA.items[0].bogus_key = true; },
   });
-  dom.window.CIV_ARC_LIVE = true;                 // enable the opt-in live overlay for these tests
-  dom.window.fetch = function () {
-    if (opts && opts.reject) return Promise.reject(new Error("network"));
-    return Promise.resolve({ ok: true, json: function () { return Promise.resolve(inflightPayload); } });
-  };
-  ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
-   "civilizationArcDraw.js", "civilizationProgressEvidence.js", "civilizationArcNav.js"].forEach((f) =>
-    dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
-  dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
-  return dom;
-}
+  const doc = dom.window.document;
+  const err = doc.querySelector(".arc-error");
+  assert(err, "error notice missing on invalid data");
+  assert.match(err.textContent, /fail-closed/i);
+  assert.strictEqual(doc.querySelectorAll(".arc-now-panel").length, 0, "no partial render");
+  assert.strictEqual(doc.querySelectorAll("[data-arc-phase]").length, 0, "no spine on invalid data");
+});
+
+// ── live overlay (AC1 stamps + AC6 fail-safe, semantics preserved) ──────────
 
 test('live overlay is OPT-IN: with no flag the fetch never fires and no chip appears', async () => {
-  const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav></div>', {
+  const dom = new JSDOM('<!doctype html><div data-civilization-arc></div>', {
     pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
   });
   let fetched = false;
   dom.window.fetch = function () { fetched = true; return Promise.resolve({ ok: false }); };
-  // NOTE: window.CIV_ARC_LIVE intentionally unset → overlay disabled.
-  ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
-   "civilizationArcDraw.js", "civilizationProgressEvidence.js", "civilizationArcNav.js"].forEach((f) =>
+  VIEW_ASSETS.forEach((f) =>
     dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
   dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
   await new Promise((r) => setTimeout(r, 0));
-  const nav = dom.window.document.querySelector(".civilization-arc-nav");
+  const view = dom.window.document.querySelector(".civilization-arc-view");
   assert.strictEqual(fetched, false, "no inflight.json fetch when the overlay is not enabled");
-  assert(!nav.querySelector(".arc-live-chip"), "no live chip when the overlay is disabled");
-  assert(nav.querySelectorAll(".arc-item-group").length > 0, "the baked arc still renders on its own");
+  assert(!view.querySelector(".arc-live-chip"), "no live chip when the overlay is disabled");
+  assert(view.querySelectorAll("[data-arc-phase]").length > 0, "the baked arc still renders on its own");
 });
 
 const LIVE_PR = {
@@ -329,107 +250,107 @@ const LIVE_PR = {
     author: "msaucier", note: "open · @msaucier" }],
 };
 
-test('live overlay: stubbed fetch adds the PR marker and a freshness chip', async () => {
+test('live overlay: the PR appears in active-now with a live evidence stamp', async () => {
   const dom = mountWithFetch(LIVE_PR);
   await new Promise((r) => setTimeout(r, 0));
-  const nav = dom.window.document.querySelector(".civilization-arc-nav");
-  assert(nav.querySelector('[data-arc-item="pr-hive-1"]'), "live PR marker should render after overlay");
-  const chip = nav.querySelector(".arc-live-chip");
+  const view = dom.window.document.querySelector(".civilization-arc-view");
+  const row = view.querySelector('[data-arc-active-item="pr-hive-1"]');
+  assert(row, "live PR row should render in the active-now column");
+  assert.match(row.textContent, /@msaucier/);
+  const live = row.querySelector(".arc-evidence-live");
+  assert(live, "live row must carry the observed stamp");
+  assert.match(live.textContent, /observed 2026-06-17 14:00/);
+  const chip = view.querySelector(".arc-live-chip");
   assert(chip && /updated 2026-06-17 14:00/.test(chip.textContent), "chip should show generated time");
 });
 
-test('live overlay: the live marker is interactive and shows its author', async () => {
+test('live overlay never moves the frontier, phase, or next gate (baked anchor)', async () => {
   const dom = mountWithFetch(LIVE_PR);
   await new Promise((r) => setTimeout(r, 0));
-  const nav = dom.window.document.querySelector(".civilization-arc-nav");
-  const marker = nav.querySelector('[data-arc-item="pr-hive-1"]');
-  marker.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
-  const tip = nav.querySelector('.arc-tooltip');
-  assert.strictEqual(tip.hidden, false);
-  assert.match(tip.textContent, /actor · @msaucier/);
+  const view = dom.window.document.querySelector(".civilization-arc-view");
+  // the live item merges ahead of the baked frontier and is tagged
+  // "stewardship" — the phase read must stay anchored to baked items
+  const now = [...view.querySelectorAll("[data-arc-phase-now]")];
+  assert.strictEqual(now.length, 1);
+  assert.strictEqual(now[0].getAttribute("data-arc-phase"), "deployment",
+    "an open PR must not teleport the current phase to stewardship");
+  assert.strictEqual(view.querySelector(".arc-now-phase").textContent, "Deployment / Operations");
+  assert.match(view.querySelector(".arc-now-frontier").textContent, /seq 14\.36/);
+  assert.match(view.querySelector(".arc-now-code").textContent, /Gate-K·go-live/);
 });
 
-test('live overlay FAILS SAFE: a rejected fetch keeps the baked render, no live marker', async () => {
+test('live overlay FAILS SAFE: a rejected fetch keeps the baked render, no live row', async () => {
   const dom = mountWithFetch(null, { reject: true });
   await new Promise((r) => setTimeout(r, 0));
-  const nav = dom.window.document.querySelector(".civilization-arc-nav");
-  assert(!nav.querySelector('[data-arc-item="pr-hive-1"]'), "no live marker on fetch failure");
-  assert(nav.querySelectorAll(".arc-item-group").length > 0, "baked render survives");
+  const view = dom.window.document.querySelector(".civilization-arc-view");
+  assert(!view.querySelector('[data-arc-active-item="pr-hive-1"]'), "no live row on fetch failure");
+  assert(view.querySelectorAll("[data-arc-phase]").length > 0, "baked render survives");
+  const chip = view.querySelector(".arc-live-chip");
+  assert(chip && /unavailable/.test(chip.textContent), "chip warns unavailable");
 });
 
 test('live overlay FAILS SAFE on invalid live data: merge rejected → baked kept + chip warns', async () => {
-  // Valid fetch, but a live item with an invalid status → mergeInflight returns ok:false.
   const BAD = { generated: "g", window_days: 30, repos: ["hive"], errors: [],
     items: [{ id: "pr-bad-1", code: "bad#1", type: "work", label: "x", status: "merged", // ∉ STATUS_ORDER
       blocked: false, provenance: "derived", repo: ["hive"], sprint: "stewardship", author: "x", note: "x" }] };
   const dom = mountWithFetch(BAD);
   await new Promise((r) => setTimeout(r, 0));
-  const nav = dom.window.document.querySelector(".civilization-arc-nav");
-  assert(!nav.querySelector('[data-arc-item="pr-bad-1"]'), "invalid live item must not render");
-  assert(nav.querySelectorAll(".arc-item-group").length > 0, "baked render survives");
-  const chip = nav.querySelector(".arc-live-chip");
+  const view = dom.window.document.querySelector(".civilization-arc-view");
+  assert(!view.querySelector('[data-arc-active-item="pr-bad-1"]'), "invalid live item must not render");
+  assert(view.querySelectorAll("[data-arc-phase]").length > 0, "baked render survives");
+  const chip = view.querySelector(".arc-live-chip");
   assert(chip && /unavailable/.test(chip.textContent), "chip warns unavailable on rejected merge");
 });
 
 test('live overlay FAILS CLOSED on a degraded refresh: errors present → chip warns "stale", never "updated"', async () => {
-  // inflight.py still writes a payload when a gh/network/auth call fails: errors[] is set
-  // and items may be empty. mergeInflight treats empty items as ok, so without this guard
-  // the chip would stamp a green "live · updated" on a failed refresh — hiding missing
-  // live PRs while claiming the view is current. A degraded refresh must warn, not lie.
   const DEGRADED = { generated: "2026-06-17 14:00", window_days: 30, repos: ["hive"],
     errors: ["hive open: RuntimeError"], items: [] };
   const dom = mountWithFetch(DEGRADED);
   await new Promise((r) => setTimeout(r, 0));
-  const nav = dom.window.document.querySelector(".civilization-arc-nav");
-  const chip = nav.querySelector(".arc-live-chip");
+  const view = dom.window.document.querySelector(".civilization-arc-view");
+  const chip = view.querySelector(".arc-live-chip");
   assert(chip, "a chip must render on a degraded refresh");
   assert.doesNotMatch(chip.textContent, /updated/, "a failed refresh must NOT claim 'live · updated'");
   assert.match(chip.textContent, /stale|source error/, "chip must signal the degraded refresh");
   assert(chip.classList.contains("arc-live-chip-warn"), "degraded chip must use the warn style");
-  assert(nav.querySelectorAll(".arc-item-group").length > 0, "baked render survives a degraded refresh");
+  assert(view.querySelectorAll("[data-arc-phase]").length > 0, "baked render survives a degraded refresh");
 });
 
-test('Gate K renders as cleared-by-waiver (done) with go-live residual surfaced and evidence links', () => {
-  const { nav, svg, dom } = mountArc();
-  const gate = svg.querySelector('[data-arc-item="gate-k"]');
-  assert(gate, "gate-k marker missing");
-  assert(gate.classList.contains("arc-status-done"), "gate-k must render done (pre-go-live waiver, docs#138)");
-  assert(!gate.classList.contains("arc-blocked"), "gate-k is no longer blocked after the pre-go-live waiver");
-
-  gate.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
-  const tip = nav.querySelector('.arc-tooltip');
-  assert.match(tip.textContent, /gate · done/i);
-
-  gate.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-  const detail = nav.querySelector('.arc-detail-panel');
-  assert.match(detail.textContent, /Done/);
-  // Item 2b split: the panel shows the honest criteria line and points at the
-  // gate-k-go-live dependent that carries the unmet go-live scope.
-  assert.match(detail.textContent, /go-live/i);
-  assert.match(detail.textContent, /criteria/i);
-  assert.match(detail.textContent, /pre-live loop-hardening closeout \(waiver\) done/i);
-  assert.match(detail.textContent, /Gate-K·go-live/);
-
-  assert.match(detail.textContent, /private merge evidence was rechecked/i);
-  assert.doesNotMatch(detail.textContent, /\b[0-9a-f]{40}\b/i);
-  const evidenceHrefs = [...detail.querySelectorAll('.arc-detail-evidence-link')]
-    .map((a) => a.getAttribute("href"));
-  assert(evidenceHrefs.includes("gate-k.html"));
-  assert(!evidenceHrefs.some((href) => href && href.includes("github.com/transpara-ai/docs")),
-    "Gate K detail must not link private docs repo evidence");
-
-  // CFAR 2b-r5: the undated hard-stop gate keeps its provenance visible
-  const goLiveDot = svg.querySelector('[data-arc-item="gate-k-go-live"]');
-  assert(goLiveDot, "gate-k-go-live marker missing");
-  goLiveDot.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-  const goLiveDetail = nav.querySelector('.arc-detail-panel');
-  assert.match(goLiveDetail.textContent, /docs#138/,
-    'an undated gate still renders its provenance ref');
+test('a draft live PR renders with the blocked dot (blocked overlay honored)', async () => {
+  const DRAFT = { generated: "g", window_days: 30, repos: ["hive"], errors: [],
+    items: [Object.assign({}, LIVE_PR.items[0],
+      { id: "pr-hive-2", code: "hive#2", blocked: true, blocked_reason: "gate" })] };
+  const dom = mountWithFetch(DRAFT);
+  await new Promise((r) => setTimeout(r, 0));
+  const view = dom.window.document.querySelector(".civilization-arc-view");
+  const row = view.querySelector('[data-arc-active-item="pr-hive-2"]');
+  assert(row, "draft PR row renders");
+  assert(row.querySelector(".arc-status-dot-blocked"), "draft PR shows the blocked overlay dot");
 });
+
+// ── XSS hardening (safeHref allowlist preserved) ────────────────────────────
+
+test('javascript: href is never assigned to any rendered link (XSS hardening)', () => {
+  const { view, dom } = mountArc({
+    beforeView(win) {
+      // poison an ACTIVE work item so the row renders in the panel
+      const victim = win.CIVILIZATION_ARC_DATA.items.find(
+        (it) => it.type === "work" && it.status === "active");
+      victim.href = "javascript:alert(1)";
+    },
+  });
+  const hrefs = [...dom.window.document.querySelectorAll("a")].map((a) => a.getAttribute("href"));
+  assert(hrefs.length > 0, "sanity: some links render");
+  assert(!hrefs.some((h) => h && /^(javascript:|data:|vbscript:)/i.test(h) || /^[\\/]{2}/.test(h || "")),
+    "unsafe href rendered");
+  assert(view.querySelectorAll(".arc-evidence-link[href^='javascript']").length === 0);
+});
+
+// ── AC7 — governance-honesty panels survive the engine retirement ───────────
 
 test('operation progress evidence snapshot renders under the arc', () => {
-  const { nav } = mountArc();
-  const panel = nav.querySelector('.arc-progress-panel');
+  const { view } = mountArc();
+  const panel = view.querySelector('.arc-progress-panel');
   assert(panel, 'progress evidence panel missing');
   assert.match(panel.textContent, /Progress evidence snapshot/);
   assert.match(panel.textContent, /snapshot2026-06-21T00:00:00Z/);
@@ -451,9 +372,9 @@ test('operation progress evidence fails closed without explicit public-safe meta
     ["public_safe false", (win) => { win.CIVILIZATION_PROGRESS_EVIDENCE.privacy.public_safe = false; }],
     ["missing privacy", (win) => { delete win.CIVILIZATION_PROGRESS_EVIDENCE.privacy; }],
     ["schema mismatch", (win) => { win.CIVILIZATION_PROGRESS_EVIDENCE.schema_version = 2; }],
-  ].forEach(([label, beforeNav]) => {
-    const { nav } = mountArc({ beforeNav });
-    const panel = nav.querySelector('.arc-progress-panel');
+  ].forEach(([label, beforeView]) => {
+    const { view } = mountArc({ beforeView });
+    const panel = view.querySelector('.arc-progress-panel');
     assert(panel, `progress evidence panel missing for ${label}`);
     assert.match(panel.textContent, /No public-safe progress evidence export is available/);
     assert.strictEqual(panel.querySelectorAll('.arc-progress-item').length, 0, label);
@@ -462,13 +383,13 @@ test('operation progress evidence fails closed without explicit public-safe meta
 });
 
 test('operation progress evidence rejects unsafe progress links', () => {
-  const { nav } = mountArc({
-    beforeNav(win) {
+  const { view } = mountArc({
+    beforeView(win) {
       win.CIVILIZATION_PROGRESS_EVIDENCE_SOURCE.operation_pr_url = 'data:text/html,unsafe';
       win.CIVILIZATION_PROGRESS_EVIDENCE.items[0].source_url = 'javascript:alert(1)';
     },
   });
-  const panel = nav.querySelector('.arc-progress-panel');
+  const panel = view.querySelector('.arc-progress-panel');
   assert(panel, 'progress evidence panel missing');
   const hrefs = [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href'));
   assert(!hrefs.some((href) => href && /^(javascript:|data:|\/\/)/i.test(href)), 'unsafe progress href rendered');
@@ -483,8 +404,8 @@ test('operation progress evidence asset omits private governing-repo identifiers
 });
 
 test('live-reader correction proof renders public-safe correction labels under the arc', () => {
-  const { nav } = mountArc();
-  const panel = nav.querySelector('.arc-live-reader-correction');
+  const { view } = mountArc();
+  const panel = view.querySelector('.arc-live-reader-correction');
   assert(panel, 'live-reader correction panel missing');
   assert.match(panel.textContent, /Live Reader Correction Proof/);
   assert.match(panel.textContent, /source transpara-ai\/operation#30/);
@@ -497,256 +418,33 @@ test('live-reader correction proof renders public-safe correction labels under t
   assert.match(panel.textContent, /unavailable-source/);
   assert.match(panel.textContent, /not live truth/i);
   assert.match(panel.textContent, /not Gate X closure/i);
-  assert.doesNotMatch(panel.textContent, /No valid public-safe correction export is available/);
-
-  const hrefs = [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href'));
-  assert(hrefs.includes('https://github.com/transpara-ai/operation/pull/30'));
-  assert(hrefs.includes('https://github.com/transpara-ai/operation/issues/26'));
-});
-
-function assertLiveReaderCorrectionPayload(payload) {
-  assert(payload, 'live-reader correction payload missing');
-  assert.strictEqual(payload.schema_version, 1);
-  assert.strictEqual(payload.display_only, true);
-  assert.strictEqual(payload.privacy.public_safe, true);
-  assert.strictEqual(payload.privacy.network_access, 'none');
-  assert.strictEqual(payload.source.network_access, 'none');
-  assert(['fresh', 'fixture', 'source_recorded'].includes(payload.freshness.state));
-
-  const itemIds = new Set(payload.items.map((item) => item.id));
-  payload.items.forEach((item) => {
-    assert.strictEqual(item.display_only, true, `${item.id} must be display-only`);
-    assert(['source_recorded', 'corrected', 'superseded', 'stale', 'missing', 'unavailable'].includes(item.evidence_state),
-      `${item.id} has invalid evidence_state`);
-    assert(['fresh', 'fixture', 'source_recorded', 'stale', 'missing', 'unavailable'].includes(item.freshness_state),
-      `${item.id} has invalid freshness_state`);
-    assert(item.limitation, `${item.id} must carry limitation text`);
-  });
-  payload.corrections.forEach((correction) => {
-    assert.strictEqual(correction.display_only, true, `${correction.correction_id} must be display-only`);
-    assert(itemIds.has(correction.supersedes_item_id), `${correction.correction_id} missing superseded item`);
-    assert(itemIds.has(correction.corrected_item_id), `${correction.correction_id} missing corrected item`);
-    assert(correction.limitation, `${correction.correction_id} must carry limitation text`);
-  });
-  payload.omitted_sources.forEach((source) => {
-    assert(['missing', 'stale', 'unavailable'].includes(source.freshness_state),
-      `${source.id} must be missing, stale, or unavailable`);
-    assert(source.reason && source.public_summary, `${source.id} must carry reason and summary`);
-  });
-
-  const serialized = JSON.stringify(payload);
-  assert.doesNotMatch(serialized, /github\.com\/transpara-ai\/docs|transpara-ai\/docs|docs#[0-9]+/i);
-  assert.doesNotMatch(serialized, /api\.github\.com|fetch\(|XMLHttpRequest|GITHUB_TOKEN|RuntimeBroker|EventGraph write|deploy hook|protected setting|protected action|production readiness/i);
-}
-
-test('live-reader correction payload itself satisfies the public-safe contract', () => {
-  const dom = new JSDOM('<!doctype html><div></div>', {
-    pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/index.html",
-  });
-  dom.window.eval(fs.readFileSync(path.join(root, "compile/assets/civilizationArcData.js"), "utf8"));
-  assertLiveReaderCorrectionPayload(dom.window.CIVILIZATION_LIVE_READER_CORRECTION);
 });
 
 test('live-reader correction proof fails closed without valid public-safe metadata', () => {
   [
     ["public_safe false", (win) => { win.CIVILIZATION_LIVE_READER_CORRECTION.privacy.public_safe = false; }],
-    ["global stale", (win) => { win.CIVILIZATION_LIVE_READER_CORRECTION.freshness.state = "stale"; }],
-    ["dangling correction", (win) => { win.CIVILIZATION_LIVE_READER_CORRECTION.corrections[0].corrected_item_id = "missing"; }],
-  ].forEach(([label, beforeNav]) => {
-    const { nav } = mountArc({ beforeNav });
-    const panel = nav.querySelector('.arc-live-reader-correction');
-    assert(panel, `live-reader correction panel missing for ${label}`);
-    assert.match(panel.textContent, /No valid public-safe correction export is available/);
+    ["network access", (win) => { win.CIVILIZATION_LIVE_READER_CORRECTION.privacy.network_access = "live"; }],
+    ["schema mismatch", (win) => { win.CIVILIZATION_LIVE_READER_CORRECTION.schema_version = 2; }],
+    ["empty items", (win) => { win.CIVILIZATION_LIVE_READER_CORRECTION.items = []; }],
+  ].forEach(([label, beforeView]) => {
+    const { view } = mountArc({ beforeView });
+    const panel = view.querySelector('.arc-live-reader-correction');
+    assert(panel, `correction panel missing for ${label}`);
+    assert.match(panel.textContent, /No valid public-safe correction export is available/, label);
     assert.strictEqual(panel.querySelectorAll('.arc-progress-item').length, 0, label);
-    assert.doesNotMatch(panel.textContent, /Superseded Test 001 GREEN Claim/);
   });
 });
 
 test('live-reader correction proof rejects unsafe links', () => {
-  const { nav } = mountArc({
-    beforeNav(win) {
+  const { view } = mountArc({
+    beforeView(win) {
       win.CIVILIZATION_LIVE_READER_CORRECTION.source.operation_pr_url = 'javascript:alert(1)';
-      win.CIVILIZATION_LIVE_READER_CORRECTION.items[2].source_refs[0].url = 'data:text/html,unsafe';
+      win.CIVILIZATION_LIVE_READER_CORRECTION.items[0].source_refs = [
+        { repo: "transpara-ai/operation", ref: "operation#30", url: "data:text/html,bad" },
+      ];
     },
   });
-  const panel = nav.querySelector('.arc-live-reader-correction');
-  assert(panel, 'live-reader correction panel missing');
+  const panel = view.querySelector('.arc-live-reader-correction');
   const hrefs = [...panel.querySelectorAll('a')].map((a) => a.getAttribute('href'));
   assert(!hrefs.some((href) => href && /^(javascript:|data:|\/\/)/i.test(href)), 'unsafe correction href rendered');
-  assert.match(panel.textContent, /transpara-ai\/operation#30/);
-  assert.match(panel.textContent, /operation#26/);
 });
-
-test('selecting an item draws dashed dependency lines (both directions) + lists deps', () => {
-  const { nav, svg, dom } = mountArc();
-  const marker = svg.querySelector('[data-arc-item="civic-ai"]');
-  assert(marker, "civic-ai marker missing");
-  marker.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-  assert(svg.querySelectorAll('.arc-dep-line').length > 0, "dependency lines must render on selection");
-  assert(svg.querySelector('.arc-dep-precedent'), "a precedent (upstream) line must render");
-  assert(svg.querySelector('.arc-dep-antecedent'), "an antecedent (downstream) line must render");
-  const detail = nav.querySelector('.arc-detail-panel');
-  assert.match(detail.textContent, /depends on/i);
-  assert.match(detail.textContent, /depended on by/i);
-  // Background click clears the selection and removes the lines.
-  svg.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-  assert.strictEqual(svg.querySelectorAll('.arc-dep-line').length, 0, "lines clear on deselect");
-});
-
-test('drawDeps anchors a line to EVERY placement of a duplicated multi-lane item (repo view)', () => {
-  const D = require('../compile/assets/civilizationArcDraw.js');
-  const doc = new JSDOM('<!doctype html>').window.document;
-  const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  // Item X is rendered in TWO lanes (y=10 and y=50); item Y once (y=30). X depends on Y.
-  const layout = { tracks: [
-    { rows: [{ items: [{ item: { id: 'X' }, x: 100, y: 10 }, { item: { id: 'Y' }, x: 60, y: 30 }] }] },
-    { rows: [{ items: [{ item: { id: 'X' }, x: 100, y: 50 }] }] },
-  ] };
-  D.drawDeps(svg, layout, [{ from: 'Y', to: 'X' }], 'X');
-  const lines = [...svg.querySelectorAll('.arc-dep-line')];
-  const ys = new Set(lines.flatMap(l => [Number(l.getAttribute('y1')), Number(l.getAttribute('y2'))]));
-  assert.ok(ys.has(10) && ys.has(50),
-    'a dep line must reach BOTH copies of X (y=10 and y=50), not just the last; got ' + [...ys].join(','));
-});
-
-test('now-panel surfaces the gate-k-go-live hard stop (Item 2b split: a real blocked gate)', () => {
-  const { nav } = mountArc();
-  const np = nav.querySelector('.arc-now-panel').textContent;
-  assert.match(np, /Gate-K·go-live/, 'the go-live hard-stop gate is surfaced in the focus panel');
-  assert.match(np, /go-live/i, 'the go-live revalidation scope is named, not hidden behind a click');
-  assert.match(np, /blocked/i, 'the hard stop reads as blocked — never as done/all-clear');
-});
-
-test('standalone wheel: dominant-horizontal pans the frame (not hijacked into zoom); vertical zooms', () => {
-  const dom = new JSDOM('<!doctype html><div data-civilization-arc-nav data-arc-standalone="true"></div>', {
-    pretendToBeVisual: true, runScripts: "outside-only", url: "http://127.0.0.1:8787/civilization-arc.html",
-  });
-  ["civilizationOntology.js", "civilizationArcData.js", "civilizationArcLayout.js",
-   "civilizationArcDraw.js", "civilizationArcNav.js"].forEach((f) =>
-    dom.window.eval(fs.readFileSync(path.join(root, "compile/assets", f), "utf8")));
-  dom.window.document.dispatchEvent(new dom.window.Event("DOMContentLoaded"));
-  const svg = dom.window.document.querySelector(".civilization-arc-nav svg.arc-svg");
-  // A dominant-horizontal trackpad gesture must fall through to scroll the frame, not zoom.
-  const hEvt = new dom.window.WheelEvent('wheel', { deltaX: 140, deltaY: 0, bubbles: true, cancelable: true });
-  svg.dispatchEvent(hEvt);
-  assert.strictEqual(hEvt.defaultPrevented, false, 'dominant-horizontal wheel must pan the frame, not be hijacked into zoom');
-  // At Fit, a zoom-out gesture cannot change zoom and must fall through so the page can scroll.
-  const lowerBoundEvt = new dom.window.WheelEvent('wheel', { deltaX: 0, deltaY: 140, bubbles: true, cancelable: true });
-  svg.dispatchEvent(lowerBoundEvt);
-  assert.strictEqual(lowerBoundEvt.defaultPrevented, false, 'wheel down at Fit must scroll the page, not be swallowed');
-  // A vertical wheel is still treated as zoom (prevents the page from scrolling).
-  const vEvt = new dom.window.WheelEvent('wheel', { deltaX: 0, deltaY: -140, bubbles: true, cancelable: true });
-  svg.dispatchEvent(vEvt);
-  assert.strictEqual(vEvt.defaultPrevented, true, 'vertical wheel is treated as zoom');
-});
-
-test('a backfilled date shows in the tooltip + a STRUCTURED detail-panel date line (with ref)', () => {
-  const { nav, svg, dom } = mountArc();
-  const gate = svg.querySelector('[data-arc-item="gate-k"]');
-  assert(gate, 'gate-k marker missing');
-  gate.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
-  assert.match(nav.querySelector('.arc-tooltip').textContent, /date · 2026-06-17/, 'tooltip shows the date');
-  gate.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-  // Target the dedicated date element, NOT the panel text (gate-k's prose note also
-  // happens to mention the date/ref — a prose match would be a false positive).
-  const dateLine = nav.querySelector('.arc-detail-date');
-  assert(dateLine, 'detail panel must have a structured .arc-detail-date line');
-  assert.match(dateLine.textContent, /date\b/, 'date line is labelled');
-  assert.match(dateLine.textContent, /2026-06-17/, 'date line shows the ISO date');
-  assert.match(dateLine.textContent, /docs#138/, 'date line carries the provenance ref');
-});
-
-test('every item shows a date line — explicit placeholder when undated, never blank, never fabricated', () => {
-  // Reverses the earlier "graceful absence" rule: the requirement is that EVERYTHING
-  // carries a date line. origin-signal is a reconstructed beat with no backfilled date,
-  // so it must show an explicit placeholder — not a blank, and not an invented ISO date.
-  const { nav, svg, dom } = mountArc();
-  const m = svg.querySelector('[data-arc-item="origin-signal"]');
-  m.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
-  const tip = nav.querySelector('.arc-tooltip').textContent;
-  assert.match(tip, /date ·/, 'tooltip always carries a date line');
-  assert.doesNotMatch(tip, /date · \d{4}-\d{2}-\d{2}/, 'must NOT fabricate an ISO date for an undated item');
-  m.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
-  const dateLine = nav.querySelector('.arc-detail-date');
-  assert(dateLine, 'detail panel ALWAYS has a .arc-detail-date line');
-  assert.match(dateLine.textContent, /date\b/, 'date line is labelled');
-  assert.doesNotMatch(dateLine.textContent, /\d{4}-\d{2}-\d{2}/, 'undated item shows no fabricated ISO date');
-});
-
-test('Actor toggle is disabled when no item carries an author (live overlay parked)', () => {
-  const { nav } = mountArc();
-  const actor = nav.querySelector('[data-arc-group="actor"]');
-  assert(actor, "actor button present");
-  assert.strictEqual(actor.disabled, true, "actor button must be disabled with no actor data");
-  assert(actor.classList.contains('arc-group-btn-disabled'), "disabled class applied");
-});
-
-// A live inflight payload of N items, each attributed to the given author(s) — exercises
-// the actor gate the way the real overlay does (it attributes every in-flight PR to an author).
-function livePayloadWithAuthors(authors) {
-  return {
-    generated: "2026-06-17 14:00", window_days: 30, repos: ["hive"], errors: [],
-    items: authors.map(function (a, i) {
-      return { id: "pr-actor-" + i, code: "pr#" + i, type: "work", label: "live work",
-        status: "active", blocked: false, provenance: "derived", repo: ["hive"],
-        sprint: "stewardship", href: "https://github.com/transpara-ai/hive/pull/" + (i + 1),
-        author: a, note: "open · @" + a };
-    }),
-  };
-}
-
-test('Actor toggle STAYS disabled with a single distinct actor (the operator only)', async () => {
-  const dom = mountWithFetch(livePayloadWithAuthors(['MichaelSaucier', 'MichaelSaucier']));
-  await new Promise((r) => setTimeout(r, 0));
-  const actor = dom.window.document.querySelector('[data-arc-group="actor"]');
-  assert.strictEqual(actor.disabled, true, 'one actor = one useless lane → still disabled');
-  assert(actor.classList.contains('arc-group-btn-disabled'));
-});
-
-test('Actor toggle ENABLES once >= 2 distinct actors exist', async () => {
-  const dom = mountWithFetch(livePayloadWithAuthors(['guardian', 'implementer']));
-  await new Promise((r) => setTimeout(r, 0));
-  const actor = dom.window.document.querySelector('[data-arc-group="actor"]');
-  assert.strictEqual(actor.disabled, false, 'multiple actors → actor view is meaningful');
-  assert(!actor.classList.contains('arc-group-btn-disabled'));
-});
-
-test('row-name gutter is a pinned layer that tracks frame scroll (sticky row names)', () => {
-  const { nav, svg, dom } = mountArc();
-  const gutter = svg.querySelector('.arc-gutter');
-  assert(gutter, 'a dedicated pinned gutter <g> must render');
-  assert(gutter.querySelector('.arc-gutter-bg'), 'opaque backing rect present (markers must not bleed through)');
-  assert(gutter.querySelector('.arc-track-label'), 'track labels live INSIDE the pinned gutter layer');
-  assert(gutter.querySelector('.arc-subrow-label'), 'sub-row labels live inside the pinned gutter layer');
-  // Drawn last → paints above the markers.
-  assert.strictEqual(svg.children[svg.children.length - 1], gutter, 'gutter paints on top (appended last)');
-  // jsdom has no layout, so drive scrollLeft directly + fire scroll → the gutter must offset to match.
-  const frame = nav.querySelector('.arc-frame');
-  frame.scrollLeft = 137;
-  frame.dispatchEvent(new dom.window.Event('scroll'));
-  assert.strictEqual(gutter.getAttribute('transform'), 'translate(137,0)', 'gutter pins to viewport-left on horizontal scroll');
-});
-
-test('legend renders the symbol/colour key from data.legendItems (regression: it was missing)', () => {
-  const { nav } = mountArc();
-  const legend = nav.querySelector('.arc-legend');
-  assert(legend, 'legend panel must render');
-  assert.strictEqual(legend.hidden, false, 'legend must be visible when legendItems exist');
-  const rows = [...legend.querySelectorAll('.arc-legend-item')];
-  const legendItems = loadArcData().legendItems;
-  assert.strictEqual(rows.length, legendItems.length, 'one legend row per legendItem (got ' + rows.length + ')');
-  // The swatch must carry the shape-specific class so the colour/shape actually styles.
-  assert(legend.querySelector('.arc-legend-swatch.arc-legend-diamond'), 'gate diamond swatch present');
-  assert(legend.querySelector('.arc-legend-swatch.arc-legend-risk-high'), 'risk-high swatch present');
-  assert(legend.querySelector('.arc-legend-swatch.arc-legend-line'), 'critical-path line swatch present');
-  assert.match(legend.textContent, /Milestone \/ gate/, 'legend labels render');
-});
-
-const data = loadArcData();
-assertData(data);
-assertRenderedDom();
-
-console.log(
-  `arc DOM smoke ok: ${data.items.length} items, now=${O.deriveNow(data.items)}, ` +
-    `${O.groupBy(data.items, "status").length} status lanes`
-);

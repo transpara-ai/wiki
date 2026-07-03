@@ -30,9 +30,7 @@ SOURCE_DIST = DIST / "source"
 CSS_VER = ""
 SEARCH_VER = ""
 ARC_DATA_VER = ""
-ARC_LAYOUT_VER = ""
-ARC_DRAW_VER = ""
-ARC_NAV_VER = ""
+ARC_VIEW_VER = ""
 ONTO_VER = ""
 PROGRESS_VER = ""
 SITE_NAME = "Transpara-AI Civilization Wiki"
@@ -1909,17 +1907,32 @@ def arc_page(status):
         '<script defer src="civilizationOntology.js?v=%s"></script>'
         '<script defer src="civilizationArcData.js?v=%s"></script>'
         '<script defer src="civilizationProgressEvidence.js?v=%s"></script>'
-        '<script defer src="civilizationArcLayout.js?v=%s"></script>'
-        '<script defer src="civilizationArcDraw.js?v=%s"></script>'
-        '<script defer src="civilizationArcNav.js?v=%s"></script>'
-        % (ONTO_VER, ARC_DATA_VER, PROGRESS_VER, ARC_LAYOUT_VER, ARC_DRAW_VER, ARC_NAV_VER)
+        '<script defer src="civilizationArcView.js?v=%s"></script>'
+        % (ONTO_VER, ARC_DATA_VER, PROGRESS_VER, ARC_VIEW_VER)
+    )
+    # The one-status legend is static content — the builder emits it; the view
+    # script renders only the derived parts (freshness, now-panel, spine).
+    legend = (
+        '<section class="arc-view-legend" aria-label="Status legend">'
+        '<h3>One status vocabulary</h3>'
+        '<ul class="arc-legend-list">'
+        '<li class="arc-legend-item"><span class="arc-status-dot arc-status-dot-done" aria-hidden="true"></span>done</li>'
+        '<li class="arc-legend-item"><span class="arc-status-dot arc-status-dot-active" aria-hidden="true"></span>active</li>'
+        '<li class="arc-legend-item"><span class="arc-status-dot arc-status-dot-planned" aria-hidden="true"></span>planned</li>'
+        '<li class="arc-legend-item"><span class="arc-status-dot arc-status-dot-future" aria-hidden="true"></span>future</li>'
+        '<li class="arc-legend-item"><span class="arc-status-dot arc-status-dot-blocked" aria-hidden="true"></span>'
+        'blocked — an overlay with a structured reason, never a lifecycle value</li>'
+        '</ul>'
+        '<p class="arc-legend-note">Every status is evidence-derived or stamped.</p>'
+        '</section>'
     )
     chart = (
         '<section class="wiki-arc-embed" aria-label="Civilization progress chart">'
         '<h2 id="progress-chart">Progress chart</h2>'
         '<p class="wiki-arc-note">This chart is a read lens over the wiki and operation exports. '
         'It is display-only; it is not EventGraph truth, certification evidence, or release authority.</p>'
-        '<div data-civilization-arc-nav data-arc-standalone="true" data-arc-live="true"></div>'
+        '<div data-civilization-arc data-arc-standalone="true" data-arc-live="true"></div>'
+        + legend +
         '</section>'
     )
     return page(slug, meta["title"], meta, fm, body_html + chart, toc_tokens, links, status,
@@ -1927,7 +1940,7 @@ def arc_page(status):
 
 
 def build():
-    global CSS_VER, SEARCH_VER, ARC_DATA_VER, ARC_LAYOUT_VER, ARC_DRAW_VER, ARC_NAV_VER, ONTO_VER, PROGRESS_VER, REPOS
+    global CSS_VER, SEARCH_VER, ARC_DATA_VER, ARC_VIEW_VER, ONTO_VER, PROGRESS_VER, REPOS
     # fail closed BEFORE any dist mutation: a malformed board must never
     # leave the served site partially updated (CFAR 2a-r6); the index
     # render below re-runs build_board on the same fm
@@ -1988,9 +2001,7 @@ def build():
     ONTO_VER = copy_asset("civilizationOntology.js")
     ARC_DATA_VER = copy_asset("civilizationArcData.js")
     PROGRESS_VER = copy_asset("civilizationProgressEvidence.js")
-    ARC_LAYOUT_VER = copy_asset("civilizationArcLayout.js")
-    ARC_DRAW_VER = copy_asset("civilizationArcDraw.js")
-    ARC_NAV_VER = copy_asset("civilizationArcNav.js")
+    ARC_VIEW_VER = copy_asset("civilizationArcView.js")
     count = 0
     for p in sorted(WIKI.glob("*.md")):
         fm, body = split_fm(p.read_text())
