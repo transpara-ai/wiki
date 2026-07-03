@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-ARC-2B-VISUAL
 title: Arc 2b-visual — Now-Panel + Phase Spine, Retire the Six-Mode Engine (TLC Design Packet)
 doc_type: design
-version: 0.3.0
+version: 0.3.1
 status: draft
 canonical: false
 created: 2026-07-03
@@ -102,6 +102,10 @@ All consume `CivOntology` (`deriveNow`, `rollupCriteria`, `validateItems`,
   order-dependent guess; same-sprint ties are not ambiguous. Frontier sprint
   not present in `sprints[]` ⇒ the same deny-path (the validator does not
   enforce sprint membership — this is the display-side fail-closed net).
+  **No settled items at all** (valid all-planned/future input, CFADA-r2 N1)
+  ⇒ the same deny-path: `null` + visible notice, named unit test — the
+  deny-paths enumerate the full valid domain: no-settled, ambiguous
+  cross-sprint tie, unknown sprint.
 - **D3 — `nextBlockingGate(bakedItems)`** — computed over **baked** items
   only (both the gate candidates and the `deriveNow` frontier it compares
   against), consistent with D2's anchor; live items are always `type:"work"`
@@ -180,7 +184,7 @@ via the existing custom-property palette.
 | # | Criterion (risk) | Verification — named test |
 |---|---|---|
 | AC1 | Now-panel renders the current phase, active work with per-piece evidence stamps, and the next blocking gate with its criteria checklist + rollup, all derived from live data functions, never hand-authored (med) | dom-smoke: `now panel names the current phase from baked frontier`, `active-now rows each carry an evidence stamp` (incl. the explicit no-source-ref placeholder path), `next gate is gate-k-go-live with criteria checklist and recomputed rollup`; unit: `D3 selects gate-k-go-live on real data`, `D4 census on real data is 9 active work items + live overlay rows` |
-| AC2 | Phase spine renders every phase with a fail-closed D1 rollup, exactly one derived frontier marker, done-and-unblocked phases collapsed (med) | unit: `phaseRollup empty set is future never done`, `phaseRollup matches rollupCriteria across the status×blocked domain`, `done+blocked phase never collapses` (B3), `currentPhase anchors to baked frontier under live overlay`, `currentPhase deny-path on unknown sprint`, `currentPhase deny-path on ambiguous same-seq cross-sprint frontier` (B2), `nextBlockingGate ties resolve by (seq,id) independent of array order` (B2); dom-smoke: `spine collapse tracks done-and-unblocked exactly` (structural, every phase) + snapshot anchors (15 phases, frontier on deployment, stewardship blocked ring) |
+| AC2 | Phase spine renders every phase with a fail-closed D1 rollup, exactly one derived frontier marker, done-and-unblocked phases collapsed (med) | unit: `phaseRollup empty set is future never done`, `phaseRollup matches rollupCriteria across the status×blocked domain`, `done+blocked phase never collapses` (B3), `currentPhase anchors to baked frontier under live overlay`, `currentPhase deny-path on unknown sprint`, `currentPhase deny-path on ambiguous same-seq cross-sprint frontier` (B2), `currentPhase deny-path when no settled item exists` (r2 N1), `nextBlockingGate ties resolve by (seq,id) independent of array order` (B2); dom-smoke: `spine collapse tracks done-and-unblocked exactly` (structural, every phase) + snapshot anchors (15 phases, frontier on deployment, stewardship blocked ring) |
 | AC3 | The six-mode toolbar, zoom, and SVG engine are gone; no parallel layout engine remains (low) | dom-smoke: `retired engine artifacts are absent` (no `.arc-toolbar`, `[data-arc-group]`, `.arc-zoom`, `svg.arc-svg`, `.arc-track-band`); py: `test_build_site_arc.py` asserts the arc page HTML carries the View script + static legend and none of Nav/Layout/Draw |
 | AC4 | Net LOC deletion across `civilizationArc*.js` (low) | procedural: `git diff --stat` vs main recorded in the PR body (−1882 engine lines vs one new view module); automated regrowth guard: `test_build_site_arc.py` asserts the three retired assets exist in neither `compile/assets/` nor `dist/` nor any `package.json` script list, and `test:js` checks only the 4 surviving assets (CFADA-r1 M1: the LOC number itself stays a PR-visible review criterion; the guard automates non-regrowth) |
 | AC5 | `npm run verify` green: build, `node --check`, unit, py, dom-smoke, Playwright — incl. rewritten `inc001` arc-routes block and new `arc-view.spec.js` (panel+spine visible on both arc routes and in BOTH themes, legend present, zero console errors) (low) | the verify chain itself |
@@ -229,6 +233,18 @@ CI-equivalent `npm run verify` exits 0. Any unproven criterion ⇒ not satisfied
 | B3 | `done+blocked` (ontology-valid) phase would collapse as finished under "collapse ⇔ rollup done" | collapse requires `done AND !blocked`; `done+blocked` renders expanded with the blocked ring; named unit test |
 | M1 | `test_build_site_arc.py` named in AC3 but absent from the file plan; AC4 not automated | file plan ADD row + `test:py` wiring; AC4 split: LOC number stays PR-visible procedural, non-regrowth automated (assets absent from tree/dist/script lists) |
 | N1 | source-of-intent verified only against a mutable issue; audit sandbox had no GitHub access | §4 gains the dated label snapshot (live-verified at intake by the author session); PR body must restate it |
+
+## Appendix — CFADA round 2 (Codex) → PASS at head `323799e`
+
+> Verdict: **`CFADA_2B_VISUAL_R2 PASS blockers=0 majors=0 minors=1`**
+> (packet v0.3.0). All r1 findings verified RESOLVED by independent
+> simulation; the issue #46 label snapshot was independently confirmed live
+> (open; `enhancement, cc:intake, cc:pr-ready, cc:civilization-presence`; no
+> deny labels).
+
+| # | Finding | Disposition (v0.3.1) |
+|---|---|---|
+| N1 | D2 omits the "no settled items" deny-path (valid all-planned input has no frontier) | FIXED — D2 deny-paths now enumerate the full valid domain (no-settled, ambiguous tie, unknown sprint), each under a named unit test |
 
 - **Residual risks:** (a) `executionPlan`/`legendItems` remain in the data
   file as dead keys — follow-up data-side cleanup, deliberately out of scope
