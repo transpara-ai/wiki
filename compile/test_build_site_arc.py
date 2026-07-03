@@ -73,6 +73,21 @@ def test_package_scripts_reference_no_retired_assets():
     print("ok test_package_scripts_reference_no_retired_assets")
 
 
+def test_css_custom_properties_all_defined():
+    """Fail-closed guard for the CFAR 2b-visual-r1 class: a var(--x) whose
+    property is defined nowhere is silently invalid at computed-value time —
+    the browser drops the declaration and the page quietly de-styles. Every
+    custom property referenced without a fallback must be defined somewhere
+    in the sheet (scoping is not checked; existence is the regression net)."""
+    import re
+    css = (ASSETS / "style.css").read_text()
+    defined = set(re.findall(r'(--[A-Za-z0-9_-]+)\s*:', css))
+    referenced = set(re.findall(r'var\(\s*(--[A-Za-z0-9_-]+)\s*\)', css))  # no-fallback uses only
+    missing = sorted(referenced - defined)
+    assert not missing, "custom properties referenced but never defined: %s" % ", ".join(missing)
+    print("ok test_css_custom_properties_all_defined")
+
+
 def test_both_arc_routes_ship_the_same_view():
     canonical = (DIST / "civilization-arc.html").read_text()
     alias = (DIST / "civilization_arc.html").read_text()

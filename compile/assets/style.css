@@ -508,10 +508,40 @@ summary.fresh::after{content:"▾";margin-left:6px;font-size:9px;opacity:.75}
 
 /* ==================================================================== */
 /* Arc view (civilizationArcView.js): freshness header, now-panel,      */
-/* phase spine, one-status legend. The shared --color-* /               */
-/* --border-radius-* design tokens are scoped to the view root, aliased */
-/* to the --arc-* palette so everything resolves in both themes.        */
+/* phase spine, one-status legend. The --arc-* palette is scoped to the */
+/* whole embed section (view root + static legend sibling), themed via  */
+/* the light override below; the shared --color-* / --border-radius-*   */
+/* tokens alias onto it so everything resolves in both themes.          */
 /* ==================================================================== */
+.wiki-arc-embed{
+  --arc-fs:1; /* text scale knob; the retired SVG chart ran at 1.5 */
+  --arc-bg:#10151b;
+  --arc-bg-2:#151d25;
+  --arc-panel:#1b242d;
+  --arc-panel-2:#202b35;
+  --arc-line:#51606d;
+  --arc-text:#f1f4f7;
+  --arc-muted:#a9b4bf;
+  --arc-faint:#72808d;
+  --arc-blue:#6cb6ff;
+  --arc-cyan:#69d2d4;
+  --arc-green:#7bd88f;
+  --arc-gold:#e7bf64;
+  --arc-orange:#ff9c5a;
+  --arc-red:#ff6b6b;
+  --arc-violet:#bba4ff;
+  --arc-magenta:#f08ad6;
+}
+:root[data-theme="light"] .wiki-arc-embed{
+  --arc-bg:#f7f9fb;
+  --arc-bg-2:#edf2f6;
+  --arc-panel:#fff;
+  --arc-panel-2:#eef3f7;
+  --arc-line:#7b8793;
+  --arc-text:#18202a;
+  --arc-muted:#4d5965;
+  --arc-faint:#77828d;
+}
 .civilization-arc-view{
   --color-text-primary:var(--arc-text);
   --color-text-secondary:var(--arc-muted);
