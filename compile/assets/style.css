@@ -809,7 +809,7 @@ summary.fresh::after{content:"▾";margin-left:6px;font-size:9px;opacity:.75}
   padding:1px 6px;
   border-radius:3px;
   background:var(--arc-gold);
-  color:var(--arc-bg);
+  color:#10151b; /* fixed dark ink — gold needs it in BOTH themes (light --arc-bg is near-white) */
   font:700 9px/1.4 var(--mono);
   text-transform:uppercase;
   letter-spacing:.08em;
