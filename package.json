@@ -5,11 +5,11 @@
   "description": "Static Civilization Wiki renderer and visualization smoke tests.",
   "scripts": {
     "build": "python3 compile/build_site.py",
-    "test:js": "node --check compile/assets/civilizationArcData.js && node --check compile/assets/civilizationProgressEvidence.js && node --check compile/assets/civilizationArcNav.js && node --check compile/assets/civilizationArcLayout.js && node --check compile/assets/civilizationArcDraw.js && node --check compile/assets/civilizationOntology.js",
-    "test:unit": "node --test tests/arcLayout.test.js tests/ontology.test.js",
+    "test:js": "node --check compile/assets/civilizationArcData.js && node --check compile/assets/civilizationProgressEvidence.js && node --check compile/assets/civilizationArcView.js && node --check compile/assets/civilizationOntology.js",
+    "test:unit": "node --test tests/arcView.test.js tests/ontology.test.js",
     "test:dom": "node tests/arc-dom-smoke.test.js",
     "test:browser": "playwright install chromium && playwright test",
-    "test:py": "python3 compile/test_live_reader_correction.py && python3 compile/test_inflight.py && python3 compile/test_ingest_server.py && python3 compile/test_build_site_security.py && python3 compile/test_build_site_nav.py && python3 compile/test_stats.py && python3 compile/test_refresh.py && python3 compile/test_build_site_board.py && python3 compile/test_secret_scan.py && python3 tests/inflight.test.py",
+    "test:py": "python3 compile/test_live_reader_correction.py && python3 compile/test_inflight.py && python3 compile/test_ingest_server.py && python3 compile/test_build_site_security.py && python3 compile/test_build_site_nav.py && python3 compile/test_stats.py && python3 compile/test_refresh.py && python3 compile/test_build_site_board.py && python3 compile/test_secret_scan.py && python3 compile/test_build_site_arc.py && python3 tests/inflight.test.py",
     "verify": "npm run build && npm run test:js && npm run test:unit && npm run test:py && npm run test:dom && npm run test:browser"
   },
   "devDependencies": {

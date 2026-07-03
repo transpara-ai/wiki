@@ -43,10 +43,13 @@ test("INC-001 operational wiki pages render locally", async ({ page }) => {
 test("INC-001 arc routes render local browser visualization", async ({ page }) => {
   for (const route of ["/civilization-arc.html", "/civilization_arc.html"]) {
     await page.goto(route);
-    await expect(page.locator(".civilization-arc-nav")).toBeVisible();
-    await expect(page.locator("svg.arc-svg")).toBeVisible();
-    // Presentation smoke: expected arc scaffolding for the current static view.
-    await expect(page.locator(".arc-track-band")).toHaveCount(3);
-    await expect(page.locator(".arc-now-line")).toHaveCount(1);
+    await expect(page.locator(".civilization-arc-view")).toBeVisible();
+    // Presentation smoke: the "where are we" view scaffolding.
+    await expect(page.locator(".arc-now-panel")).toBeVisible();
+    await expect(page.locator("[data-arc-phase]")).toHaveCount(15);
+    await expect(page.locator(".arc-view-legend")).toBeVisible();
+    // The retired chronological-tracks engine stays retired.
+    await expect(page.locator("svg.arc-svg")).toHaveCount(0);
+    await expect(page.locator(".arc-toolbar")).toHaveCount(0);
   }
 });
