@@ -2126,8 +2126,12 @@ def build():
                                 search_text(fm, body)))[:12000],
         })
         for p in sorted(WIKI.glob("*.md")):
-            fm, body = split_fm(p.read_text())
             meta = META[p.stem]
+            if meta.get("retired_on"):
+                continue  # retired tombstones drop from search — the search
+                # UI turns index rows into live links; a retired topic is
+                # reachable by direct link only, never discoverable (CFAR r11)
+            fm, body = split_fm(p.read_text())
             docs.append({
                 "slug": p.stem,
                 "title": meta["title"],

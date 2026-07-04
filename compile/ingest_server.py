@@ -105,10 +105,20 @@ def fm_list(fm, key):
     return items
 
 
+def article_is_retired(slug):
+    path = WIKI / ("%s.md" % slug)
+    if not path.exists():
+        return False
+    fm, _, _ = split_fm(path.read_text())
+    return bool(fm_val(fm, "retired_on"))
+
+
 def article_records(include_sources=True):
     out = []
     for p in sorted(WIKI.glob("*.md")):
         fm, _, _ = split_fm(p.read_text())
+        if fm_val(fm, "retired_on"):
+            continue  # retired tombstones are not offered in the ingest selector
         out.append({
             "slug": p.stem,
             "title": fm_val(fm, "entity") or p.stem.replace("-", " "),
@@ -731,6 +741,13 @@ class IngestHandler(SimpleHTTPRequestHandler):
         target_slug = normalize_target_slug(raw_target_slug)
         external_urls = valid_external_urls(raw_external_urls)
         with wiki_write_lock():
+            # a retired topic is a tombstone — Add must not resurrect it with
+            # live sources (Replace already refuses retired; keep Add
+            # consistent). Checked inside the lock, before any write (CFAR r11)
+            if target_slug and article_is_retired(target_slug):
+                raise ingest_ops.OpRefused(
+                    "target article is retired — Add refused; a retired topic "
+                    "is a tombstone reachable by direct link only")
             saved = save_uploads(form, target_slug, note, supersedes)
             source_refs = [s["path"] for s in saved] + external_urls
             created_article = {"slug": "", "created": False}

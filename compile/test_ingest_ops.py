@@ -1425,6 +1425,61 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-11 repairs
+
+def test_cfar11_add_refuses_retired_target():
+    """CFAR-11 P2-1: Add to a retired tombstone must refuse before any write,
+    and retired articles must not appear in the ingest selector."""
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        (root / "compile").mkdir()
+        wiki = root / "wiki"
+        wiki.mkdir()
+        (wiki / "gone-topic.md").write_text(
+            '---\nentity: Gone\ntier: investigation\n'
+            'retired_on: "2026-07-01"\nretired_reason: "obsolete"\n---\n\n'
+            '# Gone\n\nRetired.\n')
+        (wiki / "live-topic.md").write_text(
+            "---\nentity: Live\ntier: investigation\n---\n\n# Live\n")
+        old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+               srv.subprocess.Popen)
+        try:
+            srv.ROOT = root
+            srv.WIKI = wiki
+            srv.RAW_INBOX = root / "raw" / "inbox"
+            srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = lambda *a, **k: _FakeProc()
+
+            # retired articles are hidden from the /api/articles selector
+            slugs = [r["slug"] for r in srv.article_records()]
+            assert "gone-topic" not in slugs and "live-topic" in slugs, slugs
+            assert srv.article_is_retired("gone-topic") is True
+
+            # POST /api/ingest targeting the retired slug -> refused, no write
+            h = make_handler("/api/ingest", body=b"target_slug=gone-topic&note=x")
+            srv.IngestHandler.do_POST(h)
+            assert h.status == 422, h.status
+            before = (wiki / "gone-topic.md").read_text()
+            # confirm no source was appended to the tombstone
+            assert "sources:" not in before and not (root / "raw").exists()
+        finally:
+            (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+             srv.subprocess.Popen) = old
+    print("ok test_cfar11_add_refuses_retired_target")
+
+
+def test_cfar11_search_index_excludes_retired():
+    """CFAR-11 P2-2: retired articles are dropped from the search index (the
+    search UI turns rows into live links → they'd stay discoverable)."""
+    src = (pathlib.Path(__file__).resolve().parent / "build_site.py").read_text()
+    # the search-index builder must consult retired_on and skip those rows
+    idx = src.index("def build_search_index")
+    seg = src[idx:idx + 1200]
+    assert 'retired_on' in seg and "continue" in seg, seg
+    print("ok test_cfar11_search_index_excludes_retired")
+
+
 # ------------------------------------------- CFAR round-10 repairs
 
 def test_cfar10_replacement_path_collision_refused():
