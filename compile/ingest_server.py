@@ -858,19 +858,19 @@ class IngestHandler(SimpleHTTPRequestHandler):
         json_response(self, 200, {"replace": row})
 
     def handle_remove(self):
+        # the retirement rationale is bound to the authorization artifact's
+        # `reason`, not a request field, so the audit cannot diverge from the
+        # human-approved grant (CFAR r26)
         form = parse_post_form(self)
         slug = first_value(form, "slug").strip()
-        reason = first_value(form, "reason").strip()
         ingest_ops.load_authorization(
             ROOT / "compile" / "ingest-authorization.json",
             dt.datetime.now(dt.timezone.utc).isoformat(),
             operation="remove", slug=slug, source_ref="")
-        if not reason:
-            raise ingest_ops.OpRefused("remove requires a reason")
         with wiki_write_lock():
             now = dt.datetime.now(dt.timezone.utc).isoformat()  # window at mutation time (CFAR r7)
             row = ingest_ops.remove_topic(
-                ROOT, slug=slug, reason=reason, now=now,
+                ROOT, slug=slug, now=now,
                 rebuild_runner=lambda: run_refresh_unlocked().get("ok") is True)
         json_response(self, 200, {"remove": row})
 

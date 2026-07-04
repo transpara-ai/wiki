@@ -690,17 +690,20 @@ def _raw_html_outside_fences(text):
     return bool(RAW_HTML_RE.search(FENCE_RE.sub("", text)))
 
 
-def run_engine(engine_command, timeout, job):
+def run_engine(engine_command, timeout, job, cwd=None):
     """Authority-gated single-article synthesis. Output is the article BODY
     only; every violation of the output law discards the output (the caller
-    keeps the deterministic honest-stale state)."""
+    keeps the deterministic honest-stale state). Runs with the operation root
+    as cwd so the job's relative `raw/...` refs resolve regardless of where the
+    server process was launched (CFAR r26)."""
     if engine_command == []:
         return ("disabled", None)
     try:
         proc = subprocess.Popen(
             list(engine_command), stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, start_new_session=True)
+            text=True, start_new_session=True,
+            cwd=str(cwd) if cwd is not None else None)
     except Exception:
         return ("failed", None)
     try:
@@ -841,7 +844,7 @@ def replace_source(root, *, slug, source_ref, data, filename, note, now,
            "sources": fm_list_values(fm_lines, "sources"),
            "raw_documents": fm_list_values(fm_lines, "raw_documents")}
     engine, body = run_engine(auth["engine_command"],
-                              auth["engine_timeout_seconds"], job)
+                              auth["engine_timeout_seconds"], job, cwd=root)
     if engine == "ok":
         assembled_fm = _drop_scalar(fm_lines, "stale_since")
         _atomic_write_text(article_path,
@@ -986,7 +989,7 @@ def find_inbound_edges(root, target_slug):
     return sources
 
 
-def remove_topic(root, *, slug, reason, now, rebuild_runner=None):
+def remove_topic(root, *, slug, now, rebuild_runner=None):
     root = pathlib.Path(root)
     now = _now_str(now)  # reject a naive timestamp before any write (CFAR r14)
     if not _valid_ts(now):
@@ -994,14 +997,12 @@ def remove_topic(root, *, slug, reason, now, rebuild_runner=None):
     auth_path = root / "compile" / "ingest-authorization.json"
     auth = load_authorization(auth_path, now, operation="remove",
                               slug=slug, source_ref="")
-    # normalize + validate the reason BEFORE auth consumption or any write —
-    # an empty reason must refuse in preflight (else the ledger row fails
-    # AFTER the tombstone is written, orphaning the audit), and a multi-line
-    # reason must collapse so it cannot inject extra PROVENANCE lines
-    # (CFAR r2 P2-2)
-    reason = re.sub(r"\s+", " ", reason or "").strip()
-    if not reason:
-        raise OpRefused("remove requires a non-empty reason")
+    # the retirement rationale is BOUND to the authorization artifact — it is
+    # the human-approved `reason`, never a separately-supplied request string,
+    # so the tombstone/edge/PROVENANCE/ledger audit cannot diverge from the
+    # grant (CFAR r26). load_authorization already stripped it single-line and
+    # rejected blanks/newlines (CFAR r5/r10); quarantine it since it persists.
+    reason = auth["reason"]
     quarantine_fields({"slug": slug, "reason": reason,
                        "authorized_by": auth["authority"]})
 

@@ -295,17 +295,21 @@ Order of operations (each step refuses → stop, nothing written):
   records `"engine": "disabled"`; the article is honest-stale by
   construction.
 
-### 2.7 Remove — `POST /api/remove` `{slug, reason}` and the edge-state law
+### 2.7 Remove — `POST /api/remove` `{slug}` and the edge-state law
 
 Order: authoring gates → authorization §2.3 (instance match on
-`(operation="remove", slug, source_ref="")`) →
+`(operation="remove", slug, source_ref="")`) → **retirement rationale is the
+authorization artifact's `reason`, never a request field** (so the
+tombstone/edge/PROVENANCE/ledger audit is bound to the human-approved grant
+and cannot diverge; CFAR r26) →
 `quarantine_fields({slug, reason, authorized_by})` → preflight (slug
-exists, not already retired, not `index`; ledger preflight; edge-states
-strict-parse preflight) → consume the artifact (durable write #0) →
-Layer 1 under the lock → rebuild attempt → ledger append last (recording
-the rebuild outcome). A retirement line is
-appended to `PROVENANCE.md` in Layer 1 (topic, date, reason — ratified §6
-obligation), read-modify-temp-file-`os.replace`.
+exists, not already retired, not a generated/structural page — `index` or
+`civilization-arc`, both of which the builder regenerates; ledger preflight;
+edge-states strict-parse preflight) → consume the artifact (durable write
+#0) → Layer 1 under the lock → rebuild attempt → ledger append last
+(recording the rebuild outcome). A retirement line is appended to
+`PROVENANCE.md` in Layer 1 (topic, date, reason — ratified §6 obligation),
+read-modify-temp-file-`os.replace`.
 
 Layer 1 (deterministic, atomic per file):
 1. Rewrite `wiki/<slug>.md` as a **retired tombstone stub** via temp-file +

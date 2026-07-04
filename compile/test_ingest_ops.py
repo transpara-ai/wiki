@@ -525,7 +525,7 @@ def test_ac5_remove_tombstone_and_edge_enumeration():
     linked_article(root, "linker-md", "doomed-topic", "md")
     linked_article(root, "linker-href", "doomed-topic", "href")
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     path = root / "wiki" / "doomed-topic.md"
     assert path.exists(), "tombstone, never a delete"
     text = path.read_text()
@@ -552,7 +552,7 @@ def test_ac5_closure_zero_unqueued_pending():
     article(root, "doomed-topic")
     linked_article(root, "linker-wiki", "doomed-topic", "wiki")
     write_auth(root, remove_auth("doomed-topic"))
-    ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    ops.remove_topic(root, slug="doomed-topic", now=NOW)
     states = ops.load_edge_states(root / "compile" / "edge-states.json")
     unqueued_pending = [k for k, v in states.items()
                         if v["state"] == "dangling-pending" and v["queued"] is False]
@@ -586,7 +586,7 @@ def test_ac5_corrupt_edge_states_refuses():
         write_auth(root, remove_auth("doomed-topic"))
         (root / "compile" / "edge-states.json").write_text(raw)
         before = tree_snapshot(root)
-        refused(ops.remove_topic, root, slug="doomed-topic", reason="r", now=NOW)
+        refused(ops.remove_topic, root, slug="doomed-topic", now=NOW)
         assert tree_snapshot(root) == before, \
             "corrupt state must refuse before any write (incl. consumption)"
     print("ok test_ac5_corrupt_edge_states_refuses")
@@ -600,7 +600,7 @@ def test_ac5_remove_refusals_write_nothing():
     for slug in ("unknown-topic", "gone-topic", "index", "../escape"):
         write_auth(root, remove_auth(slug))
         before = tree_snapshot(root)
-        refused(ops.remove_topic, root, slug=slug, reason="r", now=NOW)
+        refused(ops.remove_topic, root, slug=slug, now=NOW)
         assert tree_snapshot(root) == before, slug
     print("ok test_ac5_remove_refusals_write_nothing")
 
@@ -827,7 +827,7 @@ def test_ac7_operations_append_row_last():
     assert rows[0]["authorization_sha256"] == digest
     assert rows[0]["rebuild"] in ("ok", "failed")
     write_auth(root, remove_auth("alpha-topic"))
-    ops.remove_topic(root, slug="alpha-topic", reason="r", now=NOW)
+    ops.remove_topic(root, slug="alpha-topic", now=NOW)
     rows = ops.ledger_preflight(root / "compile" / "ingest-ledger.jsonl")
     assert [r["operation"] for r in rows] == ["replace", "remove"]
     print("ok test_ac7_operations_append_row_last")
@@ -1028,13 +1028,13 @@ def test_cfar_href_spelling_variants_are_gated():
 
 
 def test_cfar_tombstone_reason_no_html_injection():
-    """CFAR P2-2: a remove reason carrying raw HTML must not reach the
-    rendered tombstone body as live markup."""
+    """CFAR P2-2: a retirement reason carrying raw HTML (from the authorization
+    artifact) must not reach the rendered tombstone body as live markup."""
     root = fresh_root()
     article(root, "doomed-topic")
     payload = "<script>alert(1)</script> and <img src=x onerror=bad>"
-    write_auth(root, remove_auth("doomed-topic"))
-    ops.remove_topic(root, slug="doomed-topic", reason=payload, now=NOW)
+    write_auth(root, remove_auth("doomed-topic", reason=payload))
+    ops.remove_topic(root, slug="doomed-topic", now=NOW)
     body = (root / "wiki" / "doomed-topic.md").read_text().split("---\n", 2)[2]
     assert "<script>" not in body and "<img" not in body, body
     assert "&lt;script&gt;" in body, "reason must be HTML-escaped in the body"
@@ -1072,7 +1072,7 @@ def test_cfar_index_inbound_edge_queued():
     (root / "index.md").write_text(
         "---\ntitle: Home\n---\n\n# Home\n\nsee [[doomed-topic]] now\n")
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     states = json.loads((root / "compile" / "edge-states.json").read_text())
     assert "index->doomed-topic" in states, states
     assert "index" in result["affected_edges"]
@@ -1089,7 +1089,7 @@ def test_cfar_titled_markdown_link_detected():
         '---\nentity: Linker\ntier: investigation\n---\n\n'
         '# Linker\n\nsee [Doomed](doomed-topic.html "the detail page") now\n')
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     assert "linker-titled" in result["affected_edges"], result["affected_edges"]
     print("ok test_cfar_titled_markdown_link_detected")
 
@@ -1109,34 +1109,67 @@ def test_cfar2_data_href_does_not_control_gate():
 
 
 def test_cfar2_remove_empty_reason_refuses_before_mutation():
-    """CFAR-2 P2-2: an empty/whitespace reason must refuse in preflight —
-    before auth consumption or any durable write."""
+    """CFAR-2/r26: a blank/whitespace/multiline authorization reason must
+    refuse before auth consumption or any durable write (the retirement reason
+    is bound to the artifact, and load_authorization validates it)."""
     root = fresh_root()
     article(root, "doomed-topic")
-    for bad in ("", "   ", "\n\t "):
-        write_auth(root, remove_auth("doomed-topic"))
+    for bad in ("", "   ", "line one\nline two"):
+        write_auth(root, remove_auth("doomed-topic", reason=bad))
         before = tree_snapshot(root)
-        refused(ops.remove_topic, root, slug="doomed-topic", reason=bad, now=NOW)
+        refused(ops.remove_topic, root, slug="doomed-topic", now=NOW)
         assert tree_snapshot(root) == before, "no mutation, auth not consumed"
     print("ok test_cfar2_remove_empty_reason_refuses_before_mutation")
 
 
-def test_cfar2_remove_reason_normalized_single_line():
-    """CFAR-2 P2-2: a multi-line reason collapses to a single line before it
-    reaches PROVENANCE / the ledger / the edge reason."""
+def test_cfar26_reason_bound_to_authorization():
+    """CFAR-26 P2: the retirement rationale persisted to the tombstone, edge
+    reason, PROVENANCE, and ledger is the AUTHORIZATION artifact's reason — a
+    caller cannot supply a divergent rationale."""
     root = fresh_root()
     article(root, "doomed-topic")
     linked_article(root, "linker-wiki", "doomed-topic", "wiki")
-    write_auth(root, remove_auth("doomed-topic"))
-    ops.remove_topic(root, slug="doomed-topic",
-                     reason="line one\nline two\n\nline three", now=NOW)
+    write_auth(root, remove_auth("doomed-topic",
+                                 reason="board-approved retirement"))
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     prov = (root / "PROVENANCE.md").read_text()
-    remove_lines = [ln for ln in prov.splitlines() if "remove: topic" in ln]
-    assert len(remove_lines) == 1 and "line one line two line three" in remove_lines[0], prov
+    assert "board-approved retirement" in prov, prov
+    ledger = ops.ledger_preflight(root / "compile" / "ingest-ledger.jsonl")
+    assert ledger[0]["reason"] == "board-approved retirement", ledger[0]
     states = json.loads((root / "compile" / "edge-states.json").read_text())
     for entry in states.values():
+        assert "board-approved retirement" in entry["reason"]
         assert "\n" not in entry["reason"]
-    print("ok test_cfar2_remove_reason_normalized_single_line")
+    tomb = (root / "wiki" / "doomed-topic.md").read_text()
+    assert "board-approved retirement" in tomb
+    print("ok test_cfar26_reason_bound_to_authorization")
+
+
+def test_cfar26_engine_runs_from_operation_root():
+    """CFAR-26 P2: the synthesis engine must run with the operation root as
+    cwd so the job's relative raw/... refs resolve regardless of the server's
+    launch directory."""
+    root = fresh_root()
+    article(root, "alpha-topic")
+    calls = []
+    real = ops.subprocess.Popen
+
+    def spy(args, **kw):
+        calls.append((list(args), kw.get("cwd")))
+        return real(args, **kw)
+
+    write_auth(root, good_auth(
+        engine_command=[sys.executable, "-c", "print('%s')" % GOOD_BODY]))
+    old = ops.subprocess.Popen
+    try:
+        ops.subprocess.Popen = spy
+        do_replace(root)
+    finally:
+        ops.subprocess.Popen = old
+    engine_calls = [c for c in calls if c[0][:2] == [sys.executable, "-c"]]
+    assert engine_calls, "engine must run"
+    assert engine_calls[0][1] == str(root), engine_calls[0]
+    print("ok test_cfar26_engine_runs_from_operation_root")
 
 
 def test_cfar2_inline_frontmatter_list_form():
@@ -1295,7 +1328,7 @@ def test_cfar4_board_frontmatter_ref_queued_on_remove():
         'board_pillars:\n  - "N|obj|hook|other-slug|purple"\n---\n\n'
         '# Home\n\nno body link at all\n')
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     states = json.loads((root / "compile" / "edge-states.json").read_text())
     assert "index->doomed-topic" in states, states
     assert "index" in result["affected_edges"]
@@ -1306,7 +1339,7 @@ def test_cfar4_board_frontmatter_ref_queued_on_remove():
         '---\nboard_pillars:\n  - "Name|obj|hook|doomed-topic|purple"\n---\n\n'
         '# Home\n\nnobody\n')
     write_auth(root2, remove_auth("doomed-topic"))
-    r2 = ops.remove_topic(root2, slug="doomed-topic", reason="x", now=NOW)
+    r2 = ops.remove_topic(root2, slug="doomed-topic", now=NOW)
     assert "index" in r2["affected_edges"]
     print("ok test_cfar4_board_frontmatter_ref_queued_on_remove")
 
@@ -1336,7 +1369,7 @@ def test_cfar5_tombstone_preserves_inline_aliases():
         'tier: investigation\n---\n\n# Doomed\n\nBody.\n')
     (root / "raw" / "inbox" / "2026-07-01" / "doomed-topic").mkdir(parents=True)
     write_auth(root, remove_auth("doomed-topic"))
-    ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    ops.remove_topic(root, slug="doomed-topic", now=NOW)
     fm, _, _ = srv.split_fm((wiki / "doomed-topic.md").read_text())
     assert srv.fm_list(fm, "aliases") == ["DT", "old-name"], fm
     assert "retired_on" in fm
@@ -1354,7 +1387,7 @@ def test_cfar5_remove_enforces_closure_over_preexisting_pending():
                          "reason": "pre-existing", "queued": False,
                          "enqueued_at": None}}))
     write_auth(root, remove_auth("doomed-topic"))
-    ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    ops.remove_topic(root, slug="doomed-topic", now=NOW)
     states = ops.load_edge_states(root / "compile" / "edge-states.json")
     unqueued = [k for k, v in states.items()
                 if v["state"] == "dangling-pending" and v["queued"] is False]
@@ -1404,7 +1437,7 @@ def test_cfar6_reference_style_link_queued_on_remove():
         '---\nentity: Linker\ntier: investigation\n---\n\n'
         '# Linker\n\nsee [the detail][dead] here\n\n[dead]: doomed-topic.html\n')
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     assert "linker-ref" in result["affected_edges"], result["affected_edges"]
     print("ok test_cfar6_reference_style_link_queued_on_remove")
 
@@ -1418,7 +1451,7 @@ def test_cfar6_board_scalar_with_comment_queued():
         '---\nboard_narrative_link: doomed-topic # curated origin story\n'
         'board_guardrail: "distrust|other-slug"\n---\n\n# Home\n\nno body link\n')
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     states = json.loads((root / "compile" / "edge-states.json").read_text())
     assert "index->doomed-topic" in states, states
     assert "index" in result["affected_edges"]
@@ -1441,7 +1474,7 @@ def test_cfar25_generated_pages_cannot_be_retired():
     for slug in ("civilization-arc", "index"):
         write_auth(root, remove_auth(slug))
         before = tree_snapshot(root)
-        refused(ops.remove_topic, root, slug=slug, reason="x", now=NOW)
+        refused(ops.remove_topic, root, slug=slug, now=NOW)
         assert tree_snapshot(root) == before, "%s must not be retired" % slug
     print("ok test_cfar25_generated_pages_cannot_be_retired")
 
@@ -1538,7 +1571,7 @@ def test_cfar21_prose_and_unused_refdef_not_queued():
         '---\nentity: U\ntier: investigation\n---\n\n# U\n\n'
         'see [the page][ref]\n\n[ref]: doomed-topic.html\n')
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     edges = result["affected_edges"]
     assert "linker-noise" not in edges, edges
     assert "linker-used" in edges, edges
@@ -1626,7 +1659,7 @@ def test_cfar19_code_block_links_not_queued():
         '```\n<a href="doomed-topic.html">x</a>\n[y](doomed-topic.html)\n```\n')
     linked_article(root, "linker-real", "doomed-topic", "md")  # a real link
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     assert "linker-code" not in result["affected_edges"], result["affected_edges"]
     assert "linker-real" in result["affected_edges"]
     print("ok test_cfar19_code_block_links_not_queued")
@@ -1652,7 +1685,7 @@ def test_cfar18_area_href_gated_and_queued():
         '---\nentity: L\ntier: investigation\n---\n\n# L\n\n'
         '<map><area href="doomed-topic.html" alt="x"></map>\n')
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     assert "linker-area" in result["affected_edges"], result["affected_edges"]
     print("ok test_cfar18_area_href_gated_and_queued")
 
@@ -1690,7 +1723,7 @@ def test_cfar17_prose_href_not_queued_on_remove():
         '---\nentity: S\ntier: investigation\n---\n\n# S\n\n'
         '<svg><a xlink:href="doomed-topic.html">s</a></svg>\n')
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     edges = result["affected_edges"]
     assert "linker-prose" not in edges, edges
     assert "linker-anchor" in edges and "linker-svg" in edges, edges
@@ -1753,7 +1786,7 @@ def test_cfar15_markdown_escaped_link_queued_on_remove():
         '---\nentity: L\ntier: investigation\n---\n\n'
         '# L\n\nsee [detail](doomed-topic\\.html) now\n')
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     assert "linker-esc" in result["affected_edges"], result["affected_edges"]
     print("ok test_cfar15_markdown_escaped_link_queued_on_remove")
 
@@ -1775,7 +1808,7 @@ def test_cfar14_naive_now_refused():
     article(root2, "doomed-topic")
     write_auth(root2, remove_auth("doomed-topic"))
     before2 = tree_snapshot(root2)
-    refused(ops.remove_topic, root2, slug="doomed-topic", reason="x",
+    refused(ops.remove_topic, root2, slug="doomed-topic",
             now="2026-07-04T12:00:00")
     assert tree_snapshot(root2) == before2
     print("ok test_cfar14_naive_now_refused")
@@ -1793,7 +1826,7 @@ def test_cfar14_data_href_not_queued_on_remove():
     # a genuine linker so the remove still has an edge to confirm the scan runs
     linked_article(root, "linker-real", "doomed-topic", "href")
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     assert "linker-datahref" not in result["affected_edges"], result["affected_edges"]
     assert "linker-real" in result["affected_edges"]
     print("ok test_cfar14_data_href_not_queued_on_remove")
@@ -1854,7 +1887,7 @@ def test_cfar13_board_scalar_quoted_comment_queued():
         'board_guardrail: "distrust | other-slug"  # trailing note\n---\n\n'
         '# Home\n\nno body link\n')
     write_auth(root, remove_auth("doomed-topic"))
-    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     states = json.loads((root / "compile" / "edge-states.json").read_text())
     assert "index->doomed-topic" in states, states
     assert "index" in result["affected_edges"]
@@ -1864,7 +1897,7 @@ def test_cfar13_board_scalar_quoted_comment_queued():
     (root2 / "index.md").write_text(
         '---\nboard_guardrail: "distrust | guard-topic" # note\n---\n\n# Home\n')
     write_auth(root2, remove_auth("guard-topic"))
-    r2 = ops.remove_topic(root2, slug="guard-topic", reason="x", now=NOW)
+    r2 = ops.remove_topic(root2, slug="guard-topic", now=NOW)
     assert "index" in r2["affected_edges"], r2["affected_edges"]
     print("ok test_cfar13_board_scalar_quoted_comment_queued")
 
