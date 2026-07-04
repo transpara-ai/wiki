@@ -1425,6 +1425,63 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-13 repairs
+
+def test_cfar13_add_preflights_edge_states():
+    """CFAR-13 P2-1: corrupt edge-states.json must refuse Add before any write,
+    like Replace/Remove."""
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        (root / "compile").mkdir()
+        wiki = root / "wiki"
+        wiki.mkdir()
+        (wiki / "example.md").write_text(
+            "---\nentity: Example\ntier: investigation\n---\n\n# Example\n")
+        (root / "compile" / "edge-states.json").write_text("{corrupt")
+        old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+               srv.subprocess.Popen)
+        try:
+            srv.ROOT = root
+            srv.WIKI = wiki
+            srv.RAW_INBOX = root / "raw" / "inbox"
+            srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = lambda *a, **k: _FakeProc()
+            h = make_handler("/api/ingest", body=b"target_slug=example&note=x")
+            srv.IngestHandler.do_POST(h)
+            assert h.status == 422, h.status
+            assert not (root / "raw").exists(), "corrupt edge state → write-free refusal"
+        finally:
+            (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+             srv.subprocess.Popen) = old
+    print("ok test_cfar13_add_preflights_edge_states")
+
+
+def test_cfar13_board_scalar_quoted_comment_queued():
+    """CFAR-13 P2-3: a QUOTED board scalar with an inline comment
+    (`board_narrative_link: "doomed-topic" # note`) must still enumerate."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    (root / "index.md").write_text(
+        '---\nboard_narrative_link: "doomed-topic" # curated origin\n'
+        'board_guardrail: "distrust | other-slug"  # trailing note\n---\n\n'
+        '# Home\n\nno body link\n')
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    states = json.loads((root / "compile" / "edge-states.json").read_text())
+    assert "index->doomed-topic" in states, states
+    assert "index" in result["affected_edges"]
+    # also a quoted guardrail slug with spaces around the pipe + trailing note
+    root2 = fresh_root()
+    article(root2, "guard-topic")
+    (root2 / "index.md").write_text(
+        '---\nboard_guardrail: "distrust | guard-topic" # note\n---\n\n# Home\n')
+    write_auth(root2, remove_auth("guard-topic"))
+    r2 = ops.remove_topic(root2, slug="guard-topic", reason="x", now=NOW)
+    assert "index" in r2["affected_edges"], r2["affected_edges"]
+    print("ok test_cfar13_board_scalar_quoted_comment_queued")
+
+
 # ------------------------------------------- CFAR round-12 repair
 
 def test_cfar12_unassigned_add_resolving_to_retired_refused():
@@ -1458,6 +1515,7 @@ def test_cfar12_unassigned_add_resolving_to_retired_refused():
             assert h.status == 422, h.status
             assert (wiki / "gone-topic.md").read_text() == tombstone_before, \
                 "the retired tombstone must be untouched"
+            assert not (root / "raw").exists(), "refusal must be write-free"
         finally:
             (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
              srv.subprocess.Popen) = old

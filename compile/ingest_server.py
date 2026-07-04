@@ -113,6 +113,28 @@ def article_is_retired(slug):
     return bool(fm_val(fm, "retired_on"))
 
 
+def prospective_unassigned_slug(form):
+    """The slug an UNASSIGNED upload would resolve to, derived from the first
+    document's in-memory content (mirrors create_article_from_source's
+    title logic) so the retired-tombstone guard can refuse WRITE-FREE before
+    save_uploads persists anything (CFAR r13). The no-title fallback differs
+    from the saved sha-suffixed stem, but that form cannot collide with a
+    human-named retired slug."""
+    for item in field_values(form, "documents"):
+        if not getattr(item, "filename", ""):
+            continue
+        data = item.file.read()
+        item.file = io.BytesIO(data)  # rewind for the later save
+        if not data:
+            continue
+        fm, body, _ = split_fm(data.decode("utf-8", "replace"))
+        stem = pathlib.Path(safe_filename(item.filename)).stem or "document"
+        title = (fm_val(fm, "title") or fm_val(fm, "entity")
+                 or markdown_title(body) or stem.replace("-", " "))
+        return slugify(title)
+    return ""
+
+
 def article_records(include_sources=True):
     out = []
     for p in sorted(WIKI.glob("*.md")):
@@ -738,16 +760,22 @@ class IngestHandler(SimpleHTTPRequestHandler):
             item.file = io.BytesIO(data)
         ingest_ops.quarantine_fields(fields)
         ingest_ops.ledger_preflight(ROOT / "compile" / "ingest-ledger.jsonl")
+        # corrupt edge state refuses EVERY mutation, Add included — the rebuild
+        # this Add triggers would otherwise render from unverifiable state
+        # (strict-parse law; CFAR r13). Preflight before any write.
+        ingest_ops.load_edge_states(ROOT / "compile" / "edge-states.json")
         target_slug = normalize_target_slug(raw_target_slug)
         external_urls = valid_external_urls(raw_external_urls)
+        # a retired topic is a tombstone — Add must not resurrect it with live
+        # sources (Replace already refuses retired). Resolve the EFFECTIVE
+        # target — the provided slug, or the slug an unassigned upload would
+        # derive — and refuse WRITE-FREE before the lock/save (CFAR r11/r12/r13).
+        effective_slug = target_slug or prospective_unassigned_slug(form)
+        if effective_slug and article_is_retired(effective_slug):
+            raise ingest_ops.OpRefused(
+                "target article is retired — Add refused; a retired topic "
+                "is a tombstone reachable by direct link only")
         with wiki_write_lock():
-            # a retired topic is a tombstone — Add must not resurrect it with
-            # live sources (Replace already refuses retired; keep Add
-            # consistent). Checked inside the lock, before any write (CFAR r11)
-            if target_slug and article_is_retired(target_slug):
-                raise ingest_ops.OpRefused(
-                    "target article is retired — Add refused; a retired topic "
-                    "is a tombstone reachable by direct link only")
             saved = save_uploads(form, target_slug, note, supersedes)
             source_refs = [s["path"] for s in saved] + external_urls
             created_article = {"slug": "", "created": False}

@@ -833,22 +833,32 @@ def replace_source(root, *, slug, source_ref, data, filename, note, now,
 
 # ------------------------------------------------------------------- remove
 
-def _board_field_matches(raw, target_slug):
-    # a board field may carry an inline comment and/or quotes that
-    # build_site.board_scalar tolerates — strip both before comparing so the
-    # reference is not missed (CFAR r6 P2-3)
-    for field in raw.split("|"):
-        if _clean_item(field) == target_slug:
+def _board_field_matches(value, target_slug):
+    # a board field may carry an inline comment and/or quotes — strip the
+    # comment BEFORE the quotes so a quoted-then-commented scalar
+    # (`"slug" # note`) is handled: stripping the leading quote first would
+    # unbalance the value and hide the comment inside a phantom quote (CFAR
+    # r6/r13). _strip_inline_comment respects balanced quotes.
+    value = _strip_inline_comment(value)
+    for field in value.split("|"):
+        if field.strip().strip('"').strip("'") == target_slug:
             return True
     return False
+
+
+def _raw_scalar(fm_lines, key):
+    idx = _key_line_index(fm_lines, key)
+    if idx < 0 or ":" not in fm_lines[idx]:
+        return ""
+    return fm_lines[idx].split(":", 1)[1].strip()  # NOT quote-stripped (CFAR r13)
 
 
 def _references_via_board(fm_lines, target_slug):
     """True if index.md's board frontmatter references target_slug — the
     builder generates (and now gates) homepage board links from these keys, so
-    a board-only reference is a real inbound edge to queue (CFAR r4/r6)."""
+    a board-only reference is a real inbound edge to queue (CFAR r4/r6/r13)."""
     for key in ("board_narrative_link", "board_guardrail"):
-        if _board_field_matches(fm_scalar(fm_lines, key), target_slug):
+        if _board_field_matches(_raw_scalar(fm_lines, key), target_slug):
             return True
     for key in ("board_pillars", "board_inheritance"):
         for item in fm_list_values(fm_lines, key):
