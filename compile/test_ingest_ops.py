@@ -1473,6 +1473,33 @@ def test_cfar6_board_scalar_with_comment_queued():
 
 # ------------------------------------------- CFAR ready-state repairs
 
+def test_cfarready_ledger_appendability_probed():
+    """CFAR ready-state P2: a read-only (unappendable) existing ledger must
+    refuse in preflight — before auth consumption / any durable write — not
+    fail after mutations with no audit row."""
+    if os.geteuid() == 0:
+        print("ok test_cfarready_ledger_appendability_probed (skipped as root)")
+        return
+    root = fresh_root()
+    article(root, "alpha-topic")
+    ledger = root / "compile" / "ingest-ledger.jsonl"
+    ledger.write_text(json.dumps({
+        "ts": NOW, "operation": "add", "slug": "x", "sources": ["raw/a.md"],
+        "created": False, "rebuild": "ok"}, sort_keys=True) + "\n")
+    os.chmod(ledger, 0o444)  # read-only → not appendable
+    try:
+        refused(ops.ledger_preflight, ledger)  # preflight itself refuses
+        write_auth(root, good_auth())
+        before = tree_snapshot(root)
+        refused(do_replace, root)
+        assert tree_snapshot(root) == before, "unappendable ledger → write-free"
+        assert json.loads((root / "compile" / "ingest-authorization.json").read_text()
+                          )["df"] == "ingest-authorization", "auth not consumed"
+    finally:
+        os.chmod(ledger, 0o644)
+    print("ok test_cfarready_ledger_appendability_probed")
+
+
 def test_cfarready_atomic_write_preserves_mode():
     """CFAR ready-state P2: an atomic rewrite must not restrict a previously
     group/world-readable file to 0600; a new file defaults to 0644."""

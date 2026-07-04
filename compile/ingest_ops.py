@@ -314,11 +314,24 @@ def _validate_ledger_row(row, where="ledger row"):
 
 
 def ledger_preflight(path):
-    """Strict end-to-end parse of the existing ledger. A corrupt line refuses
-    (an unauditable surface takes no new actions). Absent file = valid empty."""
+    """Strict end-to-end parse AND appendability probe of the ledger — an
+    unauditable surface takes no new actions, and the append happens LAST, so
+    if it would fail (read-only file, wrong owner, unwritable dir) the whole
+    operation must refuse BEFORE the first durable write, not orphan the audit
+    after it (packet §2.9; CFAR ready-state). Absent file = valid empty."""
     path = pathlib.Path(path)
     if not path.exists():
+        if path.parent.exists() and not os.access(str(path.parent), os.W_OK):
+            raise OpRefused("ledger directory is not writable")
         return []
+    # prove the existing ledger is appendable WITHOUT writing (append mode does
+    # not truncate or modify content) — a PermissionError here refuses now
+    try:
+        with path.open("a"):
+            pass
+    except OSError as exc:
+        raise OpRefused("ledger exists but is not appendable (%s)"
+                        % type(exc).__name__)
     try:
         text = path.read_text()
     except Exception as exc:
