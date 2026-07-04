@@ -1425,6 +1425,27 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-16 repair
+
+def test_cfar16_ingest_page_selector_excludes_retired():
+    """CFAR-16 P2: the build-time ingest target <select> must not list retired
+    tombstones (consistent with /api/articles + the server refusal)."""
+    import build_site as site
+    old = (site.META,)
+    try:
+        site.META = {
+            "live-topic": {"slug": "live-topic", "title": "Live Topic",
+                           "tier": "concept", "retired_on": ""},
+            "gone-topic": {"slug": "gone-topic", "title": "Gone Topic",
+                           "tier": "concept", "retired_on": "2026-07-01"}}
+        page = site.ingest_page({})
+    finally:
+        (site.META,) = old
+    assert '<option value="live-topic">' in page, page[:400]
+    assert '<option value="gone-topic">' not in page, "retired must not be selectable"
+    print("ok test_cfar16_ingest_page_selector_excludes_retired")
+
+
 # ------------------------------------------- CFAR round-15 repairs
 
 def test_cfar15_ledger_append_preserves_jsonl_separation():

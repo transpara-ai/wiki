@@ -1766,6 +1766,10 @@ def sources_page(status):
 def ingest_page(status):
     article_options = ['<option value="">No article reference update</option>']
     for slug, meta in sorted(META.items(), key=lambda kv: kv[1]["title"].lower()):
+        if meta.get("retired_on"):
+            continue  # retired tombstones are not valid Add/Replace targets —
+            # keep the build-time selector consistent with /api/articles and
+            # the server-side refusal (CFAR r16)
         article_options.append('<option value="%s">%s</option>' % (html.escape(slug), html.escape(meta["title"])))
     inner = (
         '<h1 class="page-title">Wiki Source Ingest</h1>'
