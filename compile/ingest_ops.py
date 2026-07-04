@@ -58,7 +58,8 @@ LEDGER_SHAPES = {
                 "authorized_by", "authorization_sha256", "engine", "result",
                 "rebuild"},
     "remove": {"ts", "operation", "slug", "reason", "authorized_by",
-               "authorization_sha256", "affected_edges", "result", "rebuild"},
+               "authorization_sha256", "affected_edges", "repaired_edges",
+               "result", "rebuild"},
 }
 
 
@@ -293,9 +294,11 @@ def _validate_ledger_row(row, where="ledger row"):
             raise OpRefused("%s: result is completed iff engine ok" % where)
         return
     _require_row_str(row, ("reason",), where)
-    if not isinstance(row["affected_edges"], list) or any(
-            not isinstance(s, str) or not s for s in row["affected_edges"]):
-        raise OpRefused("%s: affected_edges must be a list of non-empty strings" % where)
+    for key in ("affected_edges", "repaired_edges"):
+        if not isinstance(row[key], list) or any(
+                not isinstance(s, str) or not s for s in row[key]):
+            raise OpRefused("%s: %s must be a list of non-empty strings"
+                            % (where, key))
     if row["result"] != "completed":
         raise OpRefused("%s: remove result must be completed" % where)
 
@@ -1075,23 +1078,34 @@ def remove_topic(root, *, slug, now, rebuild_runner=None):
     # closure (AC5) is a post-condition over the WHOLE file, not just this
     # Remove's own edges: the deterministic Layer-1 pass enqueues EVERY
     # dangling-pending edge, including any that pre-existed unqueued, so no
-    # pending work is ever left off the committed queue (CFAR r5 P2-3)
-    for entry in edge_states.values():
+    # pending work is ever left off the committed queue (CFAR r5 P2-3). Every
+    # such repair is RECORDED in the audit — a mutation of committed state must
+    # never be silent (CFAR ready-state).
+    own_keys = {"%s->%s" % (source, slug) for source in inbound}
+    repaired = []
+    for key, entry in edge_states.items():
+        if key in own_keys:
+            continue
         if entry["state"] == "dangling-pending" and not entry["queued"]:
             entry["queued"] = True
             entry["enqueued_at"] = _now_str(now)
+            repaired.append(key)
+    repaired = sorted(repaired)
     write_edge_states(edge_path, edge_states)
 
-    _append_provenance(root, "- %s remove: topic `%s` retired — %s "
-                       "(authorized by %s; %d inbound edge(s) queued)"
-                       % (_date_of(now), slug, reason, auth["authority"],
-                          len(inbound)))
+    prov = ("- %s remove: topic `%s` retired — %s "
+            "(authorized by %s; %d inbound edge(s) queued"
+            % (_date_of(now), slug, reason, auth["authority"], len(inbound)))
+    if repaired:
+        prov += "; %d pre-existing pending edge(s) repaired to queued: %s" \
+            % (len(repaired), ", ".join(repaired))
+    _append_provenance(root, prov + ")")
 
     rebuild = _run_rebuild(root, rebuild_runner)
     row = {"ts": _now_str(now), "operation": "remove", "slug": slug,
            "reason": reason, "authorized_by": auth["authority"],
            "authorization_sha256": digest,
-           "affected_edges": sorted(inbound), "result": "completed",
-           "rebuild": rebuild}
+           "affected_edges": sorted(inbound), "repaired_edges": repaired,
+           "result": "completed", "rebuild": rebuild}
     append_ledger(ledger_path, row)
     return row

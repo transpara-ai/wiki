@@ -793,6 +793,14 @@ class IngestHandler(SimpleHTTPRequestHandler):
                     "target article does not exist — Add refused")
             saved = save_uploads(form, target_slug, note, supersedes)
             source_refs = [s["path"] for s in saved] + external_urls
+            # a source-less ingest is a no-op — it must not rebuild or append a
+            # misleading `add` ledger row with sources: [] (use /api/rebuild to
+            # only refresh); save_uploads skipped every empty input, so nothing
+            # was written yet (CFAR ready-state)
+            if not source_refs:
+                raise ingest_ops.OpRefused(
+                    "ingest requires at least one document or external URL; "
+                    "use /api/rebuild to only refresh")
             created_article = {"slug": "", "created": False}
             if not target_slug and saved:
                 target_slug, created = create_article_from_source(saved[0]["path"], note, supersedes)

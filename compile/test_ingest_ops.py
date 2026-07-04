@@ -787,7 +787,7 @@ def test_ac7_ledger_strict_jsonl_preflight_first_append_last():
         "ts": NOW, "operation": "remove", "slug": "alpha-topic",
         "reason": "r", "authorized_by": "owner",
         "authorization_sha256": digest, "affected_edges": ["x"],
-        "result": "completed", "rebuild": "ok"})
+        "repaired_edges": [], "result": "completed", "rebuild": "ok"})
 
     # duplicate-key line ISOLATED: valid add row under plain json.loads
     # (last "rebuild" wins) — only the object_pairs_hook law refuses it
@@ -902,7 +902,8 @@ def test_ac8_endpoint_authoring_parity():
             srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
             srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
             srv.subprocess.Popen = lambda *a, **k: _FakeProc()
-            ingest_body = b"target_slug=example&note=clean"
+            ingest_body = (b"target_slug=example&note=clean"
+                           b"&external_urls=https%3A%2F%2Fexample.com%2Fp")
             op_body = b"slug=alpha-topic&reason=r&source_ref=x"
 
             def post(endpoint, **kw):
@@ -984,12 +985,15 @@ def test_ac8_add_gains_quarantine_and_ledger():
                 assert h.status == 422, (h.status, reply[:200])
                 assert AWS_KEY not in reply, "validator echoed the secret"
 
-            # a clean add appends one add row
-            h = make_handler("/api/ingest", body=b"target_slug=example&note=clean")
+            # a clean add WITH a source (external URL) appends one add row
+            h = make_handler(
+                "/api/ingest",
+                body=b"target_slug=example&note=clean&external_urls=https%3A%2F%2Fexample.com%2Fp")
             srv.IngestHandler.do_POST(h)
             assert h.status == 200, h.wfile.getvalue()[:400]
             rows = ops.ledger_preflight(root / "compile" / "ingest-ledger.jsonl")
             assert len(rows) == 1 and rows[0]["operation"] == "add"
+            assert rows[0]["sources"] == ["https://example.com/p"]
         finally:
             (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
              srv.subprocess.Popen) = old
@@ -1387,12 +1391,21 @@ def test_cfar5_remove_enforces_closure_over_preexisting_pending():
                          "reason": "pre-existing", "queued": False,
                          "enqueued_at": None}}))
     write_auth(root, remove_auth("doomed-topic"))
-    ops.remove_topic(root, slug="doomed-topic", now=NOW)
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
     states = ops.load_edge_states(root / "compile" / "edge-states.json")
     unqueued = [k for k, v in states.items()
                 if v["state"] == "dangling-pending" and v["queued"] is False]
     assert unqueued == [], "closure holds over pre-existing pending edges too"
     assert states["stray->other"]["queued"] is True
+    # the repair of a committed entry is AUDITED — recorded in the ledger row
+    # and PROVENANCE, and NOT conflated into this remove's affected_edges
+    # (CFAR ready-state)
+    assert result["repaired_edges"] == ["stray->other"], result
+    assert "stray->other" not in result["affected_edges"]
+    ledger = ops.ledger_preflight(root / "compile" / "ingest-ledger.jsonl")
+    assert ledger[0]["repaired_edges"] == ["stray->other"]
+    prov = (root / "PROVENANCE.md").read_text()
+    assert "stray->other" in prov and "repaired" in prov, prov
     print("ok test_cfar5_remove_enforces_closure_over_preexisting_pending")
 
 
@@ -1456,6 +1469,41 @@ def test_cfar6_board_scalar_with_comment_queued():
     assert "index->doomed-topic" in states, states
     assert "index" in result["affected_edges"]
     print("ok test_cfar6_board_scalar_with_comment_queued")
+
+
+# ------------------------------------------- CFAR ready-state repairs
+
+def test_cfarready_sourceless_add_refused():
+    """CFAR ready-state P2: a source-less ingest (no documents, no URLs) must
+    refuse — it must not rebuild or append a misleading `add` ledger row."""
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        (root / "compile").mkdir()
+        wiki = root / "wiki"
+        wiki.mkdir()
+        (wiki / "example.md").write_text(
+            "---\nentity: Example\ntier: investigation\n---\n\n# Example\n")
+        rebuilt = []
+        old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+               srv.subprocess.Popen)
+        try:
+            srv.ROOT = root
+            srv.WIKI = wiki
+            srv.RAW_INBOX = root / "raw" / "inbox"
+            srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = lambda *a, **k: (rebuilt.append(1), _FakeProc())[1]
+            # target given, but NO documents and NO external URLs
+            h = make_handler("/api/ingest", body=b"target_slug=example&note=x")
+            srv.IngestHandler.do_POST(h)
+            assert h.status == 422, h.status
+            assert not (root / "compile" / "ingest-ledger.jsonl").exists(), \
+                "no ledger row for a source-less no-op"
+            assert rebuilt == [], "no rebuild for a source-less no-op"
+        finally:
+            (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+             srv.subprocess.Popen) = old
+    print("ok test_cfarready_sourceless_add_refused")
 
 
 # ------------------------------------------- CFAR round-27 repair
