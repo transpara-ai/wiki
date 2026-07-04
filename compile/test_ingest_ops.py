@@ -8,7 +8,9 @@ matches the pre-commit scanner's detectors.
 import hashlib
 import io
 import json
+import os
 import pathlib
+import subprocess
 import sys
 import tempfile
 
@@ -43,7 +45,9 @@ def good_auth(**over):
 
 
 def remove_auth(slug, **over):
-    return good_auth(operation="remove", slug=slug, source_ref="", **over)
+    merged = dict(operation="remove", slug=slug, source_ref="")
+    merged.update(over)
+    return good_auth(**merged)
 
 
 def write_auth(root, auth, raw=None):
@@ -115,10 +119,19 @@ def test_ac1_authorization_denies_entire_domain():
 
     # missing file
     refused(ops.load_authorization, path, NOW, **req)
-    # unreadable / not json / non-object / duplicate key
-    for raw in ("{nope", "[]", '"str"', '{"df": "ingest-authorization", "df": "x"}'):
+    # unreadable / not json / non-object
+    for raw in ("{nope", "[]", '"str"'):
         write_auth(root, None, raw=raw)
         refused(ops.load_authorization, path, NOW, **req)
+    # duplicate key ISOLATED: the document is fully valid under plain
+    # json.loads (last value wins and matches the request) — ONLY the
+    # object_pairs_hook duplicate-key law can refuse it
+    valid = json.dumps(good_auth())
+    dup = valid.replace('"reason": "test window"',
+                        '"reason": "x", "reason": "test window"', 1)
+    assert json.loads(dup) == good_auth(), "fixture must be valid but for the dup"
+    write_auth(root, None, raw=dup)
+    refused(ops.load_authorization, path, NOW, **req)
 
     bad_cases = [
         good_auth(df="deploy-authorization"),
@@ -173,8 +186,8 @@ def test_ac1_authorization_single_proven_grant():
     # boundary: timeout 1 and 3600 both valid; 24h window exactly valid
     for t in (1, 3600):
         write_auth(root, good_auth(engine_timeout_seconds=t))
-        assert ops.load_authorization(path, NOW, **dict(
-            operation="replace", slug="alpha-topic", source_ref=OLD_REF))
+        assert ops.load_authorization(path, NOW, operation="replace",
+                                      slug="alpha-topic", source_ref=OLD_REF)
     write_auth(root, good_auth(expires_at="2026-07-05T00:00:00Z"))  # == 24h
     assert ops.load_authorization(path, NOW, operation="replace",
                                   slug="alpha-topic", source_ref=OLD_REF)
@@ -315,6 +328,72 @@ def test_ac3_replace_refusals_write_nothing():
     print("ok test_ac3_replace_refusals_write_nothing")
 
 
+def test_ac3_write_order_and_fault_injection():
+    """Executable form of the §2.8 ordering law: consume-auth FIRST, ledger
+    LAST, and an interruption leaves exactly the enumerated atomic prefix."""
+    # 1) record the durable-write order of a successful replace
+    root = fresh_root()
+    article(root, "alpha-topic")
+    write_auth(root, good_auth())
+    order = []
+    real_bytes, real_append = ops._atomic_write_bytes, ops.append_ledger
+
+    def spy_bytes(path, data):
+        order.append(pathlib.Path(path).name)
+        return real_bytes(path, data)
+
+    def spy_append(path, row):
+        order.append(pathlib.Path(path).name)
+        return real_append(path, row)
+
+    try:
+        ops._atomic_write_bytes = spy_bytes
+        ops.append_ledger = spy_append
+        do_replace(root)
+    finally:
+        ops._atomic_write_bytes, ops.append_ledger = real_bytes, real_append
+    assert order[0] == "ingest-authorization.json", \
+        "consume-auth must be durable write #0: %r" % order
+    assert order[-1] == "ingest-ledger.jsonl", "ledger append must be last: %r" % order
+    assert order.index("replacement-%s.md" % hashlib.sha256(
+        b"# replacement raw\n").hexdigest()[:12]) == 1, \
+        "raw upload lands right after consumption: %r" % order
+
+    # 2) fault-inject at the article write: consumed + raw exist, article
+    # bytes unchanged, no PROVENANCE line, no ledger row
+    root = fresh_root()
+    path = article(root, "alpha-topic")
+    write_auth(root, good_auth())
+    article_before = path.read_bytes()
+    prov_before = (root / "PROVENANCE.md").read_bytes()
+
+    def failing_bytes(target, data):
+        if pathlib.Path(target).name == "alpha-topic.md":
+            raise OSError("injected fault at the article write")
+        return real_bytes(target, data)
+
+    try:
+        ops._atomic_write_bytes = failing_bytes
+        try:
+            do_replace(root)
+        except OSError:
+            pass
+        else:
+            raise AssertionError("injected fault must propagate")
+    finally:
+        ops._atomic_write_bytes = real_bytes
+    spent = json.loads((root / "compile" / "ingest-authorization.json").read_text())
+    assert spent["df"] == "ingest-authorization-consumed", \
+        "prefix state: authorization burned"
+    assert list((root / "raw" / "inbox").rglob("replacement-*.md")), \
+        "prefix state: raw saved"
+    assert path.read_bytes() == article_before, "article untouched by the fault"
+    assert (root / "PROVENANCE.md").read_bytes() == prov_before
+    assert not (root / "compile" / "ingest-ledger.jsonl").exists(), \
+        "no ledger row for an interrupted operation"
+    print("ok test_ac3_write_order_and_fault_injection")
+
+
 # --------------------------------------------------------------------- AC4
 
 def py_engine(code):
@@ -329,7 +408,17 @@ def _engine_replace(root, engine_command, timeout=30):
     return do_replace(root)
 
 
+def _post_swap_baseline():
+    """The deterministic step-5 state: same fixture, engine disabled."""
+    root = fresh_root()
+    path = article(root, "alpha-topic")
+    write_auth(root, good_auth())
+    do_replace(root)
+    return path.read_bytes()
+
+
 def test_ac4_engine_failure_domain_leaves_honest_stale():
+    baseline = _post_swap_baseline()
     failure_engines = [
         (py_engine("import sys; sys.exit(3)"), 30),                    # nonzero exit
         (py_engine("import time; time.sleep(30)"), 1),                 # timeout
@@ -344,23 +433,27 @@ def test_ac4_engine_failure_domain_leaves_honest_stale():
         result = _engine_replace(root, engine, timeout)
         assert result["engine"] == "failed", engine
         assert result["result"] == "stale"
-        text = path.read_text()
-        assert "stale_since:" in text
-        assert "Re-derived" not in text, "failed engine output must be discarded"
-        assert "Body text." in text, "body bytes stay at deterministic state"
+        assert path.read_bytes() == baseline, \
+            "failed engine leaves the article BYTE-IDENTICAL to the " \
+            "deterministic post-swap state: %r" % engine
     print("ok test_ac4_engine_failure_domain_leaves_honest_stale")
 
 
 def test_ac4_engine_success_atomic_swap():
+    baseline = _post_swap_baseline().decode("utf-8")
+    baseline_fm = baseline.split("---\n", 2)[1]
+    expected_fm = "".join(line for line in baseline_fm.splitlines(keepends=True)
+                          if not line.startswith("stale_since:"))
     root = fresh_root()
     path = article(root, "alpha-topic")
     result = _engine_replace(root, py_engine("print('%s')" % GOOD_BODY))
     assert result["engine"] == "ok"
     assert result["result"] == "completed"
     text = path.read_text()
-    assert "Re-derived body." in text
-    assert "stale_since:" not in text, "success drops the stale marker"
-    assert "entity: Alpha Topic" in text, "deterministic frontmatter retained"
+    fm, body = text.split("---\n", 2)[1], text.split("---\n", 2)[2]
+    assert fm == expected_fm, \
+        "success frontmatter == deterministic post-swap fm minus stale_since"
+    assert "Re-derived body." in body
     print("ok test_ac4_engine_success_atomic_swap")
 
 
@@ -402,20 +495,29 @@ def test_ac4_engine_argv_never_shell():
 
 # --------------------------------------------------------------------- AC5
 
-def linked_article(root, slug, target):
+LINK_FORMS = {
+    "wiki": "see [[%s]] for detail",
+    "md": "see [details](%s.html) for detail",
+    "href": 'see <a href="%s.html">details</a> for detail',
+}
+
+
+def linked_article(root, slug, target, form):
+    """One article, EXACTLY ONE link form — a single-form implementation
+    cannot satisfy all three fixtures."""
     wiki = root / "wiki"
     wiki.mkdir(parents=True, exist_ok=True)
     (wiki / ("%s.md" % slug)).write_text(
-        "---\nentity: %s\ntier: investigation\n---\n\n"
-        "# %s\n\nwikilink [[%s]] markdown [x](%s.html) "
-        "raw <a href=\"%s.html\">y</a>\n" % (slug, slug, target, target, target))
+        "---\nentity: %s\ntier: investigation\n---\n\n# %s\n\n%s\n"
+        % (slug, slug, LINK_FORMS[form] % target))
 
 
 def test_ac5_remove_tombstone_and_edge_enumeration():
     root = fresh_root()
     article(root, "doomed-topic")
-    linked_article(root, "linker-one", "doomed-topic")
-    linked_article(root, "linker-two", "doomed-topic")
+    linked_article(root, "linker-wiki", "doomed-topic", "wiki")
+    linked_article(root, "linker-md", "doomed-topic", "md")
+    linked_article(root, "linker-href", "doomed-topic", "href")
     write_auth(root, remove_auth("doomed-topic"))
     result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
     path = root / "wiki" / "doomed-topic.md"
@@ -424,13 +526,17 @@ def test_ac5_remove_tombstone_and_edge_enumeration():
     assert 'retired_on:' in text and 'retired_reason:' in text
     assert (root / "raw" / "inbox" / "2026-07-01" / "doomed-topic" / "doc-abc.md").exists()
     states = json.loads((root / "compile" / "edge-states.json").read_text())
-    assert set(states) == {"linker-one->doomed-topic", "linker-two->doomed-topic"}
+    assert set(states) == {"linker-wiki->doomed-topic",
+                           "linker-md->doomed-topic",
+                           "linker-href->doomed-topic"}, \
+        "each of the three link forms discovered independently"
     for entry in states.values():
         assert entry["state"] == "dangling-pending"
         assert entry["queued"] is True
         assert entry["enqueued_at"]
         assert set(entry) == {"state", "since", "reason", "queued", "enqueued_at"}
-    assert sorted(result["affected_edges"]) == ["linker-one", "linker-two"]
+    assert sorted(result["affected_edges"]) == \
+        ["linker-href", "linker-md", "linker-wiki"]
     assert "doomed-topic" in (root / "PROVENANCE.md").read_text()
     print("ok test_ac5_remove_tombstone_and_edge_enumeration")
 
@@ -438,7 +544,7 @@ def test_ac5_remove_tombstone_and_edge_enumeration():
 def test_ac5_closure_zero_unqueued_pending():
     root = fresh_root()
     article(root, "doomed-topic")
-    linked_article(root, "linker-one", "doomed-topic")
+    linked_article(root, "linker-wiki", "doomed-topic", "wiki")
     write_auth(root, remove_auth("doomed-topic"))
     ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
     states = ops.load_edge_states(root / "compile" / "edge-states.json")
@@ -449,6 +555,9 @@ def test_ac5_closure_zero_unqueued_pending():
 
 
 def test_ac5_corrupt_edge_states_refuses():
+    # NOTE the duplicate-key fixture is ISOLATED: under plain json.loads the
+    # last "state" wins and the entry is fully valid — only the
+    # object_pairs_hook law refuses it.
     corrupt = [
         "{nope",
         "[]",
@@ -458,10 +567,13 @@ def test_ac5_corrupt_edge_states_refuses():
         '{"a->b": {"state": "valid", "since": "x", "reason": "r", "queued": false, "enqueued_at": null, "extra": 1}}',
         '{"not a slug key": {"state": "valid", "since": "x", "reason": "r", "queued": false, "enqueued_at": null}}',
     ]
+    dup_fixture = json.loads(corrupt[2])
+    assert dup_fixture["a->b"]["state"] == "valid", \
+        "dup-key fixture must be valid under plain json.loads"
     for raw in corrupt:
         root = fresh_root()
         article(root, "doomed-topic")
-        linked_article(root, "linker-one", "doomed-topic")
+        linked_article(root, "linker-wiki", "doomed-topic", "wiki")
         write_auth(root, remove_auth("doomed-topic"))
         (root / "compile" / "edge-states.json").write_text(raw)
         before = tree_snapshot(root)
@@ -547,10 +659,57 @@ def test_ac6_href_canonicalization_domain():
     print("ok test_ac6_href_canonicalization_domain")
 
 
+def test_ac6_rendered_output_gates_all_link_forms():
+    """Executable render proof: to_html() output over real markdown carrying
+    all three link forms, against a retired target, a valid target, a
+    cleanly-removed edge, and a dot-segment bypass spelling."""
+    import build_site as site
+    old = (site.META, site.SLUGS, site.EDGE_STATES, site.REPOS)
+    try:
+        site.META = {
+            "src": {"slug": "src", "title": "Src", "tier": "concept",
+                    "retired_on": ""},
+            "alive": {"slug": "alive", "title": "Alive", "tier": "concept",
+                      "retired_on": ""},
+            "gone": {"slug": "gone", "title": "Gone", "tier": "concept",
+                     "retired_on": "2026-07-01"},
+            "cut": {"slug": "cut", "title": "Cut", "tier": "concept",
+                    "retired_on": ""},
+        }
+        site.EDGE_STATES = {
+            "src->cut": {"state": "cleanly-removed", "since": "x",
+                         "reason": "r", "queued": False, "enqueued_at": None},
+        }
+        site.SLUGS = set(site.META) | {"index"}
+        site.REPOS = []
+        body = (
+            "wikilink live [[alive]] and retired [[gone]]\n\n"
+            "markdown live [a](alive.html) and retired [g](gone.html) "
+            "and dotted [d](../gone.html)\n\n"
+            'raw live <a href="alive.html">A</a> and retired '
+            '<a href="gone.html">G</a>\n\n'
+            "cut edge [[cut]]\n"
+        )
+        html_out, _ = site.to_html(body, source_slug="src")
+    finally:
+        site.META, site.SLUGS, site.EDGE_STATES, site.REPOS = old
+    # live target renders live anchors (wikilink + markdown + raw)
+    assert '<a class="wl" href="alive.html">Alive</a>' in html_out
+    assert 'href="alive.html">a</a>' in html_out
+    assert 'href="alive.html">A</a>' in html_out
+    # retired target NEVER renders a live href, in ANY form
+    assert 'href="gone.html"' not in html_out
+    assert 'href="../gone.html"' not in html_out
+    assert html_out.count("wl-pending") >= 4, html_out
+    # cleanly-removed renders plain text (no anchor, no pending marker)
+    assert ">Cut</a>" not in html_out
+    print("ok test_ac6_rendered_output_gates_all_link_forms")
+
+
 def test_ac6_corrupt_edge_states_fails_build():
     # strict loader refuses every corrupt form (build_site delegates to it)
     for raw in ("{nope", "[]", '{"a->b": {"state": "valid"}}',
-                '{"a->b": 3}', '{"a->b": {"state": "valid", "state": "valid"}}'):
+                '{"a->b": 3}'):
         with tempfile.TemporaryDirectory() as d:
             p = pathlib.Path(d) / "edge-states.json"
             p.write_text(raw)
@@ -562,13 +721,19 @@ def test_ac6_corrupt_edge_states_fails_build():
     # missing file is the one valid empty form
     with tempfile.TemporaryDirectory() as d:
         assert ops.load_edge_states(pathlib.Path(d) / "edge-states.json") == {}
-    # build_site must consult the strict loader + the link gate (source-level
-    # wiring assertion, house pattern per test_refresh_lock_contract)
-    build_src = (pathlib.Path(__file__).resolve().parent / "build_site.py").read_text()
-    assert "load_edge_states(" in build_src
-    assert "link_state(" in build_src
-    assert "canonical_article_target(" in build_src
-    assert "wl-pending" in build_src
+    # EXECUTABLE build-failure proof: running the real builder against a
+    # corrupt edge-states file must exit non-zero before rendering anything
+    with tempfile.TemporaryDirectory() as d:
+        corrupt = pathlib.Path(d) / "edge-states.json"
+        corrupt.write_text("{nope")
+        env = dict(os.environ)
+        env["CIVWIKI_EDGE_STATES"] = str(corrupt)
+        proc = subprocess.run(
+            [sys.executable, str(pathlib.Path(__file__).resolve().parent / "build_site.py")],
+            capture_output=True, text=True, env=env, timeout=120)
+        assert proc.returncode != 0, "corrupt edge-states must FAIL the build"
+        assert "edge-states" in (proc.stderr + proc.stdout), \
+            "failure must name the corrupt surface"
     print("ok test_ac6_corrupt_edge_states_fails_build")
 
 
@@ -613,9 +778,19 @@ def test_ac7_ledger_strict_jsonl_preflight_first_append_last():
         "authorization_sha256": digest, "affected_edges": ["x"],
         "result": "completed", "rebuild": "ok"})
 
+    # duplicate-key line ISOLATED: valid add row under plain json.loads
+    # (last "rebuild" wins) — only the object_pairs_hook law refuses it
+    good_line = json.dumps(row, sort_keys=True)
+    dup_line = good_line.replace('"rebuild": "ok"',
+                                 '"rebuild": "failed", "rebuild": "ok"', 1)
+    assert json.loads(dup_line) == row, "fixture must be valid but for the dup"
+    ledger2 = root / "compile" / "dup-ledger.jsonl"
+    ledger2.write_text(dup_line + "\n")
+    refused(ops.ledger_preflight, ledger2)
+
     # corrupt line -> preflight refuses -> operation refuses, nothing written
     with ledger.open("a") as f:
-        f.write('{"ts": "x", "ts": "y"}\n')
+        f.write("{corrupt\n")
     refused(ops.ledger_preflight, ledger)
     root2 = fresh_root()
     article(root2, "alpha-topic")
@@ -650,16 +825,19 @@ def test_ac7_operations_append_row_last():
 # --------------------------------------------------------------------- AC8
 
 def make_handler(path, body=b"", content_type="application/x-www-form-urlencoded",
-                 host="127.0.0.1:8787", client="127.0.0.1"):
+                 host="127.0.0.1:8787", client="127.0.0.1", origin=None,
+                 fetch_site=None, token=None):
     handler = type("FakeHandler", (), {})()
     handler.path = path
     handler.headers = {
         "Host": host,
-        "Origin": "http://%s" % host,
-        "Sec-Fetch-Site": "same-origin",
+        "Origin": origin if origin is not None else "http://%s" % host,
+        "Sec-Fetch-Site": fetch_site if fetch_site is not None else "same-origin",
         "Content-Type": content_type,
         "Content-Length": str(len(body)),
     }
+    if token is not None:
+        handler.headers[srv.AUTHORING_TOKEN_HEADER] = token
     handler.client_address = (client, 12345)
     handler.server = type("FakeServer", (), {"server_port": 8787})()
     handler.rfile = io.BytesIO(body)
@@ -676,64 +854,103 @@ def make_handler(path, body=b"", content_type="application/x-www-form-urlencoded
     return handler
 
 
+class _FakeProc:
+    pid = 1
+    returncode = 0
+
+    def communicate(self, *a, **k):
+        return "refresh ok", ""
+
+
+def _server_root(d):
+    root = pathlib.Path(d)
+    (root / "compile").mkdir(exist_ok=True)
+    wiki = root / "wiki"
+    wiki.mkdir(exist_ok=True)
+    (wiki / "example.md").write_text(
+        "---\nentity: Example\ntier: investigation\n---\n\n# Example\n")
+    return root
+
+
 def test_ac8_endpoint_authoring_parity():
+    """The full authoring matrix, ROW-FOR-ROW identical across /api/ingest,
+    /api/replace, and /api/remove: bad Host 421; remote-no-token 403;
+    remote-wrong-token 401 (token configured); loopback cross-origin 403;
+    loopback same-origin passes authoring; remote correct-token passes
+    authoring. 'Passes authoring' for replace/remove = reaches the
+    authorization gate (403 naming the artifact), for ingest = 200."""
     with tempfile.TemporaryDirectory() as d:
-        root = pathlib.Path(d)
-        (root / "compile").mkdir()
-        old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH)
+        root = _server_root(d)
+        old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+               srv.subprocess.Popen)
+        old_token = os.environ.pop(srv.AUTHORING_TOKEN_ENV, None)
         try:
             srv.ROOT = root
             srv.WIKI = root / "wiki"
             srv.RAW_INBOX = root / "raw" / "inbox"
             srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
             srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = lambda *a, **k: _FakeProc()
+            ingest_body = b"target_slug=example&note=clean"
+            op_body = b"slug=alpha-topic&reason=r&source_ref=x"
 
-            for endpoint in ("/api/replace", "/api/remove"):
+            def post(endpoint, **kw):
+                body = ingest_body if endpoint == "/api/ingest" else op_body
+                h = make_handler(endpoint, body=body, **kw)
+                srv.IngestHandler.do_POST(h)
+                return h.status, h.wfile.getvalue().decode("utf-8")
+
+            for endpoint in ("/api/ingest", "/api/replace", "/api/remove"):
                 # bad Host -> 421 before anything else
-                h = make_handler(endpoint, host="evil.test:8787")
-                srv.IngestHandler.do_POST(h)
-                assert h.status == 421, endpoint
-                # remote client without token -> 403 (authoring gate)
-                h = make_handler(endpoint, client="192.168.20.22")
-                srv.IngestHandler.do_POST(h)
-                assert h.status == 403, endpoint
-                # gates pass but NO authorization artifact -> refused, 403
-                h = make_handler(endpoint, body=b"slug=alpha-topic&reason=r&source_ref=x")
-                srv.IngestHandler.do_POST(h)
-                assert h.status == 403, (endpoint, h.status)
-                payload = json.loads(h.wfile.getvalue().decode("utf-8"))
-                assert "error" in payload
-                assert not (root / "wiki").exists() or not list((root / "wiki").glob("*"))
+                assert post(endpoint, host="evil.test:8787")[0] == 421, endpoint
+                # remote client without token -> 403
+                assert post(endpoint, client="192.168.20.22")[0] == 403, endpoint
+                # loopback but cross-origin browser request -> 403
+                status, _ = post(endpoint, origin="http://evil.test",
+                                 fetch_site="cross-site")
+                assert status == 403, endpoint
+                # token configured: wrong token from remote -> 401
+                os.environ[srv.AUTHORING_TOKEN_ENV] = "workbench"
+                assert post(endpoint, client="192.168.20.22",
+                            token="wrong")[0] == 401, endpoint
+                # token configured: correct token from remote passes authoring
+                status, reply = post(endpoint, client="192.168.20.22",
+                                     token="workbench")
+                os.environ.pop(srv.AUTHORING_TOKEN_ENV, None)
+                if endpoint == "/api/ingest":
+                    assert status == 200, (endpoint, status, reply[:200])
+                else:
+                    assert status == 403 and "ingest-authorization" in reply, \
+                        (endpoint, status, reply[:200])
+                # loopback same-origin (no token) passes authoring
+                status, reply = post(endpoint)
+                if endpoint == "/api/ingest":
+                    assert status == 200, (endpoint, status)
+                else:
+                    assert status == 403 and "ingest-authorization" in reply, \
+                        (endpoint, status, reply[:200])
         finally:
-            (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH) = old
+            (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+             srv.subprocess.Popen) = old
+            if old_token is None:
+                os.environ.pop(srv.AUTHORING_TOKEN_ENV, None)
+            else:
+                os.environ[srv.AUTHORING_TOKEN_ENV] = old_token
     print("ok test_ac8_endpoint_authoring_parity")
 
 
 def test_ac8_add_gains_quarantine_and_ledger():
     with tempfile.TemporaryDirectory() as d:
-        root = pathlib.Path(d)
-        (root / "compile").mkdir()
-        wiki = root / "wiki"
-        wiki.mkdir()
-        (wiki / "example.md").write_text(
-            "---\nentity: Example\ntier: investigation\n---\n\n# Example\n")
+        root = _server_root(d)
         old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
                srv.subprocess.Popen)
-
-        class Proc:
-            pid = 1
-            returncode = 0
-
-            def communicate(self, timeout=None):
-                return "refresh ok", ""
-
         try:
             srv.ROOT = root
-            srv.WIKI = wiki
+            srv.WIKI = root / "wiki"
             srv.RAW_INBOX = root / "raw" / "inbox"
             srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
             srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
-            srv.subprocess.Popen = lambda *a, **k: Proc()
+            srv.subprocess.Popen = lambda *a, **k: _FakeProc()
 
             # a secret-bearing note refuses BEFORE any write
             body = ("target_slug=example&note=key%%3D%s" % AWS_KEY).encode("utf-8")
@@ -746,8 +963,7 @@ def test_ac8_add_gains_quarantine_and_ledger():
             assert not (root / "compile" / "ingest-ledger.jsonl").exists()
 
             # a clean add appends one add row
-            body = b"target_slug=example&note=clean"
-            h = make_handler("/api/ingest", body=body)
+            h = make_handler("/api/ingest", body=b"target_slug=example&note=clean")
             srv.IngestHandler.do_POST(h)
             assert h.status == 200, h.wfile.getvalue()[:400]
             rows = ops.ledger_preflight(root / "compile" / "ingest-ledger.jsonl")

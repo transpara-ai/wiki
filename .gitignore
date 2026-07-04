@@ -18,6 +18,8 @@ __pycache__/
 
 # auto-deploy: never commit the real authorization or runtime state
 compile/deploy-authorization.json
+# per-ingestion ops: the real single-use authorization is never committed
+compile/ingest-authorization.json
 compile/.deployed-sha
 compile/.deploy-history.json
 compile/.autodeploy.lock

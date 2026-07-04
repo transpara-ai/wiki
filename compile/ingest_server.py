@@ -5,10 +5,14 @@ Serves dist/ like http.server, plus small write endpoints used by ingest.html:
   GET  /api/articles
   POST /api/ingest
   POST /api/rebuild
+  POST /api/replace   (per-ingestion ops packet; ingest-authorization gated)
+  POST /api/remove    (per-ingestion ops packet; ingest-authorization gated)
 
 The durable state is still the repository: uploaded documents are written under
 raw/inbox/, optional article references are appended to wiki/<slug>.md
 frontmatter, and compile/refresh.py regenerates freshness status and dist/.
+Replace/Remove live in compile/ingest_ops.py behind a deny-by-default,
+single-use, instance-scoped authorization artifact.
 """
 import datetime as dt
 import fcntl
@@ -28,6 +32,9 @@ from email import policy
 from email.parser import BytesParser
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qsl, urlsplit
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import ingest_ops  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
@@ -326,7 +333,8 @@ def same_origin_authoring_request(headers, server_port=None):
 
 
 def authoring_allowed(client_host, supplied_token, configured_token=None):
-    configured_token = configured_token if configured_token is not None else os.environ.get(AUTHORING_TOKEN_ENV, "")
+    if configured_token is None:
+        configured_token = os.environ.get(AUTHORING_TOKEN_ENV, "")
     if configured_token:
         return hmac.compare_digest(supplied_token or "", configured_token)
     return is_loopback_host(client_host)
@@ -684,7 +692,17 @@ class IngestHandler(SimpleHTTPRequestHandler):
             if self.path == "/api/ingest":
                 self.handle_ingest()
                 return
+            if self.path == "/api/replace":
+                self.handle_replace()
+                return
+            if self.path == "/api/remove":
+                self.handle_remove()
+                return
             json_response(self, 404, {"error": "unknown endpoint"})
+        except ingest_ops.AuthRefused as e:
+            json_response(self, 403, {"error": str(e)})
+        except ingest_ops.OpRefused as e:
+            json_response(self, 422, {"error": str(e)})
         except Exception as e:
             json_response(self, 400, {"error": str(e)})
 
@@ -694,6 +712,22 @@ class IngestHandler(SimpleHTTPRequestHandler):
         note = first_value(form, "note").strip()
         supersedes = first_value(form, "supersedes").strip()
         external_urls = valid_external_urls(first_value(form, "external_urls"))
+        # quarantine + ledger preflight BEFORE any write (per-ingestion ops
+        # packet §2.4/§2.8/§2.9): a refusal here saves nothing, renders
+        # nothing, triggers no rebuild, and never echoes the finding bytes
+        fields = {"target_slug": target_slug, "note": note,
+                  "supersedes": supersedes}
+        for i, url in enumerate(external_urls):
+            fields["external_url_%d" % i] = url
+        for i, item in enumerate(field_values(form, "documents")):
+            if not getattr(item, "filename", ""):
+                continue
+            fields["filename_%d" % i] = item.filename
+            data = item.file.read()
+            ingest_ops.quarantine_payload(data)
+            item.file = io.BytesIO(data)
+        ingest_ops.quarantine_fields(fields)
+        ingest_ops.ledger_preflight(ROOT / "compile" / "ingest-ledger.jsonl")
         with wiki_write_lock():
             saved = save_uploads(form, target_slug, note, supersedes)
             source_refs = [s["path"] for s in saved] + external_urls
@@ -713,6 +747,14 @@ class IngestHandler(SimpleHTTPRequestHandler):
                     "supersedes": supersedes,
                 })
             refresh = run_refresh_unlocked()
+            ingest_ops.append_ledger(ROOT / "compile" / "ingest-ledger.jsonl", {
+                "ts": dt.datetime.now(dt.timezone.utc).isoformat(),
+                "operation": "add",
+                "slug": target_slug or "unassigned",
+                "sources": source_refs,
+                "created": created_article["created"],
+                "rebuild": "ok" if refresh["ok"] else "failed",
+            })
         json_response(self, 200 if refresh["ok"] else 500, {
             "saved": saved,
             "external_urls": external_urls,
@@ -723,6 +765,47 @@ class IngestHandler(SimpleHTTPRequestHandler):
             "source_hrefs": [{"source": s, "href": source_href(s)} for s in source_refs],
             "refresh": refresh,
         })
+
+    def handle_replace(self):
+        form = parse_post_form(self)
+        slug = first_value(form, "slug").strip()
+        source_ref = first_value(form, "source_ref").strip()
+        note = first_value(form, "note").strip()
+        now = dt.datetime.now(dt.timezone.utc).isoformat()
+        # the artifact gate fires before anything else so an unauthorized
+        # request is refused 403 regardless of payload shape; replace_source
+        # re-validates and consumes under the lock
+        ingest_ops.load_authorization(
+            ROOT / "compile" / "ingest-authorization.json", now,
+            operation="replace", slug=slug, source_ref=source_ref)
+        documents = [item for item in
+                     field_values(form, "document") + field_values(form, "documents")
+                     if getattr(item, "filename", "")]
+        if len(documents) != 1:
+            raise ingest_ops.OpRefused("replace requires exactly one uploaded document")
+        data = documents[0].file.read()
+        with wiki_write_lock():
+            row = ingest_ops.replace_source(
+                ROOT, slug=slug, source_ref=source_ref, data=data,
+                filename=documents[0].filename, note=note, now=now,
+                rebuild_runner=lambda: run_refresh_unlocked().get("ok") is True)
+        json_response(self, 200, {"replace": row})
+
+    def handle_remove(self):
+        form = parse_post_form(self)
+        slug = first_value(form, "slug").strip()
+        reason = first_value(form, "reason").strip()
+        now = dt.datetime.now(dt.timezone.utc).isoformat()
+        ingest_ops.load_authorization(
+            ROOT / "compile" / "ingest-authorization.json", now,
+            operation="remove", slug=slug, source_ref="")
+        if not reason:
+            raise ingest_ops.OpRefused("remove requires a reason")
+        with wiki_write_lock():
+            row = ingest_ops.remove_topic(
+                ROOT, slug=slug, reason=reason, now=now,
+                rebuild_runner=lambda: run_refresh_unlocked().get("ok") is True)
+        json_response(self, 200, {"remove": row})
 
 
 def main():

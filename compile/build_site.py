@@ -8,6 +8,7 @@ title, right-floated infobox (from frontmatter), auto table of contents, rendere
 No network, no LLM, no push. The repository catalog is derived from local
 Transpara-AI sibling checkouts when that host-local tree is present.
 """
+import os
 import re
 import json
 import html
@@ -15,8 +16,12 @@ import hashlib
 import functools
 import pathlib
 import subprocess
+import sys
 import urllib.parse
 import markdown
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import ingest_ops  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REPOS_ROOT = pathlib.Path("/Transpara/transpara-ai/repos")
@@ -343,12 +348,22 @@ def article_meta():
             "slug": p.stem,
             "title": fm_val(fm, "entity") or p.stem.replace("-", " "),
             "tier": fm_val(fm, "tier") or "concept",
+            "retired_on": fm_val(fm, "retired_on"),
         }
     return meta
 
 
 META = article_meta()
 SLUGS = set(META) | {"index"}
+
+# Committed edge-state truth (per-ingestion ops packet §2.7). The strict
+# loader FAILS the build on corrupt/duplicate/unreadable state — bad state is
+# never treated as empty. The env override exists so tests can prove the
+# failure path against the real builder without touching the repo's file.
+EDGE_STATES_PATH = pathlib.Path(
+    os.environ.get("CIVWIKI_EDGE_STATES", "")
+    or (ROOT / "compile" / "edge-states.json"))
+EDGE_STATES = ingest_ops.load_edge_states(EDGE_STATES_PATH)
 
 
 def title_of(slug):
@@ -604,7 +619,7 @@ def repo_records():
 REPOS = []
 
 
-def to_html(body, link_acc=None, source_refs=None):
+def to_html(body, link_acc=None, source_refs=None, source_slug=""):
     MD.reset()
     store = []
 
@@ -626,7 +641,44 @@ def to_html(body, link_acc=None, source_refs=None):
     out = link_source_code_alias_refs(out, source_refs or [])
     out = link_source_alias_refs(out, source_refs or [])
     out = sanitize_rendered_links(out)
+    out = gate_internal_links(out, source_slug)
     return out, list(getattr(MD, "toc_tokens", []) or [])
+
+
+ANCHOR_RE = re.compile(r"<a\b([^>]*)>(.*?)</a>", re.I | re.S)
+HREF_ATTR_RE = re.compile(r"href=(['\"])(.*?)\1", re.I)
+WL_PENDING = '<span class="wl wl-pending" title="pending reconciliation">%s</span>'
+
+
+def gate_internal_links(body_html, source_slug=""):
+    """The single enforcement point of the fail-closed rendering law
+    (per-ingestion ops packet §2.7): EVERY anchor in rendered article HTML —
+    wikilink-emitted, markdown, or raw author HTML — renders live ONLY when
+    its canonical internal target is proven valid. Retired targets, dangling
+    or unknown edge states, and unknown internal targets render non-live;
+    cleanly-removed edges render plain text."""
+    repo_slugs = {repo["slug"] for repo in REPOS}
+
+    def repl(m):
+        attrs, inner = m.group(1), m.group(2)
+        href_m = HREF_ATTR_RE.search(attrs)
+        if not href_m:
+            return m.group(0)
+        kind, target = ingest_ops.canonical_article_target(
+            href_m.group(2), meta=META, repo_slugs=repo_slugs)
+        if kind in ("external", "page"):
+            return m.group(0)
+        if kind == "article":
+            state = ingest_ops.link_state(source_slug, target, META, EDGE_STATES)
+            if state == "live":
+                return m.group(0)
+            if state == "plain":
+                return inner
+            return WL_PENDING % inner
+        # unknown internal target — no fall-through renders live
+        return WL_PENDING % inner
+
+    return ANCHOR_RE.sub(repl, body_html)
 
 
 def safe_uri(uri, *, image=False):
@@ -1259,7 +1311,10 @@ def build_sidebar(current, current_repo=""):
     ]
     out.append(build_repo_nav(current_repo))
     for tier in TIER_ORDER:
-        arts = sorted([m for m in META.values() if m["tier"] == tier], key=lambda m: m["title"].lower())
+        # retired articles drop from nav but stay reachable by direct link
+        arts = sorted([m for m in META.values()
+                       if m["tier"] == tier and not m.get("retired_on")],
+                      key=lambda m: m["title"].lower())
         if not arts:
             continue
         attrs = ['class="side-group"', 'data-tier="%s"' % html.escape(tier)]
@@ -1286,7 +1341,9 @@ def build_sidebar(current, current_repo=""):
 def build_navbox():
     out = ['<nav class="navbox"><div class="navbox-title">%s — index</div><div class="navbox-body">' % html.escape(SITE_NAME)]
     for tier in TIER_ORDER:
-        arts = sorted([m for m in META.values() if m["tier"] == tier], key=lambda m: m["title"].lower())
+        arts = sorted([m for m in META.values()
+                       if m["tier"] == tier and not m.get("retired_on")],
+                      key=lambda m: m["title"].lower())
         if not arts:
             continue
         links = " · ".join('<a href="%s.html">%s</a>' % (a["slug"], html.escape(a["title"])) for a in arts)
@@ -1863,6 +1920,20 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
         "an article in the %s" % SITE_NAME)
     h1 = SITE_NAME if is_home else html.escape(title)
     page_title = SITE_NAME if is_home or title == SITE_NAME else ("%s — %s" % (title, SITE_NAME))
+    state_banner = ""
+    if not is_home:
+        retired_on = fm_val(fm, "retired_on")
+        stale_since = fm_val(fm, "stale_since")
+        if retired_on:
+            state_banner = ('<div class="article-state-banner">Retired on %s'
+                            ' — %s</div>'
+                            % (html.escape(retired_on),
+                               html.escape(fm_val(fm, "retired_reason") or "no reason recorded")))
+        elif stale_since:
+            state_banner = ('<div class="article-state-banner">Synthesis stale'
+                            ' since %s — raw sources were replaced; prose'
+                            ' re-derivation is pending authorization.</div>'
+                            % html.escape(stale_since))
     if is_home:
         article_html = '<article class="body">%s</article>' % body_html
     else:
@@ -1885,7 +1956,7 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
         '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
         '</div></header>' % (html.escape(SITE_NAME), search_box(), top_links(), freshness(status)) +
         '<div class="layout">%s' % sidebar +
-        '<main class="%s"><h1 class="page-title">%s</h1>%s' % (html.escape(main_class), h1, tagline) +
+        '<main class="%s"><h1 class="page-title">%s</h1>%s%s' % (html.escape(main_class), h1, tagline, state_banner) +
         '%s%s%s%s%s%s' % (infobox, article_html, seealso, source_panel, source_updates, navbox) +
         '<footer class="page-foot">Generated from <code>wiki/</code> + <code>index.md</code> · '
         'a Karpathy-style LLM wiki · fail-legible: gaps are TBD, conflicts are stated.</footer>'
@@ -1902,7 +1973,7 @@ def arc_page(status):
     fm, body = split_fm(p.read_text() if p.exists() else "# Civilization Progress Chart\n")
     body = re.sub(r"^#\s+.*\n", "", body, count=1)
     links = set()
-    body_html, toc_tokens = to_html(body, links, article_source_refs(fm))
+    body_html, toc_tokens = to_html(body, links, article_source_refs(fm), source_slug=slug)
     arc_scripts = (
         '<script defer src="civilizationOntology.js?v=%s"></script>'
         '<script defer src="civilizationArcData.js?v=%s"></script>'
@@ -2008,7 +2079,8 @@ def build():
         meta = META[p.stem]
         body = re.sub(r"^#\s+.*\n", "", body, count=1)
         links = set()
-        body_html, toc_tokens = to_html(body, links, article_source_refs(fm))
+        body_html, toc_tokens = to_html(body, links, article_source_refs(fm),
+                                        source_slug=p.stem)
         write_dist_text(
             DIST / ("%s.html" % p.stem),
             page(p.stem, meta["title"], meta, fm, body_html, toc_tokens, links, status),
@@ -2016,7 +2088,7 @@ def build():
         count += 1
     fm, body = split_fm(INDEX.read_text())
     body = re.sub(r"^#\s+.*\n", "", body, count=1)
-    body_html, _ = to_html(body, set(), article_source_refs(fm))
+    body_html, _ = to_html(body, set(), article_source_refs(fm), source_slug="index")
     board_html = build_board(fm)  # fail-closed: a bad board stops the build
     write_dist_text(
         DIST / "index.html",
