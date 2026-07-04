@@ -685,15 +685,22 @@ class _LinkGate(HTMLParser):
         self.out = []
         self.a_stack = []  # disposition of each open <a>: keep|drop|pending
 
-    def _href(self, attrs):
-        return next((v for (k, v) in attrs
-                     if k.lower() in self.HREF_ATTRS and v is not None), None)
-
     def _disp(self, attrs):
-        href = self._href(attrs)
-        if href is None:
+        # an element may carry more than one browser-followed link attribute
+        # (e.g. an SVG <a> with both href and xlink:href) — evaluate EVERY one
+        # and fail closed if ANY points to a non-live internal target, so a
+        # live href cannot shield a retired xlink:href (CFAR r21)
+        dispositions = [
+            _internal_link_disposition(v, self.source_slug, self.repo_slugs)
+            for (k, v) in attrs
+            if k.lower() in self.HREF_ATTRS and v is not None]
+        if not dispositions:
             return None
-        return _internal_link_disposition(href, self.source_slug, self.repo_slugs)
+        if all(d in (None, "live") for d in dispositions):
+            return "live"
+        if any(d == "pending" for d in dispositions):
+            return "pending"
+        return "plain"  # some cleanly-removed, none pending
 
     def handle_starttag(self, tag, attrs):
         if tag == "a":

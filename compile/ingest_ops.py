@@ -24,6 +24,8 @@ import tempfile
 import urllib.parse
 from html.parser import HTMLParser
 
+import markdown
+
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import secret_scan  # noqa: E402
 
@@ -919,6 +921,19 @@ def _raw_anchor_hrefs(body):
     return parser.hrefs
 
 
+# matches build_site's Markdown config so edge discovery sees exactly the
+# anchors the renderer emits (extra = raw HTML + reference-style links)
+_MD = markdown.Markdown(extensions=["extra", "sane_lists"])
+
+
+def _render_markdown(body):
+    _MD.reset()
+    try:
+        return _MD.convert(body)
+    except Exception:
+        return ""
+
+
 def find_inbound_edges(root, target_slug):
     """Every source that links to the target — through any BODY form
     ([[wikilink]], markdown (slug.html) INCLUDING titled links, raw
@@ -927,12 +942,6 @@ def find_inbound_edges(root, target_slug):
     builder renders its links with source_slug 'index' (CFAR r1 P2-4/P2-5,
     r4 P2)."""
     wikilink = re.compile(r"\[\[%s(?:\|[^\]]*)?\]\]" % re.escape(target_slug))
-    # capture the URL token after `](`; a title (` "..."`) or `)` may follow,
-    # so do NOT require the closing paren immediately after the URL
-    md_link = re.compile(r"\]\(\s*<?([^\s)>]+)")
-    # reference-style link DEFINITIONS: `[label]: url "title"` — markdown emits
-    # the same internal anchor, so the edge must be queued too (CFAR r6 P2-2)
-    ref_def = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*<?([^\s>]+)", re.M)
     meta_stub = {target_slug: {}}
     root = pathlib.Path(root)
     scan = [(root / "index.md", "index")]
@@ -943,32 +952,24 @@ def find_inbound_edges(root, target_slug):
             continue
         raw = path.read_text()
         try:
-            fm_lines, tail = _parse_article(raw)
-            body = tail
+            fm_lines, body = _parse_article(raw)
         except OpRefused:
             fm_lines, body = [], raw
-        # strip fenced and inline code — build_site renders those as <code>,
-        # not live anchors, so a link mentioned inside code must not queue a
-        # spurious edge (CFAR r19 P3)
-        body = re.sub(r"```.*?```", " ", body, flags=re.S)
-        body = re.sub(r"~~~.*?~~~", " ", body, flags=re.S)
-        body = re.sub(r"`[^`]*`", " ", body)
+        # build_site substitutes [[wikilinks]] BEFORE markdown, so scan the raw
+        # body for those
         hit = bool(wikilink.search(body))
         if not hit and source_slug == "index":
             hit = _references_via_board(fm_lines, target_slug)
         if not hit:
-            # raw-HTML anchor targets come from a real HTML tokenizer (not a
-            # regex over prose) so `href=` in inline code or a title="href=..."
-            # attribute cannot queue a spurious edge (CFAR r17 P2)
-            candidates = ([m.group(1) for m in md_link.finditer(body)]
-                          + [m.group(1) for m in ref_def.finditer(body)]
-                          + _raw_anchor_hrefs(body))
-            for candidate in candidates:
-                # markdown renders `doomed-topic\.html` as `doomed-topic.html`,
-                # so decode backslash escapes before matching (CFAR r15)
-                candidate = re.sub(r"\\([!-/:-@\[-`{-~])", r"\1", candidate)
+            # markdown links (incl. titled/escaped/reference-style), and raw
+            # HTML/SVG/area anchors: RENDER the body with markdown exactly as
+            # build_site does and read the REAL anchor targets. Markdown emits
+            # no anchor for prose `](x)`, an unused reference definition, or a
+            # link inside code, so none of those queue a spurious edge
+            # (CFAR r6/r15/r17/r19/r21).
+            for cand in _raw_anchor_hrefs(_render_markdown(body)):
                 kind, stem = canonical_article_target(
-                    html.unescape(candidate), meta=meta_stub)
+                    html.unescape(cand), meta=meta_stub)
                 if kind == "article" and stem == target_slug:
                     hit = True
                     break

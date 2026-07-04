@@ -1425,6 +1425,45 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-21 repairs
+
+def test_cfar21_svg_multi_href_fails_closed():
+    """CFAR-21 P2-1: an SVG <a> with a live href AND a retired xlink:href must
+    fail closed — a live attribute cannot shield a non-live one."""
+    meta = {"src": {"retired_on": ""}, "gone": {"retired_on": "2026-07-01"},
+            "alive": {"title": "Alive", "retired_on": ""}}
+    out = _render_with(
+        meta, {}, '<svg><a href="alive.html" xlink:href="gone.html">x</a></svg>')
+    assert 'xlink:href="gone.html"' not in out and 'href="gone.html"' not in out, out
+    assert "wl-pending" in out, out
+    print("ok test_cfar21_svg_multi_href_fails_closed")
+
+
+def test_cfar21_prose_and_unused_refdef_not_queued():
+    """CFAR-21 P2-2: prose `](x)` and UNUSED reference definitions emit no
+    anchor in markdown, so Remove must not queue them; a used reference link
+    still queues."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    wiki = root / "wiki"
+    # prose that merely contains `](doomed-topic.html)` with no preceding [text]
+    # and an UNUSED reference definition — neither renders an anchor
+    (wiki / "linker-noise.md").write_text(
+        '---\nentity: N\ntier: investigation\n---\n\n# N\n\n'
+        'a stray sequence ](doomed-topic.html) in prose\n\n'
+        '[unused]: doomed-topic.html\n')
+    # a USED reference-style link DOES render an anchor
+    (wiki / "linker-used.md").write_text(
+        '---\nentity: U\ntier: investigation\n---\n\n# U\n\n'
+        'see [the page][ref]\n\n[ref]: doomed-topic.html\n')
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    edges = result["affected_edges"]
+    assert "linker-noise" not in edges, edges
+    assert "linker-used" in edges, edges
+    print("ok test_cfar21_prose_and_unused_refdef_not_queued")
+
+
 # ------------------------------------------- CFAR round-20 repair
 
 def test_cfar20_arc_view_gates_retired_hrefs():
