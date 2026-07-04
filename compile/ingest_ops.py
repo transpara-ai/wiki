@@ -506,7 +506,27 @@ def _list_item_indexes(fm_lines, key):
     return key_idx, items
 
 
+def _inline_list(line):
+    """Parse `key: [a, b]` (the inline form the live fm_list accepts), or None
+    if the value is not an inline list."""
+    value = line.split(":", 1)[1].strip() if ":" in line else ""
+    if value.startswith("[") and value.endswith("]"):
+        return [x.strip().strip('"').strip("'")
+                for x in value[1:-1].split(",") if x.strip()]
+    return None
+
+
 def fm_list_values(fm_lines, key):
+    # match the live fm_list parser: accept BOTH the inline `key: [a, b]` form
+    # and the block `-` form — reading only block rows silently returns [] for
+    # a valid inline list, breaking the in-article and shared-source checks
+    # (CFAR r2 P2-3)
+    idx = _key_line_index(fm_lines, key)
+    if idx < 0:
+        return []
+    inline = _inline_list(fm_lines[idx])
+    if inline is not None:
+        return [v for v in inline if v]
     _, items = _list_item_indexes(fm_lines, key)
     values = []
     for i in items:
@@ -514,6 +534,20 @@ def fm_list_values(fm_lines, key):
         if value:
             values.append(value)
     return values
+
+
+def _normalize_list_to_block(fm_lines, key):
+    """Rewrite an inline `key: [a, b]` list as block `-` rows so the block-form
+    mutation helpers can move/remove items — otherwise a superseded ref left
+    in an inline `sources` line stays load-bearing under the live parser."""
+    idx = _key_line_index(fm_lines, key)
+    if idx < 0:
+        return fm_lines
+    inline = _inline_list(fm_lines[idx])
+    if inline is None:
+        return fm_lines
+    block = ["%s:" % key] + ["  - %s" % json.dumps(v) for v in inline if v]
+    return fm_lines[:idx] + block + fm_lines[idx + 1:]
 
 
 def fm_scalar(fm_lines, key):
@@ -730,6 +764,11 @@ def replace_source(root, *, slug, source_ref, data, filename, note, now,
     _atomic_write_bytes(dst, data)
     new_ref = str(dst.relative_to(root))
 
+    # canonicalize any inline-form lists to block form before mutating, so the
+    # remove/move helpers cannot leave a superseded ref inline+live (CFAR r2 P2-3)
+    for key in ("sources", "raw_documents", "superseded_sources",
+                "superseded_raw_documents"):
+        fm_lines = _normalize_list_to_block(fm_lines, key)
     for key in ("sources", "raw_documents"):
         if source_ref in fm_list_values(fm_lines, key):
             fm_lines = _remove_list_value(fm_lines, key, source_ref)
@@ -813,6 +852,14 @@ def remove_topic(root, *, slug, reason, now, rebuild_runner=None):
     auth_path = root / "compile" / "ingest-authorization.json"
     auth = load_authorization(auth_path, now, operation="remove",
                               slug=slug, source_ref="")
+    # normalize + validate the reason BEFORE auth consumption or any write —
+    # an empty reason must refuse in preflight (else the ledger row fails
+    # AFTER the tombstone is written, orphaning the audit), and a multi-line
+    # reason must collapse so it cannot inject extra PROVENANCE lines
+    # (CFAR r2 P2-2)
+    reason = re.sub(r"\s+", " ", reason or "").strip()
+    if not reason:
+        raise OpRefused("remove requires a non-empty reason")
     quarantine_fields({"slug": slug, "reason": reason,
                        "authorized_by": auth["authority"]})
 

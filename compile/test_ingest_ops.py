@@ -1094,6 +1094,89 @@ def test_cfar_titled_markdown_link_detected():
     print("ok test_cfar_titled_markdown_link_detected")
 
 
+# ------------------------------------------- CFAR round-2 P2 repairs
+
+def test_cfar2_data_href_does_not_control_gate():
+    """CFAR-2 P2-1: an auxiliary attribute like data-href must not be matched
+    as the link's href and suppress a genuinely live target."""
+    meta = {"src": {"retired_on": ""}, "gone": {"retired_on": "2026-07-01"},
+            "alive": {"title": "Alive", "retired_on": ""}}
+    out = _render_with(meta, {},
+                       '<a data-href="gone.html" href="alive.html">A</a>')
+    assert 'href="alive.html"' in out, out
+    assert "wl-pending" not in out, out
+    print("ok test_cfar2_data_href_does_not_control_gate")
+
+
+def test_cfar2_remove_empty_reason_refuses_before_mutation():
+    """CFAR-2 P2-2: an empty/whitespace reason must refuse in preflight —
+    before auth consumption or any durable write."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    for bad in ("", "   ", "\n\t "):
+        write_auth(root, remove_auth("doomed-topic"))
+        before = tree_snapshot(root)
+        refused(ops.remove_topic, root, slug="doomed-topic", reason=bad, now=NOW)
+        assert tree_snapshot(root) == before, "no mutation, auth not consumed"
+    print("ok test_cfar2_remove_empty_reason_refuses_before_mutation")
+
+
+def test_cfar2_remove_reason_normalized_single_line():
+    """CFAR-2 P2-2: a multi-line reason collapses to a single line before it
+    reaches PROVENANCE / the ledger / the edge reason."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    linked_article(root, "linker-wiki", "doomed-topic", "wiki")
+    write_auth(root, remove_auth("doomed-topic"))
+    ops.remove_topic(root, slug="doomed-topic",
+                     reason="line one\nline two\n\nline three", now=NOW)
+    prov = (root / "PROVENANCE.md").read_text()
+    remove_lines = [ln for ln in prov.splitlines() if "remove: topic" in ln]
+    assert len(remove_lines) == 1 and "line one line two line three" in remove_lines[0], prov
+    states = json.loads((root / "compile" / "edge-states.json").read_text())
+    for entry in states.values():
+        assert "\n" not in entry["reason"]
+    print("ok test_cfar2_remove_reason_normalized_single_line")
+
+
+def test_cfar2_inline_frontmatter_list_form():
+    """CFAR-2 P2-3: sources/raw_documents in the inline [..] form (accepted by
+    the live fm_list parser) must be read for both the in-article ref check
+    and the shared-source scan."""
+    root = fresh_root()
+    # target article with INLINE-form lists
+    wiki = root / "wiki"
+    wiki.mkdir(parents=True, exist_ok=True)
+    (wiki / "alpha-topic.md").write_text(
+        '---\nentity: Alpha Topic\ntier: investigation\n'
+        'raw_documents: ["%s"]\nsources: ["%s"]\n---\n\n# Alpha\n\nBody.\n'
+        % (OLD_REF, OLD_REF))
+    raw_dir = root / "raw" / "inbox" / "2026-07-01" / "alpha-topic"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    (raw_dir / "doc-abc.md").write_text("# original raw\n")
+
+    # a shared ref: another article (also inline form) references OLD_REF
+    (wiki / "beta-topic.md").write_text(
+        '---\nentity: Beta\ntier: investigation\nsources: ["%s"]\n---\n\n# Beta\n'
+        % OLD_REF)
+    write_auth(root, good_auth())
+    before = tree_snapshot(root)
+    # shared-source scan must SEE beta's inline reference and refuse
+    refused(do_replace, root)
+    assert tree_snapshot(root) == before, "shared inline ref must be detected"
+
+    # now make it exclusive (remove beta) and confirm the inline ref is found,
+    # moved to superseded, and is no longer load-bearing under live fm_list
+    (wiki / "beta-topic.md").unlink()
+    write_auth(root, good_auth())
+    do_replace(root)
+    fm, _, _ = srv.split_fm((wiki / "alpha-topic.md").read_text())
+    assert OLD_REF not in srv.fm_list(fm, "sources")
+    assert OLD_REF not in srv.fm_list(fm, "raw_documents")
+    assert OLD_REF in srv.fm_list(fm, "superseded_sources")
+    print("ok test_cfar2_inline_frontmatter_list_form")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

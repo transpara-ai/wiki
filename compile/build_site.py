@@ -648,9 +648,12 @@ def to_html(body, link_acc=None, source_refs=None, source_slug=""):
 ANCHOR_RE = re.compile(r"<a\b([^>]*)>(.*?)</a>", re.I | re.S)
 # tolerant of whitespace around `=` and quoted OR unquoted values — a browser
 # resolves `href = "x"` and `href=x` identically, so the gate must too or it
-# fails open on spellings it cannot parse (CFAR r1 P2-1)
+# fails open on spellings it cannot parse (CFAR r1 P2-1). The negative
+# lookbehind requires an attribute boundary before `href` so `data-href` /
+# `aria-href` do not hijack the gate (CFAR r2 P2-1) — `\b` is insufficient
+# because `-` is itself a word boundary.
 HREF_ATTR_RE = re.compile(
-    r"""href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))""", re.I)
+    r"""(?<![-\w])href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))""", re.I)
 WL_PENDING = '<span class="wl wl-pending" title="pending reconciliation">%s</span>'
 
 
