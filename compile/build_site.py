@@ -2109,7 +2109,10 @@ def build():
     fm, body = split_fm(INDEX.read_text())
     body = re.sub(r"^#\s+.*\n", "", body, count=1)
     body_html, _ = to_html(body, set(), article_source_refs(fm), source_slug="index")
-    board_html = build_board(fm)  # fail-closed: a bad board stops the build
+    # gate the board's generated links through the SAME fail-closed renderer
+    # as article bodies — board tiles to a retired slug must not stay live
+    # (CFAR r3 P2-2); the homepage is the most visible generated-link surface
+    board_html = gate_internal_links(build_board(fm), source_slug="index")
     write_dist_text(
         DIST / "index.html",
         page("index", SITE_NAME, {}, "", board_html + body_html, [], set(), status, is_home=True),

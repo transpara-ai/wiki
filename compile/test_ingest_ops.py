@@ -1177,6 +1177,96 @@ def test_cfar2_inline_frontmatter_list_form():
     print("ok test_cfar2_inline_frontmatter_list_form")
 
 
+# ------------------------------------------- CFAR round-3 P2 repairs
+
+def test_cfar3_list_items_scan_past_comments():
+    """CFAR-3 P2-1: a standalone comment or blank inside a sources/raw_documents
+    block must not truncate the list — the live fm_list scans to the next key."""
+    fm = ['sources:', '  - "raw/a.md"', '  # a standalone note', '',
+          '  - "raw/b.md"', 'tier: concept']
+    assert ops.fm_list_values(fm, 'sources') == ['raw/a.md', 'raw/b.md']
+    # removing the earlier item keeps the key AND the later item (not orphaned)
+    out = ops._remove_list_value(fm, 'sources', 'raw/a.md')
+    assert ops._key_line_index(out, 'sources') >= 0, "key line survives"
+    assert ops.fm_list_values(out, 'sources') == ['raw/b.md']
+    print("ok test_cfar3_list_items_scan_past_comments")
+
+
+def test_cfar3_replace_with_commented_block_no_orphan():
+    """CFAR-3 P2-1: replacing an item in a commented block leaves later refs
+    live and correctly detects the target ref."""
+    root = fresh_root()
+    wiki = root / "wiki"
+    wiki.mkdir(parents=True, exist_ok=True)
+    other = "raw/inbox/2026-07-01/alpha-topic/doc-other.md"
+    (wiki / "alpha-topic.md").write_text(
+        '---\nentity: Alpha Topic\ntier: investigation\n'
+        'raw_documents:\n  - "%s"\nsources:\n  - "%s"  # first ingest\n'
+        '  # a standalone comment line\n  - "%s"\n---\n\n# Alpha\n\nBody.\n'
+        % (OLD_REF, OLD_REF, other))
+    raw_dir = root / "raw" / "inbox" / "2026-07-01" / "alpha-topic"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    (raw_dir / "doc-abc.md").write_text("# a\n")
+    (raw_dir / "doc-other.md").write_text("# b\n")
+    write_auth(root, good_auth())
+    do_replace(root)  # supersede OLD_REF
+    fm, _, _ = srv.split_fm((wiki / "alpha-topic.md").read_text())
+    assert OLD_REF in srv.fm_list(fm, "superseded_sources")
+    assert OLD_REF not in srv.fm_list(fm, "sources")
+    assert other in srv.fm_list(fm, "sources"), "the later ref is not orphaned"
+    print("ok test_cfar3_replace_with_commented_block_no_orphan")
+
+
+BOARD_FM = (
+    'board_eyebrow: "E"\n'
+    'board_hero: "H"\n'
+    'board_subtitle: "S"\n'
+    'board_narrative_link: narrative-topic\n'
+    'board_pillars:\n'
+    '  - "Accountability|obj|hook|pillar-purple|purple"\n'
+    '  - "Provenance|obj||pillar-teal|teal"\n'
+    '  - "Autonomy|obj||pillar-amber|amber"\n'
+    '  - "One|obj|hook|pillar-coral|coral"\n'
+    'board_inheritance:\n'
+    '  - "Searles|inherit-one"\n'
+    'board_method: "intent → gate → certified"\n'
+    'board_guardrail: "distrust|guard-topic"\n')
+
+BOARD_SLUGS = ["narrative-topic", "pillar-purple", "pillar-teal",
+               "pillar-amber", "pillar-coral", "inherit-one", "guard-topic"]
+
+
+def test_cfar3_board_links_are_gated():
+    """CFAR-3 P2-2: homepage board links to a retired slug must NOT render
+    live — build() routes board_html through the same gate as the body."""
+    import build_site as site
+    with tempfile.TemporaryDirectory() as d:
+        wiki = pathlib.Path(d) / "wiki"
+        wiki.mkdir()
+        for s in BOARD_SLUGS:
+            (wiki / ("%s.md" % s)).write_text("---\nentity: %s\n---\n\n# %s\n" % (s, s))
+        old = (site.WIKI, site.META, site.SLUGS, site.EDGE_STATES, site.REPOS)
+        try:
+            site.WIKI = wiki
+            site.META = {s: {"slug": s, "title": s, "tier": "concept",
+                             "retired_on": ""} for s in BOARD_SLUGS}
+            site.META["pillar-amber"]["retired_on"] = "2026-07-01"  # retired pillar
+            site.SLUGS = set(site.META) | {"index"}
+            site.EDGE_STATES = {}
+            site.REPOS = []
+            gated = site.gate_internal_links(site.build_board(BOARD_FM),
+                                             source_slug="index")
+        finally:
+            site.WIKI, site.META, site.SLUGS, site.EDGE_STATES, site.REPOS = old
+    assert 'href="pillar-amber.html"' not in gated, "retired board link must be gated"
+    assert "wl-pending" in gated
+    assert 'href="pillar-purple.html"' in gated, "live board links stay live"
+    # build() must actually apply the gate to board_html (wiring proof)
+    build_src = (pathlib.Path(__file__).resolve().parent / "build_site.py").read_text()
+    assert "gate_internal_links(build_board(" in build_src
+    print("ok test_cfar3_board_links_are_gated")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

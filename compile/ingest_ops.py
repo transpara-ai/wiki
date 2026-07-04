@@ -501,8 +501,11 @@ def _list_item_indexes(fm_lines, key):
     for i in range(key_idx + 1, len(fm_lines)):
         if LIST_ITEM_RE.match(fm_lines[i]):
             items.append(i)
-        else:
-            break
+        elif re.match(r"^[A-Za-z_]", fm_lines[i]):
+            break  # next top-level key ends the block
+        # else: a standalone comment or blank line — the live fm_list keeps
+        # scanning to the next key, so we must too, or a later `-` item is
+        # silently dropped / orphaned on mutation (CFAR r3 P2-1)
     return key_idx, items
 
 
