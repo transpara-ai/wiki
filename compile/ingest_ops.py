@@ -324,8 +324,17 @@ def append_ledger(path, row):
     _validate_ledger_row(row)
     path = pathlib.Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    # a preflight-valid ledger may lack a trailing newline (e.g. after a manual
+    # repair); appending directly would merge two objects onto one line and
+    # break the strict JSONL parse forever — insert the missing separator
+    # first (CFAR r15).
+    prefix = ""
+    if path.exists():
+        existing = path.read_bytes()
+        if existing and not existing.endswith(b"\n"):
+            prefix = "\n"
     with path.open("a") as f:
-        f.write(json.dumps(row, sort_keys=True) + "\n")
+        f.write(prefix + json.dumps(row, sort_keys=True) + "\n")
 
 
 # --------------------------------------------------------------- edge states
@@ -913,6 +922,9 @@ def find_inbound_edges(root, target_slug):
                           + [m.group(1) for m in ref_def.finditer(body)]
                           + [m.group(1) for m in href.finditer(body)])
             for candidate in candidates:
+                # markdown renders `doomed-topic\.html` as `doomed-topic.html`,
+                # so decode backslash escapes before matching (CFAR r15)
+                candidate = re.sub(r"\\([!-/:-@\[-`{-~])", r"\1", candidate)
                 kind, stem = canonical_article_target(
                     html.unescape(candidate), meta=meta_stub)
                 if kind == "article" and stem == target_slug:

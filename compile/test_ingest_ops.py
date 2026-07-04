@@ -1425,6 +1425,46 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-15 repairs
+
+def test_cfar15_ledger_append_preserves_jsonl_separation():
+    """CFAR-15 P2-1: appending to a preflight-valid ledger whose last line
+    lacks a trailing newline must not merge two objects onto one line."""
+    root = fresh_root()
+    ledger = root / "compile" / "ingest-ledger.jsonl"
+    row = {"ts": NOW, "operation": "add", "slug": "x",
+           "sources": ["raw/a.md"], "created": False, "rebuild": "ok"}
+    ledger.write_text(json.dumps(row, sort_keys=True))  # NO trailing newline
+    ops.append_ledger(ledger, dict(row, slug="y"))
+    parsed = ops.ledger_preflight(ledger)  # must still parse cleanly
+    assert [r["slug"] for r in parsed] == ["x", "y"], ledger.read_text()
+    # and an operation appending after a no-newline ledger stays auditable
+    root2 = fresh_root()
+    article(root2, "alpha-topic")
+    (root2 / "compile" / "ingest-ledger.jsonl").write_text(
+        json.dumps(row, sort_keys=True))  # no newline
+    write_auth(root2, good_auth())
+    do_replace(root2)
+    rows = ops.ledger_preflight(root2 / "compile" / "ingest-ledger.jsonl")
+    assert [r["operation"] for r in rows] == ["add", "replace"], rows
+    print("ok test_cfar15_ledger_append_preserves_jsonl_separation")
+
+
+def test_cfar15_markdown_escaped_link_queued_on_remove():
+    """CFAR-15 P2-2: a markdown-escaped destination `[x](slug\\.html)` (which
+    renders as slug.html) must be enumerated on Remove."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    wiki = root / "wiki"
+    (wiki / "linker-esc.md").write_text(
+        '---\nentity: L\ntier: investigation\n---\n\n'
+        '# L\n\nsee [detail](doomed-topic\\.html) now\n')
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    assert "linker-esc" in result["affected_edges"], result["affected_edges"]
+    print("ok test_cfar15_markdown_escaped_link_queued_on_remove")
+
+
 # ------------------------------------------- CFAR round-14 repairs
 
 def test_cfar14_naive_now_refused():
