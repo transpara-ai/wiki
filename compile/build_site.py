@@ -674,6 +674,10 @@ class _LinkGate(HTMLParser):
     per HTMLParser's own attribute parsing) is always gated (CFAR r1/r2/r4/r5/
     r6). This is the single fail-closed enforcement point (packet §2.7)."""
 
+    # SVG anchors target xlink:href (SVG 1.1) or href (SVG 2); browsers follow
+    # either, so both are link attributes the gate must inspect (CFAR r17)
+    HREF_ATTRS = ("href", "xlink:href")
+
     def __init__(self, source_slug, repo_slugs):
         super().__init__(convert_charrefs=False)
         self.source_slug = source_slug
@@ -681,10 +685,13 @@ class _LinkGate(HTMLParser):
         self.out = []
         self.a_stack = []  # disposition of each open <a>: keep|drop|pending
 
+    def _href(self, attrs):
+        return next((v for (k, v) in attrs
+                     if k.lower() in self.HREF_ATTRS and v is not None), None)
+
     def handle_starttag(self, tag, attrs):
         if tag == "a":
-            href = next((v for (k, v) in attrs
-                         if k.lower() == "href" and v is not None), None)
+            href = self._href(attrs)
             disp = (_internal_link_disposition(href, self.source_slug,
                                                self.repo_slugs)
                     if href is not None else None)
@@ -715,8 +722,7 @@ class _LinkGate(HTMLParser):
         # echoed verbatim (CFAR r9). A non-live self-closing anchor is dropped
         # (its following text renders plain) — there is no inner span to wrap.
         if tag == "a":
-            href = next((v for (k, v) in attrs
-                         if k.lower() == "href" and v is not None), None)
+            href = self._href(attrs)
             disp = (_internal_link_disposition(href, self.source_slug,
                                                self.repo_slugs)
                     if href is not None else None)

@@ -22,6 +22,7 @@ import subprocess
 import sys
 import tempfile
 import urllib.parse
+from html.parser import HTMLParser
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import secret_scan  # noqa: E402
@@ -883,6 +884,39 @@ def _references_via_board(fm_lines, target_slug):
     return False
 
 
+class _AnchorHrefs(HTMLParser):
+    """Extract real anchor targets (href / SVG xlink:href) from raw HTML in an
+    article body. HTMLParser ignores prose, inline code, and non-link
+    attributes (e.g. title="href=..."), so edge discovery matches what the
+    renderer would actually link — no spurious queued edges (CFAR r17)."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.hrefs = []
+
+    def _collect(self, tag, attrs):
+        if tag == "a":
+            for k, v in attrs:
+                if k.lower() in ("href", "xlink:href") and v:
+                    self.hrefs.append(v)
+
+    def handle_starttag(self, tag, attrs):
+        self._collect(tag, attrs)
+
+    def handle_startendtag(self, tag, attrs):
+        self._collect(tag, attrs)
+
+
+def _raw_anchor_hrefs(body):
+    parser = _AnchorHrefs()
+    try:
+        parser.feed(body)
+        parser.close()
+    except Exception:
+        return []
+    return parser.hrefs
+
+
 def find_inbound_edges(root, target_slug):
     """Every source that links to the target — through any BODY form
     ([[wikilink]], markdown (slug.html) INCLUDING titled links, raw
@@ -897,9 +931,6 @@ def find_inbound_edges(root, target_slug):
     # reference-style link DEFINITIONS: `[label]: url "title"` — markdown emits
     # the same internal anchor, so the edge must be queued too (CFAR r6 P2-2)
     ref_def = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*<?([^\s>]+)", re.M)
-    # boundary before `href` so `data-href`/`aria-href` don't queue spurious
-    # inbound edges the renderer would never link (CFAR r14 P3)
-    href = re.compile(r"(?<![-\w])href\s*=\s*[\"']?([^\"'\s>]+)", re.I)
     meta_stub = {target_slug: {}}
     root = pathlib.Path(root)
     scan = [(root / "index.md", "index")]
@@ -918,9 +949,12 @@ def find_inbound_edges(root, target_slug):
         if not hit and source_slug == "index":
             hit = _references_via_board(fm_lines, target_slug)
         if not hit:
+            # raw-HTML anchor targets come from a real HTML tokenizer (not a
+            # regex over prose) so `href=` in inline code or a title="href=..."
+            # attribute cannot queue a spurious edge (CFAR r17 P2)
             candidates = ([m.group(1) for m in md_link.finditer(body)]
                           + [m.group(1) for m in ref_def.finditer(body)]
-                          + [m.group(1) for m in href.finditer(body)])
+                          + _raw_anchor_hrefs(body))
             for candidate in candidates:
                 # markdown renders `doomed-topic\.html` as `doomed-topic.html`,
                 # so decode backslash escapes before matching (CFAR r15)

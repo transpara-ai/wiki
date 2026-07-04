@@ -1425,6 +1425,46 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-17 repairs
+
+def test_cfar17_svg_xlink_href_gated():
+    """CFAR-17 P2-1: an SVG anchor targeting a retired page via xlink:href must
+    be gated (browsers follow xlink:href)."""
+    meta = {"src": {"retired_on": ""}, "gone": {"retired_on": "2026-07-01"},
+            "alive": {"title": "Alive", "retired_on": ""}}
+    out = _render_with(meta, {}, '<svg><a xlink:href="gone.html">g</a></svg>')
+    assert 'xlink:href="gone.html"' not in out, out
+    out2 = _render_with(meta, {}, '<svg><a xlink:href="alive.html">a</a></svg>')
+    assert "alive.html" in out2, out2
+    print("ok test_cfar17_svg_xlink_href_gated")
+
+
+def test_cfar17_prose_href_not_queued_on_remove():
+    """CFAR-17 P2-2: `href=` in inline code or a non-anchor attribute must not
+    queue a spurious inbound edge — only real anchors count."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    wiki = root / "wiki"
+    # inline code + a title attribute that merely mention the href — NOT links
+    (wiki / "linker-prose.md").write_text(
+        '---\nentity: L\ntier: investigation\n---\n\n# L\n\n'
+        'the attribute `href="doomed-topic.html"` and '
+        '<span title="href=doomed-topic.html">x</span> are not links\n')
+    # a REAL raw anchor (and an SVG xlink anchor) that ARE links
+    (wiki / "linker-anchor.md").write_text(
+        '---\nentity: A\ntier: investigation\n---\n\n# A\n\n'
+        '<a href="doomed-topic.html">real</a>\n')
+    (wiki / "linker-svg.md").write_text(
+        '---\nentity: S\ntier: investigation\n---\n\n# S\n\n'
+        '<svg><a xlink:href="doomed-topic.html">s</a></svg>\n')
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    edges = result["affected_edges"]
+    assert "linker-prose" not in edges, edges
+    assert "linker-anchor" in edges and "linker-svg" in edges, edges
+    print("ok test_cfar17_prose_href_not_queued_on_remove")
+
+
 # ------------------------------------------- CFAR round-16 repair
 
 def test_cfar16_ingest_page_selector_excludes_retired():
