@@ -1425,6 +1425,59 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-19 repairs
+
+def test_cfar19_unknown_target_refused_write_free():
+    """CFAR-19 P2: a provided nonexistent target_slug must refuse before any
+    write (save_uploads would otherwise persist raw + manifest with no ledger)."""
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        (root / "compile").mkdir()
+        wiki = root / "wiki"
+        wiki.mkdir()
+        (wiki / "example.md").write_text(
+            "---\nentity: Example\ntier: investigation\n---\n\n# Example\n")
+        old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+               srv.subprocess.Popen)
+        try:
+            srv.ROOT = root
+            srv.WIKI = wiki
+            srv.RAW_INBOX = root / "raw" / "inbox"
+            srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = lambda *a, **k: _FakeProc()
+            ctype, body = _multipart(
+                {"target_slug": "does-not-exist"}, "doc.md", b"# doc\n",
+                field_name="documents")
+            h = make_handler("/api/ingest", body=body, content_type=ctype)
+            srv.IngestHandler.do_POST(h)
+            assert h.status == 422, h.status
+            assert not (root / "raw").exists(), "unknown target → write-free refusal"
+            assert not (root / "compile" / "ingest-ledger.jsonl").exists()
+        finally:
+            (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+             srv.subprocess.Popen) = old
+    print("ok test_cfar19_unknown_target_refused_write_free")
+
+
+def test_cfar19_code_block_links_not_queued():
+    """CFAR-19 P3: links inside markdown code fences/spans render as code, not
+    anchors — they must not queue spurious inbound edges on Remove."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    wiki = root / "wiki"
+    (wiki / "linker-code.md").write_text(
+        '---\nentity: L\ntier: investigation\n---\n\n# L\n\n'
+        'inline `[x](doomed-topic.html)` and fenced:\n\n'
+        '```\n<a href="doomed-topic.html">x</a>\n[y](doomed-topic.html)\n```\n')
+    linked_article(root, "linker-real", "doomed-topic", "md")  # a real link
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    assert "linker-code" not in result["affected_edges"], result["affected_edges"]
+    assert "linker-real" in result["affected_edges"]
+    print("ok test_cfar19_code_block_links_not_queued")
+
+
 # ------------------------------------------- CFAR round-18 repair
 
 def test_cfar18_area_href_gated_and_queued():

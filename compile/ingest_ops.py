@@ -947,6 +947,12 @@ def find_inbound_edges(root, target_slug):
             body = tail
         except OpRefused:
             fm_lines, body = [], raw
+        # strip fenced and inline code — build_site renders those as <code>,
+        # not live anchors, so a link mentioned inside code must not queue a
+        # spurious edge (CFAR r19 P3)
+        body = re.sub(r"```.*?```", " ", body, flags=re.S)
+        body = re.sub(r"~~~.*?~~~", " ", body, flags=re.S)
+        body = re.sub(r"`[^`]*`", " ", body)
         hit = bool(wikilink.search(body))
         if not hit and source_slug == "index":
             hit = _references_via_board(fm_lines, target_slug)

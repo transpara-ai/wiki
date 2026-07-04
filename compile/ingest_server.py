@@ -783,6 +783,13 @@ class IngestHandler(SimpleHTTPRequestHandler):
                 raise ingest_ops.OpRefused(
                     "target article is retired — Add refused; a retired topic "
                     "is a tombstone reachable by direct link only")
+            # a PROVIDED target_slug must name an existing article (only the
+            # unassigned path creates new articles) — refuse a nonexistent
+            # target before any write, else save_uploads persists raw +
+            # manifest and the append below fails with no ledger row (CFAR r19)
+            if target_slug and not (WIKI / ("%s.md" % target_slug)).exists():
+                raise ingest_ops.OpRefused(
+                    "target article does not exist — Add refused")
             saved = save_uploads(form, target_slug, note, supersedes)
             source_refs = [s["path"] for s in saved] + external_urls
             created_article = {"slug": "", "created": False}
