@@ -645,7 +645,12 @@ def to_html(body, link_acc=None, source_refs=None, source_slug=""):
     return out, list(getattr(MD, "toc_tokens", []) or [])
 
 
-ANCHOR_RE = re.compile(r"<a\b([^>]*)>(.*?)</a>", re.I | re.S)
+# the opening-tag scan must respect quoted attributes: `[^>]*` would stop at a
+# `>` inside `title="x>y"`, truncating the tag before the real href and leaving
+# a retired link live (CFAR r5 P2-1). Each attr char is either a non-`>`/non-
+# quote char OR a whole quoted string (which may itself contain `>`).
+ANCHOR_RE = re.compile(
+    r"""<a\b((?:[^>"']|"[^"]*"|'[^']*')*)>(.*?)</a>""", re.I | re.S)
 WL_PENDING = '<span class="wl wl-pending" title="pending reconciliation">%s</span>'
 
 
@@ -694,13 +699,43 @@ def _extract_href(attrs):
     return None
 
 
+# a real href attribute (boundary before `href`, quoted), used by the
+# fail-closed backstop sweep — matched independently of element structure so a
+# markdown-mangled anchor cannot hide a live href behind broken tag boundaries
+HREF_SWEEP_RE = re.compile(r"""(?<![-\w])href\s*=\s*(["'])(.*?)\1""", re.I)
+
+
+def _internal_link_disposition(href, source_slug, repo_slugs):
+    """Return ('live'|'plain'|'pending'|None). None = not an internal article
+    link (external / builder page) — leave it alone."""
+    kind, target = ingest_ops.canonical_article_target(
+        href, meta=META, repo_slugs=repo_slugs)
+    if kind in ("external", "page"):
+        return None
+    if kind == "article":
+        state = ingest_ops.link_state(source_slug, target, META, EDGE_STATES)
+        if state == "live":
+            return "live"
+        if state == "plain":
+            return "plain"
+        return "pending"
+    return "pending"  # unknown internal target — never renders live
+
+
 def gate_internal_links(body_html, source_slug=""):
     """The single enforcement point of the fail-closed rendering law
     (per-ingestion ops packet §2.7): EVERY anchor in rendered article HTML —
     wikilink-emitted, markdown, or raw author HTML — renders live ONLY when
     its canonical internal target is proven valid. Retired targets, dangling
     or unknown edge states, and unknown internal targets render non-live;
-    cleanly-removed edges render plain text."""
+    cleanly-removed edges render plain text.
+
+    Two passes: (1) a well-formed-anchor pass that gives clean anchors a
+    legible wl-pending span (or plain text for cleanly-removed); (2) a
+    backstop sweep that neutralizes ANY surviving non-live internal href
+    attribute value to `#`, so a markdown-mangled or malformed anchor cannot
+    leave a live link to a non-live target — the browser resolves the href
+    regardless of element well-formedness, so the gate must too (CFAR r5)."""
     repo_slugs = {repo["slug"] for repo in REPOS}
 
     def repl(m):
@@ -708,21 +743,23 @@ def gate_internal_links(body_html, source_slug=""):
         href = _extract_href(attrs)
         if href is None:
             return m.group(0)
-        kind, target = ingest_ops.canonical_article_target(
-            href, meta=META, repo_slugs=repo_slugs)
-        if kind in ("external", "page"):
+        disp = _internal_link_disposition(href, source_slug, repo_slugs)
+        if disp is None or disp == "live":
             return m.group(0)
-        if kind == "article":
-            state = ingest_ops.link_state(source_slug, target, META, EDGE_STATES)
-            if state == "live":
-                return m.group(0)
-            if state == "plain":
-                return inner
-            return WL_PENDING % inner
-        # unknown internal target — no fall-through renders live
+        if disp == "plain":
+            return inner
         return WL_PENDING % inner
 
-    return ANCHOR_RE.sub(repl, body_html)
+    gated = ANCHOR_RE.sub(repl, body_html)
+
+    def sweep(m):
+        quote, val = m.group(1), m.group(2)
+        disp = _internal_link_disposition(html.unescape(val), source_slug, repo_slugs)
+        if disp is None or disp == "live":
+            return m.group(0)
+        return "href=%s#%s" % (quote, quote)  # neutralize non-live internal href
+
+    return HREF_SWEEP_RE.sub(sweep, gated)
 
 
 def safe_uri(uri, *, image=False):

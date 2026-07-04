@@ -1317,6 +1317,74 @@ def test_cfar4_board_frontmatter_ref_queued_on_remove():
     print("ok test_cfar4_board_frontmatter_ref_queued_on_remove")
 
 
+# ------------------------------------------- CFAR round-5 P2 repairs
+
+def test_cfar5_anchor_with_gt_in_attribute_is_gated():
+    """CFAR-5 P2-1: a `>` inside a quoted attribute must not truncate the tag
+    scan and let the real retired href stay live. Markdown may mangle such raw
+    HTML, so the backstop sweep neutralizes the surviving href to `#`."""
+    meta = {"src": {"retired_on": ""}, "gone": {"retired_on": "2026-07-01"}}
+    out = _render_with(meta, {}, '<a title="x>y" href="gone.html">G</a>')
+    assert 'href="gone.html"' not in out, out  # no live link to the retired page
+    # and a plain well-formed retired link still gets the legible pending span
+    out2 = _render_with(meta, {}, "see [g](gone.html) here")
+    assert 'href="gone.html"' not in out2 and "wl-pending" in out2, out2
+    print("ok test_cfar5_anchor_with_gt_in_attribute_is_gated")
+
+
+def test_cfar5_tombstone_preserves_inline_aliases():
+    """CFAR-5 P2-2: inline `aliases: [..]` must survive retirement."""
+    root = fresh_root()
+    wiki = root / "wiki"
+    wiki.mkdir(parents=True, exist_ok=True)
+    (wiki / "doomed-topic.md").write_text(
+        '---\nentity: Doomed Topic\naliases: ["DT", "old-name"]\n'
+        'tier: investigation\n---\n\n# Doomed\n\nBody.\n')
+    (root / "raw" / "inbox" / "2026-07-01" / "doomed-topic").mkdir(parents=True)
+    write_auth(root, remove_auth("doomed-topic"))
+    ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    fm, _, _ = srv.split_fm((wiki / "doomed-topic.md").read_text())
+    assert srv.fm_list(fm, "aliases") == ["DT", "old-name"], fm
+    assert "retired_on" in fm
+    print("ok test_cfar5_tombstone_preserves_inline_aliases")
+
+
+def test_cfar5_remove_enforces_closure_over_preexisting_pending():
+    """CFAR-5 P2-3: a pre-existing dangling-pending edge with queued:false
+    must not survive a Remove — closure (AC5) is enforced over the whole file."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    linked_article(root, "linker-wiki", "doomed-topic", "wiki")
+    (root / "compile" / "edge-states.json").write_text(json.dumps({
+        "stray->other": {"state": "dangling-pending", "since": NOW,
+                         "reason": "pre-existing", "queued": False,
+                         "enqueued_at": None}}))
+    write_auth(root, remove_auth("doomed-topic"))
+    ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    states = ops.load_edge_states(root / "compile" / "edge-states.json")
+    unqueued = [k for k, v in states.items()
+                if v["state"] == "dangling-pending" and v["queued"] is False]
+    assert unqueued == [], "closure holds over pre-existing pending edges too"
+    assert states["stray->other"]["queued"] is True
+    print("ok test_cfar5_remove_enforces_closure_over_preexisting_pending")
+
+
+def test_cfar5_authority_multiline_refused():
+    """CFAR-5 P2-4: a persisted auth field (authority) with a newline is
+    malformed — it must refuse before consumption / any PROVENANCE write."""
+    root = fresh_root()
+    article(root, "alpha-topic")
+    path = root / "compile" / "ingest-authorization.json"
+    for bad in ("owner\n- injected line", "owner\r\nx"):
+        write_auth(root, good_auth(authority=bad))
+        refused(ops.load_authorization, path, NOW, operation="replace",
+                slug="alpha-topic", source_ref=OLD_REF)
+        before = tree_snapshot(root)
+        refused(do_replace, root)
+        assert tree_snapshot(root) == before, "no write on malformed authority"
+    print("ok test_cfar5_authority_multiline_refused")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

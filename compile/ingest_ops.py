@@ -144,6 +144,12 @@ def load_authorization(path, now, *, operation, slug, source_ref):
                 "expires_at", "reason"):
         if not auth[key]:
             raise AuthRefused("field %s must be non-blank" % key)
+    # authority/reason are persisted (PROVENANCE, ledger) — a newline would
+    # inject extra provenance/audit lines while still passing a non-blank
+    # check, so a persisted free-text field must be a single line (CFAR r5 P2-4)
+    for key in ("authority", "reason"):
+        if "\n" in auth[key] or "\r" in auth[key]:
+            raise AuthRefused("field %s must be a single line" % key)
     if auth["operation"] not in ("replace", "remove"):
         raise AuthRefused("artifact operation must be replace or remove")
     if auth["operation"] == "remove" and auth["source_ref"] != "":
@@ -909,10 +915,12 @@ def remove_topic(root, *, slug, reason, now, rebuild_runner=None):
     # queued dangling-pending state, atomically
     title = fm_scalar(fm_lines, "entity") or slug.replace("-", " ")
     stub_fm = ["entity: %s" % json.dumps(title)]
-    _key, alias_items = _list_item_indexes(fm_lines, "aliases")
-    if alias_items:
+    # read aliases via fm_list_values so BOTH the inline `[..]` and block forms
+    # survive retirement (removal preserves entity + aliases; CFAR r5 P2-2)
+    aliases = fm_list_values(fm_lines, "aliases")
+    if aliases:
         stub_fm.append("aliases:")
-        stub_fm.extend(fm_lines[i] for i in alias_items)
+        stub_fm.extend("  - %s" % json.dumps(a) for a in aliases)
     tier = fm_scalar(fm_lines, "tier")
     if tier:
         stub_fm.append("tier: %s" % tier)
@@ -940,6 +948,14 @@ def remove_topic(root, *, slug, reason, now, rebuild_runner=None):
             "queued": True,
             "enqueued_at": _now_str(now),
         }
+    # closure (AC5) is a post-condition over the WHOLE file, not just this
+    # Remove's own edges: the deterministic Layer-1 pass enqueues EVERY
+    # dangling-pending edge, including any that pre-existed unqueued, so no
+    # pending work is ever left off the committed queue (CFAR r5 P2-3)
+    for entry in edge_states.values():
+        if entry["state"] == "dangling-pending" and not entry["queued"]:
+            entry["queued"] = True
+            entry["enqueued_at"] = _now_str(now)
     write_edge_states(edge_path, edge_states)
 
     _append_provenance(root, "- %s remove: topic `%s` retired — %s "
