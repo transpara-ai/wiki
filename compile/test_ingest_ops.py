@@ -1385,6 +1385,52 @@ def test_cfar5_authority_multiline_refused():
     print("ok test_cfar5_authority_multiline_refused")
 
 
+# ------------------------------------------- CFAR round-6 P2 repairs
+
+def test_cfar6_unquoted_href_neutralized():
+    """CFAR-6 P2-1: an unquoted href to a retired target must not stay live —
+    the backstop sweep handles unquoted attribute values too."""
+    meta = {"src": {"retired_on": ""}, "gone": {"retired_on": "2026-07-01"},
+            "alive": {"title": "Alive", "retired_on": ""}}
+    out = _render_with(meta, {}, "<a href=gone.html>G</a>")
+    assert "href=gone.html" not in out and 'href="gone.html"' not in out, out
+    # a live unquoted href is left intact
+    out2 = _render_with(meta, {}, "<a href=alive.html>A</a>")
+    assert "alive.html" in out2, out2
+    print("ok test_cfar6_unquoted_href_neutralized")
+
+
+def test_cfar6_reference_style_link_queued_on_remove():
+    """CFAR-6 P2-2: a reference-style markdown link to the removed topic must
+    be enumerated (the renderer emits + gates the same anchor)."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    wiki = root / "wiki"
+    (wiki / "linker-ref.md").write_text(
+        '---\nentity: Linker\ntier: investigation\n---\n\n'
+        '# Linker\n\nsee [the detail][dead] here\n\n[dead]: doomed-topic.html\n')
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    assert "linker-ref" in result["affected_edges"], result["affected_edges"]
+    print("ok test_cfar6_reference_style_link_queued_on_remove")
+
+
+def test_cfar6_board_scalar_with_comment_queued():
+    """CFAR-6 P2-3: an inline comment on a board scalar link must not hide the
+    board reference from edge enumeration."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    (root / "index.md").write_text(
+        '---\nboard_narrative_link: doomed-topic # curated origin story\n'
+        'board_guardrail: "distrust|other-slug"\n---\n\n# Home\n\nno body link\n')
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    states = json.loads((root / "compile" / "edge-states.json").read_text())
+    assert "index->doomed-topic" in states, states
+    assert "index" in result["affected_edges"]
+    print("ok test_cfar6_board_scalar_with_comment_queued")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

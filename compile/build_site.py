@@ -699,10 +699,12 @@ def _extract_href(attrs):
     return None
 
 
-# a real href attribute (boundary before `href`, quoted), used by the
-# fail-closed backstop sweep — matched independently of element structure so a
-# markdown-mangled anchor cannot hide a live href behind broken tag boundaries
-HREF_SWEEP_RE = re.compile(r"""(?<![-\w])href\s*=\s*(["'])(.*?)\1""", re.I)
+# a real href attribute (boundary before `href`), quoted OR unquoted, used by
+# the fail-closed backstop sweep — matched independently of element structure
+# so a markdown-mangled or unquoted-attribute anchor cannot hide a live href
+# behind broken tag boundaries; browsers accept unquoted attrs too (CFAR r5/r6)
+HREF_SWEEP_RE = re.compile(
+    r"""(?<![-\w])href\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))""", re.I)
 
 
 def _internal_link_disposition(href, source_slug, repo_slugs):
@@ -753,11 +755,12 @@ def gate_internal_links(body_html, source_slug=""):
     gated = ANCHOR_RE.sub(repl, body_html)
 
     def sweep(m):
-        quote, val = m.group(1), m.group(2)
+        val = next((g for g in (m.group(2), m.group(3), m.group(4))
+                    if g is not None), "")
         disp = _internal_link_disposition(html.unescape(val), source_slug, repo_slugs)
         if disp is None or disp == "live":
             return m.group(0)
-        return "href=%s#%s" % (quote, quote)  # neutralize non-live internal href
+        return 'href="#"'  # neutralize non-live internal href (any quoting)
 
     return HREF_SWEEP_RE.sub(sweep, gated)
 

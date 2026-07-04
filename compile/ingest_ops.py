@@ -817,19 +817,27 @@ def replace_source(root, *, slug, source_ref, data, filename, note, now,
 
 # ------------------------------------------------------------------- remove
 
+def _board_field_matches(raw, target_slug):
+    # a board field may carry an inline comment and/or quotes that
+    # build_site.board_scalar tolerates — strip both before comparing so the
+    # reference is not missed (CFAR r6 P2-3)
+    for field in raw.split("|"):
+        if _clean_item(field) == target_slug:
+            return True
+    return False
+
+
 def _references_via_board(fm_lines, target_slug):
     """True if index.md's board frontmatter references target_slug — the
     builder generates (and now gates) homepage board links from these keys, so
-    a board-only reference is a real inbound edge to queue (CFAR r4 P2)."""
+    a board-only reference is a real inbound edge to queue (CFAR r4/r6)."""
     for key in ("board_narrative_link", "board_guardrail"):
-        for field in fm_scalar(fm_lines, key).split("|"):
-            if field.strip() == target_slug:
-                return True
+        if _board_field_matches(fm_scalar(fm_lines, key), target_slug):
+            return True
     for key in ("board_pillars", "board_inheritance"):
         for item in fm_list_values(fm_lines, key):
-            for field in item.split("|"):
-                if field.strip() == target_slug:
-                    return True
+            if _board_field_matches(item, target_slug):
+                return True
     return False
 
 
@@ -844,6 +852,9 @@ def find_inbound_edges(root, target_slug):
     # capture the URL token after `](`; a title (` "..."`) or `)` may follow,
     # so do NOT require the closing paren immediately after the URL
     md_link = re.compile(r"\]\(\s*<?([^\s)>]+)")
+    # reference-style link DEFINITIONS: `[label]: url "title"` — markdown emits
+    # the same internal anchor, so the edge must be queued too (CFAR r6 P2-2)
+    ref_def = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*<?([^\s>]+)", re.M)
     href = re.compile(r"href\s*=\s*[\"']?([^\"'\s>]+)", re.I)
     meta_stub = {target_slug: {}}
     root = pathlib.Path(root)
@@ -863,8 +874,10 @@ def find_inbound_edges(root, target_slug):
         if not hit and source_slug == "index":
             hit = _references_via_board(fm_lines, target_slug)
         if not hit:
-            for candidate in [m.group(1) for m in md_link.finditer(body)] + \
-                             [m.group(1) for m in href.finditer(body)]:
+            candidates = ([m.group(1) for m in md_link.finditer(body)]
+                          + [m.group(1) for m in ref_def.finditer(body)]
+                          + [m.group(1) for m in href.finditer(body)])
+            for candidate in candidates:
                 kind, stem = canonical_article_target(
                     html.unescape(candidate), meta=meta_stub)
                 if kind == "article" and stem == target_slug:
