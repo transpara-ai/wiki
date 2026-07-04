@@ -5,10 +5,14 @@ Serves dist/ like http.server, plus small write endpoints used by ingest.html:
   GET  /api/articles
   POST /api/ingest
   POST /api/rebuild
+  POST /api/replace   (per-ingestion ops packet; ingest-authorization gated)
+  POST /api/remove    (per-ingestion ops packet; ingest-authorization gated)
 
 The durable state is still the repository: uploaded documents are written under
 raw/inbox/, optional article references are appended to wiki/<slug>.md
 frontmatter, and compile/refresh.py regenerates freshness status and dist/.
+Replace/Remove live in compile/ingest_ops.py behind a deny-by-default,
+single-use, instance-scoped authorization artifact.
 """
 import datetime as dt
 import fcntl
@@ -28,6 +32,9 @@ from email import policy
 from email.parser import BytesParser
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qsl, urlsplit
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import ingest_ops  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
@@ -98,10 +105,47 @@ def fm_list(fm, key):
     return items
 
 
+def article_is_retired(slug):
+    path = WIKI / ("%s.md" % slug)
+    if not path.exists():
+        return False
+    fm, _, _ = split_fm(path.read_text())
+    return bool(fm_val(fm, "retired_on"))
+
+
+def prospective_unassigned_slug(form):
+    """The slug an UNASSIGNED upload would resolve to, derived from the first
+    document's in-memory content (mirrors create_article_from_source's
+    title logic) so the retired-tombstone guard can refuse WRITE-FREE before
+    save_uploads persists anything (CFAR r13). The no-title fallback differs
+    from the saved sha-suffixed stem, but that form cannot collide with a
+    human-named retired slug."""
+    for item in field_values(form, "documents"):
+        if not getattr(item, "filename", ""):
+            continue
+        data = item.file.read()
+        item.file = io.BytesIO(data)  # rewind for the later save
+        if not data:
+            continue
+        fm, body, _ = split_fm(data.decode("utf-8", "replace"))
+        # mirror create_article_from_source EXACTLY, including the saved
+        # content-addressed stem used by its no-title fallback, so this never
+        # false-refuses a distinct new article
+        original = safe_filename(item.filename)
+        saved_stem = "%s-%s" % (pathlib.Path(original).stem or "document",
+                                hashlib.sha256(data).hexdigest()[:12])
+        title = (fm_val(fm, "title") or fm_val(fm, "entity")
+                 or markdown_title(body) or saved_stem.replace("-", " "))
+        return slugify(title)
+    return ""
+
+
 def article_records(include_sources=True):
     out = []
     for p in sorted(WIKI.glob("*.md")):
         fm, _, _ = split_fm(p.read_text())
+        if fm_val(fm, "retired_on"):
+            continue  # retired tombstones are not offered in the ingest selector
         out.append({
             "slug": p.stem,
             "title": fm_val(fm, "entity") or p.stem.replace("-", " "),
@@ -326,7 +370,8 @@ def same_origin_authoring_request(headers, server_port=None):
 
 
 def authoring_allowed(client_host, supplied_token, configured_token=None):
-    configured_token = configured_token if configured_token is not None else os.environ.get(AUTHORING_TOKEN_ENV, "")
+    if configured_token is None:
+        configured_token = os.environ.get(AUTHORING_TOKEN_ENV, "")
     if configured_token:
         return hmac.compare_digest(supplied_token or "", configured_token)
     return is_loopback_host(client_host)
@@ -387,7 +432,7 @@ def save_uploads(form, target_slug, note, supersedes):
         if not child_path_under(dst, RAW_INBOX):
             raise ValueError("upload destination escaped raw inbox")
         if not dst.exists():
-            dst.write_bytes(data)
+            ingest_ops.atomic_write_bytes(dst, data)
         rel = str(dst.resolve().relative_to(ROOT.resolve()))
         saved.append({"path": rel, "sha256": digest, "original": original})
         append_manifest({
@@ -498,7 +543,7 @@ def append_frontmatter_list_items(slug, key, values, line_builder):
         block = "".join(lines)
         if insert_at > 0 and raw[insert_at - 1] != "\n":
             block = "\n" + block
-    path.write_text(raw[:insert_at] + block + raw[insert_at:])
+    ingest_ops.atomic_write_text(path, raw[:insert_at] + block + raw[insert_at:])
     return added
 
 
@@ -572,7 +617,7 @@ def create_article_from_source(source, note="", supersedes=""):
         body_title,
         body_title,
     )
-    path.write_text(body)
+    ingest_ops.atomic_write_text(path, body)
     return slug, True
 
 
@@ -684,17 +729,80 @@ class IngestHandler(SimpleHTTPRequestHandler):
             if self.path == "/api/ingest":
                 self.handle_ingest()
                 return
+            if self.path == "/api/replace":
+                self.handle_replace()
+                return
+            if self.path == "/api/remove":
+                self.handle_remove()
+                return
             json_response(self, 404, {"error": "unknown endpoint"})
+        except ingest_ops.AuthRefused as e:
+            json_response(self, 403, {"error": str(e)})
+        except ingest_ops.OpRefused as e:
+            json_response(self, 422, {"error": str(e)})
         except Exception as e:
             json_response(self, 400, {"error": str(e)})
 
     def handle_ingest(self):
         form = parse_post_form(self)
-        target_slug = normalize_target_slug(first_value(form, "target_slug"))
+        raw_target_slug = first_value(form, "target_slug").strip()
         note = first_value(form, "note").strip()
         supersedes = first_value(form, "supersedes").strip()
-        external_urls = valid_external_urls(first_value(form, "external_urls"))
+        raw_external_urls = first_value(form, "external_urls")
+        # quarantine BEFORE any validation or write (packet §2.4/§2.8): the
+        # slug/URL validators below echo the submitted value in their errors,
+        # so nothing reaches them until it is proven secret-free; a refusal
+        # here saves nothing and never echoes the finding bytes. Quarantine is
+        # request-content only, so it may run before the lock.
+        fields = {"target_slug": raw_target_slug, "note": note,
+                  "supersedes": supersedes, "external_urls": raw_external_urls}
+        any_document = False
+        for i, item in enumerate(field_values(form, "documents")):
+            if not getattr(item, "filename", ""):
+                continue
+            fields["filename_%d" % i] = item.filename
+            data = item.file.read()
+            ingest_ops.quarantine_payload(data)
+            item.file = io.BytesIO(data)
+            if data:
+                any_document = True
+        ingest_ops.quarantine_fields(fields)
+        target_slug = normalize_target_slug(raw_target_slug)
+        external_urls = valid_external_urls(raw_external_urls)
+        # a source-less ingest (no non-empty document, no external URL) is a
+        # no-op — refuse BEFORE the lock/save so it neither rebuilds nor appends
+        # a misleading `add` ledger row, and creates no raw-inbox directory;
+        # save_uploads would mkdir the bucket before finding nothing to save, so
+        # this must precede it to stay write-free (CFAR ready-state)
+        if not any_document and not external_urls:
+            raise ingest_ops.OpRefused(
+                "ingest requires at least one document or external URL; "
+                "use /api/rebuild to only refresh")
         with wiki_write_lock():
+            # ledger + edge-state preflights read SHARED state, so they must run
+            # at mutation time INSIDE the lock — a preflight before the lock can
+            # be stale if a concurrent op corrupts the ledger/edge state while
+            # this request waits (strict-parse law; CFAR r13/r24).
+            ingest_ops.ledger_preflight(ROOT / "compile" / "ingest-ledger.jsonl")
+            ingest_ops.load_edge_states(ROOT / "compile" / "edge-states.json")
+            # a retired topic is a tombstone — Add must not resurrect it with
+            # live sources (Replace already refuses retired). Resolve the
+            # EFFECTIVE target (provided slug, or the slug an unassigned upload
+            # would derive) and refuse INSIDE the lock, BEFORE any write — so
+            # the check is both write-free AND race-free against a concurrent
+            # Remove that retires the target (CFAR r11/r12/r13/r14).
+            effective_slug = target_slug or prospective_unassigned_slug(form)
+            if effective_slug and article_is_retired(effective_slug):
+                raise ingest_ops.OpRefused(
+                    "target article is retired — Add refused; a retired topic "
+                    "is a tombstone reachable by direct link only")
+            # a PROVIDED target_slug must name an existing article (only the
+            # unassigned path creates new articles) — refuse a nonexistent
+            # target before any write, else save_uploads persists raw +
+            # manifest and the append below fails with no ledger row (CFAR r19)
+            if target_slug and not (WIKI / ("%s.md" % target_slug)).exists():
+                raise ingest_ops.OpRefused(
+                    "target article does not exist — Add refused")
             saved = save_uploads(form, target_slug, note, supersedes)
             source_refs = [s["path"] for s in saved] + external_urls
             created_article = {"slug": "", "created": False}
@@ -713,6 +821,14 @@ class IngestHandler(SimpleHTTPRequestHandler):
                     "supersedes": supersedes,
                 })
             refresh = run_refresh_unlocked()
+            ingest_ops.append_ledger(ROOT / "compile" / "ingest-ledger.jsonl", {
+                "ts": dt.datetime.now(dt.timezone.utc).isoformat(),
+                "operation": "add",
+                "slug": target_slug or "unassigned",
+                "sources": source_refs,
+                "created": created_article["created"],
+                "rebuild": "ok" if refresh["ok"] else "failed",
+            })
         json_response(self, 200 if refresh["ok"] else 500, {
             "saved": saved,
             "external_urls": external_urls,
@@ -723,6 +839,52 @@ class IngestHandler(SimpleHTTPRequestHandler):
             "source_hrefs": [{"source": s, "href": source_href(s)} for s in source_refs],
             "refresh": refresh,
         })
+
+    def handle_replace(self):
+        form = parse_post_form(self)
+        slug = first_value(form, "slug").strip()
+        source_ref = first_value(form, "source_ref").strip()
+        note = first_value(form, "note").strip()
+        # the artifact gate fires before anything else so an unauthorized
+        # request is refused 403 regardless of payload shape; replace_source
+        # re-validates and consumes under the lock
+        ingest_ops.load_authorization(
+            ROOT / "compile" / "ingest-authorization.json",
+            dt.datetime.now(dt.timezone.utc).isoformat(),
+            operation="replace", slug=slug, source_ref=source_ref)
+        documents = [item for item in
+                     field_values(form, "document") + field_values(form, "documents")
+                     if getattr(item, "filename", "")]
+        if len(documents) != 1:
+            raise ingest_ops.OpRefused("replace requires exactly one uploaded document")
+        data = documents[0].file.read()
+        with wiki_write_lock():
+            # capture the timestamp INSIDE the lock so the authority window is
+            # enforced at mutation time — a grant that expired while another
+            # op held the lock must not be consumed (CFAR r7)
+            now = dt.datetime.now(dt.timezone.utc).isoformat()
+            row = ingest_ops.replace_source(
+                ROOT, slug=slug, source_ref=source_ref, data=data,
+                filename=documents[0].filename, note=note, now=now,
+                rebuild_runner=lambda: run_refresh_unlocked().get("ok") is True)
+        json_response(self, 200, {"replace": row})
+
+    def handle_remove(self):
+        # the retirement rationale is bound to the authorization artifact's
+        # `reason`, not a request field, so the audit cannot diverge from the
+        # human-approved grant (CFAR r26)
+        form = parse_post_form(self)
+        slug = first_value(form, "slug").strip()
+        ingest_ops.load_authorization(
+            ROOT / "compile" / "ingest-authorization.json",
+            dt.datetime.now(dt.timezone.utc).isoformat(),
+            operation="remove", slug=slug, source_ref="")
+        with wiki_write_lock():
+            now = dt.datetime.now(dt.timezone.utc).isoformat()  # window at mutation time (CFAR r7)
+            row = ingest_ops.remove_topic(
+                ROOT, slug=slug, now=now,
+                rebuild_runner=lambda: run_refresh_unlocked().get("ok") is True)
+        json_response(self, 200, {"remove": row})
 
 
 def main():

@@ -1,0 +1,12 @@
+{
+  "df": "ingest-authorization",
+  "operation": "replace",
+  "slug": "REPLACE-WITH-TARGET-ARTICLE-SLUG",
+  "source_ref": "raw/REPLACE-WITH-EXACT-SOURCE-REF (or \"\" for remove)",
+  "authority": "name / role of the human authorizing this ONE operation",
+  "authorized_at": "2026-01-01T00:00:00Z",
+  "expires_at": "2026-01-01T12:00:00Z",
+  "reason": "one-line note: why this exact operation is cleared",
+  "engine_command": [],
+  "engine_timeout_seconds": 300
+}

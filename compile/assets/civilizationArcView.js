@@ -139,6 +139,10 @@
     nextBlockingGate: nextBlockingGate,
     activeWork: activeWork,
     latestClosed: latestClosed,
+    // exported for node --test of the fail-closed link gate (hoisted decls)
+    safeHref: safeHref,
+    isRetiredInternal: isRetiredInternal,
+    canonicalArcSlug: canonicalArcSlug,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (root) root.CivArcView = api;
@@ -162,10 +166,45 @@
   // Fail-closed allowlist: permits http(s), anchors, root-relative (single /),
   // and bare relative paths that carry no scheme. Rejects any scheme: URI,
   // protocol-relative // or \\, control/whitespace chars, empty/non-string.
+  // A retired article is a tombstone reachable by direct link only — no
+  // generated live link may point to it, including arc-view data hrefs, so
+  // the browser gate mirrors the server-side gate_internal_links, including
+  // its canonicalization: percent-decode + dot-segment normalization so a
+  // browser-equivalent spelling (`slug%2ehtml`, `x/../slug.html`) cannot dodge
+  // the retired check (CFAR r20/r22).
+  function canonicalArcSlug(href) {
+    if (typeof href !== "string") return null;
+    var h = href.split("#")[0].split("?")[0];
+    try { h = decodeURIComponent(h); } catch (e) { return null; }
+    h = h.replace(/\\/g, "/");  // browsers treat backslash as a path separator
+    h = h.replace(/^\//, "");
+    var parts = h.split("/"), out = [];
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      if (p === "" || p === ".") continue;
+      if (p === "..") { out.pop(); continue; }
+      out.push(p);
+    }
+    var m = /^([A-Za-z0-9_][A-Za-z0-9_-]*)\.html$/i.exec(out.join("/"));
+    return m ? m[1] : null;  // case-insensitive extension (`.HTML` too)
+  }
+  function isRetiredInternal(href) {
+    var slug = canonicalArcSlug(href);
+    if (!slug) return false;
+    // slugs are lowercase by construction; compare case-insensitively so a
+    // case-variant href to a retired article (`Gate-k.html`) is still gated,
+    // matching the server's non-live treatment of case variants (CFAR
+    // ready-state)
+    slug = slug.toLowerCase();
+    var retired = (typeof window !== "undefined" && window.CIVWIKI_RETIRED_SLUGS) || [];
+    for (var i = 0; i < retired.length; i++) { if (retired[i] === slug) return true; }
+    return false;
+  }
   function safeHref(href) {
     if (typeof href !== "string" || href === "") return null;
     if (/[\x00-\x20\x7f]/.test(href)) return null;
     if (/^[\\/]{2}/.test(href)) return null;
+    if (isRetiredInternal(href)) return null;  // retired target → render as text
     if (/^https?:\/\//i.test(href)) return href;
     if (href.charAt(0) === "#" || href.charAt(0) === "/") return href;
     var sep = href.search(/[/#?]/);

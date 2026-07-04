@@ -267,3 +267,21 @@ test('spine snapshot anchors on real data: 15 phases, frontier deployment, stewa
   });
   assert.strictEqual(spine.filter((p) => p.collapsed).length, 12);
 });
+
+test('safeHref gates retired internal targets, including canonical-equivalent spellings (CFAR r20/r22)', () => {
+  global.window = { CIVWIKI_RETIRED_SLUGS: ['gate-k'] };
+  try {
+    // canonical spellings of a retired target all resolve to null (rendered as text)
+    ['gate-k.html', './gate-k.html', '/gate-k.html', 'x/../gate-k.html',
+     'gate-k.html#frag', 'gate-k.html?q=1', 'gate%2dk.html', 'gate-k%2ehtml', '\\gate-k.html', 'x\\..\\gate-k.html',
+     'Gate-k.html', 'GATE-K.html', 'gate-k.HTML', 'gate-k.Html']  // case variants
+      .forEach((h) => assert.strictEqual(V.safeHref(h), null, h));
+    // a live internal target and external URLs are preserved
+    assert.strictEqual(V.safeHref('live-arc.html'), 'live-arc.html');
+    assert.strictEqual(V.safeHref('https://example.com/gate-k.html'), 'https://example.com/gate-k.html');
+    // the source-viewer multi-segment form is not an article slug — untouched
+    assert.strictEqual(V.canonicalArcSlug('source/abc123.html'), null);
+  } finally {
+    delete global.window;
+  }
+});
