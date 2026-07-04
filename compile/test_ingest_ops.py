@@ -1425,6 +1425,22 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-9 P2 repair
+
+def test_cfar9_self_closing_anchor_is_gated():
+    """CFAR-9 P2: a self-closing `<a href=.../>` (which browsers keep live)
+    must be gated like any other anchor."""
+    meta = {"src": {"retired_on": ""}, "gone": {"retired_on": "2026-07-01"},
+            "alive": {"title": "Alive", "retired_on": ""}}
+    out = _render_with(meta, {}, '<a href="gone.html"/>label here')
+    assert 'href="gone.html"' not in out, out  # no live link to the retired page
+    assert "label here" in out, "the following text is preserved (plain)"
+    # a live self-closing anchor is left intact
+    out2 = _render_with(meta, {}, '<a href="alive.html"/>go')
+    assert "alive.html" in out2, out2
+    print("ok test_cfar9_self_closing_anchor_is_gated")
+
+
 # ------------------------------------------- CFAR round-8 P2 repair
 
 def test_cfar8_gate_does_not_corrupt_valid_content():

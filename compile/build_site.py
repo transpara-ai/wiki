@@ -710,6 +710,19 @@ class _LinkGate(HTMLParser):
         self.out.append("</%s>" % tag)
 
     def handle_startendtag(self, tag, attrs):
+        # browsers ignore the `/` on a non-void `<a .../>` in text/html and
+        # keep the link live, so a self-closing anchor must be gated too, not
+        # echoed verbatim (CFAR r9). A non-live self-closing anchor is dropped
+        # (its following text renders plain) — there is no inner span to wrap.
+        if tag == "a":
+            href = next((v for (k, v) in attrs
+                         if k.lower() == "href" and v is not None), None)
+            disp = (_internal_link_disposition(href, self.source_slug,
+                                               self.repo_slugs)
+                    if href is not None else None)
+            if disp is None or disp == "live":
+                self.out.append(self.get_starttag_text())
+            return
         self.out.append(self.get_starttag_text())
 
     def handle_data(self, data):
