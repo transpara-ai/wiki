@@ -18,6 +18,7 @@ import pathlib
 import subprocess
 import sys
 import urllib.parse
+from html.parser import HTMLParser
 import markdown
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -645,66 +646,7 @@ def to_html(body, link_acc=None, source_refs=None, source_slug=""):
     return out, list(getattr(MD, "toc_tokens", []) or [])
 
 
-# the opening-tag scan must respect quoted attributes: `[^>]*` would stop at a
-# `>` inside `title="x>y"`, truncating the tag before the real href and leaving
-# a retired link live (CFAR r5 P2-1). Each attr char is either a non-`>`/non-
-# quote char OR a whole quoted string (which may itself contain `>`).
-ANCHOR_RE = re.compile(
-    r"""<a\b((?:[^>"']|"[^"]*"|'[^']*')*)>(.*?)</a>""", re.I | re.S)
 WL_PENDING = '<span class="wl wl-pending" title="pending reconciliation">%s</span>'
-
-
-def _extract_href(attrs):
-    """Tokenize an anchor's attribute string respecting quoting and return the
-    REAL href value (entity-decoded), or None. A regex cannot do this: a
-    `href=` inside another attribute's quoted value (e.g. `title="href='x'"`)
-    or a prefix attribute like `data-href` would hijack the gate and leave a
-    retired link live (CFAR r1/r2/r4). This is a whole-attribute-domain parser."""
-    i, n = 0, len(attrs)
-    while i < n:
-        while i < n and attrs[i].isspace():
-            i += 1
-        start = i
-        while i < n and not attrs[i].isspace() and attrs[i] != "=":
-            i += 1
-        name = attrs[start:i].lower()
-        while i < n and attrs[i].isspace():
-            i += 1
-        value = ""
-        has_value = False
-        if i < n and attrs[i] == "=":
-            has_value = True
-            i += 1
-            while i < n and attrs[i].isspace():
-                i += 1
-            if i < n and attrs[i] in "\"'":
-                quote = attrs[i]
-                i += 1
-                vstart = i
-                while i < n and attrs[i] != quote:
-                    i += 1
-                value = attrs[vstart:i]
-                i += 1  # consume closing quote
-            else:
-                vstart = i
-                while i < n and not attrs[i].isspace():
-                    i += 1
-                value = attrs[vstart:i]
-        if name == "href" and has_value:
-            # first href wins (HTML5 duplicate-attribute rule); entity-decode
-            # so `gone&#46;html` is gated as gone.html, not passed live
-            return html.unescape(value)
-        if not name and not has_value:
-            break  # no progress guard
-    return None
-
-
-# a real href attribute (boundary before `href`), quoted OR unquoted, used by
-# the fail-closed backstop sweep — matched independently of element structure
-# so a markdown-mangled or unquoted-attribute anchor cannot hide a live href
-# behind broken tag boundaries; browsers accept unquoted attrs too (CFAR r5/r6)
-HREF_SWEEP_RE = re.compile(
-    r"""(?<![-\w])href\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))""", re.I)
 
 
 def _internal_link_disposition(href, source_slug, repo_slugs):
@@ -724,45 +666,92 @@ def _internal_link_disposition(href, source_slug, repo_slugs):
     return "pending"  # unknown internal target — never renders live
 
 
+class _LinkGate(HTMLParser):
+    """Rewrites ONLY genuine anchor href attributes. Everything else — text,
+    inline code, other tags, other attributes (title/aria that merely mention
+    an href) — is echoed verbatim, so valid content is never corrupted (CFAR
+    r8) while a browser-resolved href (quoted, unquoted, or entity-encoded,
+    per HTMLParser's own attribute parsing) is always gated (CFAR r1/r2/r4/r5/
+    r6). This is the single fail-closed enforcement point (packet §2.7)."""
+
+    def __init__(self, source_slug, repo_slugs):
+        super().__init__(convert_charrefs=False)
+        self.source_slug = source_slug
+        self.repo_slugs = repo_slugs
+        self.out = []
+        self.a_stack = []  # disposition of each open <a>: keep|drop|pending
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "a":
+            href = next((v for (k, v) in attrs
+                         if k.lower() == "href" and v is not None), None)
+            disp = (_internal_link_disposition(href, self.source_slug,
+                                               self.repo_slugs)
+                    if href is not None else None)
+            if disp is None or disp == "live":
+                self.out.append(self.get_starttag_text())
+                self.a_stack.append("keep")
+            elif disp == "plain":
+                self.a_stack.append("drop")  # emit inner text, drop the anchor
+            else:
+                self.out.append(WL_PENDING.split("%s")[0])
+                self.a_stack.append("pending")
+            return
+        self.out.append(self.get_starttag_text())
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self.a_stack:
+            disp = self.a_stack.pop()
+            if disp == "keep":
+                self.out.append("</a>")
+            elif disp == "pending":
+                self.out.append(WL_PENDING.split("%s")[1])
+            return  # drop: emit nothing for the closing tag
+        self.out.append("</%s>" % tag)
+
+    def handle_startendtag(self, tag, attrs):
+        self.out.append(self.get_starttag_text())
+
+    def handle_data(self, data):
+        self.out.append(data)
+
+    def handle_entityref(self, name):
+        self.out.append("&%s;" % name)
+
+    def handle_charref(self, name):
+        self.out.append("&#%s;" % name)
+
+    def handle_comment(self, data):
+        self.out.append("<!--%s-->" % data)
+
+    def handle_decl(self, decl):
+        self.out.append("<!%s>" % decl)
+
+    def handle_pi(self, data):
+        self.out.append("<?%s>" % data)
+
+    def result(self):
+        # close any anchors left open by malformed input (fail-closed: a
+        # pending span must never leak unclosed)
+        while self.a_stack:
+            if self.a_stack.pop() == "pending":
+                self.out.append(WL_PENDING.split("%s")[1])
+        return "".join(self.out)
+
+
 def gate_internal_links(body_html, source_slug=""):
     """The single enforcement point of the fail-closed rendering law
     (per-ingestion ops packet §2.7): EVERY anchor in rendered article HTML —
     wikilink-emitted, markdown, or raw author HTML — renders live ONLY when
     its canonical internal target is proven valid. Retired targets, dangling
     or unknown edge states, and unknown internal targets render non-live;
-    cleanly-removed edges render plain text.
-
-    Two passes: (1) a well-formed-anchor pass that gives clean anchors a
-    legible wl-pending span (or plain text for cleanly-removed); (2) a
-    backstop sweep that neutralizes ANY surviving non-live internal href
-    attribute value to `#`, so a markdown-mangled or malformed anchor cannot
-    leave a live link to a non-live target — the browser resolves the href
-    regardless of element well-formedness, so the gate must too (CFAR r5)."""
-    repo_slugs = {repo["slug"] for repo in REPOS}
-
-    def repl(m):
-        attrs, inner = m.group(1), m.group(2)
-        href = _extract_href(attrs)
-        if href is None:
-            return m.group(0)
-        disp = _internal_link_disposition(href, source_slug, repo_slugs)
-        if disp is None or disp == "live":
-            return m.group(0)
-        if disp == "plain":
-            return inner
-        return WL_PENDING % inner
-
-    gated = ANCHOR_RE.sub(repl, body_html)
-
-    def sweep(m):
-        val = next((g for g in (m.group(2), m.group(3), m.group(4))
-                    if g is not None), "")
-        disp = _internal_link_disposition(html.unescape(val), source_slug, repo_slugs)
-        if disp is None or disp == "live":
-            return m.group(0)
-        return 'href="#"'  # neutralize non-live internal href (any quoting)
-
-    return HREF_SWEEP_RE.sub(sweep, gated)
+    cleanly-removed edges render plain text. Parsed with an HTML tokenizer so
+    only real href attributes are touched — never prose, code, or other
+    attributes that merely mention an href."""
+    gate = _LinkGate(source_slug, {repo["slug"] for repo in REPOS})
+    gate.feed(body_html)
+    gate.close()
+    return gate.result()
 
 
 def safe_uri(uri, *, image=False):

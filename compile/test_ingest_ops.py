@@ -1282,12 +1282,6 @@ def test_cfar4_quoted_attr_href_does_not_bypass_gate():
     out2 = _render_with(
         meta, {}, '<a data-note="href=gone.html" href="alive.html">A</a>')
     assert 'href="alive.html"' in out2 and "wl-pending" not in out2, out2
-    # direct extractor unit checks
-    import build_site as site
-    assert site._extract_href(" title=\"href='x.html'\" href=\"y.html\"") == "y.html"
-    assert site._extract_href(' data-href="a.html" href="b.html"') == "b.html"
-    assert site._extract_href(' href = "c.html" ') == "c.html"
-    assert site._extract_href(' name="anchor"') is None
     print("ok test_cfar4_quoted_attr_href_does_not_bypass_gate")
 
 
@@ -1429,6 +1423,29 @@ def test_cfar6_board_scalar_with_comment_queued():
     assert "index->doomed-topic" in states, states
     assert "index" in result["affected_edges"]
     print("ok test_cfar6_board_scalar_with_comment_queued")
+
+
+# ------------------------------------------- CFAR round-8 P2 repair
+
+def test_cfar8_gate_does_not_corrupt_valid_content():
+    """CFAR-8 P2: the gate must touch ONLY real anchor href attributes — never
+    a title/aria attribute that mentions an href, and never prose or inline
+    code — while still gating the real href."""
+    meta = {"src": {"retired_on": ""}, "gone": {"retired_on": "2026-07-01"},
+            "alive": {"title": "Alive", "retired_on": ""}}
+    # a live anchor whose TITLE mentions a retired href: title preserved intact,
+    # the real (live) href stays live, no invalid `title="href="#""` corruption
+    out = _render_with(
+        meta, {}, "<a title=\"href='gone.html'\" href=\"alive.html\">A</a>")
+    assert 'href="alive.html"' in out, out
+    assert "href='gone.html'" in out, "the title text must be preserved verbatim"
+    assert 'title="href="' not in out, "must not corrupt the title attribute"
+    assert "wl-pending" not in out, out
+    # prose / inline code that merely MENTIONS an internal href is untouched
+    out2 = _render_with(meta, {}, "use the attribute `href=\"gone.html\"` in raw HTML")
+    assert 'href="gone.html"' in out2, "inline code must be echoed verbatim"
+    assert "wl-pending" not in out2 and 'href="#"' not in out2, out2
+    print("ok test_cfar8_gate_does_not_corrupt_valid_content")
 
 
 # ------------------------------------------- CFAR round-7 P2 repair
