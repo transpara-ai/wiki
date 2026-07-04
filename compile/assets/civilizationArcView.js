@@ -139,6 +139,10 @@
     nextBlockingGate: nextBlockingGate,
     activeWork: activeWork,
     latestClosed: latestClosed,
+    // exported for node --test of the fail-closed link gate (hoisted decls)
+    safeHref: safeHref,
+    isRetiredInternal: isRetiredInternal,
+    canonicalArcSlug: canonicalArcSlug,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (root) root.CivArcView = api;
@@ -164,12 +168,30 @@
   // protocol-relative // or \\, control/whitespace chars, empty/non-string.
   // A retired article is a tombstone reachable by direct link only — no
   // generated live link may point to it, including arc-view data hrefs, so
-  // the browser gate mirrors the server-side gate_internal_links (CFAR r20).
+  // the browser gate mirrors the server-side gate_internal_links, including
+  // its canonicalization: percent-decode + dot-segment normalization so a
+  // browser-equivalent spelling (`slug%2ehtml`, `x/../slug.html`) cannot dodge
+  // the retired check (CFAR r20/r22).
+  function canonicalArcSlug(href) {
+    if (typeof href !== "string") return null;
+    var h = href.split("#")[0].split("?")[0];
+    try { h = decodeURIComponent(h); } catch (e) { return null; }
+    h = h.replace(/^\//, "");
+    var parts = h.split("/"), out = [];
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      if (p === "" || p === ".") continue;
+      if (p === "..") { out.pop(); continue; }
+      out.push(p);
+    }
+    var m = /^([A-Za-z0-9_][A-Za-z0-9_-]*)\.html$/.exec(out.join("/"));
+    return m ? m[1] : null;
+  }
   function isRetiredInternal(href) {
-    var m = /^(?:\.\/|\/)?([A-Za-z0-9_][A-Za-z0-9_-]*)\.html(?:[#?].*)?$/.exec(href);
-    if (!m) return false;
+    var slug = canonicalArcSlug(href);
+    if (!slug) return false;
     var retired = (typeof window !== "undefined" && window.CIVWIKI_RETIRED_SLUGS) || [];
-    for (var i = 0; i < retired.length; i++) { if (retired[i] === m[1]) return true; }
+    for (var i = 0; i < retired.length; i++) { if (retired[i] === slug) return true; }
     return false;
   }
   function safeHref(href) {

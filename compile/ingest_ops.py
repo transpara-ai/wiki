@@ -749,6 +749,11 @@ def replace_source(root, *, slug, source_ref, data, filename, note, now,
     quarantine_fields({"slug": slug, "source_ref": source_ref, "note": note,
                        "filename": filename, "authorized_by": auth["authority"]})
     quarantine_payload(data)
+    # an empty upload is clean to the scanner but would supersede the live
+    # evidence source with nothing — refuse before consuming auth (Add skips
+    # empty uploads; Replace must too) (CFAR r22)
+    if not data:
+        raise OpRefused("replacement upload is empty")
 
     # preflight — read-only; refusal leaves the tree byte-identical
     if not SLUG_RE.match(slug):

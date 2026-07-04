@@ -1425,6 +1425,24 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-22 repair
+
+def test_cfar22_empty_replacement_upload_refused():
+    """CFAR-22 P2: an empty replacement upload is clean to the scanner but
+    would supersede the live source with nothing — refuse before consuming
+    auth or writing."""
+    root = fresh_root()
+    article(root, "alpha-topic")
+    auth_path = write_auth(root, good_auth())
+    before = tree_snapshot(root)
+    refused(ops.replace_source, root, slug="alpha-topic", source_ref=OLD_REF,
+            data=b"", filename="empty.md", note="", now=NOW)
+    assert tree_snapshot(root) == before, "empty upload → write-free refusal"
+    assert json.loads(auth_path.read_text())["df"] == "ingest-authorization", \
+        "auth must not be consumed"
+    print("ok test_cfar22_empty_replacement_upload_refused")
+
+
 # ------------------------------------------- CFAR round-21 repairs
 
 def test_cfar21_svg_multi_href_fails_closed():
