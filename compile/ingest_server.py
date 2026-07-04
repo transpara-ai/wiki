@@ -756,6 +756,7 @@ class IngestHandler(SimpleHTTPRequestHandler):
         # request-content only, so it may run before the lock.
         fields = {"target_slug": raw_target_slug, "note": note,
                   "supersedes": supersedes, "external_urls": raw_external_urls}
+        any_document = False
         for i, item in enumerate(field_values(form, "documents")):
             if not getattr(item, "filename", ""):
                 continue
@@ -763,9 +764,20 @@ class IngestHandler(SimpleHTTPRequestHandler):
             data = item.file.read()
             ingest_ops.quarantine_payload(data)
             item.file = io.BytesIO(data)
+            if data:
+                any_document = True
         ingest_ops.quarantine_fields(fields)
         target_slug = normalize_target_slug(raw_target_slug)
         external_urls = valid_external_urls(raw_external_urls)
+        # a source-less ingest (no non-empty document, no external URL) is a
+        # no-op — refuse BEFORE the lock/save so it neither rebuilds nor appends
+        # a misleading `add` ledger row, and creates no raw-inbox directory;
+        # save_uploads would mkdir the bucket before finding nothing to save, so
+        # this must precede it to stay write-free (CFAR ready-state)
+        if not any_document and not external_urls:
+            raise ingest_ops.OpRefused(
+                "ingest requires at least one document or external URL; "
+                "use /api/rebuild to only refresh")
         with wiki_write_lock():
             # ledger + edge-state preflights read SHARED state, so they must run
             # at mutation time INSIDE the lock — a preflight before the lock can
@@ -793,14 +805,6 @@ class IngestHandler(SimpleHTTPRequestHandler):
                     "target article does not exist — Add refused")
             saved = save_uploads(form, target_slug, note, supersedes)
             source_refs = [s["path"] for s in saved] + external_urls
-            # a source-less ingest is a no-op — it must not rebuild or append a
-            # misleading `add` ledger row with sources: [] (use /api/rebuild to
-            # only refresh); save_uploads skipped every empty input, so nothing
-            # was written yet (CFAR ready-state)
-            if not source_refs:
-                raise ingest_ops.OpRefused(
-                    "ingest requires at least one document or external URL; "
-                    "use /api/rebuild to only refresh")
             created_article = {"slug": "", "created": False}
             if not target_slug and saved:
                 target_slug, created = create_article_from_source(saved[0]["path"], note, supersedes)

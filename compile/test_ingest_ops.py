@@ -1499,6 +1499,8 @@ def test_cfarready_sourceless_add_refused():
             assert h.status == 422, h.status
             assert not (root / "compile" / "ingest-ledger.jsonl").exists(), \
                 "no ledger row for a source-less no-op"
+            assert not (root / "raw").exists(), \
+                "write-free: no raw-inbox directory created (checked before save)"
             assert rebuilt == [], "no rebuild for a source-less no-op"
         finally:
             (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,

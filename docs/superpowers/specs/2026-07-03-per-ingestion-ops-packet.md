@@ -465,8 +465,12 @@ No durable file is ever readable in a half-written state.
     (`result` is `"completed"` iff `engine == "ok"`)
   - remove: `{"ts", "operation": "remove", "slug", "reason": str,
     "authorized_by": str, "authorization_sha256": str,
-    "affected_edges": [str], "result": "completed",
-    "rebuild": "ok"|"failed"}`
+    "affected_edges": [str], "repaired_edges": [str],
+    "result": "completed", "rebuild": "ok"|"failed"}`
+    (`repaired_edges` = pre-existing unqueued `dangling-pending` edges the
+    Layer-1 closure pass enqueued for OTHER targets — recorded so no committed
+    edge-state mutation is silent; distinct from this remove's own
+    `affected_edges`)
 
 ## 3. Acceptance criteria — named tests in `compile/test_ingest_ops.py`
 
