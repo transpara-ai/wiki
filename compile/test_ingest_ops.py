@@ -1458,6 +1458,33 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-27 repair
+
+def test_cfar27_backslash_href_canonicalized():
+    """CFAR-27 P2: the shared canonicalizer must normalize backslash paths (a
+    browser resolves `x\\..\\slug.html` and `\\slug.html` as slash paths) — a
+    live target must render live and a removed target must be enumerated."""
+    meta = {"target": {}, "gone": {"retired_on": "2026-07-01"}}
+    for href in ("target.html", "\\target.html", "x\\..\\target.html",
+                 "./x\\..\\target.html"):
+        kind, stem = ops.canonical_article_target(href, meta=meta)
+        assert (kind, stem) == ("article", "target"), href
+    # render gate: a retired target via backslash href is non-live
+    rmeta = {"src": {"retired_on": ""}, "gone": {"retired_on": "2026-07-01"}}
+    out = _render_with(rmeta, {}, '<a href="x\\..\\gone.html">g</a>')
+    assert 'href="x\\..\\gone.html"' not in out and "gone.html" not in out, out
+    # edge discovery: a backslash link to the removed topic is queued
+    root = fresh_root()
+    article(root, "doomed-topic")
+    (root / "wiki" / "linker-bs.md").write_text(
+        '---\nentity: L\ntier: investigation\n---\n\n'
+        '# L\n\n<a href="x\\..\\doomed-topic.html">x</a>\n')
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", now=NOW)
+    assert "linker-bs" in result["affected_edges"], result["affected_edges"]
+    print("ok test_cfar27_backslash_href_canonicalized")
+
+
 # ------------------------------------------- CFAR round-25 repair
 
 def test_cfar25_generated_pages_cannot_be_retired():

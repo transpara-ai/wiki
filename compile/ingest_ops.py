@@ -439,6 +439,10 @@ def canonical_article_target(href, *, meta, repo_slugs=()):
     href = (href or "").strip()
     if not href:
         return ("external", "")
+    # browsers treat backslash as a path separator, so `x\..\slug.html` and
+    # `\slug.html` resolve like their slash forms — normalize before parsing so
+    # neither dodges the gate nor is missed on Remove (CFAR r27)
+    href = href.replace("\\", "/")
     try:
         parsed = urllib.parse.urlsplit(href)
     except ValueError:
