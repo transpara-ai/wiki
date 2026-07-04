@@ -749,11 +749,11 @@ class IngestHandler(SimpleHTTPRequestHandler):
         note = first_value(form, "note").strip()
         supersedes = first_value(form, "supersedes").strip()
         raw_external_urls = first_value(form, "external_urls")
-        # quarantine + ledger preflight BEFORE any validation or write
-        # (packet §2.4/§2.8/§2.9): the slug/URL validators below echo the
-        # submitted value in their errors, so nothing reaches them until it
-        # is proven secret-free; a refusal here saves nothing, renders
-        # nothing, triggers no rebuild, and never echoes the finding bytes
+        # quarantine BEFORE any validation or write (packet §2.4/§2.8): the
+        # slug/URL validators below echo the submitted value in their errors,
+        # so nothing reaches them until it is proven secret-free; a refusal
+        # here saves nothing and never echoes the finding bytes. Quarantine is
+        # request-content only, so it may run before the lock.
         fields = {"target_slug": raw_target_slug, "note": note,
                   "supersedes": supersedes, "external_urls": raw_external_urls}
         for i, item in enumerate(field_values(form, "documents")):
@@ -764,14 +764,15 @@ class IngestHandler(SimpleHTTPRequestHandler):
             ingest_ops.quarantine_payload(data)
             item.file = io.BytesIO(data)
         ingest_ops.quarantine_fields(fields)
-        ingest_ops.ledger_preflight(ROOT / "compile" / "ingest-ledger.jsonl")
-        # corrupt edge state refuses EVERY mutation, Add included — the rebuild
-        # this Add triggers would otherwise render from unverifiable state
-        # (strict-parse law; CFAR r13). Preflight before any write.
-        ingest_ops.load_edge_states(ROOT / "compile" / "edge-states.json")
         target_slug = normalize_target_slug(raw_target_slug)
         external_urls = valid_external_urls(raw_external_urls)
         with wiki_write_lock():
+            # ledger + edge-state preflights read SHARED state, so they must run
+            # at mutation time INSIDE the lock — a preflight before the lock can
+            # be stale if a concurrent op corrupts the ledger/edge state while
+            # this request waits (strict-parse law; CFAR r13/r24).
+            ingest_ops.ledger_preflight(ROOT / "compile" / "ingest-ledger.jsonl")
+            ingest_ops.load_edge_states(ROOT / "compile" / "edge-states.json")
             # a retired topic is a tombstone — Add must not resurrect it with
             # live sources (Replace already refuses retired). Resolve the
             # EFFECTIVE target (provided slug, or the slug an unassigned upload

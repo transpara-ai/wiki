@@ -1425,6 +1425,48 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-24 repair
+
+def test_cfar24_add_state_preflights_inside_lock():
+    """CFAR-24 P2: the Add ledger + edge-state preflights read shared state, so
+    they must run inside the write lock (a pre-lock check can go stale while
+    the request waits for the lock)."""
+    src = (pathlib.Path(__file__).resolve().parent / "ingest_server.py").read_text()
+    seg = src.split("def handle_ingest", 1)[1].split("\n    def ", 1)[0]
+    lock_at = seg.index("wiki_write_lock()")
+    for call in ("ledger_preflight(", "load_edge_states("):
+        assert seg.index(call) > lock_at, \
+            "%s must run inside the write lock (CFAR r24)" % call
+    save_at = seg.index("save_uploads(")
+    assert seg.index("ledger_preflight(") < save_at, "preflight before save"
+    # and corrupt edge state STILL refuses Add write-free (now inside the lock)
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        (root / "compile").mkdir()
+        wiki = root / "wiki"
+        wiki.mkdir()
+        (wiki / "example.md").write_text(
+            "---\nentity: Example\ntier: investigation\n---\n\n# Example\n")
+        (root / "compile" / "edge-states.json").write_text("{corrupt")
+        old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+               srv.subprocess.Popen)
+        try:
+            srv.ROOT = root
+            srv.WIKI = wiki
+            srv.RAW_INBOX = root / "raw" / "inbox"
+            srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = lambda *a, **k: _FakeProc()
+            h = make_handler("/api/ingest", body=b"target_slug=example&note=x")
+            srv.IngestHandler.do_POST(h)
+            assert h.status == 422, h.status
+            assert not (root / "raw").exists()
+        finally:
+            (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+             srv.subprocess.Popen) = old
+    print("ok test_cfar24_add_state_preflights_inside_lock")
+
+
 # ------------------------------------------- CFAR round-22 repair
 
 def test_cfar22_empty_replacement_upload_refused():
