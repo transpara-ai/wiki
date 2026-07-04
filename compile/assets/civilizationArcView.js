@@ -185,12 +185,17 @@
       if (p === "..") { out.pop(); continue; }
       out.push(p);
     }
-    var m = /^([A-Za-z0-9_][A-Za-z0-9_-]*)\.html$/.exec(out.join("/"));
-    return m ? m[1] : null;
+    var m = /^([A-Za-z0-9_][A-Za-z0-9_-]*)\.html$/i.exec(out.join("/"));
+    return m ? m[1] : null;  // case-insensitive extension (`.HTML` too)
   }
   function isRetiredInternal(href) {
     var slug = canonicalArcSlug(href);
     if (!slug) return false;
+    // slugs are lowercase by construction; compare case-insensitively so a
+    // case-variant href to a retired article (`Gate-k.html`) is still gated,
+    // matching the server's non-live treatment of case variants (CFAR
+    // ready-state)
+    slug = slug.toLowerCase();
     var retired = (typeof window !== "undefined" && window.CIVWIKI_RETIRED_SLUGS) || [];
     for (var i = 0; i < retired.length; i++) { if (retired[i] === slug) return true; }
     return false;

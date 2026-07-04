@@ -94,6 +94,16 @@ def _atomic_write_bytes(path, data):
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(data)
+        # mkstemp creates the temp file 0600; os.replace would install that over
+        # the destination and make a previously group/world-readable tracked
+        # file (wiki/*.md, PROVENANCE.md, raw uploads) unreadable to the static
+        # server/builder. Preserve the destination's existing mode, or default a
+        # NEW file to 0644 (the served-content convention) (CFAR ready-state).
+        try:
+            mode = os.stat(str(path)).st_mode & 0o777
+        except FileNotFoundError:
+            mode = 0o644
+        os.chmod(tmp, mode)
         os.replace(tmp, str(path))
     except BaseException:
         try:

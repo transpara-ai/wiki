@@ -1473,6 +1473,40 @@ def test_cfar6_board_scalar_with_comment_queued():
 
 # ------------------------------------------- CFAR ready-state repairs
 
+def test_cfarready_atomic_write_preserves_mode():
+    """CFAR ready-state P2: an atomic rewrite must not restrict a previously
+    group/world-readable file to 0600; a new file defaults to 0644."""
+    with tempfile.TemporaryDirectory() as d:
+        existing = pathlib.Path(d) / "wiki.md"
+        existing.write_text("original")
+        os.chmod(existing, 0o644)
+        ops.atomic_write_text(existing, "rewritten")
+        assert (os.stat(existing).st_mode & 0o777) == 0o644, \
+            oct(os.stat(existing).st_mode & 0o777)
+        # a preserved stricter mode survives too
+        os.chmod(existing, 0o640)
+        ops.atomic_write_text(existing, "again")
+        assert (os.stat(existing).st_mode & 0o777) == 0o640
+        # a NEW file gets the served-content default 0644
+        fresh = pathlib.Path(d) / "new.json"
+        ops.atomic_write_text(fresh, "{}")
+        assert (os.stat(fresh).st_mode & 0o777) == 0o644
+    print("ok test_cfarready_atomic_write_preserves_mode")
+
+
+def test_cfarready_replace_preserves_article_mode():
+    """CFAR ready-state P2: a Replace that rewrites wiki/<slug>.md preserves
+    its 0644 mode (the static server serves it)."""
+    root = fresh_root()
+    path = article(root, "alpha-topic")
+    os.chmod(path, 0o644)
+    write_auth(root, good_auth())
+    do_replace(root)
+    assert (os.stat(path).st_mode & 0o777) == 0o644, \
+        oct(os.stat(path).st_mode & 0o777)
+    print("ok test_cfarready_replace_preserves_article_mode")
+
+
 def test_cfarready_sourceless_add_refused():
     """CFAR ready-state P2: a source-less ingest (no documents, no URLs) must
     refuse — it must not rebuild or append a misleading `add` ledger row."""
