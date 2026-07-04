@@ -689,12 +689,15 @@ class _LinkGate(HTMLParser):
         return next((v for (k, v) in attrs
                      if k.lower() in self.HREF_ATTRS and v is not None), None)
 
+    def _disp(self, attrs):
+        href = self._href(attrs)
+        if href is None:
+            return None
+        return _internal_link_disposition(href, self.source_slug, self.repo_slugs)
+
     def handle_starttag(self, tag, attrs):
         if tag == "a":
-            href = self._href(attrs)
-            disp = (_internal_link_disposition(href, self.source_slug,
-                                               self.repo_slugs)
-                    if href is not None else None)
+            disp = self._disp(attrs)
             if disp is None or disp == "live":
                 self.out.append(self.get_starttag_text())
                 self.a_stack.append("keep")
@@ -703,6 +706,14 @@ class _LinkGate(HTMLParser):
             else:
                 self.out.append(WL_PENDING.split("%s")[0])
                 self.a_stack.append("pending")
+            return
+        if tag == "area":
+            # <area> (image map) is a void, browser-navigable href element —
+            # drop it when its target is non-live; there is no inner content
+            # to preserve (CFAR r18)
+            disp = self._disp(attrs)
+            if disp is None or disp == "live":
+                self.out.append(self.get_starttag_text())
             return
         self.out.append(self.get_starttag_text())
 
@@ -719,13 +730,10 @@ class _LinkGate(HTMLParser):
     def handle_startendtag(self, tag, attrs):
         # browsers ignore the `/` on a non-void `<a .../>` in text/html and
         # keep the link live, so a self-closing anchor must be gated too, not
-        # echoed verbatim (CFAR r9). A non-live self-closing anchor is dropped
-        # (its following text renders plain) — there is no inner span to wrap.
-        if tag == "a":
-            href = self._href(attrs)
-            disp = (_internal_link_disposition(href, self.source_slug,
-                                               self.repo_slugs)
-                    if href is not None else None)
+        # echoed verbatim (CFAR r9). A non-live self-closing anchor/area is
+        # dropped — there is no inner span to wrap.
+        if tag in ("a", "area"):
+            disp = self._disp(attrs)
             if disp is None or disp == "live":
                 self.out.append(self.get_starttag_text())
             return

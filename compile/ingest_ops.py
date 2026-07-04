@@ -895,7 +895,9 @@ class _AnchorHrefs(HTMLParser):
         self.hrefs = []
 
     def _collect(self, tag, attrs):
-        if tag == "a":
+        # <a> and <area> (image map) are the browser-navigable href elements;
+        # SVG anchors use xlink:href (CFAR r17/r18)
+        if tag in ("a", "area"):
             for k, v in attrs:
                 if k.lower() in ("href", "xlink:href") and v:
                     self.hrefs.append(v)

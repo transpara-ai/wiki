@@ -1425,6 +1425,31 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-18 repair
+
+def test_cfar18_area_href_gated_and_queued():
+    """CFAR-18 P2: <area> image-map hrefs are browser-navigable — gate them
+    in the renderer and enumerate them on Remove."""
+    meta = {"src": {"retired_on": ""}, "gone": {"retired_on": "2026-07-01"},
+            "alive": {"title": "Alive", "retired_on": ""}}
+    out = _render_with(
+        meta, {}, '<map><area href="gone.html" alt="g"></map>')
+    assert 'href="gone.html"' not in out, out
+    out2 = _render_with(
+        meta, {}, '<map><area href="alive.html" alt="a"></map>')
+    assert "alive.html" in out2, out2
+    # remove-side enumeration includes <area>
+    root = fresh_root()
+    article(root, "doomed-topic")
+    (root / "wiki" / "linker-area.md").write_text(
+        '---\nentity: L\ntier: investigation\n---\n\n# L\n\n'
+        '<map><area href="doomed-topic.html" alt="x"></map>\n')
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    assert "linker-area" in result["affected_edges"], result["affected_edges"]
+    print("ok test_cfar18_area_href_gated_and_queued")
+
+
 # ------------------------------------------- CFAR round-17 repairs
 
 def test_cfar17_svg_xlink_href_gated():
