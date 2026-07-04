@@ -162,10 +162,21 @@
   // Fail-closed allowlist: permits http(s), anchors, root-relative (single /),
   // and bare relative paths that carry no scheme. Rejects any scheme: URI,
   // protocol-relative // or \\, control/whitespace chars, empty/non-string.
+  // A retired article is a tombstone reachable by direct link only — no
+  // generated live link may point to it, including arc-view data hrefs, so
+  // the browser gate mirrors the server-side gate_internal_links (CFAR r20).
+  function isRetiredInternal(href) {
+    var m = /^(?:\.\/|\/)?([A-Za-z0-9_][A-Za-z0-9_-]*)\.html(?:[#?].*)?$/.exec(href);
+    if (!m) return false;
+    var retired = (typeof window !== "undefined" && window.CIVWIKI_RETIRED_SLUGS) || [];
+    for (var i = 0; i < retired.length; i++) { if (retired[i] === m[1]) return true; }
+    return false;
+  }
   function safeHref(href) {
     if (typeof href !== "string" || href === "") return null;
     if (/[\x00-\x20\x7f]/.test(href)) return null;
     if (/^[\\/]{2}/.test(href)) return null;
+    if (isRetiredInternal(href)) return null;  // retired target → render as text
     if (/^https?:\/\//i.test(href)) return href;
     if (href.charAt(0) === "#" || href.charAt(0) === "/") return href;
     var sep = href.search(/[/#?]/);

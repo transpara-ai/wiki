@@ -2082,12 +2082,18 @@ def arc_page(status):
     body = re.sub(r"^#\s+.*\n", "", body, count=1)
     links = set()
     body_html, toc_tokens = to_html(body, links, article_source_refs(fm), source_slug=slug)
+    # the arc view builds links client-side from data hrefs, bypassing the
+    # server-side gate — publish the retired-slug set so its safeHref() renders
+    # a retired target as text, never a live link (CFAR r20). Emitted BEFORE
+    # the deferred view script so the global is set when it runs.
+    retired_slugs = sorted(s for s, m in META.items() if m.get("retired_on"))
     arc_scripts = (
+        '<script>window.CIVWIKI_RETIRED_SLUGS=%s;</script>'
         '<script defer src="civilizationOntology.js?v=%s"></script>'
         '<script defer src="civilizationArcData.js?v=%s"></script>'
         '<script defer src="civilizationProgressEvidence.js?v=%s"></script>'
         '<script defer src="civilizationArcView.js?v=%s"></script>'
-        % (ONTO_VER, ARC_DATA_VER, PROGRESS_VER, ARC_VIEW_VER)
+        % (json.dumps(retired_slugs), ONTO_VER, ARC_DATA_VER, PROGRESS_VER, ARC_VIEW_VER)
     )
     # The one-status legend is static content — the builder emits it; the view
     # script renders only the derived parts (freshness, now-panel, spine).

@@ -1425,6 +1425,40 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-20 repair
+
+def test_cfar20_arc_view_gates_retired_hrefs():
+    """CFAR-20 P2: the arc view builds links from data hrefs client-side — its
+    safeHref must render a retired internal target as text, and the builder
+    must publish the retired-slug set for it."""
+    # 1) the browser gate: safeHref returns null for a retired internal href
+    view = (pathlib.Path(__file__).resolve().parent / "assets"
+            / "civilizationArcView.js").read_text()
+    assert "isRetiredInternal" in view and "CIVWIKI_RETIRED_SLUGS" in view, \
+        "arc view must gate internal hrefs against the retired set"
+    assert "if (isRetiredInternal(href)) return null" in view
+    # 2) the builder publishes the retired-slug global on the arc page, BEFORE
+    # the deferred view script
+    import build_site as site
+    old = site.META
+    try:
+        site.META = {
+            "gate-k": {"slug": "gate-k", "title": "Gate K", "tier": "meta",
+                       "retired_on": "2026-07-01"},
+            "live-arc": {"slug": "live-arc", "title": "Live Arc", "tier": "meta",
+                         "retired_on": ""}}
+        arc_html = site.arc_page({})
+    finally:
+        site.META = old
+    marker = 'window.CIVWIKI_RETIRED_SLUGS='
+    assert marker in arc_html, arc_html[:200]
+    published = arc_html.split(marker, 1)[1].split(";", 1)[0]
+    assert '"gate-k"' in published and '"live-arc"' not in published, published
+    assert arc_html.index(marker) < arc_html.index("civilizationArcView.js"), \
+        "retired set must be published before the deferred view script"
+    print("ok test_cfar20_arc_view_gates_retired_hrefs")
+
+
 # ------------------------------------------- CFAR round-19 repairs
 
 def test_cfar19_unknown_target_refused_write_free():
