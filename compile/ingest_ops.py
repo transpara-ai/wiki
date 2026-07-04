@@ -11,6 +11,7 @@ Refusal messages never echo secret bytes (rule ids only).
 """
 import datetime
 import hashlib
+import html
 import json
 import os
 import pathlib
@@ -768,16 +769,24 @@ def replace_source(root, *, slug, source_ref, data, filename, note, now,
 
 # ------------------------------------------------------------------- remove
 
-def find_inbound_edges(wiki_dir, target_slug):
-    """Every article whose BODY links to the target through any of the three
-    forms: [[wikilink]], markdown (slug.html), raw href="slug.html"."""
+def find_inbound_edges(root, target_slug):
+    """Every source whose BODY links to the target through any of the three
+    forms: [[wikilink]], markdown (slug.html) INCLUDING titled links, raw
+    href="slug.html" (any spelling). The homepage (index.md) is scanned too
+    — the builder renders its links with source_slug 'index' (CFAR r1
+    P2-4/P2-5)."""
     wikilink = re.compile(r"\[\[%s(?:\|[^\]]*)?\]\]" % re.escape(target_slug))
-    md_link = re.compile(r"\]\(([^)\s]+)\)")
-    href = re.compile(r"href=[\"']([^\"']+)[\"']", re.I)
+    # capture the URL token after `](`; a title (` "..."`) or `)` may follow,
+    # so do NOT require the closing paren immediately after the URL
+    md_link = re.compile(r"\]\(\s*<?([^\s)>]+)")
+    href = re.compile(r"href\s*=\s*[\"']?([^\"'\s>]+)", re.I)
     meta_stub = {target_slug: {}}
+    root = pathlib.Path(root)
+    scan = [(root / "index.md", "index")]
+    scan += [(p, p.stem) for p in sorted((root / "wiki").glob("*.md"))]
     sources = []
-    for path in sorted(pathlib.Path(wiki_dir).glob("*.md")):
-        if path.stem == target_slug:
+    for path, source_slug in scan:
+        if source_slug == target_slug or not path.exists():
             continue
         raw = path.read_text()
         try:
@@ -789,12 +798,13 @@ def find_inbound_edges(wiki_dir, target_slug):
         if not hit:
             for candidate in [m.group(1) for m in md_link.finditer(body)] + \
                              [m.group(1) for m in href.finditer(body)]:
-                kind, stem = canonical_article_target(candidate, meta=meta_stub)
+                kind, stem = canonical_article_target(
+                    html.unescape(candidate), meta=meta_stub)
                 if kind == "article" and stem == target_slug:
                     hit = True
                     break
         if hit:
-            sources.append(path.stem)
+            sources.append(source_slug)
     return sources
 
 
@@ -821,7 +831,7 @@ def remove_topic(root, *, slug, reason, now, rebuild_runner=None):
     ledger_preflight(ledger_path)
     edge_path = root / "compile" / "edge-states.json"
     edge_states = load_edge_states(edge_path)
-    inbound = find_inbound_edges(root / "wiki", slug)
+    inbound = find_inbound_edges(root, slug)
 
     # durable write #0: burn the single-use authorization (intent record)
     digest = consume_authorization(auth_path, auth, now)
@@ -839,11 +849,17 @@ def remove_topic(root, *, slug, reason, now, rebuild_runner=None):
         stub_fm.append("tier: %s" % tier)
     stub_fm.append("retired_on: %s" % json.dumps(_date_of(now)))
     stub_fm.append("retired_reason: %s" % json.dumps(reason))
+    # markdown `extra` passes raw HTML through, so escape any HTML in the
+    # title/reason before it reaches the rendered tombstone body — the
+    # frontmatter banner is already escaped by build_site, the body was not
+    # (CFAR r1 P2-2). Collapse newlines so a reason cannot break structure.
+    safe_title = html.escape(title)
+    safe_reason = html.escape(re.sub(r"\s+", " ", reason).strip())
     stub_body = (
         "# %s\n\n**Retired** on %s — %s\n\nThis topic is a tombstone: its "
         "raw sources are preserved under `raw/` and every inbound reference "
         "is queued for reconciliation. Nothing was deleted.\n"
-        % (title, _date_of(now), reason))
+        % (safe_title, _date_of(now), safe_reason))
     _atomic_write_text(article_path,
                        "---\n" + "\n".join(stub_fm) + "\n---\n\n" + stub_body)
 

@@ -646,8 +646,21 @@ def to_html(body, link_acc=None, source_refs=None, source_slug=""):
 
 
 ANCHOR_RE = re.compile(r"<a\b([^>]*)>(.*?)</a>", re.I | re.S)
-HREF_ATTR_RE = re.compile(r"href=(['\"])(.*?)\1", re.I)
+# tolerant of whitespace around `=` and quoted OR unquoted values — a browser
+# resolves `href = "x"` and `href=x` identically, so the gate must too or it
+# fails open on spellings it cannot parse (CFAR r1 P2-1)
+HREF_ATTR_RE = re.compile(
+    r"""href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))""", re.I)
 WL_PENDING = '<span class="wl wl-pending" title="pending reconciliation">%s</span>'
+
+
+def _extract_href(attrs):
+    m = HREF_ATTR_RE.search(attrs)
+    if not m:
+        return None
+    raw = next(g for g in m.groups() if g is not None)
+    # entity-decode so `gone&#46;html` is gated as gone.html, not passed live
+    return html.unescape(raw)
 
 
 def gate_internal_links(body_html, source_slug=""):
@@ -661,11 +674,11 @@ def gate_internal_links(body_html, source_slug=""):
 
     def repl(m):
         attrs, inner = m.group(1), m.group(2)
-        href_m = HREF_ATTR_RE.search(attrs)
-        if not href_m:
+        href = _extract_href(attrs)
+        if href is None:
             return m.group(0)
         kind, target = ingest_ops.canonical_article_target(
-            href_m.group(2), meta=META, repo_slugs=repo_slugs)
+            href, meta=META, repo_slugs=repo_slugs)
         if kind in ("external", "page"):
             return m.group(0)
         if kind == "article":
@@ -1536,7 +1549,11 @@ def search_box(prefix=""):
 
 
 def build_seealso(links, current):
-    rel = sorted((s for s in links if s != current and s in META),
+    # a wikilink the body gate suppressed (retired target / cleanly-removed
+    # edge) must not reappear as a live link here — filter through the SAME
+    # link_state gate the body used (CFAR r1 P2-3)
+    rel = sorted((s for s in links if s != current and s in META
+                  and ingest_ops.link_state(current, s, META, EDGE_STATES) == "live"),
                  key=lambda s: title_of(s).lower())
     if not rel:
         return ""

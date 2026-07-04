@@ -996,6 +996,104 @@ def test_ac8_add_gains_quarantine_and_ledger():
     print("ok test_ac8_add_gains_quarantine_and_ledger")
 
 
+# ------------------------------------------- CFAR round-1 P2 repairs
+
+def _render_with(meta, edges, body, source_slug="src"):
+    import build_site as site
+    old = (site.META, site.SLUGS, site.EDGE_STATES, site.REPOS)
+    try:
+        site.META = meta
+        site.SLUGS = set(meta) | {"index"}
+        site.EDGE_STATES = edges
+        site.REPOS = []
+        return site.to_html(body, source_slug=source_slug)[0]
+    finally:
+        site.META, site.SLUGS, site.EDGE_STATES, site.REPOS = old
+
+
+def test_cfar_href_spelling_variants_are_gated():
+    """CFAR P2-1: raw href spellings (spaced `=`, entity-encoded) that a
+    browser still resolves to a retired target must NOT render live."""
+    meta = {"src": {"retired_on": ""}, "gone": {"retired_on": "2026-07-01"}}
+    edges = {}
+    for raw in ('<a href = "gone.html">G</a>',
+                '<a href="gone&#46;html">G</a>',
+                "<a href='gone.html'>G</a>",
+                '<a href="./gone.html">G</a>'):
+        out = _render_with(meta, edges, raw)
+        assert 'href="gone.html"' not in out and 'href = "gone.html"' not in out \
+            and "gone&#46;html" not in out, (raw, out)
+        assert "wl-pending" in out, (raw, out)
+    print("ok test_cfar_href_spelling_variants_are_gated")
+
+
+def test_cfar_tombstone_reason_no_html_injection():
+    """CFAR P2-2: a remove reason carrying raw HTML must not reach the
+    rendered tombstone body as live markup."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    payload = "<script>alert(1)</script> and <img src=x onerror=bad>"
+    write_auth(root, remove_auth("doomed-topic"))
+    ops.remove_topic(root, slug="doomed-topic", reason=payload, now=NOW)
+    body = (root / "wiki" / "doomed-topic.md").read_text().split("---\n", 2)[2]
+    assert "<script>" not in body and "<img" not in body, body
+    assert "&lt;script&gt;" in body, "reason must be HTML-escaped in the body"
+    print("ok test_cfar_tombstone_reason_no_html_injection")
+
+
+def test_cfar_seealso_excludes_suppressed_targets():
+    """CFAR P2-3: See also must not reintroduce a live link the body gate
+    suppressed (retired target or cleanly-removed edge)."""
+    import build_site as site
+    old = (site.META, site.SLUGS, site.EDGE_STATES)
+    try:
+        site.META = {"src": {"retired_on": ""},
+                     "gone": {"title": "Gone", "retired_on": "2026-07-01"},
+                     "cut": {"title": "Cut", "retired_on": ""},
+                     "alive": {"title": "Alive", "retired_on": ""}}
+        site.SLUGS = set(site.META) | {"index"}
+        site.EDGE_STATES = {
+            "src->cut": {"state": "cleanly-removed", "since": NOW,
+                         "reason": "r", "queued": False, "enqueued_at": None}}
+        out = site.build_seealso({"gone", "cut", "alive"}, "src")
+    finally:
+        site.META, site.SLUGS, site.EDGE_STATES = old
+    assert 'href="gone.html"' not in out, out
+    assert 'href="cut.html"' not in out, out
+    assert 'href="alive.html"' in out, "live targets still appear in See also"
+    print("ok test_cfar_seealso_excludes_suppressed_targets")
+
+
+def test_cfar_index_inbound_edge_queued():
+    """CFAR P2-4: a homepage (index.md) link to the removed topic must be
+    queued in edge-states and the ledger's affected_edges."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    (root / "index.md").write_text(
+        "---\ntitle: Home\n---\n\n# Home\n\nsee [[doomed-topic]] now\n")
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    states = json.loads((root / "compile" / "edge-states.json").read_text())
+    assert "index->doomed-topic" in states, states
+    assert "index" in result["affected_edges"]
+    print("ok test_cfar_index_inbound_edge_queued")
+
+
+def test_cfar_titled_markdown_link_detected():
+    """CFAR P2-5: a titled markdown link `[A](slug.html "t")` is a real
+    inbound reference and must be enumerated on Remove."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    wiki = root / "wiki"
+    (wiki / "linker-titled.md").write_text(
+        '---\nentity: Linker\ntier: investigation\n---\n\n'
+        '# Linker\n\nsee [Doomed](doomed-topic.html "the detail page") now\n')
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    assert "linker-titled" in result["affected_edges"], result["affected_edges"]
+    print("ok test_cfar_titled_markdown_link_detected")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
