@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-INGEST-OPS
 title: Per-Ingestion Operations v1 — Deterministic Layer 1, Deny-by-Default Gate, Honest-Stale Engine Boundary (TLC Design Packet)
 doc_type: design
-version: 0.4.1
+version: 0.5.0
 status: draft
 canonical: false
 created: 2026-07-03
@@ -109,30 +109,45 @@ fully-proven branch; every other path refuses the operation with a reason and
 **nothing written**. Add requires no authorization artifact (additive-only)
 — it keeps the authoring-surface gates it has today.
 
-Exact schema — key set must be exactly these eight keys (unknown keys
+**The artifact is per-ingestion, single-use, and instance-scoped** — it
+authorizes ONE exact destructive operation, mirroring the ratified
+"destructive intent is always a human, in the moment" model and the
+autodeploy precedent (which authorizes an exact SHA, never a class). A
+class-of-operations window grant is explicitly rejected as a standing
+authorization (CFADA rebuild-r2 B3).
+
+Exact schema — key set must be exactly these ten keys (unknown keys
 refuse; duplicate keys refuse via `object_pairs_hook`; wrong type of the
 top-level document refuses):
 
 ```json
 {
   "df": "ingest-authorization",
-  "operations": {"replace": true, "remove": false},
+  "operation": "replace",
+  "slug": "alpha-topic",
+  "source_ref": "raw/inbox/2026-07-01/alpha-topic/doc-abc.md",
   "authority": "name / role of the human authorizing",
   "authorized_at": "2026-07-04T00:00:00Z",
-  "expires_at": "2026-07-11T00:00:00Z",
-  "reason": "one-line note: why these operations are cleared",
+  "expires_at": "2026-07-04T12:00:00Z",
+  "reason": "one-line note: why this exact operation is cleared",
   "engine_command": ["claude", "-p"],
   "engine_timeout_seconds": 300
 }
 ```
 
 Field law (each violation → refuse):
-- `df` must equal `"ingest-authorization"` exactly.
-- `operations` must be an object with EXACTLY the keys `replace` and
-  `remove`, each a JSON boolean (`isinstance(v, bool)` — truthiness never
-  grants). The requested operation's value must be exactly `true`.
+- `df` must equal `"ingest-authorization"` exactly. A consumed artifact
+  (rewritten to `df: "ingest-authorization-consumed"`, below) therefore
+  refuses by the same rule — single-use is enforced by the `df` gate itself.
+- `operation` must be exactly `"replace"` or `"remove"` AND equal the
+  requested operation; `slug` must equal the requested slug; `source_ref`
+  must equal the requested source_ref for replace and must be `""` for
+  remove. Any mismatch → refuse: the artifact authorizes this one payload,
+  not a class.
 - `authority`, `reason` non-empty strings; `authorized_at`/`expires_at`
-  ISO-8601; grant only while `authorized_at <= now < expires_at`.
+  ISO-8601; grant only while `authorized_at <= now < expires_at`, and the
+  window may not exceed **24 hours** (in-the-moment authority, not a
+  standing grant).
 - `engine_command` must be a JSON array. `[]` means **engine disabled**
   (deterministic-only mode; Replace completes honest-stale). If non-empty,
   every element must be a non-empty string. It is executed as an **argv
@@ -141,6 +156,19 @@ Field law (each violation → refuse):
   `1 <= v <= 3600`.
 - File missing, unreadable, non-JSON, non-object → refuse. There is no
   `default:`/`else` that grants.
+
+**Consumption (single-use + transaction intent):** after all refusal gates
+pass and BEFORE the first repo mutation, the artifact file is atomically
+rewritten to a consumed tombstone
+(`{"df": "ingest-authorization-consumed", "consumed_at", "operation",
+"slug", "source_ref", "authorization_sha256"}` — the sha256 of the original
+artifact bytes). This is durable write #0: a crash at any later point
+leaves a burned authorization plus an enumerable prefix (§2.8), never a
+replayable grant. The same `authorization_sha256` lands in the ledger row,
+tying the grant to the audit record. A consumed artifact without a matching
+ledger row is the legible signature of an interrupted operation — the
+operator inspects the git diff; the ledger itself remains valid and does
+not block on it.
 
 ### 2.4 Quarantine — every byte scanned before any write
 
@@ -188,9 +216,11 @@ upload (the replacement), optional `note`.
 Order of operations (each step refuses → stop, nothing written):
 1. Authoring-surface gates (identical to `/api/ingest`): allowed Host +
    `require_authoring`.
-2. Authorization gate §2.3 with `operations.replace`.
+2. Authorization gate §2.3: instance match on
+   `(operation="replace", slug, source_ref)`.
 3. Quarantine: `quarantine_fields({slug, source_ref, note, filename,
    authorized_by})`, `quarantine_payload(upload bytes)`.
+4a. Consume the authorization artifact (§2.3) — durable write #0.
 4. Preflight (deterministic, read-only):
    - `slug` matches `SLUG_RE` and `wiki/<slug>.md` exists and is not retired;
    - `source_ref` is listed in that article's `sources`/`raw_documents`;
@@ -232,19 +262,28 @@ Order of operations (each step refuses → stop, nothing written):
   authorized (never `shell=True`), job JSON on stdin
   (`{"operation": "replace", "slug", "raw_documents", "sources"}` — the
   LIVE lists only; `superseded_*` refs are excluded from engine input by
-  construction), complete replacement article markdown expected on stdout,
-  `engine_timeout_seconds` enforced with process-group kill (the
-  `run_refresh_unlocked` pattern).
+  construction), `engine_timeout_seconds` enforced with process-group kill
+  (the `run_refresh_unlocked` pattern).
+- **The engine's output is the article BODY only — never frontmatter.**
+  Frontmatter authority is exclusively deterministic (Layer 1): a
+  whole-file engine output could reintroduce a superseded ref into live
+  `sources` or drop the replacement, silently undoing the structural
+  supersession (CFADA rebuild-r2 B1). On success the file is assembled as
+  *deterministic post-swap frontmatter (with `stale_since` removed by the
+  assembler) + engine body*.
 - Output law — ALL must hold or the output is discarded:
   - non-zero exit, timeout, empty/whitespace stdout → discard;
-  - output must parse as frontmatter + body (`split_fm` finds a block);
+  - output starting with a `---` frontmatter fence → discard (an attempt
+    to seize frontmatter authority);
   - **no raw HTML outside fenced code blocks** (markdown `extra` passes raw
     HTML through to the rendered page — this grammar rule is the injection
     gate). Inline/backtick code spans do not count as fences;
-  - `quarantine_payload(output bytes)` clean;
-  - frontmatter must keep `entity` and drop `stale_since`.
-- On success: the whole article file (frontmatter + body) is replaced via
-  temp-file + `os.replace` (atomic; no reader ever sees a partial write).
+  - `quarantine_payload(output bytes)` clean.
+- On success: the assembled article (deterministic frontmatter minus
+  `stale_since` + engine body) is written via temp-file + `os.replace`
+  (atomic; no reader ever sees a partial write). The live
+  `sources`/`raw_documents`/`superseded_*` lists are byte-identical to the
+  step-5 deterministic state by construction.
 - On ANY failure: **the article file's bytes are exactly the step-5
   deterministic state** — updated frontmatter with `stale_since`, body
   untouched. The banner renders the stale notice from `stale_since`. Never
@@ -255,11 +294,13 @@ Order of operations (each step refuses → stop, nothing written):
 
 ### 2.7 Remove — `POST /api/remove` `{slug, reason}` and the edge-state law
 
-Order: authoring gates → authorization (`operations.remove`) →
+Order: authoring gates → authorization §2.3 (instance match on
+`(operation="remove", slug, source_ref="")`) →
 `quarantine_fields({slug, reason, authorized_by})` → preflight (slug
 exists, not already retired, not `index`; ledger preflight; edge-states
-strict-parse preflight) → Layer 1 under the lock → rebuild attempt →
-ledger append last (recording the rebuild outcome). A retirement line is
+strict-parse preflight) → consume the artifact (durable write #0) →
+Layer 1 under the lock → rebuild attempt → ledger append last (recording
+the rebuild outcome). A retirement line is
 appended to `PROVENANCE.md` in Layer 1 (topic, date, reason — ratified §6
 obligation), read-modify-temp-file-`os.replace`.
 
@@ -331,20 +372,27 @@ place by extending `sanitize_rendered_links()` (which already visits every
 `href`) with the internal-target state check.
 
 **Internal-target canonicalization (exact, so the gate cannot be dodged by
-spelling):** an href is an internal-article candidate iff it has no scheme
-and no host and, after stripping at most one leading `./` or `/`, stripping
-a trailing `#fragment` and/or `?query`, and percent-decoding, it is a
-SINGLE path segment matching `^(?P<slug>[A-Za-z0-9][A-Za-z0-9-]*)\.html$`.
-Decision over the candidate's decoded slug: (a) slug in `META`/`index` →
-apply the edge-state gate above (case-SENSITIVE match — `Foo.html` is not
-`foo.html`); (b) slug in the builder-emitted page allowlist
-(`repos`, `sources`, `ingest`, `civilization-arc`,
-`civilization_arc`, `repo-<known repo slug>`) → live (not an article);
-(c) anything else — including case variants of real slugs and unknown
-single-segment `.html` targets — renders NON-live. Multi-segment relative
-paths (`source/<id>.html`) and scheme/host-bearing URIs keep today's
-scheme-only sanitization. Fragments/queries are re-appended when the link
-renders live. Retired articles drop from the
+spelling):** scheme- or host-bearing URIs keep today's scheme-only
+sanitization; relative paths that do not end in `.html` (assets) keep
+today's behavior. EVERY no-scheme, no-host href whose path ends in `.html`
+is canonicalized: strip a trailing `#fragment` and/or `?query`,
+percent-decode, strip one leading `/`, then **normalize dot-segments**
+(posix semantics; `..` above the root clamps to root — `../slug.html`,
+`./x/../slug.html`, and `/slug.html` all canonicalize to `slug.html`, so
+dot-segment spellings cannot bypass the gate; CFADA rebuild-r2 B2).
+Decision over the canonical path:
+(a) a single segment matching `^(?P<slug>[A-Za-z0-9_][A-Za-z0-9_-]*)\.html$`
+with slug in `META`/`index` → apply the edge-state gate above
+(case-SENSITIVE — `Foo.html` is not `foo.html`);
+(b) single segment in the builder-emitted page allowlist (`repos`,
+`sources`, `ingest`, `civilization-arc`, `civilization_arc`,
+`repo-<known repo slug>`) → live (not an article);
+(c) canonical path matching `^source/[0-9a-f]{16}\.html$` → live (the
+source-viewer allowlist — the only multi-segment internal form);
+(d) anything else — case variants of real slugs, unknown single-segment
+targets, any other multi-segment `.html` path — renders NON-live. There is
+no relative `.html` spelling that reaches the page without a decision.
+Fragments/queries are re-appended when the link renders live. Retired articles drop from the
 nav but remain reachable (retired ≠ discoverable; never a 404); article
 pages carry a banner line when `stale_since` or `retired_on` is set.
 
@@ -357,15 +405,26 @@ HTTP 422 with redacted reason. After a successful Add, one ledger row
 (`operation: "add"`) is appended. No authorization artifact required.
 
 **Atomicity law (all operations):** EVERY durable file this feature writes
-or rewrites — raw uploads, article rewrites, tombstones,
-`edge-states.json`, `PROVENANCE.md` — lands via temp-file-in-destination-dir
-+ `os.replace`; `append_frontmatter_list_items()`'s direct `write_text` is
-upgraded to the same pattern. Appends to the manifest and ledger are
-single-line writes under the held lock. Write order within an operation is
-fixed (raw → frontmatter/tombstone → edge-states → PROVENANCE → rebuild →
-ledger), so an interruption leaves a prefix of atomic writes: the worst
-residue is a saved raw file not yet referenced by any frontmatter — inert,
-never rendered as an article source, and visible in the manifest/git diff.
+or rewrites — the authorization consumption, raw uploads, article rewrites,
+tombstones, `edge-states.json`, `PROVENANCE.md` — lands via
+temp-file-in-destination-dir + `os.replace`;
+`append_frontmatter_list_items()`'s direct `write_text` is upgraded to the
+same pattern. Appends to the manifest and ledger are single-line writes
+under the held lock. Write order within an operation is fixed:
+**consume-auth → raw → frontmatter/tombstone → edge-states → PROVENANCE →
+rebuild → ledger.** An interruption therefore leaves exactly one of these
+enumerated prefix states, each individually consistent (no half-written
+file) and each fail-closed:
+- *consumed only*: authorization burned, repo untouched — a retry needs a
+  fresh human grant; never a replay;
+- *+raw*: an inert saved raw file, referenced by nothing, rendered nowhere;
+- *+frontmatter/tombstone*, *+edge-states*, *+PROVENANCE*: durable,
+  individually-atomic repo mutations without a ledger row.
+Recovery is legible, not automatic: a consumed artifact with no matching
+ledger row marks the interrupted operation; the mutations are tracked
+files, so `git diff` on the authoring clone shows the exact prefix. The
+ledger stays valid (preflight does not block on an interrupted-op
+signature); Add refuses only on quarantine/ledger-corruption, as today.
 No durable file is ever readable in a half-written state.
 
 ### 2.9 The ledger — `compile/ingest-ledger.jsonl` (strict JSONL, preflight-first, append-last)
@@ -392,25 +451,27 @@ No durable file is ever readable in a half-written state.
   - add: `{"ts", "operation": "add", "slug", "sources": [str],
     "created": bool, "rebuild": "ok"|"failed"}`
   - replace: `{"ts", "operation": "replace", "slug", "superseded": str,
-    "replacement": str, "authorized_by": str, "engine":
-    "ok"|"failed"|"disabled", "result": "completed"|"stale",
+    "replacement": str, "authorized_by": str,
+    "authorization_sha256": str (hex sha256 of the consumed artifact),
+    "engine": "ok"|"failed"|"disabled", "result": "completed"|"stale",
     "rebuild": "ok"|"failed"}`
     (`result` is `"completed"` iff `engine == "ok"`)
   - remove: `{"ts", "operation": "remove", "slug", "reason": str,
-    "authorized_by": str, "affected_edges": [str], "result": "completed",
+    "authorized_by": str, "authorization_sha256": str,
+    "affected_edges": [str], "result": "completed",
     "rebuild": "ok"|"failed"}`
 
 ## 3. Acceptance criteria — named tests in `compile/test_ingest_ops.py`
 
 | AC | Law under test | Named test(s) |
 |---|---|---|
-| AC1 | Authorization gate refuses across the ENTIRE input domain — missing/unreadable/non-object file, wrong `df`, unknown key, duplicate key, `operations` wrong shape (missing/extra key, non-bool incl. truthy 1/"true"), op `false`, bad/blank strings, bad/expired/future window, `engine_command` non-list / non-string / empty-string element, `engine_timeout_seconds` bool/non-int/0/3601 — and grants ONLY the single fully-proven shape | `test_ac1_authorization_denies_entire_domain`, `test_ac1_authorization_single_proven_grant` |
+| AC1 | Authorization gate refuses across the ENTIRE input domain — missing/unreadable/non-object file, wrong/consumed `df`, unknown key, duplicate key, wrong/mismatched `operation`/`slug`/`source_ref` (instance binding — a replace grant does not authorize remove, another slug, or another ref; remove requires `source_ref: ""`), bad/blank strings, bad/expired/future window, window > 24 h, `engine_command` non-list / non-string / empty-string element, `engine_timeout_seconds` bool/non-int/0/3601 — and grants ONLY the single fully-proven instance-matched shape; a successful operation CONSUMES the artifact (second use refuses) | `test_ac1_authorization_denies_entire_domain`, `test_ac1_authorization_single_proven_grant`, `test_ac1_authorization_single_use_consumed` |
 | AC2 | Quarantine refuses oversized/binary/secret-bearing payloads and a planted secret in EVERY persisted field; refusal writes nothing anywhere; refusal output never contains the secret bytes | `test_ac2_quarantine_payload_input_classes`, `test_ac2_quarantine_every_persisted_field`, `test_ac2_refusal_writes_nothing_and_redacts` |
-| AC3 | Replace deterministic swap: new raw saved atomically, old ref MOVED to `superseded_sources`/`superseded_raw_documents` (file retained; live `sources`/`raw_documents` no longer carry it — non-load-bearing under the live parser), frontmatter atomically updated, `stale_since` set, body bytes untouched, PROVENANCE.md supersession line appended, engine job input excludes superseded refs; refusals (unknown slug, ref not in article, URL ref, shared ref, retired slug) write nothing | `test_ac3_replace_deterministic_swap`, `test_ac3_replace_supersession_not_load_bearing`, `test_ac3_replace_refusals_write_nothing` |
-| AC4 | Engine boundary: `[]` → disabled+stale; nonzero exit / timeout / empty stdout / no frontmatter / raw HTML outside fences / secret in output → article bytes IDENTICAL to post-swap state, `engine: "failed"`, `result: "stale"`; success replaces atomically, drops `stale_since`; argv exec, never shell | `test_ac4_engine_failure_domain_leaves_honest_stale`, `test_ac4_engine_success_atomic_swap`, `test_ac4_engine_argv_never_shell` |
+| AC3 | Replace deterministic swap: authorization consumed first (durable write #0), new raw saved atomically, old ref MOVED to `superseded_sources`/`superseded_raw_documents` (file retained; live `sources`/`raw_documents` no longer carry it — non-load-bearing under the live parser), frontmatter atomically updated, `stale_since` set, body bytes untouched, PROVENANCE.md supersession line appended, engine job input excludes superseded refs; refusals (unknown slug, ref not in article, URL ref, shared ref, retired slug, mismatched authorization) write nothing INCLUDING the artifact (not consumed) | `test_ac3_replace_deterministic_swap`, `test_ac3_replace_supersession_not_load_bearing`, `test_ac3_replace_refusals_write_nothing` |
+| AC4 | Engine boundary: `[]` → disabled+stale; nonzero exit / timeout / empty stdout / output opening a `---` frontmatter fence (authority grab) / raw HTML outside fences / secret in output → article bytes IDENTICAL to post-swap state, `engine: "failed"`, `result: "stale"`; success assembles deterministic-frontmatter + engine BODY atomically, drops `stale_since`, and the live+superseded source lists are byte-identical to the post-swap state (engine cannot undo supersession); argv exec, never shell | `test_ac4_engine_failure_domain_leaves_honest_stale`, `test_ac4_engine_success_atomic_swap`, `test_ac4_engine_cannot_touch_frontmatter`, `test_ac4_engine_argv_never_shell` |
 | AC5 | Remove: tombstone stub written (never deletes files), PROVENANCE.md retirement line appended, all inbound edges across ALL THREE link forms discovered → `dangling-pending` queued; **closure: zero unqueued dangling-pending entries**; corrupt/duplicate-key/non-object `edge-states.json` → operation REFUSED in preflight, nothing written; refusals write nothing | `test_ac5_remove_tombstone_and_edge_enumeration`, `test_ac5_closure_zero_unqueued_pending`, `test_ac5_corrupt_edge_states_refuses`, `test_ac5_remove_refusals_write_nothing` |
-| AC6 | Rendering fail-closed over the whole edge-state domain: `valid` live; `cleanly-removed` plain text; `dangling-pending` pending marker; UNKNOWN state non-live; retired target non-live even with no entry; missing target `tbd`; live renders ONLY on the proven branch — for `[[slug]]`, `[x](slug.html)`, and raw href forms; canonicalization: `./slug.html`, `/slug.html`, `slug.html#frag`, `slug.html?q`, percent-encoded, and case-variant spellings all reach the gate (case variants and unknown single-segment targets render non-live; builder-page allowlist stays live); corrupt `edge-states.json` FAILS the build | `test_ac6_render_state_domain_all_link_forms`, `test_ac6_href_canonicalization_domain`, `test_ac6_corrupt_edge_states_fails_build` |
-| AC7 | Ledger: strict JSONL, exact per-op shapes incl. `rebuild`, duplicate-key line invalid; corrupt existing line → operation refused, nothing written; append is last (failed op appends nothing; rebuild-failed appends a row with `rebuild: "failed"`); Add appends an add row | `test_ac7_ledger_strict_jsonl_preflight_first_append_last` |
+| AC6 | Rendering fail-closed over the whole edge-state domain: `valid` live; `cleanly-removed` plain text; `dangling-pending` pending marker; UNKNOWN state non-live; retired target non-live even with no entry; missing target `tbd`; live renders ONLY on the proven branch — for `[[slug]]`, `[x](slug.html)`, and raw href forms; canonicalization: `./slug.html`, `/slug.html`, `../slug.html`, `x/../slug.html`, `slug.html#frag`, `slug.html?q`, percent-encoded, and case-variant spellings all reach the gate (dot-segments normalize, clamped at root; case variants, unknown single-segment, and non-allowlisted multi-segment `.html` targets render non-live; builder-page allowlist and `source/<16-hex>.html` stay live); corrupt `edge-states.json` FAILS the build | `test_ac6_render_state_domain_all_link_forms`, `test_ac6_href_canonicalization_domain`, `test_ac6_corrupt_edge_states_fails_build` |
+| AC7 | Ledger: strict JSONL, exact per-op shapes incl. `rebuild` and `authorization_sha256` (replace/remove), duplicate-key line invalid; corrupt existing line → operation refused, nothing written; append is last (failed op appends nothing; rebuild-failed appends a row with `rebuild: "failed"`); Add appends an add row; the row's `authorization_sha256` equals the consumed artifact's digest | `test_ac7_ledger_strict_jsonl_preflight_first_append_last`, `test_ac7_operations_append_row_last` |
 | AC8 | Endpoint parity: `/api/replace` + `/api/remove` behind the SAME Host + authoring gates as `/api/ingest` (token/loopback/same-origin matrix), plus the authorization gate; Add path now quarantines and ledgers | `test_ac8_endpoint_authoring_parity` |
 
 ## 4. Fail-safe analysis (CLAUDE.md doctrine, proven over the input space)
@@ -456,6 +517,22 @@ v1 scope aligned with the queued fields (§2.7).
 
 **r3 (Codex, PASS at lost head `e39bead`):** fresh blocker-bar sweep found
 no blockers on the lost text.
+
+**rebuild-r2 (Codex, 2026-07-04, FAIL 3B+1M at `1b11f9b`) → repaired at
+v0.5.0:** B1 the engine returns the article BODY only; frontmatter
+authority is exclusively deterministic and a `---`-opening output is
+discarded — a whole-file output could have reintroduced superseded refs
+into live lists (§2.6, AC4); B2 href canonicalization normalizes
+dot-segments (root-clamped) and gates EVERY relative `.html` path — the
+only live multi-segment form is the explicit `source/<16-hex>.html`
+allowlist (`../slug.html` bypass closed) (§2.7, AC6); B3 the authorization
+artifact is per-ingestion: instance-scoped (`operation`+`slug`+
+`source_ref`), window ≤ 24 h, SINGLE-USE via atomic consumption as durable
+write #0, digest recorded in the ledger row — class-of-operations grants
+rejected as standing authority, restoring the ratified in-the-moment model
+and the autodeploy exact-instance precedent (§2.3, §2.5, §2.7, AC1/AC3/AC7);
+M1 interruption prefix states enumerated with the consumed-artifact
+transaction-intent record and legible git-diff recovery (§2.8).
 
 **rebuild-r1 (Codex, 2026-07-04, FAIL 3B+4M+1m at `952c464`) → repaired at
 v0.4.1:** B1 supersession made STRUCTURAL (`superseded_sources`/
