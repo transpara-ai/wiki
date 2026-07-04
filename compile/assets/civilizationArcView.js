@@ -176,6 +176,7 @@
     if (typeof href !== "string") return null;
     var h = href.split("#")[0].split("?")[0];
     try { h = decodeURIComponent(h); } catch (e) { return null; }
+    h = h.replace(/\\/g, "/");  // browsers treat backslash as a path separator
     h = h.replace(/^\//, "");
     var parts = h.split("/"), out = [];
     for (var i = 0; i < parts.length; i++) {

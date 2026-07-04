@@ -273,7 +273,7 @@ test('safeHref gates retired internal targets, including canonical-equivalent sp
   try {
     // canonical spellings of a retired target all resolve to null (rendered as text)
     ['gate-k.html', './gate-k.html', '/gate-k.html', 'x/../gate-k.html',
-     'gate-k.html#frag', 'gate-k.html?q=1', 'gate%2dk.html', 'gate-k%2ehtml']
+     'gate-k.html#frag', 'gate-k.html?q=1', 'gate%2dk.html', 'gate-k%2ehtml', '\\gate-k.html', 'x\\..\\gate-k.html']
       .forEach((h) => assert.strictEqual(V.safeHref(h), null, h));
     // a live internal target and external URLs are preserved
     assert.strictEqual(V.safeHref('live-arc.html'), 'live-arc.html');
