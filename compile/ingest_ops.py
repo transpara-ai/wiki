@@ -146,10 +146,16 @@ def load_authorization(path, now, *, operation, slug, source_ref):
             raise AuthRefused("field %s must be non-blank" % key)
     # authority/reason are persisted (PROVENANCE, ledger) — a newline would
     # inject extra provenance/audit lines while still passing a non-blank
-    # check, so a persisted free-text field must be a single line (CFAR r5 P2-4)
+    # check, so a persisted free-text field must be a single line (CFAR r5 P2-4).
+    # Normalize surrounding whitespace and reject blank-after-strip so
+    # `"authority": "   "` cannot be consumed into an unusable audit record
+    # (CFAR r10 P3).
     for key in ("authority", "reason"):
         if "\n" in auth[key] or "\r" in auth[key]:
             raise AuthRefused("field %s must be a single line" % key)
+        auth[key] = auth[key].strip()
+        if not auth[key]:
+            raise AuthRefused("field %s must be non-blank" % key)
     if auth["operation"] not in ("replace", "remove"):
         raise AuthRefused("artifact operation must be replace or remove")
     if auth["operation"] == "remove" and auth["source_ref"] != "":
@@ -761,17 +767,27 @@ def replace_source(root, *, slug, source_ref, data, filename, note, now,
     # triggers would otherwise render from unverifiable state
     load_edge_states(root / "compile" / "edge-states.json")
 
-    # durable write #0: burn the single-use authorization (intent record)
-    digest = consume_authorization(auth_path, auth, now)
-
-    # deterministic swap (Layer 1): raw file, then frontmatter-only rewrite
+    # compute the replacement's content-addressed path IN PREFLIGHT: if it
+    # collides with source_ref (a same-day re-upload of identical content),
+    # the swap would remove-then-re-add the same ref and leave the "superseded"
+    # source live — breaking append-only supersession. Refuse before consuming
+    # the authorization or writing anything (CFAR r10 P2).
     sha = hashlib.sha256(data).hexdigest()
     original = _safe_filename(filename)
     dst = (root / "raw" / "inbox" / _date_of(now) / slug /
            ("%s-%s%s" % (pathlib.Path(original).stem or "document", sha[:12],
                          pathlib.Path(original).suffix or ".md")))
-    _atomic_write_bytes(dst, data)
     new_ref = str(dst.relative_to(root))
+    if new_ref == source_ref:
+        raise OpRefused("replacement resolves to the same raw path as "
+                        "source_ref — upload distinct content or a distinct "
+                        "filename to supersede it")
+
+    # durable write #0: burn the single-use authorization (intent record)
+    digest = consume_authorization(auth_path, auth, now)
+
+    # deterministic swap (Layer 1): raw file, then frontmatter-only rewrite
+    _atomic_write_bytes(dst, data)
 
     # canonicalize any inline-form lists to block form before mutating, so the
     # remove/move helpers cannot leave a superseded ref inline+live (CFAR r2 P2-3)

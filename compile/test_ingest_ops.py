@@ -1425,6 +1425,53 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-10 repairs
+
+def test_cfar10_replacement_path_collision_refused():
+    """CFAR-10 P2: a replacement that resolves to the SAME content-addressed
+    path as source_ref must refuse before consuming auth or writing —
+    otherwise the superseded ref would be re-added live."""
+    root = fresh_root()
+    wiki = root / "wiki"
+    wiki.mkdir(parents=True, exist_ok=True)
+    data = b"# replacement raw\n"
+    sha12 = hashlib.sha256(data).hexdigest()[:12]
+    # source_ref matches exactly what do_replace would compute for `data`
+    colliding = "raw/inbox/2026-07-04/alpha-topic/replacement-%s.md" % sha12
+    (wiki / "alpha-topic.md").write_text(
+        '---\nentity: Alpha Topic\ntier: investigation\n'
+        'raw_documents:\n  - "%s"\nsources:\n  - "%s"\n---\n\n# Alpha\n\nBody.\n'
+        % (colliding, colliding))
+    raw_dir = root / "raw" / "inbox" / "2026-07-04" / "alpha-topic"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    (raw_dir / ("replacement-%s.md" % sha12)).write_bytes(data)
+    auth_path = write_auth(root, good_auth(source_ref=colliding))
+    before = tree_snapshot(root)
+    refused(ops.replace_source, root, slug="alpha-topic", source_ref=colliding,
+            data=data, filename="replacement.md", note="", now=NOW)
+    assert tree_snapshot(root) == before, "no write, auth not consumed"
+    assert json.loads(auth_path.read_text())["df"] == "ingest-authorization"
+    print("ok test_cfar10_replacement_path_collision_refused")
+
+
+def test_cfar10_whitespace_only_auth_field_refused():
+    """CFAR-10 P3: whitespace-only authority/reason must refuse; a padded value
+    is normalized before it lands in the audit trail."""
+    root = fresh_root()
+    article(root, "alpha-topic")
+    path = root / "compile" / "ingest-authorization.json"
+    for field in ("authority", "reason"):
+        write_auth(root, good_auth(**{field: "   "}))
+        refused(ops.load_authorization, path, NOW, operation="replace",
+                slug="alpha-topic", source_ref=OLD_REF)
+    # a padded-but-nonblank authority is normalized in the persisted record
+    write_auth(root, good_auth(authority="  Michael / owner  "))
+    do_replace(root)
+    rows = ops.ledger_preflight(root / "compile" / "ingest-ledger.jsonl")
+    assert rows[0]["authorized_by"] == "Michael / owner", rows[0]
+    print("ok test_cfar10_whitespace_only_auth_field_refused")
+
+
 # ------------------------------------------- CFAR round-9 P2 repair
 
 def test_cfar9_self_closing_anchor_is_gated():
