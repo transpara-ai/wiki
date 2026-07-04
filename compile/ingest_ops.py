@@ -724,6 +724,13 @@ def run_engine(engine_command, timeout, job):
 def replace_source(root, *, slug, source_ref, data, filename, note, now,
                    rebuild_runner=None):
     root = pathlib.Path(root)
+    # `now` is written verbatim into the ledger/edge-state timestamps, whose
+    # strict validators require an explicit timezone — reject a naive `now`
+    # BEFORE consuming auth or writing, else mutations land with no audit row
+    # (CFAR r14). The auth window parser would otherwise silently accept it.
+    now = _now_str(now)
+    if not _valid_ts(now):
+        raise OpRefused("now must be an ISO-8601 timestamp with a timezone")
     auth_path = root / "compile" / "ingest-authorization.json"
     auth = load_authorization(auth_path, now, operation="replace",
                               slug=slug, source_ref=source_ref)
@@ -881,7 +888,9 @@ def find_inbound_edges(root, target_slug):
     # reference-style link DEFINITIONS: `[label]: url "title"` — markdown emits
     # the same internal anchor, so the edge must be queued too (CFAR r6 P2-2)
     ref_def = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*<?([^\s>]+)", re.M)
-    href = re.compile(r"href\s*=\s*[\"']?([^\"'\s>]+)", re.I)
+    # boundary before `href` so `data-href`/`aria-href` don't queue spurious
+    # inbound edges the renderer would never link (CFAR r14 P3)
+    href = re.compile(r"(?<![-\w])href\s*=\s*[\"']?([^\"'\s>]+)", re.I)
     meta_stub = {target_slug: {}}
     root = pathlib.Path(root)
     scan = [(root / "index.md", "index")]
@@ -916,6 +925,9 @@ def find_inbound_edges(root, target_slug):
 
 def remove_topic(root, *, slug, reason, now, rebuild_runner=None):
     root = pathlib.Path(root)
+    now = _now_str(now)  # reject a naive timestamp before any write (CFAR r14)
+    if not _valid_ts(now):
+        raise OpRefused("now must be an ISO-8601 timestamp with a timezone")
     auth_path = root / "compile" / "ingest-authorization.json"
     auth = load_authorization(auth_path, now, operation="remove",
                               slug=slug, source_ref="")

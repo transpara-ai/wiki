@@ -1425,6 +1425,60 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-14 repairs
+
+def test_cfar14_naive_now_refused():
+    """CFAR-14 P2: a naive (timezone-less) `now` must refuse before any write —
+    the auth window parser would accept it but the strict ledger validator
+    would reject it after mutations, orphaning the audit."""
+    root = fresh_root()
+    article(root, "alpha-topic")
+    write_auth(root, good_auth())
+    before = tree_snapshot(root)
+    refused(ops.replace_source, root, slug="alpha-topic", source_ref=OLD_REF,
+            data=b"# new\n", filename="new.md", note="", now="2026-07-04T12:00:00")
+    assert tree_snapshot(root) == before, "naive now → write-free refusal"
+    root2 = fresh_root()
+    article(root2, "doomed-topic")
+    write_auth(root2, remove_auth("doomed-topic"))
+    before2 = tree_snapshot(root2)
+    refused(ops.remove_topic, root2, slug="doomed-topic", reason="x",
+            now="2026-07-04T12:00:00")
+    assert tree_snapshot(root2) == before2
+    print("ok test_cfar14_naive_now_refused")
+
+
+def test_cfar14_data_href_not_queued_on_remove():
+    """CFAR-14 P3: `data-href` (and other *href attributes) must not queue a
+    spurious inbound edge the renderer would never link."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    wiki = root / "wiki"
+    (wiki / "linker-datahref.md").write_text(
+        '---\nentity: L\ntier: investigation\n---\n\n# L\n\n'
+        'mentions <a data-href="doomed-topic.html">x</a> but no real link\n')
+    # a genuine linker so the remove still has an edge to confirm the scan runs
+    linked_article(root, "linker-real", "doomed-topic", "href")
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="x", now=NOW)
+    assert "linker-datahref" not in result["affected_edges"], result["affected_edges"]
+    assert "linker-real" in result["affected_edges"]
+    print("ok test_cfar14_data_href_not_queued_on_remove")
+
+
+def test_cfar14_add_retired_check_inside_lock():
+    """CFAR-14 P2: the effective-target retired check must run INSIDE the write
+    lock and BEFORE save_uploads (write-free AND race-free)."""
+    src = (pathlib.Path(__file__).resolve().parent / "ingest_server.py").read_text()
+    seg = src.split("def handle_ingest", 1)[1].split("\n    def ", 1)[0]
+    lock_at = seg.index("wiki_write_lock()")
+    check_at = seg.index("article_is_retired(effective_slug)")
+    save_at = seg.index("save_uploads(")
+    assert lock_at < check_at < save_at, \
+        "retired check must be inside the lock, before save_uploads"
+    print("ok test_cfar14_add_retired_check_inside_lock")
+
+
 # ------------------------------------------- CFAR round-13 repairs
 
 def test_cfar13_add_preflights_edge_states():
