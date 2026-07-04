@@ -99,6 +99,16 @@ def _atomic_write_text(path, text):
     _atomic_write_bytes(path, text.encode("utf-8"))
 
 
+def atomic_write_bytes(path, data):
+    """Public atomicity primitive (packet §2.8): every durable file write in
+    the ingest surface lands via temp-file + os.replace."""
+    _atomic_write_bytes(path, data)
+
+
+def atomic_write_text(path, text):
+    _atomic_write_text(path, text)
+
+
 # ------------------------------------------------------------ authorization
 
 def load_authorization(path, now, *, operation, slug, source_ref):
@@ -238,7 +248,9 @@ def _validate_ledger_row(row, where="ledger row"):
     if set(row) != LEDGER_SHAPES[operation]:
         raise OpRefused("%s: %s keys must be exactly %s"
                         % (where, operation, sorted(LEDGER_SHAPES[operation])))
-    _require_row_str(row, ("ts", "slug"), where)
+    if not _valid_ts(row.get("ts")):
+        raise OpRefused("%s: ts must be ISO-8601 with timezone" % where)
+    _require_row_str(row, ("slug",), where)
     if row["rebuild"] not in ("ok", "failed"):
         raise OpRefused("%s: rebuild must be ok|failed" % where)
     if operation == "add":
@@ -305,6 +317,19 @@ def append_ledger(path, row):
 
 # --------------------------------------------------------------- edge states
 
+def _valid_ts(value):
+    """ISO-8601 with explicit timezone — 'a string' is not a timestamp.
+    Checks the raw parse: _parse_iso would normalize a naive value to UTC,
+    which is exactly the leniency this validator exists to refuse."""
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except Exception:
+        return False
+    return parsed.tzinfo is not None
+
+
 def _validate_edge_entry(key, entry):
     where = "edge-states entry %r" % key
     if not isinstance(entry, dict) or set(entry) != EDGE_ENTRY_KEYS:
@@ -312,14 +337,15 @@ def _validate_edge_entry(key, entry):
                         % (where, sorted(EDGE_ENTRY_KEYS)))
     if entry["state"] not in EDGE_STATES_VOCAB:
         raise OpRefused("%s: unknown state — fail closed" % where)
-    for field in ("since", "reason"):
-        if not isinstance(entry[field], str) or not entry[field]:
-            raise OpRefused("%s: %s must be a non-empty string" % (where, field))
+    if not _valid_ts(entry["since"]):
+        raise OpRefused("%s: since must be ISO-8601 with timezone" % where)
+    if not isinstance(entry["reason"], str) or not entry["reason"]:
+        raise OpRefused("%s: reason must be a non-empty string" % where)
     if not isinstance(entry["queued"], bool):
         raise OpRefused("%s: queued must be a boolean" % where)
     if entry["queued"]:
-        if not isinstance(entry["enqueued_at"], str) or not entry["enqueued_at"]:
-            raise OpRefused("%s: queued entries need enqueued_at" % where)
+        if not _valid_ts(entry["enqueued_at"]):
+            raise OpRefused("%s: queued entries need ISO-8601 enqueued_at" % where)
     elif entry["enqueued_at"] is not None:
         raise OpRefused("%s: unqueued entries need enqueued_at null" % where)
 
@@ -686,6 +712,10 @@ def replace_source(root, *, slug, source_ref, data, filename, note, now,
                             "shared-source replace is refused in v1")
     ledger_path = root / "compile" / "ingest-ledger.jsonl"
     ledger_preflight(ledger_path)
+    # corrupt edge state refuses EVERY operation, not only Remove (§2.7
+    # strict-parse law; CFADA rebuild-r4 B1) — the rebuild this operation
+    # triggers would otherwise render from unverifiable state
+    load_edge_states(root / "compile" / "edge-states.json")
 
     # durable write #0: burn the single-use authorization (intent record)
     digest = consume_authorization(auth_path, auth, now)

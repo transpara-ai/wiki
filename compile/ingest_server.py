@@ -395,7 +395,7 @@ def save_uploads(form, target_slug, note, supersedes):
         if not child_path_under(dst, RAW_INBOX):
             raise ValueError("upload destination escaped raw inbox")
         if not dst.exists():
-            dst.write_bytes(data)
+            ingest_ops.atomic_write_bytes(dst, data)
         rel = str(dst.resolve().relative_to(ROOT.resolve()))
         saved.append({"path": rel, "sha256": digest, "original": original})
         append_manifest({
@@ -506,7 +506,7 @@ def append_frontmatter_list_items(slug, key, values, line_builder):
         block = "".join(lines)
         if insert_at > 0 and raw[insert_at - 1] != "\n":
             block = "\n" + block
-    path.write_text(raw[:insert_at] + block + raw[insert_at:])
+    ingest_ops.atomic_write_text(path, raw[:insert_at] + block + raw[insert_at:])
     return added
 
 
@@ -580,7 +580,7 @@ def create_article_from_source(source, note="", supersedes=""):
         body_title,
         body_title,
     )
-    path.write_text(body)
+    ingest_ops.atomic_write_text(path, body)
     return slug, True
 
 
@@ -708,17 +708,17 @@ class IngestHandler(SimpleHTTPRequestHandler):
 
     def handle_ingest(self):
         form = parse_post_form(self)
-        target_slug = normalize_target_slug(first_value(form, "target_slug"))
+        raw_target_slug = first_value(form, "target_slug").strip()
         note = first_value(form, "note").strip()
         supersedes = first_value(form, "supersedes").strip()
-        external_urls = valid_external_urls(first_value(form, "external_urls"))
-        # quarantine + ledger preflight BEFORE any write (per-ingestion ops
-        # packet §2.4/§2.8/§2.9): a refusal here saves nothing, renders
+        raw_external_urls = first_value(form, "external_urls")
+        # quarantine + ledger preflight BEFORE any validation or write
+        # (packet §2.4/§2.8/§2.9): the slug/URL validators below echo the
+        # submitted value in their errors, so nothing reaches them until it
+        # is proven secret-free; a refusal here saves nothing, renders
         # nothing, triggers no rebuild, and never echoes the finding bytes
-        fields = {"target_slug": target_slug, "note": note,
-                  "supersedes": supersedes}
-        for i, url in enumerate(external_urls):
-            fields["external_url_%d" % i] = url
+        fields = {"target_slug": raw_target_slug, "note": note,
+                  "supersedes": supersedes, "external_urls": raw_external_urls}
         for i, item in enumerate(field_values(form, "documents")):
             if not getattr(item, "filename", ""):
                 continue
@@ -728,6 +728,8 @@ class IngestHandler(SimpleHTTPRequestHandler):
             item.file = io.BytesIO(data)
         ingest_ops.quarantine_fields(fields)
         ingest_ops.ledger_preflight(ROOT / "compile" / "ingest-ledger.jsonl")
+        target_slug = normalize_target_slug(raw_target_slug)
+        external_urls = valid_external_urls(raw_external_urls)
         with wiki_write_lock():
             saved = save_uploads(form, target_slug, note, supersedes)
             source_refs = [s["path"] for s in saved] + external_urls

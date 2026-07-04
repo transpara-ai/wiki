@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-INGEST-OPS
 title: Per-Ingestion Operations v1 — Deterministic Layer 1, Deny-by-Default Gate, Honest-Stale Engine Boundary (TLC Design Packet)
 doc_type: design
-version: 0.5.0
+version: 0.5.1
 status: draft
 canonical: false
 created: 2026-07-03
@@ -230,7 +230,10 @@ Order of operations (each step refuses → stop, nothing written):
      are refused in v1** — the multi-article recompile fan-out is exactly
      the economy/integrity trade the owner deferred; refusing is the only
      fail-safe v1 answer);
-   - ledger preflight §2.9 (existing ledger must parse strictly).
+   - ledger preflight §2.9 (existing ledger must parse strictly);
+   - edge-states strict-parse preflight §2.7 (corrupt edge state refuses
+     EVERY operation — the rebuild this operation triggers would otherwise
+     render from unverifiable state).
 5. Deterministic swap (Layer 1, under `wiki_write_lock`): save the new
    upload under `raw/inbox/<date>/<slug>/` (same content-addressed naming as
    Add; written to a temp file in the destination directory then
@@ -517,6 +520,28 @@ v1 scope aligned with the queued fields (§2.7).
 
 **r3 (Codex, PASS at lost head `e39bead`):** fresh blocker-bar sweep found
 no blockers on the lost text.
+
+**rebuild-r4 (Codex, 2026-07-04, FAIL 2B+2M at `dea1b3b`, implementation
+round) → repaired at v0.5.1:** B1 Replace now preflights edge-states
+strict-parse like Remove (§2.5-4; corrupt state refuses EVERY operation);
+B2 Add quarantines the RAW submitted values BEFORE the slug/URL validators
+whose errors echo the value — a secret in an invalid field returns
+422-redacted, never a 400 echo (§2.8, AC8); M1 Add's raw-upload and
+frontmatter/article writes upgraded to temp-file+`os.replace`
+(`save_uploads`, `append_frontmatter_list_items`,
+`create_article_from_source`); M2 ledger `ts` and edge `since`/
+`enqueued_at` must parse as ISO-8601 WITH timezone — "a non-empty string"
+is not a timestamp (§2.7, §2.9, AC5/AC7). Rounds r3→r4 also confirmed all
+r3 test-law repairs and the green implementation at `dea1b3b`.
+
+**rebuild-r3 (Codex, 2026-07-04, FAIL 2B+3M+1m at `d4d806d`, test-law
+round): packet prose confirmed clean; every finding was a test encoding a
+weaker law than the packet — repaired in `compile/test_ingest_ops.py`
+(one-form-per-linker AC5 fixtures; executable render-gate and real-builder
+corrupt-state build-failure proofs; byte-identity AC4 baselines;
+consume-first/append-last fault-injection ordering proof; full AC8
+authoring matrix across all three endpoints; isolated duplicate-key
+fixtures).**
 
 **rebuild-r2 (Codex, 2026-07-04, FAIL 3B+1M at `1b11f9b`) → repaired at
 v0.5.0:** B1 the engine returns the article BODY only; frontmatter

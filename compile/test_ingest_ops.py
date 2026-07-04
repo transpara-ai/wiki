@@ -325,6 +325,12 @@ def test_ac3_replace_refusals_write_nothing():
         before = tree_snapshot(root)
         refused(do_replace, root, **case)
         assert tree_snapshot(root) == before, case
+    # corrupt edge state refuses Replace too, not only Remove (rebuild-r4 B1)
+    write_auth(root, good_auth())
+    (root / "compile" / "edge-states.json").write_text("{nope")
+    before = tree_snapshot(root)
+    refused(do_replace, root)
+    assert tree_snapshot(root) == before
     print("ok test_ac3_replace_refusals_write_nothing")
 
 
@@ -557,15 +563,18 @@ def test_ac5_closure_zero_unqueued_pending():
 def test_ac5_corrupt_edge_states_refuses():
     # NOTE the duplicate-key fixture is ISOLATED: under plain json.loads the
     # last "state" wins and the entry is fully valid — only the
-    # object_pairs_hook law refuses it.
+    # object_pairs_hook law refuses it. Every other fixture carries exactly
+    # one fault (timestamps are valid ISO so the fault is unambiguous).
     corrupt = [
         "{nope",
         "[]",
-        '{"a->b": {"state": "dangling-pending", "since": "x", "reason": "r", "queued": true, "enqueued_at": "x", "state": "valid"}}',
-        '{"a->b": {"state": "wat", "since": "x", "reason": "r", "queued": false, "enqueued_at": null}}',
-        '{"a->b": {"state": "valid", "since": "x", "reason": "r", "queued": true, "enqueued_at": null}}',
-        '{"a->b": {"state": "valid", "since": "x", "reason": "r", "queued": false, "enqueued_at": null, "extra": 1}}',
-        '{"not a slug key": {"state": "valid", "since": "x", "reason": "r", "queued": false, "enqueued_at": null}}',
+        '{"a->b": {"state": "dangling-pending", "since": "%s", "reason": "r", "queued": true, "enqueued_at": "%s", "state": "valid"}}' % (NOW, NOW),
+        '{"a->b": {"state": "wat", "since": "%s", "reason": "r", "queued": false, "enqueued_at": null}}' % NOW,
+        '{"a->b": {"state": "valid", "since": "%s", "reason": "r", "queued": true, "enqueued_at": null}}' % NOW,
+        '{"a->b": {"state": "valid", "since": "%s", "reason": "r", "queued": false, "enqueued_at": null, "extra": 1}}' % NOW,
+        '{"not a slug key": {"state": "valid", "since": "%s", "reason": "r", "queued": false, "enqueued_at": null}}' % NOW,
+        '{"a->b": {"state": "valid", "since": "not-a-date", "reason": "r", "queued": false, "enqueued_at": null}}',
+        '{"a->b": {"state": "dangling-pending", "since": "%s", "reason": "r", "queued": true, "enqueued_at": "not-a-date"}}' % NOW,
     ]
     dup_fixture = json.loads(corrupt[2])
     assert dup_fixture["a->b"]["state"] == "valid", \
@@ -758,6 +767,8 @@ def test_ac7_ledger_strict_jsonl_preflight_first_append_last():
         {k: v for k, v in row.items() if k != "rebuild"},
         dict(row, extra=1),
         dict(row, rebuild="maybe"),
+        dict(row, ts="not-a-date"),
+        dict(row, ts="2026-07-04T12:00:00"),  # no timezone -> not UTC-anchored
     ]
     for bad in bad_rows:
         try:
@@ -961,6 +972,17 @@ def test_ac8_add_gains_quarantine_and_ledger():
             assert AWS_KEY not in reply
             assert not (root / "raw").exists(), "refusal writes nothing"
             assert not (root / "compile" / "ingest-ledger.jsonl").exists()
+
+            # quarantine fires BEFORE the echoing validators (rebuild-r4 B2):
+            # a secret in an INVALID slug or INVALID external URL must come
+            # back 422-redacted, never 400 with the value echoed
+            for body in (("target_slug=%s&note=x" % AWS_KEY).encode("utf-8"),
+                         ("target_slug=example&external_urls=%s" % AWS_KEY).encode("utf-8")):
+                h = make_handler("/api/ingest", body=body)
+                srv.IngestHandler.do_POST(h)
+                reply = h.wfile.getvalue().decode("utf-8")
+                assert h.status == 422, (h.status, reply[:200])
+                assert AWS_KEY not in reply, "validator echoed the secret"
 
             # a clean add appends one add row
             h = make_handler("/api/ingest", body=b"target_slug=example&note=clean")
