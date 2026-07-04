@@ -773,12 +773,12 @@ class IngestHandler(SimpleHTTPRequestHandler):
         slug = first_value(form, "slug").strip()
         source_ref = first_value(form, "source_ref").strip()
         note = first_value(form, "note").strip()
-        now = dt.datetime.now(dt.timezone.utc).isoformat()
         # the artifact gate fires before anything else so an unauthorized
         # request is refused 403 regardless of payload shape; replace_source
         # re-validates and consumes under the lock
         ingest_ops.load_authorization(
-            ROOT / "compile" / "ingest-authorization.json", now,
+            ROOT / "compile" / "ingest-authorization.json",
+            dt.datetime.now(dt.timezone.utc).isoformat(),
             operation="replace", slug=slug, source_ref=source_ref)
         documents = [item for item in
                      field_values(form, "document") + field_values(form, "documents")
@@ -787,6 +787,10 @@ class IngestHandler(SimpleHTTPRequestHandler):
             raise ingest_ops.OpRefused("replace requires exactly one uploaded document")
         data = documents[0].file.read()
         with wiki_write_lock():
+            # capture the timestamp INSIDE the lock so the authority window is
+            # enforced at mutation time — a grant that expired while another
+            # op held the lock must not be consumed (CFAR r7)
+            now = dt.datetime.now(dt.timezone.utc).isoformat()
             row = ingest_ops.replace_source(
                 ROOT, slug=slug, source_ref=source_ref, data=data,
                 filename=documents[0].filename, note=note, now=now,
@@ -797,13 +801,14 @@ class IngestHandler(SimpleHTTPRequestHandler):
         form = parse_post_form(self)
         slug = first_value(form, "slug").strip()
         reason = first_value(form, "reason").strip()
-        now = dt.datetime.now(dt.timezone.utc).isoformat()
         ingest_ops.load_authorization(
-            ROOT / "compile" / "ingest-authorization.json", now,
+            ROOT / "compile" / "ingest-authorization.json",
+            dt.datetime.now(dt.timezone.utc).isoformat(),
             operation="remove", slug=slug, source_ref="")
         if not reason:
             raise ingest_ops.OpRefused("remove requires a reason")
         with wiki_write_lock():
+            now = dt.datetime.now(dt.timezone.utc).isoformat()  # window at mutation time (CFAR r7)
             row = ingest_ops.remove_topic(
                 ROOT, slug=slug, reason=reason, now=now,
                 rebuild_runner=lambda: run_refresh_unlocked().get("ok") is True)

@@ -1431,6 +1431,75 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-7 P2 repair
+
+def _multipart(fields, doc_name, doc_bytes):
+    boundary = "----ingestopsboundary"
+    parts = []
+    for name, value in fields.items():
+        parts.append("--%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n"
+                     % (boundary, name, value))
+    parts.append("--%s\r\nContent-Disposition: form-data; name=\"document\"; "
+                 "filename=\"%s\"\r\nContent-Type: text/markdown\r\n\r\n"
+                 % (boundary, doc_name))
+    body = "".join(parts).encode("utf-8") + doc_bytes + ("\r\n--%s--\r\n" % boundary).encode("utf-8")
+    return "multipart/form-data; boundary=%s" % boundary, body
+
+
+def test_cfar7_expiry_enforced_at_lock_time():
+    """CFAR-7: a grant valid before the write lock but expired by the time the
+    lock is acquired must NOT be consumed — the window is checked at mutation
+    time (now captured inside the lock)."""
+    import datetime as _dt
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        (root / "compile").mkdir()
+        article(root, "alpha-topic")  # creates wiki/ + raw/ under this ROOT
+        auth_path = root / "compile" / "ingest-authorization.json"
+        auth_path.write_text(json.dumps(good_auth()))  # window 00:00–23:00Z
+
+        # fake clock: 1st now() (pre-lock) within window; later (inside lock) expired
+        real_dt = srv.dt.datetime
+        state = {"n": 0}
+
+        class FakeDT(real_dt):
+            @classmethod
+            def now(cls, tz=None):
+                state["n"] += 1
+                if state["n"] == 1:
+                    return real_dt(2026, 7, 4, 12, 0, tzinfo=_dt.timezone.utc)
+                return real_dt(2026, 7, 5, 0, 0, tzinfo=_dt.timezone.utc)  # expired
+
+        ctype, body = _multipart(
+            {"slug": "alpha-topic", "source_ref": OLD_REF},
+            "replacement.md", b"# replacement raw\n")
+        h = make_handler("/api/replace", body=body, content_type=ctype)
+        old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH, srv.dt.datetime)
+        try:
+            srv.ROOT = root
+            srv.WIKI = root / "wiki"
+            srv.RAW_INBOX = root / "raw" / "inbox"
+            srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.dt.datetime = FakeDT
+            srv.IngestHandler.do_POST(h)
+        finally:
+            (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+             srv.dt.datetime) = old
+        assert h.status in (403, 422), h.status
+        spent = json.loads(auth_path.read_text())
+        assert spent["df"] == "ingest-authorization", \
+            "an at-lock-time-expired grant must NOT be consumed"
+    # wiring proof: both handlers capture now INSIDE the lock
+    src = (pathlib.Path(__file__).resolve().parent / "ingest_server.py").read_text()
+    for handler in ("handle_replace", "handle_remove"):
+        seg = src.split("def %s" % handler, 1)[1].split("def ", 1)[0]
+        lock_at = seg.index("wiki_write_lock()")
+        now_at = seg.index("dt.datetime.now", lock_at)
+        assert now_at > lock_at, "%s must capture now inside the lock" % handler
+    print("ok test_cfar7_expiry_enforced_at_lock_time")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
