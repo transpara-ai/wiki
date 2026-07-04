@@ -1425,6 +1425,45 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-12 repair
+
+def test_cfar12_unassigned_add_resolving_to_retired_refused():
+    """CFAR-12 P2: an unassigned upload whose derived slug matches a retired
+    tombstone must refuse before the append — no tombstone resurrection."""
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        (root / "compile").mkdir()
+        wiki = root / "wiki"
+        wiki.mkdir()
+        # a retired article whose slug is what "Gone Topic" slugifies to
+        (wiki / "gone-topic.md").write_text(
+            '---\nentity: Gone Topic\ntier: investigation\n'
+            'retired_on: "2026-07-01"\nretired_reason: "obsolete"\n---\n\n'
+            '# Gone Topic\n\nRetired.\n')
+        tombstone_before = (wiki / "gone-topic.md").read_text()
+        ctype, body = _multipart(  # unassigned: no target_slug field
+            {"note": "resurrection attempt"}, "gone-topic.md",
+            b"# Gone Topic\n\nfresh source body\n", field_name="documents")
+        old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+               srv.subprocess.Popen)
+        try:
+            srv.ROOT = root
+            srv.WIKI = wiki
+            srv.RAW_INBOX = root / "raw" / "inbox"
+            srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = lambda *a, **k: _FakeProc()
+            h = make_handler("/api/ingest", body=body, content_type=ctype)
+            srv.IngestHandler.do_POST(h)
+            assert h.status == 422, h.status
+            assert (wiki / "gone-topic.md").read_text() == tombstone_before, \
+                "the retired tombstone must be untouched"
+        finally:
+            (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+             srv.subprocess.Popen) = old
+    print("ok test_cfar12_unassigned_add_resolving_to_retired_refused")
+
+
 # ------------------------------------------- CFAR round-11 repairs
 
 def test_cfar11_add_refuses_retired_target():
@@ -1568,15 +1607,15 @@ def test_cfar8_gate_does_not_corrupt_valid_content():
 
 # ------------------------------------------- CFAR round-7 P2 repair
 
-def _multipart(fields, doc_name, doc_bytes):
+def _multipart(fields, doc_name, doc_bytes, field_name="document"):
     boundary = "----ingestopsboundary"
     parts = []
     for name, value in fields.items():
         parts.append("--%s\r\nContent-Disposition: form-data; name=\"%s\"\r\n\r\n%s\r\n"
                      % (boundary, name, value))
-    parts.append("--%s\r\nContent-Disposition: form-data; name=\"document\"; "
+    parts.append("--%s\r\nContent-Disposition: form-data; name=\"%s\"; "
                  "filename=\"%s\"\r\nContent-Type: text/markdown\r\n\r\n"
-                 % (boundary, doc_name))
+                 % (boundary, field_name, doc_name))
     body = "".join(parts).encode("utf-8") + doc_bytes + ("\r\n--%s--\r\n" % boundary).encode("utf-8")
     return "multipart/form-data; boundary=%s" % boundary, body
 

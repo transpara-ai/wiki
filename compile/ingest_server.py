@@ -754,6 +754,13 @@ class IngestHandler(SimpleHTTPRequestHandler):
             if not target_slug and saved:
                 target_slug, created = create_article_from_source(saved[0]["path"], note, supersedes)
                 created_article = {"slug": target_slug, "created": created}
+            # an UNASSIGNED upload whose title slugifies to an existing retired
+            # tombstone resolves target_slug here (created=False) — re-check so
+            # the append below cannot resurrect it (CFAR r12)
+            if target_slug and article_is_retired(target_slug):
+                raise ingest_ops.OpRefused(
+                    "resolved target article is retired — Add refused; a "
+                    "retired topic is a tombstone reachable by direct link only")
             added = append_sources_to_article(target_slug, source_refs, note, supersedes) if target_slug else []
             raw_added = append_raw_documents_to_article(target_slug, source_refs) if target_slug else []
             for url in external_urls:
