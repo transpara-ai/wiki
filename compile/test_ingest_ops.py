@@ -1267,6 +1267,56 @@ def test_cfar3_board_links_are_gated():
     print("ok test_cfar3_board_links_are_gated")
 
 
+# ------------------------------------------- CFAR round-4 P2/P1 repairs
+
+def test_cfar4_quoted_attr_href_does_not_bypass_gate():
+    """CFAR-4 P1: a fake `href=` inside another attribute's quoted value must
+    not be read as the link's href — the REAL href attribute governs."""
+    meta = {"src": {"retired_on": ""}, "gone": {"retired_on": "2026-07-01"},
+            "alive": {"title": "Alive", "retired_on": ""}}
+    out = _render_with(
+        meta, {}, "<a title=\"href='alive.html'\" href=\"gone.html\">G</a>")
+    assert 'href="gone.html"' not in out, out
+    assert "wl-pending" in out, out
+    # a genuine live link with a decoy attribute value stays live
+    out2 = _render_with(
+        meta, {}, '<a data-note="href=gone.html" href="alive.html">A</a>')
+    assert 'href="alive.html"' in out2 and "wl-pending" not in out2, out2
+    # direct extractor unit checks
+    import build_site as site
+    assert site._extract_href(" title=\"href='x.html'\" href=\"y.html\"") == "y.html"
+    assert site._extract_href(' data-href="a.html" href="b.html"') == "b.html"
+    assert site._extract_href(' href = "c.html" ') == "c.html"
+    assert site._extract_href(' name="anchor"') is None
+    print("ok test_cfar4_quoted_attr_href_does_not_bypass_gate")
+
+
+def test_cfar4_board_frontmatter_ref_queued_on_remove():
+    """CFAR-4 P2: a removed slug referenced only through index.md board
+    frontmatter must still be queued in edge-states/affected_edges."""
+    root = fresh_root()
+    article(root, "doomed-topic")
+    (root / "index.md").write_text(
+        '---\nboard_narrative_link: doomed-topic\n'
+        'board_pillars:\n  - "N|obj|hook|other-slug|purple"\n---\n\n'
+        '# Home\n\nno body link at all\n')
+    write_auth(root, remove_auth("doomed-topic"))
+    result = ops.remove_topic(root, slug="doomed-topic", reason="obsolete", now=NOW)
+    states = json.loads((root / "compile" / "edge-states.json").read_text())
+    assert "index->doomed-topic" in states, states
+    assert "index" in result["affected_edges"]
+    # also detect a pillar-embedded board slug (pipe field)
+    root2 = fresh_root()
+    article(root2, "doomed-topic")
+    (root2 / "index.md").write_text(
+        '---\nboard_pillars:\n  - "Name|obj|hook|doomed-topic|purple"\n---\n\n'
+        '# Home\n\nnobody\n')
+    write_auth(root2, remove_auth("doomed-topic"))
+    r2 = ops.remove_topic(root2, slug="doomed-topic", reason="x", now=NOW)
+    assert "index" in r2["affected_edges"]
+    print("ok test_cfar4_board_frontmatter_ref_queued_on_remove")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

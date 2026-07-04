@@ -646,24 +646,52 @@ def to_html(body, link_acc=None, source_refs=None, source_slug=""):
 
 
 ANCHOR_RE = re.compile(r"<a\b([^>]*)>(.*?)</a>", re.I | re.S)
-# tolerant of whitespace around `=` and quoted OR unquoted values — a browser
-# resolves `href = "x"` and `href=x` identically, so the gate must too or it
-# fails open on spellings it cannot parse (CFAR r1 P2-1). The negative
-# lookbehind requires an attribute boundary before `href` so `data-href` /
-# `aria-href` do not hijack the gate (CFAR r2 P2-1) — `\b` is insufficient
-# because `-` is itself a word boundary.
-HREF_ATTR_RE = re.compile(
-    r"""(?<![-\w])href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))""", re.I)
 WL_PENDING = '<span class="wl wl-pending" title="pending reconciliation">%s</span>'
 
 
 def _extract_href(attrs):
-    m = HREF_ATTR_RE.search(attrs)
-    if not m:
-        return None
-    raw = next(g for g in m.groups() if g is not None)
-    # entity-decode so `gone&#46;html` is gated as gone.html, not passed live
-    return html.unescape(raw)
+    """Tokenize an anchor's attribute string respecting quoting and return the
+    REAL href value (entity-decoded), or None. A regex cannot do this: a
+    `href=` inside another attribute's quoted value (e.g. `title="href='x'"`)
+    or a prefix attribute like `data-href` would hijack the gate and leave a
+    retired link live (CFAR r1/r2/r4). This is a whole-attribute-domain parser."""
+    i, n = 0, len(attrs)
+    while i < n:
+        while i < n and attrs[i].isspace():
+            i += 1
+        start = i
+        while i < n and not attrs[i].isspace() and attrs[i] != "=":
+            i += 1
+        name = attrs[start:i].lower()
+        while i < n and attrs[i].isspace():
+            i += 1
+        value = ""
+        has_value = False
+        if i < n and attrs[i] == "=":
+            has_value = True
+            i += 1
+            while i < n and attrs[i].isspace():
+                i += 1
+            if i < n and attrs[i] in "\"'":
+                quote = attrs[i]
+                i += 1
+                vstart = i
+                while i < n and attrs[i] != quote:
+                    i += 1
+                value = attrs[vstart:i]
+                i += 1  # consume closing quote
+            else:
+                vstart = i
+                while i < n and not attrs[i].isspace():
+                    i += 1
+                value = attrs[vstart:i]
+        if name == "href" and has_value:
+            # first href wins (HTML5 duplicate-attribute rule); entity-decode
+            # so `gone&#46;html` is gated as gone.html, not passed live
+            return html.unescape(value)
+        if not name and not has_value:
+            break  # no progress guard
+    return None
 
 
 def gate_internal_links(body_html, source_slug=""):

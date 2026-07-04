@@ -811,12 +811,29 @@ def replace_source(root, *, slug, source_ref, data, filename, note, now,
 
 # ------------------------------------------------------------------- remove
 
+def _references_via_board(fm_lines, target_slug):
+    """True if index.md's board frontmatter references target_slug — the
+    builder generates (and now gates) homepage board links from these keys, so
+    a board-only reference is a real inbound edge to queue (CFAR r4 P2)."""
+    for key in ("board_narrative_link", "board_guardrail"):
+        for field in fm_scalar(fm_lines, key).split("|"):
+            if field.strip() == target_slug:
+                return True
+    for key in ("board_pillars", "board_inheritance"):
+        for item in fm_list_values(fm_lines, key):
+            for field in item.split("|"):
+                if field.strip() == target_slug:
+                    return True
+    return False
+
+
 def find_inbound_edges(root, target_slug):
-    """Every source whose BODY links to the target through any of the three
-    forms: [[wikilink]], markdown (slug.html) INCLUDING titled links, raw
-    href="slug.html" (any spelling). The homepage (index.md) is scanned too
-    — the builder renders its links with source_slug 'index' (CFAR r1
-    P2-4/P2-5)."""
+    """Every source that links to the target — through any BODY form
+    ([[wikilink]], markdown (slug.html) INCLUDING titled links, raw
+    href="slug.html" any spelling) OR, for the homepage, through generated
+    board frontmatter links. The homepage (index.md) is scanned because the
+    builder renders its links with source_slug 'index' (CFAR r1 P2-4/P2-5,
+    r4 P2)."""
     wikilink = re.compile(r"\[\[%s(?:\|[^\]]*)?\]\]" % re.escape(target_slug))
     # capture the URL token after `](`; a title (` "..."`) or `)` may follow,
     # so do NOT require the closing paren immediately after the URL
@@ -832,11 +849,13 @@ def find_inbound_edges(root, target_slug):
             continue
         raw = path.read_text()
         try:
-            _, tail = _parse_article(raw)
+            fm_lines, tail = _parse_article(raw)
             body = tail
         except OpRefused:
-            body = raw
+            fm_lines, body = [], raw
         hit = bool(wikilink.search(body))
+        if not hit and source_slug == "index":
+            hit = _references_via_board(fm_lines, target_slug)
         if not hit:
             for candidate in [m.group(1) for m in md_link.finditer(body)] + \
                              [m.group(1) for m in href.finditer(body)]:
