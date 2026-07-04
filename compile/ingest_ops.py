@@ -240,7 +240,16 @@ def quarantine_payload(data):
                         "refused" % MAX_QUARANTINE_BYTES)
     if b"\x00" in data:
         raise OpRefused("binary payload cannot be text-scanned; refused")
-    findings = secret_scan.scan_text(data.decode("utf-8", "replace"))
+    # decode STRICTLY — a non-UTF-8 payload (binary without a NUL, e.g. an
+    # image or Latin-1 bytes) is unscannable as text; decoding with replacement
+    # would scan the mangled U+FFFD text and could accept it. Wiki sources are
+    # UTF-8 markdown/text; anything else refuses (CFAR ready-state).
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        raise OpRefused("payload is not valid UTF-8 — binary/unscannable; "
+                        "refused")
+    findings = secret_scan.scan_text(text)
     if findings:
         rules = sorted({f.rule_id for f in findings})
         raise OpRefused("%d secret finding(s) in payload [%s]; refused"

@@ -178,8 +178,10 @@ not block on it.
   in-memory payload by the scanner's input classes *before it exists on
   disk*: larger than `secret_scan.MAX_BLOB_BYTES` → refuse (oversized,
   unscannable at runtime — there is no runtime attestation path); contains
-  NUL → refuse (binary, unscannable); otherwise decode
-  (`utf-8`, `replace`) and `scan_text()` — any finding refuses.
+  NUL → refuse (binary, unscannable); not valid UTF-8 → refuse (binary/
+  unscannable as text — a strict decode, never decode-with-replacement, so a
+  non-UTF-8 payload cannot be scanned as mangled U+FFFD text and accepted);
+  otherwise `scan_text()` the decoded text — any finding refuses.
 - **`quarantine_fields(fields: dict[str, str]) -> refusal | None`** — runs
   `scan_text()` over EVERY string that will be persisted anywhere. The law
   is destination-defined: any string that can reach the ledger, article

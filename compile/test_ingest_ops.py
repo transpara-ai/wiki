@@ -219,6 +219,11 @@ def test_ac2_quarantine_payload_input_classes():
     refused(ops.quarantine_payload, b"x" * (ops.MAX_QUARANTINE_BYTES + 1))
     # binary NUL
     refused(ops.quarantine_payload, b"clean\x00clean")
+    # non-UTF-8 binary WITHOUT a NUL (image-shaped bytes, Latin-1) refuses —
+    # unscannable as text, must not be decoded-with-replacement and accepted
+    for binary in (b"\xff\xd8\xff\xe0 jpeg-ish", b"caf\xe9 latin-1",
+                   b"\xc3\x28 bad utf8"):
+        refused(ops.quarantine_payload, binary)
     # text with a finding per representative rule family
     for secret in (AWS_KEY, SK_KEY, PEM):
         refused(ops.quarantine_payload, ("doc body %s tail" % secret).encode("utf-8"))
