@@ -1425,6 +1425,27 @@ def test_cfar6_board_scalar_with_comment_queued():
     print("ok test_cfar6_board_scalar_with_comment_queued")
 
 
+# ------------------------------------------- CFAR round-25 repair
+
+def test_cfar25_generated_pages_cannot_be_retired():
+    """CFAR-25 P2: civilization-arc is wiki-backed but the builder regenerates
+    it as a whole page (arc_page ignores retired_on), so Remove must refuse it
+    like index — else the tombstone is reanimated on rebuild."""
+    root = fresh_root()
+    wiki = root / "wiki"
+    wiki.mkdir(parents=True, exist_ok=True)
+    (wiki / "civilization-arc.md").write_text(
+        "---\nentity: Civilization Progress Chart\ntier: meta\n---\n\n# Arc\n")
+    (wiki / "index.md").write_text(
+        "---\nentity: Index\ntier: meta\n---\n\n# Index\n")
+    for slug in ("civilization-arc", "index"):
+        write_auth(root, remove_auth(slug))
+        before = tree_snapshot(root)
+        refused(ops.remove_topic, root, slug=slug, reason="x", now=NOW)
+        assert tree_snapshot(root) == before, "%s must not be retired" % slug
+    print("ok test_cfar25_generated_pages_cannot_be_retired")
+
+
 # ------------------------------------------- CFAR round-24 repair
 
 def test_cfar24_add_state_preflights_inside_lock():

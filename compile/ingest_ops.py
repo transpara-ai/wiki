@@ -46,6 +46,9 @@ EDGE_STATES_VOCAB = ("valid", "cleanly-removed", "dangling-pending")
 EDGE_ENTRY_KEYS = {"state", "since", "reason", "queued", "enqueued_at"}
 BUILDER_PAGES = {"repos", "sources", "ingest", "civilization-arc",
                  "civilization_arc"}
+# wiki/*.md-backed slugs the builder ALSO regenerates as a whole page, so they
+# must never be retired as a tombstone (Remove would be reanimated on rebuild)
+PROTECTED_SLUGS = {"index", "civilization-arc"}
 AUTH_KEYS = {"df", "operation", "slug", "source_ref", "authority",
              "authorized_at", "expires_at", "reason", "engine_command",
              "engine_timeout_seconds"}
@@ -1005,8 +1008,13 @@ def remove_topic(root, *, slug, reason, now, rebuild_runner=None):
     # preflight — read-only
     if not SLUG_RE.match(slug):
         raise OpRefused("invalid article slug")
-    if slug == "index":
-        raise OpRefused("the main page cannot be retired")
+    # generated/structural pages cannot be retired: the builder always
+    # regenerates them (index; arc_page rebuilds civilization-arc.html and its
+    # alias regardless of retired_on), so a tombstone would be reanimated and
+    # the completed-retirement ledger row would be a lie (CFAR r25)
+    if slug in PROTECTED_SLUGS:
+        raise OpRefused("the %s page is generated/structural and cannot be "
+                        "retired" % slug)
     article_path = root / "wiki" / ("%s.md" % slug)
     if not article_path.exists():
         raise OpRefused("unknown article slug")
