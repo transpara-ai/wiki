@@ -2,8 +2,8 @@
 doc_id: FO-WIKI-FRONTEND-UX
 title: Front-end requirements completion — §7 ingest UX + honest-state styling (Factory Order)
 doc_type: factory-order
-version: 0.1.0
-status: draft (pending channel-A intake confirmation — "is this your order?")
+version: 0.2.0
+status: confirmed (channel-A intake confirm, Michael, 2026-07-06 — answers archived in §5)
 canonical: false
 created: 2026-07-06
 updated: 2026-07-06
@@ -16,6 +16,8 @@ source_of_intent:
   - docs/superpowers/specs/2026-07-01-per-ingestion-operations-design.md §7 (blob d21e2fef6606c0bd228b2198e29b3c9ba9ccb788, canonical on main) — the UX/legibility requirements v1 deferred
   - docs/superpowers/specs/2026-06-15-wiki-autodeploy-design.md (blob d05d5985dd8a48f80f106227de8fc734ce23ab17) — deploy-status visibility surface
   - docs/superpowers/specs/2026-07-03-per-ingestion-ops-packet.md §2.1 (blob 48e330a27d8449c5c8ac0e412dcf6f7d98c23dfc) — the explicit v1 deferral record ("ingest.html UI for the new operations — API-first; curl is the v1 surface")
+  - transpara-ai/wiki#50 (open) — sanctioned manifest-registration path for session-authored inbox docs (R6's source; first consumer = the pending TAI-RES-2026-006 row recorded in the issue body)
+  - transpara-ai/wiki#52 (open) — inherited CONFIDENTIAL frontmatter; its supersession option consumes R6's machinery, its accept-as-historical option stays a human decision
 intake_channel: A (owner-directed session 2026-07-06)
 ---
 
@@ -58,6 +60,19 @@ intake_channel: A (owner-directed session 2026-07-06)
   (`build_site.py:649`, zero matching rules in `style.css`) gets a visible
   house-style treatment in both themes — a pending-reconciliation link must
   be visually distinct from both live and absent links, not tooltip-only.
+- **R6 — Sanctioned session-author ingest registration path (issue #50;
+  added at intake confirm — Michael's Q3 answer, §5).** A gated ingest
+  operation registers session-authored raw documents in
+  `raw/inbox/manifest.jsonl` through the authorized machinery
+  (`load_authorization` → `consume_authorization` → ledger append) under the
+  same deny-by-default single-use artifact contract as Replace/Remove — so
+  provenance completeness never depends on hand-edited manifest rows. The
+  design must handle the secret-scan F9 base-ref allowlist mechanic recorded
+  in #50 (a PR cannot self-allowlist its own manifest edit; the operation
+  runs server-side under authorization instead). First consumer: the pending
+  TAI-RES-2026-006 row (source_path, sha256, target_slug pinned in #50).
+  Unblocks #52's supersession option; #52's accept-as-historical alternative
+  remains Michael's decision and is NOT part of this order.
 
 ## 2. Non-goals and constraints
 
@@ -92,22 +107,24 @@ completed before this FO was crafted):
 > 3) Once 1 and 2 are complete we must immediately return to fixing the
 > front-end of the Wiki and making the requirements met.
 
-## 5. Intake confirmation (stage-2 checkpoint, required for channel A)
+## 5. Intake confirmation — RECEIVED (Michael, 2026-07-06)
 
-**Is this your order?** Specifically:
+The stage-2 channel-A confirm was asked and answered in-session:
 
-- **Q1 — Scope:** is "the front-end requirements" = R1–R5 above (the §7 UX
-  surface + the two unstyled honest-state indicators)? Anything to add —
-  e.g. broader visual/aesthetic work, front-page, arc page — or to cut?
-- **Q2 — Destructive-mode UX:** the server requires the pre-placed
-  single-use authorization artifact for Replace/Remove. Should the UI
-  (a) assume the operator pre-places the artifact out-of-band and simply
-  surface the server's refusal honestly (minimal, keeps authority fully
-  out-of-band), or (b) additionally display current authorization state
-  (read-only) before the confirm step?
-- **Q3 — Preview mechanics:** any objection to a new strictly read-only
-  preview endpoint if the design lands there (vs deriving the consequence
-  list client-side)?
+- **Q1 — Scope:** *"Yes, R1–R5 is the order."* → FO confirmed as read.
+- **Q2 — Destructive-mode UX:** *"Surface refusal only."* → binding
+  constraint: the operator pre-places the authorization artifact
+  out-of-band; the UI renders the server's honest refusals (403/422) and
+  never displays, checks, or handles authorization state itself.
+- **Q3 — Preview mechanics:** *"Yes, read-only endpoint OK PLUS fix the
+  error 'no sanctioned ingest path for session-authored raw docs — the eval
+  now lives under a new external_landscape_authored PROVENANCE tier instead
+  of the inbox ledger'."* → read-only preview endpoint permitted if the
+  design lands there; **R6 added** (traced to issue #50; the quoted error is
+  the situation PR #49's CFAR surfaced, tier registered at
+  `PROVENANCE.md` on that PR's branch, sanctioned-path work queued as
+  #50/#52).
 
-On confirmation this FO's status flips to confirmed (version bump), and the
-arc proceeds: design packet → IADA → CFADA → Human Design Review → build.
+The arc proceeds: design packet → IADA → CFADA → **Human Design Review
+(stage 6, Michael — required before any code)** → build → draft PR → IAR →
+CFAR → ready. Merge remains stage 12, Michael only.
