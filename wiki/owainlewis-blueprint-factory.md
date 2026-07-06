@@ -20,8 +20,8 @@ current_research_version: 1.0.0
 confidence:
   enforcement_posture: high — every enforcement claim is code- or prompt-text-anchored (exec lines, prompt wrapper, audit heuristics, cage constants read directly)
   methodology_read: high — all 17 Blueprint skills, guides, Factory PRD/standard/spec, and dogfood files read in full
-  author_background: medium — bio/roles from self-published profile and site; Oracle/OCI period inferred from authored SDK repos, not self-declared
-  reception: low-medium — no independent third-party assessment of blueprint/factory found; traction evidence is stars/forks and his own channels
+  author_background: high — Oracle OCI Director-of-Engineering role verified 3–0 by the deep-research sweep (archived GitHub profile snapshots + leaddev.com bio); current roles from self-published materials
+  reception: medium — the deep-research sweep confirmed the negative definitively: no substantive third-party critiques, reviews, or adoption case studies of blueprint/factory surfaced under adversarial verification; traction evidence is stars/forks and his own channels
   civilization_baseline: high — quoted from the accepted v4.0 doctrine set and shipped gate tool; Level 0 state taken from doc 06's own gate table
   learning_opportunities: medium-high — patterns are text-verifiable; the hive review-capacity-throttle gap should be re-verified before implementation
 raw_documents:
