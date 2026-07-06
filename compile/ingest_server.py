@@ -151,8 +151,41 @@ def article_records(include_sources=True):
             "title": fm_val(fm, "entity") or p.stem.replace("-", " "),
             "tier": fm_val(fm, "tier") or "concept",
             "sources": fm_list(fm, "sources") if include_sources else [],
+            # the replace preflight accepts sources OR raw_documents, so the
+            # UI selector must be able to offer both (CFAR r1 P2); same gate
+            "raw_documents": (fm_list(fm, "raw_documents")
+                              if include_sources else []),
         })
     return out
+
+
+def preview_payload(root, operation, slug, source_ref):
+    """GET /api/preview logic (fe-ux packet §2.3). Echo-quarantine FIRST —
+    the ops preflights echo submitted values in refusal messages, so nothing
+    reaches them unproven-secret-free (the CFAR-r20 lane, on the read path).
+    An OpRefused from the OPERATION lanes returns as the honest
+    refuses-shape: the preview of a doomed operation IS the refusal, shown
+    before any confirm. Malformed/unknown requests raise (422 at the route);
+    the ops preview helpers are strictly read-only."""
+    ingest_ops.quarantine_fields({"operation": operation, "slug": slug,
+                                  "source_ref": source_ref})
+    if operation == "remove":
+        if source_ref:
+            raise ingest_ops.OpRefused("remove preview takes no source_ref")
+        def run():
+            return ingest_ops.preview_remove(root, slug)
+    elif operation == "replace":
+        if not source_ref:
+            raise ingest_ops.OpRefused("replace preview requires source_ref")
+        def run():
+            return ingest_ops.preview_replace(root, slug, source_ref)
+    else:
+        raise ingest_ops.OpRefused("unknown preview operation")
+    try:
+        return {"preview": run()}
+    except ingest_ops.OpRefused as exc:
+        return {"preview": {"operation": operation, "slug": slug,
+                            "refuses": str(exc)}}
 
 
 def json_response(handler, status, payload):
@@ -449,9 +482,11 @@ def save_uploads(form, target_slug, note, supersedes):
 
 
 def append_manifest(row):
-    RAW_INBOX.mkdir(parents=True, exist_ok=True)
-    with MANIFEST.open("a") as f:
-        f.write(json.dumps(row, sort_keys=True) + "\n")
+    # frozen-file law (fe-ux packet §2.5): raw/inbox/manifest.jsonl is the
+    # historical segment and never grows again; every new row is an immutable
+    # single-row shard under raw/inbox/manifest.d/ (see its README.md), so no
+    # committed manifest blob ever changes after birth (issue #50 F9 class)
+    return ingest_ops.write_manifest_shard(ROOT, row, row["ingested_at"])
 
 
 class wiki_write_lock:
@@ -709,6 +744,24 @@ class IngestHandler(SimpleHTTPRequestHandler):
         if self.path == "/api/health":
             json_response(self, 200, {"ok": True})
             return
+        if self.path.split("?", 1)[0] == "/api/preview":
+            # deliberately STRICTER than /api/articles: full require_authoring
+            # (fe-ux packet §2.3); strictly read-only — consumes nothing
+            if not self.require_authoring():
+                return
+            try:
+                params = dict(parse_qsl(urlsplit(self.path).query))
+                payload = preview_payload(
+                    ROOT, params.get("operation", ""),
+                    params.get("slug", ""), params.get("source_ref", ""))
+                json_response(self, 200, payload)
+            except ingest_ops.AuthRefused as e:
+                json_response(self, 403, {"error": str(e)})
+            except ingest_ops.OpRefused as e:
+                json_response(self, 422, {"error": str(e)})
+            except Exception as e:
+                json_response(self, 400, {"error": str(e)})
+            return
         if self.path == "/api/articles":
             supplied = self.headers.get(AUTHORING_TOKEN_HEADER, "")
             include_sources = authoring_allowed(self.client_address[0], supplied)
@@ -734,6 +787,9 @@ class IngestHandler(SimpleHTTPRequestHandler):
                 return
             if self.path == "/api/remove":
                 self.handle_remove()
+                return
+            if self.path == "/api/register":
+                self.handle_register()
                 return
             json_response(self, 404, {"error": "unknown endpoint"})
         except ingest_ops.AuthRefused as e:
@@ -868,6 +924,27 @@ class IngestHandler(SimpleHTTPRequestHandler):
                 filename=documents[0].filename, note=note, now=now,
                 rebuild_runner=lambda: run_refresh_unlocked().get("ok") is True)
         json_response(self, 200, {"replace": row})
+
+    def handle_register(self):
+        form = parse_post_form(self)
+        slug = first_value(form, "slug").strip()
+        source_ref = first_value(form, "source_ref").strip()
+        note = first_value(form, "note").strip()
+        # the artifact gate fires before anything else so an unauthorized
+        # request is refused 403 regardless of payload shape; register_source
+        # re-validates and consumes under the lock
+        ingest_ops.load_authorization(
+            ROOT / "compile" / "ingest-authorization.json",
+            dt.datetime.now(dt.timezone.utc).isoformat(),
+            operation="register", slug=slug, source_ref=source_ref)
+        with wiki_write_lock():
+            # timestamp INSIDE the lock so the authority window is enforced
+            # at mutation time (CFAR r7)
+            now = dt.datetime.now(dt.timezone.utc).isoformat()
+            row = ingest_ops.register_source(
+                ROOT, slug=slug, source_ref=source_ref, note=note, now=now,
+                rebuild_runner=lambda: run_refresh_unlocked().get("ok") is True)
+        json_response(self, 200, {"register": row})
 
     def handle_remove(self):
         # the retirement rationale is bound to the authorization artifact's

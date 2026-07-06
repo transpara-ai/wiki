@@ -1664,18 +1664,33 @@ def load_status():
     return {}
 
 
+def pending_edges_chip(edge_states):
+    """Honest-state chip (fe-ux packet §2.4): dangling-pending edge count
+    from the STRICT edge-states load the build already performed — a corrupt
+    file refuses the whole build upstream (ingest_ops.load_edge_states), so
+    this renderer only ever sees validated state. Allowlist rendering: only
+    a positive count of the one pending state renders; zero renders nothing."""
+    n = sum(1 for entry in edge_states.values()
+            if entry.get("state") == "dangling-pending")
+    if n <= 0:
+        return ""
+    return ('<span class="fresh warn pending-edges">%d edge%s pending '
+            'reconciliation</span>' % (n, "" if n == 1 else "s"))
+
+
 def freshness(status):
     synced = status.get("synced", "")
     stale = status.get("stale_articles", [])
     changed = status.get("changed_articles", [])
+    chip = pending_edges_chip(EDGE_STATES)
     if not synced:
-        return '<span class="fresh warn">not yet refreshed</span>'
+        return '<span class="fresh warn">not yet refreshed</span>' + chip
     if not stale:
         changed_text = ""
         if changed:
             changed_text = " · %d rebuilt" % len(changed)
-        return '<span class="fresh ok">updated %s · 0 stale%s</span>' % (
-            html.escape(synced), changed_text)
+        return '<span class="fresh ok">updated %s · 0 stale%s</span>%s' % (
+            html.escape(synced), changed_text, chip)
     # "stale" = a deterministic rebuild failed after refresh.py identified
     # articles whose declared sources changed. Make the chip name the affected
     # articles so the retry/fix target is actionable rather than opaque.
@@ -1697,7 +1712,7 @@ def freshness(status):
         'list and records the affected articles in <code>changed_articles</code>; LLM prose '
         'synthesis remains a separate manual Tier 2 decision.</p>'
         '</div></details>'
-    ) % (html.escape(synced), n, n, "" if n == 1 else "s", links)
+    ) % (html.escape(synced), n, n, "" if n == 1 else "s", links) + chip
 
 
 def deploy_status_script():
@@ -1786,19 +1801,41 @@ def sources_page(status):
 
 def ingest_page(status):
     article_options = ['<option value="">No article reference update</option>']
+    target_options = ['<option value="">Select an article…</option>']
     for slug, meta in sorted(META.items(), key=lambda kv: kv[1]["title"].lower()):
         if meta.get("retired_on"):
             continue  # retired tombstones are not valid Add/Replace targets —
             # keep the build-time selector consistent with /api/articles and
             # the server-side refusal (CFAR r16)
-        article_options.append('<option value="%s">%s</option>' % (html.escape(slug), html.escape(meta["title"])))
+        opt = '<option value="%s">%s</option>' % (
+            html.escape(slug), html.escape(meta["title"]))
+        article_options.append(opt)
+        target_options.append(opt)
+    # fe-ux packet §2.2: transport-token auth (the shared authoring-token
+    # field) is NOT the operation authorization — the single-use artifact
+    # never touches this page (FO Q2). Both destructive panels say so.
+    q2_line = (
+        '<p class="ingest-authority-note">Requires a pre-placed single-use '
+        'authorization artifact on the server; this page never reads, '
+        'checks, or transmits the operation authorization artifact — an '
+        'unauthorized request is refused honestly by the server.</p>')
     inner = (
         '<h1 class="page-title">Wiki Source Ingest</h1>'
         '<article class="body ingest-tool">'
-        '<section class="ingest-card">'
+        # the transport token is shared page chrome, OUTSIDE the mode panels:
+        # a user starting in Replace/Remove needs it visible (CFAR r1 P2); it
+        # travels as a header via headers(), never as a form field
+        '<section class="ingest-card ingest-auth">'
+        '<label>Authoring token<input id="authoring-token" type="password" autocomplete="off" placeholder="required for non-loopback authoring"></label>'
+        '</section>'
+        '<nav class="ingest-modes" role="radiogroup" aria-label="Operation">'
+        '<label><input type="radio" name="ingest-mode" value="add" checked> Add</label>'
+        '<label class="mode-destructive"><input type="radio" name="ingest-mode" value="replace"> Replace</label>'
+        '<label class="mode-destructive"><input type="radio" name="ingest-mode" value="remove"> Remove</label>'
+        '</nav>'
+        '<section class="ingest-card" data-mode-panel="add">'
         '<h2>Batch ingest</h2>'
         '<form id="ingest-form">'
-        '<label>Authoring token<input id="authoring-token" type="password" autocomplete="off" placeholder="required for non-loopback authoring"></label>'
         '<label>Target article<select name="target_slug" id="target-slug">%s</select></label>'
         '<label>Documents<input name="documents" id="documents" type="file" multiple></label>'
         '<label>External URLs<textarea name="external_urls" id="external-urls" rows="4" placeholder="https://..."></textarea></label>'
@@ -1806,6 +1843,28 @@ def ingest_page(status):
         '<label>Note<input name="note" id="source-note" type="text" placeholder="citation update, replacement, or placement note"></label>'
         '<div class="form-actions"><button type="submit">Ingest and rebuild</button>'
         '<button type="button" id="rebuild-now">Refresh status and rebuild</button></div>'
+        '</form></section>'
+        '<section class="ingest-card ingest-destructive" data-mode-panel="replace" hidden>'
+        '<h2>Replace a source</h2>'
+        + q2_line +
+        '<form id="replace-form">'
+        '<label>Target article<select name="slug" id="rep-target">%s</select></label>'
+        '<label>Source to supersede<select name="source_ref" id="rep-source"><option value="">Select a source…</option></select></label>'
+        '<label>Replacement document<input name="document" id="rep-doc" type="file"></label>'
+        '<label>Note<input name="note" id="rep-note" type="text" placeholder="why this source is superseded"></label>'
+        '<div id="rep-preview" class="consequence-panel">Select a target and source to preview consequences.</div>'
+        '<label class="confirm-line"><input id="rep-confirm" type="checkbox" disabled> I have read the consequences above</label>'
+        '<div class="form-actions"><button type="submit" id="rep-submit" disabled>Replace after preview</button></div>'
+        '</form></section>'
+        '<section class="ingest-card ingest-destructive" data-mode-panel="remove" hidden>'
+        '<h2>Remove (retire) a topic</h2>'
+        + q2_line +
+        '<p class="ingest-authority-note">The retirement reason is bound to the authorization artifact on the server — it is not collected here.</p>'
+        '<form id="remove-form">'
+        '<label>Target article<select name="slug" id="rm-target">%s</select></label>'
+        '<div id="rm-preview" class="consequence-panel">Select a target to preview consequences.</div>'
+        '<label class="confirm-line"><input id="rm-confirm" type="checkbox" disabled> I have read the consequences above</label>'
+        '<div class="form-actions"><button type="submit" id="rm-submit" disabled>Retire after preview</button></div>'
         '</form></section>'
         '<section class="ingest-card"><h2>Status</h2><div id="ingest-status" class="ingest-status">Ready.</div></section>'
         '</article>'
@@ -1836,7 +1895,60 @@ def ingest_page(status):
         'rebuild.addEventListener("click",function(){say("Refreshing status and rebuilding...");fetch("/api/rebuild",{method:"POST",headers:headers()})'
         '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(reloadWithResult).catch(function(e){say(e);});});'
         '})();</script>'
-    ) % "".join(article_options)
+        # fe-ux packet §2.3 state machine: destructive submits are disabled at
+        # birth; the ONLY arming expression is sequence-token guarded
+        # (previewedSeq===seq), so a stale/out-of-order preview response, a
+        # selection change, or a failed preview can never arm a submit.
+        '<script>(function(){'
+        'var token=document.getElementById("authoring-token"),status=document.getElementById("ingest-status");'
+        'function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c];});}'
+        'function headers(){var h={};if(token&&token.value)h["X-CivWiki-Authoring-Token"]=token.value;return h;}'
+        'var seq=0,previewedSeq=-1,articles={};'
+        'var modes=Array.prototype.slice.call(document.querySelectorAll("input[name=\\"ingest-mode\\"]"));'
+        'var panels=Array.prototype.slice.call(document.querySelectorAll("[data-mode-panel]"));'
+        'var el={replace:{form:document.getElementById("replace-form"),target:document.getElementById("rep-target"),source:document.getElementById("rep-source"),panel:document.getElementById("rep-preview"),confirm:document.getElementById("rep-confirm"),submit:document.getElementById("rep-submit")},'
+        'remove:{form:document.getElementById("remove-form"),target:document.getElementById("rm-target"),panel:document.getElementById("rm-preview"),confirm:document.getElementById("rm-confirm"),submit:document.getElementById("rm-submit")}};'
+        'function currentMode(){var m="add";modes.forEach(function(r){if(r.checked)m=r.value;});return m;}'
+        'function disarm(){seq++;previewedSeq=-1;["replace","remove"].forEach(function(m){el[m].confirm.checked=false;el[m].confirm.disabled=true;el[m].submit.disabled=true;});}'
+        'function arm(m){el[m].submit.disabled=!(el[m].confirm.checked&&previewedSeq===seq);}'
+        'function renderPreview(m,p){if(m==="remove"){var items=(p.inbound||[]).map(function(s){return "<li><a href=\\""+esc(s)+".html\\">"+esc(s)+"</a></li>";}).join("");'
+        'return "<p>Retiring <strong>"+esc(p.slug)+"</strong> writes a tombstone at <code>"+esc(p.tombstone)+"</code> and marks <strong>"+esc(String(p.edges_would_pend))+"</strong> inbound edge(s) pending reconciliation:</p><ul>"+(items||"<li>(no inbound articles)</li>")+"</ul><p>A recompile follows. Nothing is deleted.</p>";}'
+        'return "<p>Source <code>"+esc(p.superseded)+"</code> is superseded (moved to superseded_sources) and a recompile follows.</p>";}'
+        'function fetchPreview(m){var e=el[m];var slug=e.target.value;var src=(m==="replace"&&e.source)?e.source.value:"";'
+        'if(!slug||(m==="replace"&&!src)){e.panel.textContent="Select a target"+(m==="replace"?" and source":"")+" to preview consequences.";return;}'
+        'var my=++seq;previewedSeq=-1;e.panel.textContent="Loading consequence preview\\u2026";'
+        'fetch("/api/preview?operation="+m+"&slug="+encodeURIComponent(slug)+(src?"&source_ref="+encodeURIComponent(src):""),{cache:"no-store",headers:headers()})'
+        '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});})'
+        '.then(function(j){if(my!==seq)return;var p=j&&j.preview;if(!p)throw j;'
+        'if(p.refuses){e.panel.innerHTML="<p class=\\"preview-refuses\\">The server would refuse this operation: <strong>"+esc(p.refuses)+"</strong></p>";return;}'
+        'e.panel.innerHTML=renderPreview(m,p);previewedSeq=my;e.confirm.disabled=false;})'
+        '.catch(function(){if(my!==seq)return;e.panel.textContent="Preview unavailable \\u2014 destructive submit stays disabled.";});}'
+        'function showMode(){var m=currentMode();panels.forEach(function(p){p.hidden=p.getAttribute("data-mode-panel")!==m;});disarm();if(m!=="add")fetchPreview(m);}'
+        'modes.forEach(function(r){r.addEventListener("change",showMode);});'
+        'function loadArticles(){fetch("/api/articles",{cache:"no-store",headers:headers()}).then(function(r){return r.ok?r.json():null}).then(function(j){'
+        'if(!j)return;articles={};j.articles.forEach(function(a){articles[a.slug]=a;});refillSources();});}'
+        'function refillSources(){var e=el.replace;e.source.innerHTML="<option value=\\"\\">Select a source\\u2026</option>";'
+        'var a=articles[e.target.value];if(!a)return;var seen={};'
+        '(a.sources||[]).concat(a.raw_documents||[]).forEach(function(s){if(seen[s])return;seen[s]=1;var o=document.createElement("option");o.value=s;o.textContent=s;e.source.appendChild(o);});}'
+        'loadArticles();if(token)token.addEventListener("change",loadArticles);'
+        'el.replace.target.addEventListener("change",function(){refillSources();disarm();fetchPreview("replace");});'
+        'el.replace.source.addEventListener("change",function(){disarm();fetchPreview("replace");});'
+        'el.remove.target.addEventListener("change",function(){disarm();fetchPreview("remove");});'
+        'el.replace.confirm.addEventListener("change",function(){arm("replace");});'
+        'el.remove.confirm.addEventListener("change",function(){arm("remove");});'
+        'function wireSubmit(m,url){el[m].form.addEventListener("submit",function(ev){ev.preventDefault();'
+        'if(el[m].submit.disabled)return;var fd=new FormData(el[m].form);'
+        'status.textContent="recompiling\\u2026 (the rebuild runs inside this request)";el[m].submit.disabled=true;el[m].confirm.disabled=true;'
+        'fetch(url,{method:"POST",headers:headers(),body:fd})'
+        '.then(function(r){return r.json().then(function(j){return {ok:r.ok,code:r.status,j:j};});})'
+        '.then(function(res){if(!res.ok){status.innerHTML="<p>Refused ("+esc(String(res.code))+"): <strong>"+esc((res.j&&res.j.error)||"unknown refusal")+"</strong></p>";}'
+        'else{status.innerHTML="<pre>"+esc(JSON.stringify(res.j,null,2))+"</pre>";}'
+        'disarm();fetchPreview(m);})'
+        '.catch(function(){status.textContent="Request failed \\u2014 state unknown; refresh the page.";disarm();});});}'
+        'wireSubmit("replace","/api/replace");wireSubmit("remove","/api/remove");'
+        '})();</script>'
+    ) % ("".join(article_options), "".join(target_options),
+         "".join(target_options))
     return tool_page("Wiki Source Ingest", inner, status)
 
 
