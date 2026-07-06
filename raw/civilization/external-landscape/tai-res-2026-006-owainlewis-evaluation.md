@@ -10,7 +10,7 @@ reviewer: Transpara AI Hive
 owner: Research & Strategic Intelligence
 org: Transpara AI
 repo: transpara-ai/wiki
-classification: CONFIDENTIAL — Internal Use Only
+classification: PUBLIC — external-landscape research (this repo is public; no secrets; Civilization doctrine is quoted at the same depth as the previously published TAI-RES evaluations)
 companion_to: TAI-RES-2026-001 (Sakana AI), TAI-RES-2026-002 (Hermes Agent & Self-Evolution), TAI-RES-2026-003 (Google Open Knowledge Format), TAI-RES-2026-004 (MemPalace), TAI-RES-2026-005 (Solo Orchestrator)
 ---
 
