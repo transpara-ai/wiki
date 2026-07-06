@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-ARC-DATA-DEADKEYS
 title: Arc data dead-keys removal — retire executionPlan + legendItems (TLC Factory Order + Design Packet)
 doc_type: design
-version: 0.3.1
+version: 0.3.2
 status: draft
 canonical: false
 created: 2026-07-06
@@ -181,4 +181,4 @@ lifecycle ends at ready PR. This IADA does not replace external CFADA.
 
 | # | Finding | Disposition (v0.3.1) |
 |---|---|---|
-| R2-B1 | The v0.3.0 survey correction (I5) fixed §2 but left the stale `2660–3009` extent in the §3 contract row — the contract still "authorized" deletion into the must-not-touch `CIVILIZATION_LIVE_READER_CORRECTION` region. The implementation stayed narrow (key-anchored splice + ground-truth key diff), but the packet contract was stale — the same fix-the-instance-not-the-class failure I5 itself warned about | FIXED — §3 row corrected to 2660–2821 with the must-not-touch boundary named inline; full-packet sweep for `3009` confirms the only remaining occurrences are the two historical records of the error (I5 row, §2 parenthetical), which stay |
+| R2-B1 | The v0.3.0 survey correction (I5) fixed §2 but left the stale extent in the §3 contract row — the contract still "authorized" deletion into the must-not-touch `CIVILIZATION_LIVE_READER_CORRECTION` region. The implementation stayed narrow (key-anchored splice + ground-truth key diff), but the packet contract was stale — the same fix-the-instance-not-the-class failure I5 itself warned about | FIXED — §3 row corrected to 2660–2821 with the must-not-touch boundary named inline. Class assertion (CFADA r3 R3-B1 wording repair): every remaining occurrence of the stale end-line number in this packet sits inside a historical record of the error — §2's parenthetical, the I5 row, and this disposition row; the sole OPERATIVE extent (§3 contract row) is 2660–2821 and no operative extent crosses the must-not-touch boundary |
