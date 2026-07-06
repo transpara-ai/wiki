@@ -2,8 +2,8 @@
 doc_id: FO-WIKI-FRONTEND-UX
 title: Front-end requirements completion — §7 ingest UX + honest-state styling (Factory Order)
 doc_type: factory-order
-version: 0.2.0
-status: confirmed (channel-A intake confirm, Michael, 2026-07-06 — answers archived in §5)
+version: 0.3.0
+status: confirmed (channel-A intake confirm, Michael, 2026-07-06 — answers archived in §5; R5 factual predicate corrected at v0.3.0, scope narrowed, intent unchanged)
 canonical: false
 created: 2026-07-06
 updated: 2026-07-06
@@ -56,10 +56,15 @@ intake_channel: A (owner-directed session 2026-07-06)
   (emitted by `build_site.py:1708` and the blocked-banner path; zero matching
   rules in `style.css` today) get house-style rules in both themes, so the
   autodeploy visibility surface reads as designed instead of unstyled text.
-- **R5 — Pending-wikilink styling.** `.wl-pending`
-  (`build_site.py:649`, zero matching rules in `style.css`) gets a visible
-  house-style treatment in both themes — a pending-reconciliation link must
-  be visually distinct from both live and absent links, not tooltip-only.
+- **R5 — Pending-wikilink treatment verified, not rebuilt.** SURVEY
+  CORRECTION (v0.3.0, CFADA-FEUX-005): `.wl.wl-pending` IS already styled —
+  `style.css:35` (muted + dashed underline + help cursor, palette-driven,
+  both themes); the v0.2.0 claim of "zero matching rules" was a misread
+  grep. R5's deliverable narrows to a guard: a named test asserting every
+  emitted honest-state class (`.wl-pending`, R4's deploy classes, the new
+  ingest-state classes) has rules in the built sheet — so an emitted-but-
+  unstyled state class can never silently recur. No new pending-link
+  styling unless that guard finds a real gap.
 - **R6 — Sanctioned session-author ingest registration path (issue #50;
   added at intake confirm — Michael's Q3 answer, §5).** A gated ingest
   operation registers session-authored raw documents in

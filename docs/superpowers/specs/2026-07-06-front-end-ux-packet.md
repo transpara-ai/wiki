@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-FRONTEND-UX
 title: Front-end requirements completion — §7 ingest UX, honest-state styling, sanctioned session-author registration (TLC Design Packet)
 doc_type: design
-version: 0.2.0
+version: 0.3.0
 status: draft
 canonical: false
 created: 2026-07-06
@@ -65,8 +65,11 @@ intake_channel: A (owner-directed session 2026-07-06)
   `deploy_status_script()` (`:1703–1717`) client-fetches
   `deploy-status.json` into `#deploy-banner` (hidden unless
   `blocked===true`) and `#deploy-foot` ("live deploy: sha·checked").
-  **`.deploy-foot`/`.deploy-banner` blocked-state and `.wl-pending` have
-  zero rules in `style.css`** (measured: grep = 0) — R4/R5.
+  **`.deploy-foot` and the deploy blocked-banner have zero rules in
+  `style.css`** (measured: grep = 0) — R4. **`.wl.wl-pending` is already
+  styled** (`style.css:35`: muted + dashed underline + help cursor,
+  palette-driven) — CFADA-FEUX-005 corrected the v0.2.0 misread; R5 is a
+  coverage guard, not new styling (FO v0.3.0).
 - **Two ledgers, distinct jobs**: `raw/inbox/manifest.jsonl` — browser
   ingest audit rows `{ingested_at, mode, target_slug, source_path, sha256,
   original_name, note, supersedes}` (`ingest_server.py:438–447`), appended
@@ -94,7 +97,7 @@ intake_channel: A (owner-directed session 2026-07-06)
 | EDIT | `compile/build_site.py` | `ingest_page()`: operation selector (Add default · Replace · Remove, destructive visually distinct); Replace/Remove forms; consequence-preview panel + confirm flow; in-flight "recompiling…" state; freshness banner gains the pending-edges chip (build-time, from the same strict edge-states load the build already performs); refusal rendering (escaped, honest) |
 | EDIT | `compile/ingest_server.py` | `GET /api/preview` (strictly read-only, §2.3); `POST /api/register` (R6, §2.5) mirroring the replace/remove gate order |
 | EDIT | `compile/ingest_ops.py` | `preview_remove()` / `preview_replace()` thin wrappers over the EXISTING op preflight helpers (no parallel logic — drift-proof by construction); `register_source()` (R6); `register` added to the artifact operation allowlist + `LEDGER_SHAPES`; manifest append helper with the sharded write path (§2.5) |
-| EDIT | `compile/assets/style.css` | `.deploy-foot`, `.deploy-banner[data-blocked]`/`.deploy-blocked`, `.wl-pending`, ingest mode selector + consequence-panel + destructive-accent rules — both themes via the existing custom-property palette |
+| EDIT | `compile/assets/style.css` | `.deploy-foot`, `.deploy-banner[data-blocked]`/`.deploy-blocked`, ingest mode selector + consequence-panel + destructive-accent rules — both themes via the existing custom-property palette (`.wl-pending` already styled at `:35`; covered by the R5 guard, not restyled) |
 | EDIT | `compile/ingest-authorization.example.json` + its doc comments | `operation` allowlist gains `register`; register requires non-empty in-repo `source_ref` (documented alongside the replace/remove rules — IADA I6) |
 | ADD | `compile/test_ingest_ux.py` (wired into `test:py`) | builder-side ACs: selector emitted, preview panel scaffold, pending-chip states incl. degraded, CSS classes present in the sheet |
 | EDIT | `compile/test_ingest_ops.py`, `compile/test_ingest_server.py` | R6 register domain tests; preview read-only + parity tests |
@@ -127,10 +130,13 @@ the two auth layers cannot be conflated by a reviewer or a future editor).
 
 - **Endpoint:** `GET /api/preview?operation=remove&slug=X` and
   `GET /api/preview?operation=replace&slug=X&source_ref=S`, behind the
-  existing `require_allowed_host` + `require_authoring` (same posture as
-  `/api/articles`). Strictly read-only: consumes no authorization, takes no
-  lock, writes nothing — named tests prove the artifact is still valid and
-  the tree unchanged after a preview.
+  existing `require_allowed_host` + `require_authoring` — deliberately
+  STRICTER than live `GET /api/articles`, which is host-gated only with
+  conditional source inclusion (`ingest_server.py:706,712` —
+  CFADA-FEUX-006 corrected the "same posture" comparison). Strictly
+  read-only: consumes no authorization, takes no lock, writes nothing —
+  named tests prove the artifact is still valid and the tree unchanged
+  after a preview.
 - **Echo-quarantine first (IADA I1 — the CFAR-r20 lane, on the read path):**
   `quarantine_fields({operation, slug, source_ref})` runs BEFORE any
   validator or preflight whose refusal message would echo the submitted
@@ -193,30 +199,47 @@ the two auth layers cannot be conflated by a reviewer or a future editor).
   (reuse, not reimplementation — a finding refuses with redacted spans);
   target article exists and is not retired; ledger + edge-states strict
   preflights as in Replace/Remove.
-- **Durable writes (under `wiki_write_lock`):** (1) manifest row
-  `{ingested_at, mode: "session-author", target_slug, source_path, sha256,
-  original_name, note, supersedes}` — written as a **single-row shard
-  file**: `raw/inbox/manifest.d/<UTC-stamp>-<sha256[:12]>.jsonl`, one file
-  per row, created once, never appended to again;
-  `raw/inbox/manifest.jsonl` is frozen as the historical segment and never
-  rewritten. Per-ROW files (not per-month — IADA I2: a month shard grows,
-  so its blob changes on every append and merely narrows the F9 window)
-  close the #50 class absolutely: every manifest blob is immutable from
-  birth, no clearance ever goes stale, no PR or runtime append can poison a
-  later commit. Add's manifest writes move to the same helper — same
-  class, same fix. The complete audit surface = frozen file + shards
-  (`cat raw/inbox/manifest.jsonl raw/inbox/manifest.d/*.jsonl`); a doc
-  comment at the top of the frozen file records this. (2)
-  `ingest-ledger.jsonl` row, new strict shape `register: {ts, operation,
-  slug, source_path, sha256, authorized_by, authorization_sha256, result,
-  rebuild}` (the ops ledger keeps its existing append-last mechanics — its
-  committed history already carries clearances and its growth is the
-  PRE-EXISTING posture, explicitly out of scope here). (3) Article
-  frontmatter: `source_ref` + sha256 added to the article's
-  `raw_documents`. **Already-registered refuses in preflight, BEFORE
-  consumption** (IADA I3 — no "idempotent" lane: a re-register attempt is
-  refused with the artifact left unconsumed, so a wasted grant is
-  impossible and the audit stays one-row-per-registration).
+- **Durable writes (under `wiki_write_lock`, in THIS order —
+  CFADA-FEUX-001):** all preflights first (including the ledger
+  appendability probe, Arc 1 ready-r4 lineage: an unauditable op refuses
+  before ANY write) → artifact consumption → then:
+  1. **Manifest shard** — row `{ingested_at, mode: "session-author",
+     target_slug, source_path, sha256, original_name, note, supersedes}`
+     written as a **single-row shard file**
+     `raw/inbox/manifest.d/<UTC ISO-8601 basic, microsecond
+     precision>Z-<sha256[:12]>.jsonl`, opened with exclusive create
+     (`O_CREAT|O_EXCL`); an existing path REFUSES — never overwrite, never
+     append (CFADA-FEUX-004: collision safety is bound to the syscall, not
+     asserted; microsecond stamp + content hash make collision practically
+     impossible, and the refusal lane exists anyway).
+     `raw/inbox/manifest.jsonl` is frozen as the historical segment and
+     never rewritten. Per-ROW files (not per-month — IADA I2: a month shard
+     grows, so its blob changes on every append and merely narrows the F9
+     window) close the #50 class absolutely: every manifest blob is
+     immutable from birth, no clearance ever goes stale, no PR or runtime
+     append can poison a later commit. Add's manifest writes move to the
+     same helper — same class, same fix. The complete audit surface =
+     frozen file + shards (`cat raw/inbox/manifest.jsonl
+     raw/inbox/manifest.d/*.jsonl`); a doc comment at the top of the frozen
+     file records this AND the incomplete-op audit rule below.
+  2. **Article frontmatter** — `source_ref` + sha256 added to the
+     article's `raw_documents` (atomic temp-file + `os.replace`, house
+     pattern). **Already-registered refuses in preflight, BEFORE
+     consumption** (IADA I3 — no idempotent lane: a re-register attempt
+     leaves the artifact unconsumed, so a wasted grant is impossible).
+  3. **Rebuild** (as Replace/Remove do).
+  4. **Ledger row LAST** — `ingest-ledger.jsonl` strict shape `register:
+     {ts, operation, slug, source_path, sha256, authorized_by,
+     authorization_sha256, result, rebuild}`, appended only after every
+     other durable effect succeeded (append-last preflight-first, the Arc 1
+     invariant — ops packet AC7). **Partial-failure semantics, stated:** a
+     failure after step 1/2 leaves durable artifacts WITHOUT a ledger row —
+     the ledger never claims an op that did not complete (false audit truth
+     is the failure CFADA-FEUX-001 named); a shard without a matching
+     ledger row is the detectable signature of an incomplete op, documented
+     in the frozen-file doc comment. No rollback fabrication. (The ops
+     ledger keeps its existing single-file mechanics — pre-existing
+     posture, residual (d).)
 - **Endpoint:** `POST /api/register` (form: slug, source_ref, note),
   gate order identical to replace/remove: authoring → artifact gate FIRST →
   quarantine → preflights → consume → write → optional rebuild.
@@ -240,11 +263,11 @@ the classes exist in the built sheet (regrowth guard for the styling gap).
 | # | Criterion (risk) | Verification — named test |
 |---|---|---|
 | AC1 | Selector renders 3 modes, Add default, destructive forms hidden until selected + visually distinct, Q2 line present (med) | py: `test_ingest_page_mode_selector`; playwright: `ingest selector both themes` |
-| AC2 | Destructive submit is IMPOSSIBLE without a current rendered preview; selection change re-disarms; preview failure keeps it disabled (high) | py: `test_preview_gate_scaffold_fail_closed` (emitted HTML: destructive submit carries `disabled` at birth; the ONLY enable site in the inline JS is the preview-success handler); dom-smoke with stubbed fetch (the existing loadInflight stubbing pattern): `ingest preview gate state machine` over the domain {preview ok → armed, selection change → disarmed, fetch error → disabled + explicit notice, non-200 → disabled, parse error → disabled, confirm unchecked → disabled} (IADA I5: behavior domain moved to the dom-smoke harness where fetch is stubbable; playwright keeps the static-render + themes pass) |
+| AC2 | Destructive submit is IMPOSSIBLE without a preview rendered FOR THE CURRENT SELECTION; any selection change re-disarms AND resets the confirm; a stale/out-of-order preview response never arms (high) | py: `test_preview_gate_scaffold_fail_closed` (emitted HTML: destructive submit carries `disabled` at birth; the ONLY enable site in the inline JS is the preview-success handler, guarded by a per-request sequence token); dom-smoke with stubbed fetch: `ingest preview gate state machine` over the domain {preview ok → armed, selection change → disarmed + confirm reset, STALE response for a superseded selection arrives late → stays disarmed (sequence-token mismatch — CFADA-FEUX-002), confirm checked before preview → still disabled, fetch error/non-200/parse error → disabled + explicit notice} (IADA I5: behavior domain in the dom-smoke harness where fetch is stubbable; playwright keeps the static-render + themes pass) |
 | AC3 | Preview endpoint is strictly read-only and parity-locked to op logic (high) | server: `test_preview_consumes_nothing` (artifact still valid + tree hash unchanged after preview), `test_preview_remove_parity_with_find_inbound_edges`, `test_preview_replace_surfaces_exact_refusal` |
 | AC4 | Refusals render honestly: 403/422/400 bodies shown escaped, never swallowed; in-flight = explicit recompiling state (med) | py: `test_ingest_page_renders_refusal_states`; playwright: console-error-free refusal render |
 | AC5 | Pending-edges chip: 0 → absent; N>0 → warn chip with N; corrupt edge-states → build refuses (never healthy) (med) | py: `test_freshness_pending_chip_domain` (0, N, corrupt fixture) |
-| AC6 | `register` op: full deny domain — missing/expired/wrong-instance/wrong-operation artifact, missing file, retired target, secret-bearing payload, corrupt ledger → refuse writing NOTHING; happy path appends sharded manifest row + strict ledger row + idempotent frontmatter, consumes artifact exactly once (high) | server/ops: `test_register_authorization_domain`, `test_register_writes_are_atomic_and_audited`, `test_register_quarantine_refusal_redacts`, `test_register_manifest_shard_only_appends` (historical manifest.jsonl byte-identical after op) |
+| AC6 | `register` op: full deny domain — missing/expired/wrong-instance/wrong-operation artifact, missing file, retired target, ALREADY-REGISTERED source_ref, secret-bearing payload, corrupt ledger → refuse writing NOTHING with the artifact unconsumed; happy path writes in the §2.5 order (shard → frontmatter → rebuild → ledger LAST), consumes the artifact exactly once (high) | server/ops: `test_register_authorization_domain` (incl. already-registered pre-consumption refusal), `test_register_writes_are_atomic_and_audited` (incl. ledger-row-is-last: a forced post-shard failure leaves NO ledger row), `test_register_quarantine_refusal_redacts`, `test_register_manifest_shard_only_appends` (historical manifest.jsonl byte-identical after op) |
 | AC7 | Manifest sharding closes the F9 class: Add + register never rewrite ANY existing manifest file — one immutable single-row shard per row (high) | ops: `test_manifest_shard_never_mutates_existing_files` (property: after N sequential ops, every previously-existing shard + the frozen file are byte-identical; shard filenames collision-free) |
 | AC8 | R4/R5 classes styled in both themes; no unstyled emitted class remains (low) | py: `test_style_sheet_covers_emitted_state_classes`; playwright theme pass |
 | AC9 | Full chain green; zero regression in the 80 ingest-ops + 18 server + arc/board suites (low) | `npm run verify` exit 0 at the reviewed head |
@@ -255,9 +278,14 @@ Gate satisfied-only-when: AC1–AC9 all green at the reviewed head AND
 ## 4. Fail-safe analysis (the §8 house rule, applied)
 
 - Preview gate: the ONLY path to an armed destructive submit is
-  preview-rendered-for-current-selection AND confirm-checked; every other
-  state (no preview, stale preview, fetch error, non-200, JSON parse error)
-  keeps it disabled — allowlist, proven by AC2 across the state domain.
+  preview-rendered-for-current-selection AND confirm-checked. Mechanism
+  (CFADA-FEUX-002): every preview fetch carries a monotonically increasing
+  sequence token bound to the selection at request time; a response whose
+  token is not the CURRENT token is discarded (never rendered, never arms);
+  any selection change bumps the token, disarms the submit, and unchecks
+  the confirm. Every other state (no preview, stale response, fetch error,
+  non-200, parse error, confirm unchecked) keeps it disabled — allowlist,
+  proven by AC2 across the state domain including the out-of-order race.
 - Register authorization: single fully-proven grant branch (exact-instance,
   in-window, unconsumed artifact + all preflights); every other path
   refuses before any write (AC6 domain table).
@@ -307,3 +335,18 @@ Gate satisfied-only-when: AC1–AC9 all green at the reviewed head AND
 IADA verdict at v0.2.0: **PASS — 0 design blockers**, assessor claude
 (Fable 5), 2026-07-06. This IADA does not replace external CFADA; no code
 before Human Design Review (stage 6) approves.
+
+## Appendix — CFADA round 1 (Codex) → FAIL, repaired at v0.3.0
+
+> `CFADA_FEUX_R1 FAIL blockers=1 majors=3 minors=2` at v0.2.0 blob
+> `0a786bb3` (2026-07-06). Fidelities: coherence FAIL; packet-vs-FO PASS;
+> FO-vs-source PASS (Q2/Q3 bindings honored).
+
+| # | Finding | Disposition (v0.3.0) |
+|---|---|---|
+| 001 (blocker) | Register write order (manifest → ledger → frontmatter) could leave a completed ledger row without the article mutation — false audit truth | FIXED — §2.5 order restated: preflights (incl. appendability probe) → consume → shard → frontmatter → rebuild → **ledger LAST** (Arc 1 append-last invariant); partial-failure semantics stated (shard-without-row = detectable incomplete op); AC6 gains the ledger-row-is-last forced-failure test |
+| 002 (major) | AC2's domain missed the stale/out-of-order preview-response race and the pre-checked-confirm lane the §4 claim relied on | FIXED — per-request sequence token bound to selection; stale responses discarded; selection change disarms + resets confirm; both lanes named in AC2's dom-smoke domain and §4 |
+| 003 (major) | AC6 still said "idempotent frontmatter" after §2.5 dropped the idempotent lane — the same fix-instance-not-class failure the dead-keys arc hit | FIXED — AC6 reworded (already-registered = pre-consumption refusal); whole-packet sweep for the term confirms only the IADA/CFADA historical records retain it |
+| 004 (major) | Shard filename collision safety asserted, not bound | FIXED — microsecond UTC stamp + `O_CREAT\|O_EXCL` exclusive create; existing path refuses; named in AC6/AC7 |
+| 005 (minor) | Survey claimed `.wl-pending` unstyled; it is styled at `style.css:35` | FIXED — survey corrected here AND in the FO (v0.3.0): R5 narrows to the emitted-state-class coverage guard; file plan no longer restyles it |
+| 006 (minor) | "/api/preview same posture as /api/articles" — false comparison (articles is host-gated only) | FIXED — §2.3 states preview is deliberately stricter (host + authoring), with the live-code cite |
