@@ -11,7 +11,7 @@ status: compiled
 last_compiled: 2026-07-06
 civilization_contribution: "Pattern-only; no ADR. Contributes six mineable patterns — review-capacity throttle, definition-of-ready as Factory Order lint, density-over-length gate prose, audit→objective compiler, single-mover/stale-claim label invariants, Neo's runtime cage as worked example — and the strongest independent confirmation yet of the dev-arc's two-human-gate topology. Blueprint/Factory/Neo are never eligible as runtime, gate authority, certification, or truth store."
 sources:
-  - "raw/inbox/2026-07-06/owainlewis/TAI-RES-2026-006-v1.0.0-Owain-Lewis-Evaluation.md"  # TAI-RES-2026-006 v1.0.0, code-anchored evaluation (this page's primary source)
+  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # TAI-RES-2026-006 v1.0.0, code-anchored evaluation (this page's primary source)
   - https://github.com/owainlewis/blueprint  # @ 3815669, 2026-07-05 — read in full from local clone
   - https://github.com/owainlewis/factory  # @ 8b346d7, 2026-07-05 — all ~1,895 Go lines read as ground truth
   - https://github.com/owainlewis/neo  # @ 022d001 — harness/orchestrator; the code-enforced "cage"
@@ -25,7 +25,7 @@ confidence:
   civilization_baseline: high — quoted from the accepted v4.0 doctrine set and shipped gate tool; Level 0 state taken from doc 06's own gate table
   learning_opportunities: medium-high — patterns are text-verifiable; the hive review-capacity-throttle gap should be re-verified before implementation
 raw_documents:
-  - "raw/inbox/2026-07-06/owainlewis/TAI-RES-2026-006-v1.0.0-Owain-Lewis-Evaluation.md"  # sha256 51ce9f848d687a962215b17cb1ca6259ede750b9596610d43c0c4de2dd805f0f; session-authored (PR #49), not yet in the inbox ingestion ledger — registration via the sanctioned ingest-ops path is a named follow-up
+  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # sha256 51ce9f848d687a962215b17cb1ca6259ede750b9596610d43c0c4de2dd805f0f; session-authored (PR #49) Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter; wiki#50 tracks a sanctioned ingest path for session-authored docs
 ---
 
 # Owain Lewis Work System (Blueprint & Factory)
@@ -57,7 +57,7 @@ The deepest split is the truth object: for Lewis, running code + tests is truth 
 
 ## What his system cannot take from prompts alone (the inverse)
 
-Proof that review happened to *this* code (exact-head binding); independence that survives correlated model failure (cross-family floor); fail-closed protected actions (allowlist policy, `PolicyMissing` → `Forbidden`); typed authority with scope/expiry/quorum; an append-only record that outlives the session; an institution that outlives its single human.
+Proof that review happened to *this* code (exact-head binding); independence that survives correlated model failure (cross-family floor); fail-closed protected actions (allowlist policy, `PolicyMissing` → `Forbidden` for high-risk and critical actions); typed authority with scope/expiry/quorum; an append-only record that outlives the session; an institution that outlives its single human.
 
 ## Placement
 
