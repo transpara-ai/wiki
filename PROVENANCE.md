@@ -34,6 +34,7 @@ table records what is actually on disk this run.
 | `open_brain` | `raw/open-brain/` | **Yes, stale** | `2026-{03,04,05,06}.md` — 1,175 thoughts, 2026-03-03 through 2026-06-13; live OpenBrain checked 2026-06-21 reports 2,338 thoughts and June 21 captures |
 | `civilization_stage0` | `raw/civilization/stage-0-institutional-substrate/` | **Yes** | Stage 0 authored scaffold snapshot, excluding copied historical corpus |
 | `browser_inbox` | `raw/inbox/` | **Yes when used** | browser-ingested source drops and `manifest.jsonl`; current snapshot includes Sakana, Hermes, and OKF source files |
+| `external_landscape_authored` | `raw/civilization/external-landscape/` | **Yes** | session-authored external-landscape research documents (TAI-RES series entries authored directly in gated PRs, not browser-ingested); first entry TAI-RES-2026-006 (PR #49) |
 | `upstream_context` | `raw/investigations/` | **No** | empty but for `.gitkeep` — Phase 2 (per `DESIGN.md`) |
 
 **What this means for trust:** the `searles` tier and the stale `open_brain`
@@ -47,7 +48,13 @@ unfilled**. Stage 0 institutional substrate sources are mirrored as a bounded
 proposal snapshot under `raw/civilization/`; they are advisory source material,
 not accepted doctrine. `raw/inbox/` is the operator-facing source drop path for
 browser ingestion; its contents are provenance evidence, not article synthesis by
-themselves. Do not read an empty
+themselves. The `external_landscape_authored` tier holds research documents
+authored directly in this repo through cross-family-gated PRs rather than
+ingested: their provenance is the git history of the gated PR that landed them,
+plus each document's own frontmatter (doc id, version) and the citing article's
+`raw_documents` entry (which records the content sha256); they are deliberately
+outside `raw/inbox/manifest.jsonl`, which remains the exclusive ledger of the
+authorized ingest machinery (see issues #50/#52 for the sanctioned-path work). Do not read an empty
 `raw/` subdirectory as "no such source" — read it as "not yet mirrored." The
 nightly keep-current job in `DESIGN.md` is what will populate them.
 

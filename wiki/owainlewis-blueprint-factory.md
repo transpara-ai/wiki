@@ -25,7 +25,7 @@ confidence:
   civilization_baseline: high — quoted from the accepted v4.0 doctrine set and shipped gate tool; Level 0 state taken from doc 06's own gate table
   learning_opportunities: medium-high — patterns are text-verifiable; the hive review-capacity-throttle gap should be re-verified before implementation
 raw_documents:
-  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # sha256 9edaa1d67f89ae23ab650ca0cb2f6c9f1ebe6cb6376374faf20ee0525869ff23; session-authored (PR #49) Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter; wiki#50 tracks a sanctioned ingest path for session-authored docs
+  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # sha256 38b8d05a519ca5321a826c9be406182dea7cb695a6c65ff12f250aee55913e90; session-authored (PR #49) Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter; wiki#50 tracks a sanctioned ingest path for session-authored docs
 ---
 
 # Owain Lewis Work System (Blueprint & Factory)
@@ -51,7 +51,7 @@ The deepest split is the truth object: for Lewis, running code + tests is truth 
 
 ## Determination (TAI-RES-2026-006 §4.4)
 
-1. **ADR exists?** No — nothing in docs/wiki names owainlewis, Blueprint, Factory, or Neo (2026-07-06 search).
+1. **ADR exists?** No — no *pre-existing* ADR, decision row, or doctrine text named owainlewis, Blueprint, Factory, or Neo before this evaluation landed (2026-07-06 search of docs + wiki; this eval and its article are, by design, the first mentions).
 2. **Create one?** No ADR: nothing is adopted as a dependency or control-plane component (same disposition as Solo Orchestrator). Durable record = the eval + a per-item crosswalk row via the docs process; any pursued learning gets its own TLC arc.
 3. **Contribution?** **Pattern-only.** Six learnings, led by the **review-capacity throttle** ("finishing reviewed work beats starting new work") as a fail-closed WIP gate on the human review queue, plus the five-predicate definition-of-ready as a Factory Order lint and a density pass over gate prose. High value as a mirror; never a component.
 
