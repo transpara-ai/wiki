@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-FRONTEND-UX
 title: Front-end requirements completion — §7 ingest UX, honest-state styling, sanctioned session-author registration (TLC Design Packet)
 doc_type: design
-version: 0.3.3
+version: 0.4.0
 status: draft
 canonical: false
 created: 2026-07-06
@@ -366,6 +366,16 @@ before Human Design Review (stage 6) approves.
 |---|---|---|
 | R2-001 | Packet still bound source-of-intent to FO v0.2.0 blob `7d32e332` after the FO bumped to v0.3.0 — stale truth-chain link | FIXED — packet bound to the FO's CURRENT bytes: v0.3.1 blob `8beb8079` (computed via `git hash-object` on the co-committed file, so binding and bytes land in the same commit — the stale-binding lane is closed by procedure, not by luck) |
 | R2-002 | R5 repair incoherent across surfaces: §2.6 still promised marker-glyph restyling; FO §3 still claimed grep → 0 | FIXED — §2.6 restated guard-only; FO §3 corrected to grep → 1 with the misread recorded; third instance-not-class failure this session — repair procedure now REQUIRES a whole-corpus grep sweep for the changed fact before every commit (applied here) |
+
+## Appendix — Stage-7 upstream returns (build-time design repairs, v0.4.0)
+
+Two §2.5 ambiguities surfaced during implementation; both are repaired here
+as stage-3 returns (bump + re-audit) rather than silent code decisions:
+
+| # | Finding | Disposition (v0.4.0) |
+|---|---|---|
+| S7-1 | "Already-registered refuses in preflight" did not pin WHAT counts as registered. Frontmatter-presence would refuse the FIRST CONSUMER (#50's pending row targets an article whose `raw_documents` already carries the pointer as interim provenance) — the design would have failed its own primary consumer | PINNED — the dedup gate is **manifest-presence** (frozen file + shards, strict parse, corrupt row refuses); the frontmatter step is add-iff-absent (an existing pointer is legal interim provenance, and the single-use artifact + manifest gate make replay impossible). Named test `test_register_happy_path_and_first_consumer_shape` proves the first-consumer shape end-to-end |
+| S7-2 | "a doc comment at the top of the frozen file" is self-contradictory twice: strict JSONL admits no comment line (the parser would refuse), and writing INTO the frozen file would change its blob — the exact mutation the freeze exists to prevent | RESOLVED — the documentation lives in `raw/inbox/manifest.d/README.md` (the shard reader globs `*.jsonl` and never parses it); it records the frozen-file law AND the shard-without-ledger-row incomplete-op audit rule |
 
 ## Appendix — CFADA round 4 (Codex) → PASS at v0.3.2
 
