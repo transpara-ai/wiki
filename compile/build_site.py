@@ -1822,6 +1822,12 @@ def ingest_page(status):
     inner = (
         '<h1 class="page-title">Wiki Source Ingest</h1>'
         '<article class="body ingest-tool">'
+        # the transport token is shared page chrome, OUTSIDE the mode panels:
+        # a user starting in Replace/Remove needs it visible (CFAR r1 P2); it
+        # travels as a header via headers(), never as a form field
+        '<section class="ingest-card ingest-auth">'
+        '<label>Authoring token<input id="authoring-token" type="password" autocomplete="off" placeholder="required for non-loopback authoring"></label>'
+        '</section>'
         '<nav class="ingest-modes" role="radiogroup" aria-label="Operation">'
         '<label><input type="radio" name="ingest-mode" value="add" checked> Add</label>'
         '<label class="mode-destructive"><input type="radio" name="ingest-mode" value="replace"> Replace</label>'
@@ -1830,7 +1836,6 @@ def ingest_page(status):
         '<section class="ingest-card" data-mode-panel="add">'
         '<h2>Batch ingest</h2>'
         '<form id="ingest-form">'
-        '<label>Authoring token<input id="authoring-token" type="password" autocomplete="off" placeholder="required for non-loopback authoring"></label>'
         '<label>Target article<select name="target_slug" id="target-slug">%s</select></label>'
         '<label>Documents<input name="documents" id="documents" type="file" multiple></label>'
         '<label>External URLs<textarea name="external_urls" id="external-urls" rows="4" placeholder="https://..."></textarea></label>'
@@ -1923,7 +1928,8 @@ def ingest_page(status):
         'function loadArticles(){fetch("/api/articles",{cache:"no-store",headers:headers()}).then(function(r){return r.ok?r.json():null}).then(function(j){'
         'if(!j)return;articles={};j.articles.forEach(function(a){articles[a.slug]=a;});refillSources();});}'
         'function refillSources(){var e=el.replace;e.source.innerHTML="<option value=\\"\\">Select a source\\u2026</option>";'
-        'var a=articles[e.target.value];if(!a)return;(a.sources||[]).forEach(function(s){var o=document.createElement("option");o.value=s;o.textContent=s;e.source.appendChild(o);});}'
+        'var a=articles[e.target.value];if(!a)return;var seen={};'
+        '(a.sources||[]).concat(a.raw_documents||[]).forEach(function(s){if(seen[s])return;seen[s]=1;var o=document.createElement("option");o.value=s;o.textContent=s;e.source.appendChild(o);});}'
         'loadArticles();if(token)token.addEventListener("change",loadArticles);'
         'el.replace.target.addEventListener("change",function(){refillSources();disarm();fetchPreview("replace");});'
         'el.replace.source.addEventListener("change",function(){disarm();fetchPreview("replace");});'

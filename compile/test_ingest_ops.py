@@ -2589,6 +2589,22 @@ def test_preview_replace_surfaces_exact_refusal():
     print("ok test_preview_replace_surfaces_exact_refusal")
 
 
+def test_manifest_row_allows_unassigned_add_target():
+    # CFAR r1 P1: the default Add flow writes its manifest row BEFORE a new
+    # article slug exists (target_slug "") — a legal historical shape the
+    # shard validator must not refuse
+    import tempfile
+    root = pathlib.Path(tempfile.mkdtemp())
+    row = {"ingested_at": NOW, "mode": "browser-ingest", "target_slug": "",
+           "source_path": "raw/inbox/x/doc.md", "sha256": "b" * 64,
+           "original_name": "doc.md", "note": "", "supersedes": ""}
+    ops.write_manifest_shard(root, row, NOW)
+    shards = sorted((root / "raw" / "inbox" / "manifest.d").glob("*.jsonl"))
+    assert len(shards) == 1
+    print("ok test_manifest_row_allows_unassigned_add_target")
+
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

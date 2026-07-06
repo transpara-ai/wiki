@@ -151,6 +151,10 @@ def article_records(include_sources=True):
             "title": fm_val(fm, "entity") or p.stem.replace("-", " "),
             "tier": fm_val(fm, "tier") or "concept",
             "sources": fm_list(fm, "sources") if include_sources else [],
+            # the replace preflight accepts sources OR raw_documents, so the
+            # UI selector must be able to offer both (CFAR r1 P2); same gate
+            "raw_documents": (fm_list(fm, "raw_documents")
+                              if include_sources else []),
         })
     return out
 

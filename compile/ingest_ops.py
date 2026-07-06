@@ -1114,7 +1114,10 @@ def _validate_manifest_row(row):
     for key in sorted(keys):
         if not isinstance(row[key], str):
             raise OpRefused("manifest row: %r must be a string" % key)
-        if key not in ("note", "supersedes") and not row[key]:
+        # target_slug may be blank: the default Add flow writes its manifest
+        # row BEFORE a new article slug exists (unassigned add — CFAR r1 P1);
+        # register enforces its own non-empty slug upstream
+        if key not in ("note", "supersedes", "target_slug") and not row[key]:
             raise OpRefused("manifest row: %r must be non-empty" % key)
 
 

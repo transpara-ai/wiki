@@ -105,6 +105,22 @@ def test_style_sheet_covers_emitted_state_classes():
     print("ok test_style_sheet_covers_emitted_state_classes")
 
 
+def test_token_field_shared_across_modes_and_sources_union():
+    # CFAR r1 P2 (token): the authoring-token input must live OUTSIDE the
+    # mode panels — a user starting in Replace/Remove needs it visible
+    html = ingest_html()
+    token_at = html.index('id="authoring-token"')
+    first_panel_at = html.index("data-mode-panel=")
+    assert token_at < first_panel_at, \
+        "authoring token must precede (sit outside) the mode panels"
+    # CFAR r1 P2 (selector): the replace source fill must union sources +
+    # raw_documents — the backend accepts either
+    assert "raw_documents" in html, \
+        "replace source selector must offer raw_documents refs too"
+    print("ok test_token_field_shared_across_modes_and_sources_union")
+
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

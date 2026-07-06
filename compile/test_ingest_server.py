@@ -665,6 +665,19 @@ def test_add_manifest_writes_are_sharded():
     print("ok test_add_manifest_writes_are_sharded")
 
 
+def test_article_records_expose_raw_documents_for_replace():
+    # CFAR r1 P2: the backend replace preflight accepts sources OR
+    # raw_documents; the UI selector can only offer what /api/articles
+    # exposes, so records must carry both (behind the same sources gate)
+    recs = srv.article_records(include_sources=True)
+    assert recs, "need at least one article"
+    assert all("raw_documents" in r for r in recs)
+    gated = srv.article_records(include_sources=False)
+    assert all(r["raw_documents"] == [] for r in gated), \
+        "raw_documents must respect the include_sources gate"
+    print("ok test_article_records_expose_raw_documents_for_replace")
+
+
 
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
