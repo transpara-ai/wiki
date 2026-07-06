@@ -2604,6 +2604,43 @@ def test_manifest_row_allows_unassigned_add_target():
     print("ok test_manifest_row_allows_unassigned_add_target")
 
 
+def test_preview_surfaces_ledger_and_edge_state_refusals():
+    # CFAR r2 P2: the real ops refuse on a corrupt ledger/edge-states BEFORE
+    # mutating; a preview that skips those preflights would arm a submit for
+    # a doomed operation. Previews must run the same read-only checks.
+    root = fresh_root()
+    article(root, "alpha-topic")
+    (root / "compile" / "ingest-ledger.jsonl").write_text("{corrupt\n")
+    refused(ops.preview_remove, root, "alpha-topic")
+    refused(ops.preview_replace, root, "alpha-topic", OLD_REF)
+
+    root2 = fresh_root()
+    article(root2, "alpha-topic")
+    (root2 / "compile" / "edge-states.json").write_text("{corrupt")
+    refused(ops.preview_remove, root2, "alpha-topic")
+    refused(ops.preview_replace, root2, "alpha-topic", OLD_REF)
+    print("ok test_preview_surfaces_ledger_and_edge_state_refusals")
+
+
+def test_manifest_shard_names_bind_row_identity():
+    # CFAR r2 P2: two DISTINCT rows with identical content sha + identical
+    # timestamp must both write (one file per ROW, not per content)
+    import tempfile
+    root = pathlib.Path(tempfile.mkdtemp())
+    base = {"ingested_at": NOW, "mode": "browser-ingest", "target_slug": "a",
+            "sha256": "c" * 64, "original_name": "doc.md", "note": "",
+            "supersedes": ""}
+    row1 = dict(base, source_path="raw/inbox/x/doc.md")
+    row2 = dict(base, source_path="raw/inbox/y/doc.md")
+    ops.write_manifest_shard(root, row1, NOW)
+    ops.write_manifest_shard(root, row2, NOW)
+    shards = sorted((root / "raw" / "inbox" / "manifest.d").glob("*.jsonl"))
+    assert len(shards) == 2, "distinct rows must never collide on content"
+    # a byte-identical row at the same instant IS a duplicate -> refuses
+    refused(ops.write_manifest_shard, root, dict(row1), NOW)
+    print("ok test_manifest_shard_names_bind_row_identity")
+
+
 
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())

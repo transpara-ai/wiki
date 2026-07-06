@@ -1077,12 +1077,22 @@ def _remove_preflight(root, slug):
     return article_path, fm_lines, tail
 
 
+def _preview_state_preflights(root):
+    """The operation-state checks the real ops run before mutating (corrupt
+    ledger / unappendable ledger / corrupt edge-states refuse EVERY op) —
+    both are read-only, so the preview runs them too and surfaces the
+    refusal BEFORE a submit could arm for a doomed operation (CFAR r2 P2)."""
+    ledger_preflight(root / "compile" / "ingest-ledger.jsonl")
+    load_edge_states(root / "compile" / "edge-states.json")
+
+
 def preview_remove(root, slug):
-    """Read-only consequence preview (fe-ux packet §2.3): the SAME preflight
+    """Read-only consequence preview (fe-ux packet §2.3): the SAME preflights
     and edge enumeration the operation runs. Consumes no authorization, takes
     no lock, writes nothing."""
     root = pathlib.Path(root)
     _remove_preflight(root, slug)
+    _preview_state_preflights(root)
     inbound = find_inbound_edges(root, slug)
     return {"operation": "remove", "slug": slug, "inbound": inbound,
             "edges_would_pend": len(inbound),
@@ -1090,10 +1100,11 @@ def preview_remove(root, slug):
 
 
 def preview_replace(root, slug, source_ref):
-    """Read-only consequence preview for replace — same preflight helper the
+    """Read-only consequence preview for replace — same preflight helpers the
     operation runs, so a doomed request previews its EXACT refusal."""
     root = pathlib.Path(root)
     _replace_preflight(root, slug, source_ref)
+    _preview_state_preflights(root)
     return {"operation": "replace", "slug": slug, "source_ref": source_ref,
             "superseded": source_ref, "will_recompile": True}
 
@@ -1139,7 +1150,11 @@ def write_manifest_shard(root, row, now):
         raise OpRefused("now must be an ISO-8601 timestamp with a timezone")
     stamp = _parse_iso(now).astimezone(datetime.timezone.utc) \
         .strftime("%Y%m%dT%H%M%S.%f")
-    digest = row.get("sha256") or hashlib.sha256(
+    # the filename digest binds the FULL row identity, not the document
+    # content: two distinct rows carrying identical bytes at the same
+    # instant must both write; only a byte-identical duplicate row collides
+    # and refuses (CFAR r2 P2)
+    digest = hashlib.sha256(
         json.dumps(row, sort_keys=True).encode("utf-8")).hexdigest()
     shard_dir = root / "raw" / "inbox" / "manifest.d"
     shard_dir.mkdir(parents=True, exist_ok=True)
