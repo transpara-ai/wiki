@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-ARC-DATA-DEADKEYS
 title: Arc data dead-keys removal — retire executionPlan + legendItems (TLC Factory Order + Design Packet)
 doc_type: design
-version: 0.2.0
+version: 0.3.0
 status: draft
 canonical: false
 created: 2026-07-06
@@ -66,10 +66,19 @@ Michael's).
 ## 2. Survey — measured, not assumed (wiki main @ ca23a85)
 
 - Data file blob `697002a4bf3a703a4d7cd1b9eead3e8084fd758b`, 3011 lines.
-  `legendItems` spans lines 2645–2658; `executionPlan` spans 2660–3009 (the
-  object's final key). Two stale comments (lines ~2314–2315, ~2460–2461) say
-  item blocks "mirror the rows in executionPlan.*" — with the key gone these
-  comments would lie; they are rewritten to stand alone.
+  `legendItems` spans lines 2645–2658; `executionPlan` spans 2660–2821, the
+  LAST key of `CIVILIZATION_ARC_DATA`, whose literal closes at 2822. The file
+  then carries a SECOND assignment in the same IIFE —
+  `window.CIVILIZATION_LIVE_READER_CORRECTION` (lines 2824–3010, the
+  live-reader correction fixture behind one of the ported governance-honesty
+  panels) — which this arc must NOT touch. (v0.2.x wrongly gave the
+  executionPlan extent as 2660–3009 by assuming the object close was the file
+  tail — IADA r2 I5; the §3 contract is key-anchored, so implementation was
+  unaffected, and the key-level ground-truth diff proves exactly
+  `{legendItems, executionPlan}` removed with the correction fixture intact.)
+  Two stale comments (lines ~2314–2315, ~2460–2461) say item blocks "mirror
+  the rows in executionPlan.*" — with the key gone these comments would lie;
+  they are rewritten to stand alone.
 - Full-repo grep for readers: the ONLY live reader is
   `tests/ontology.test.js:266–276` (the drift-mirror test — it would throw
   `TypeError` on `data.executionPlan[section]` after removal, so it retires
@@ -144,8 +153,23 @@ adjudicable from this blob alone.
 | B2 | Non-goals claimed the rendered page "byte-identical except the data asset" — `build_site.py:2100` emits `civilizationArcData.js?v=%s` (cache-buster from `copy_asset()`), so the arc HTML changes with the asset | FIXED — non-goals + AC3 restated: rendering identical; artifacts differ only in the asset and its `?v=` value |
 | M1 | Channel-A source-of-intent quoted one line of the owner's instruction; the FO contract requires archiving the ingested human doc so fidelity is adjudicable without the session | FIXED — full instruction archived verbatim in the appendix; this packet's blob SHA pins it |
 | m1 | "This arc CLOSES residual (a)" closed a residual by author assertion | FIXED — closure bound to the stage-12 merge; residual stands until then |
+| I5 (r2, v0.2.x → v0.3.0) | Survey gave executionPlan's extent as 2660–3009, silently attributing the trailing `window.CIVILIZATION_LIVE_READER_CORRECTION` assignment (2824–3010) to the retired key — an unverified inference from the file tail. Caught during implementation when the splice removed 183 lines, not ~366; resolved by key-level ground truth (`Object.keys` before/after: exactly the two keys removed) | FIXED — survey corrected with exact extents and the second assignment named as must-not-touch; lesson recorded: line-extent claims must be measured to their closing anchor, never inferred from "last key + file tail" |
 
 IADA verdict at v0.2.0: **PASS — 0 design blockers**, assessor claude
 (Fable 5), 2026-07-06. Scope audit: this packet authorizes no merge, no
 deploy, no runtime execution, no issue mutation, no autonomy increase; the
 lifecycle ends at ready PR. This IADA does not replace external CFADA.
+
+## Appendix — CFADA round 1 (Codex) → PASS at v0.2.0
+
+> `CFADA_DEADKEYS_R1 PASS blockers=0 majors=0 minors=0` — reviewer family
+> codex (independent of author family claude), audited bytes = blob
+> `4f2270ba14daa195bce64ca88db8a9c235525a63` (v0.2.0, commit 7f8407f),
+> 2026-07-06. Zero findings. Fidelity verdicts: coherence PASS (ACs carry
+> risk + verification; guard self-reference and cache-buster exceptions
+> explicit; allowlist gate predicate); packet-vs-FO PASS (AC1↔R1, AC2↔R2,
+> AC1/AC2↔R3; non-goals bound scope); FO-vs-source PASS (R1–R3 derive from
+> metrics §4, 2b residual (a), archived owner instruction; the stage-6
+> reading is faithful for the narrow ready-PR lifecycle with stage-12 merge
+> reserved to Michael). This appendix is a record added after the audit; the
+> gate credit binds to the audited blob above, not to this file's later SHAs.
