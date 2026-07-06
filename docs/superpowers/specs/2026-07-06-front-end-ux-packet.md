@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-FRONTEND-UX
 title: Front-end requirements completion — §7 ingest UX, honest-state styling, sanctioned session-author registration (TLC Design Packet)
 doc_type: design
-version: 0.3.2
+version: 0.3.3
 status: draft
 canonical: false
 created: 2026-07-06
@@ -366,6 +366,17 @@ before Human Design Review (stage 6) approves.
 |---|---|---|
 | R2-001 | Packet still bound source-of-intent to FO v0.2.0 blob `7d32e332` after the FO bumped to v0.3.0 — stale truth-chain link | FIXED — packet bound to the FO's CURRENT bytes: v0.3.1 blob `8beb8079` (computed via `git hash-object` on the co-committed file, so binding and bytes land in the same commit — the stale-binding lane is closed by procedure, not by luck) |
 | R2-002 | R5 repair incoherent across surfaces: §2.6 still promised marker-glyph restyling; FO §3 still claimed grep → 0 | FIXED — §2.6 restated guard-only; FO §3 corrected to grep → 1 with the misread recorded; third instance-not-class failure this session — repair procedure now REQUIRES a whole-corpus grep sweep for the changed fact before every commit (applied here) |
+
+## Appendix — CFADA round 4 (Codex) → PASS at v0.3.2
+
+> `CFADA_FEUX_R4 PASS blockers=0 majors=0 minors=0` at blob
+> `82aae1cc207356a31a79db487fadfd04f203c763` (2026-07-06). All three
+> fidelities PASS: coherence (no restyling claim survives anywhere);
+> packet-vs-FO (binding verified byte-exact to FO v0.3.1 blob `8beb8079`);
+> FO-vs-source (§7 intent preserved, grep facts re-derived). The design-gate
+> credit binds to those bytes; this v0.3.3 record is post-pass bookkeeping.
+> **Next gate: Human Design Review (stage 6, Michael) — no code before
+> approval.**
 
 ## Appendix — CFADA round 3 (Codex) → FAIL, repaired at v0.3.2
 
