@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-ARC-DATA-DEADKEYS
 title: Arc data dead-keys removal — retire executionPlan + legendItems (TLC Factory Order + Design Packet)
 doc_type: design
-version: 0.3.0
+version: 0.3.1
 status: draft
 canonical: false
 created: 2026-07-06
@@ -98,7 +98,7 @@ Michael's).
 
 | Action | File | Change |
 |---|---|---|
-| EDIT | `compile/assets/civilizationArcData.js` | delete `legendItems` (2645–2658) + `executionPlan` (2660–3009); rewrite the two stale mirror comments to describe the item blocks without referencing the retired key |
+| EDIT | `compile/assets/civilizationArcData.js` | delete `legendItems` (2645–2658) + `executionPlan` (2660–2821 — NOT beyond: `window.CIVILIZATION_LIVE_READER_CORRECTION` at 2824–3010 is must-not-touch); rewrite the two stale mirror comments to describe the item blocks without referencing the retired key |
 | EDIT | `tests/ontology.test.js` | delete the drift-mirror test (266–276); reword the line-256 assertion message (`'keep executionPlan work'` → `'keep derived worklist items'`); ADD named regrowth guard `data carries no retired render-support keys` asserting `'executionPlan' in d === false` and `'legendItems' in d === false` |
 | UNTOUCHED | everything else | items[], ontology, view, builder, server, CSS, specs |
 
@@ -173,3 +173,12 @@ lifecycle ends at ready PR. This IADA does not replace external CFADA.
 > reading is faithful for the narrow ready-PR lifecycle with stage-12 merge
 > reserved to Michael). This appendix is a record added after the audit; the
 > gate credit binds to the audited blob above, not to this file's later SHAs.
+
+## Appendix — CFADA round 2 (Codex) → FAIL, repaired at v0.3.1
+
+> `CFADA_DEADKEYS_R2 FAIL blockers=1 majors=0 minors=0` at v0.3.0 blob
+> `87028a4b` (2026-07-06). Codex independently re-measured the extents.
+
+| # | Finding | Disposition (v0.3.1) |
+|---|---|---|
+| R2-B1 | The v0.3.0 survey correction (I5) fixed §2 but left the stale `2660–3009` extent in the §3 contract row — the contract still "authorized" deletion into the must-not-touch `CIVILIZATION_LIVE_READER_CORRECTION` region. The implementation stayed narrow (key-anchored splice + ground-truth key diff), but the packet contract was stale — the same fix-the-instance-not-the-class failure I5 itself warned about | FIXED — §3 row corrected to 2660–2821 with the must-not-touch boundary named inline; full-packet sweep for `3009` confirms the only remaining occurrences are the two historical records of the error (I5 row, §2 parenthetical), which stay |
