@@ -253,7 +253,7 @@ test('migrated arc data passes the ontology allowlist', () => {
 test('migration keeps narrative beats (reconstructed) + live work (derived) + a goal', () => {
   const items = loadData().items;
   assert.ok(items.filter(i => i.provenance === 'reconstructed').length >= 20, 'keep ~28 beats');
-  assert.ok(items.filter(i => i.provenance === 'derived').length >= 10, 'keep executionPlan work');
+  assert.ok(items.filter(i => i.provenance === 'derived').length >= 10, 'keep derived worklist items');
   assert.ok(items.some(i => i.type === 'goal'), 'north-star Goal present');
 });
 
@@ -263,16 +263,13 @@ test('every dep id resolves to a real item', () => {
   items.forEach(i => (i.deps || []).forEach(d => assert.ok(ids.has(d), 'dangling dep ' + d + ' on ' + i.id)));
 });
 
-test('executionPlan row statuses mirror canonical item statuses', () => {
-  const data = loadData();
-  const byCode = new Map(data.items.map(i => [i.code, i]));
-  ['nearTerm', 'complete'].forEach((section) => {
-    (data.executionPlan[section] || []).forEach((row) => {
-      const item = byCode.get(row.order);
-      assert(item, `executionPlan.${section} row ${row.order} must have a matching item`);
-      assert.strictEqual(row.status, item.status, `executionPlan.${section}.${row.order} status drifted from item`);
-    });
-  });
+// regrowth guard: these keys fed the six-mode engine retired by PR #47; the
+// items[] worklist is the single plane (metrics spec §4). Naming the keys
+// here is the guard's job — the one allowed reference in live code.
+test('data carries no retired render-support keys', () => {
+  const d = loadData();
+  assert.strictEqual('executionPlan' in d, false, 'executionPlan must stay retired (six-mode engine key)');
+  assert.strictEqual('legendItems' in d, false, 'legendItems must stay retired (six-mode engine key)');
 });
 
 // --- date backfill: fail-closed contract rule (date ⇒ ISO + done; ref well-formed) ---

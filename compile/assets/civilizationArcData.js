@@ -2311,9 +2311,9 @@
         note: null,
       },
 
-      // ── ExecutionPlan — nearTerm N1–N7 ───────────────────────────────
-      // Placed in the late arc. These mirror the rows in executionPlan.nearTerm.
-      // N1-N6 are done; N7 is active observability work.
+      // ── Near-term worklist N1–N7 ─────────────────────────────────────
+      // Placed in the late arc. N1-N6 are done; N7 is active
+      // observability work.
       {
         id: "n1",
         code: "N1",
@@ -2457,8 +2457,7 @@
         note: "Recon, transparency contract, observatory phase-3 plan, and an SSE checkpoint are recorded in docs (#128-#130); the live UI reading PR, check, authority, heartbeat, and review-loop state from live sources is not yet wired.",
       },
 
-      // ── ExecutionPlan — complete C1–C10 ──────────────────────────────
-      // These mirror the rows in executionPlan.complete.
+      // ── Delivery route C1–C10 ────────────────────────────────────────
       // C1/C6/C8 are done; C2/C3/C4/C5/C7/C9 are active; C10 is future.
       {
         id: "c1",
@@ -2641,184 +2640,6 @@
         note: "Long-running complex tasks are shepherded end to end under governance, review, and durable evidence.",
       },
     ],
-
-    legendItems: [
-      { key: "phase", label: "Major phase", shape: "rect" },
-      { key: "module", label: "Work package / module", shape: "small-rect" },
-      { key: "deliverable", label: "Deliverable", shape: "tick" },
-      { key: "gate", label: "Milestone / gate", shape: "diamond" },
-      { key: "risk-high", label: "BLOCK chip: high risk / blocker", shape: "risk-high" },
-      { key: "risk-watch", label: "WATCH chip: caveat / gap", shape: "risk-watch" },
-      { key: "decision", label: "DEC chip: decision / ruling", shape: "decision-chip" },
-      { key: "governance", label: "Ritual / governance mechanism", shape: "circle" },
-      { key: "dependency", label: "Dependency", shape: "arrow" },
-      { key: "critical", label: "Critical path", shape: "line" },
-      { key: "hatched", label: "Planned / authorization-gated", shape: "hatch" },
-      { key: "future", label: "Future / speculative", shape: "faded" },
-    ],
-
-    executionPlan: {
-      title: "Civilization execution worklist",
-      updated: "2026-06-17",
-      endGoal:
-        "Reach a steady-state Transpara-AI civilization that can accept new or issue-scanned work, store durable artifacts in the correct repository, open governed PRs, iterate through cross-family adversarial review, surface bulletproof work for human approval, and keep the whole run observable.",
-      summary: [
-        { label: "Current gate", value: "Gate K closed for pre-live by docs#138 waiver; go-live revalidation remains blocked", status: "blocked" },
-        { label: "Merge gate", value: "Seven repos protected with cross-family review", status: "done" },
-        { label: "Storage posture", value: "Artifacts and PRs stay repo-native", status: "active" },
-        { label: "Final mode", value: "Always-on governed factory", status: "planned" },
-      ],
-      nearTerm: [
-        {
-          order: "N1",
-          status: "done",
-          work: "Extend cross-family protection to Civilization Wiki",
-          surface: "docs, agent, eventgraph, hive, site, work, wiki",
-          gate: "GitHub branch protection (Build & Test + cross-family-adversarial-review)",
-          href: "https://github.com/transpara-ai/wiki/pull/8",
-          finish: "Unblocked: wiki is now public, and main has branch protection requiring the cross-family-adversarial-review status plus a Build & Test check (strict, zero required human reviews). All seven repos now carry the gate; PR #8 wires the Build & Test workflow onto main.",
-        },
-        {
-          order: "N2",
-          status: "done",
-          work: "Keep the ordered arc plan visible",
-          surface: "wiki arc page",
-          gate: "civilization-arc.html",
-          finish: "The progress chart renders this ordered worklist under the arc on desktop and mobile.",
-        },
-        {
-          order: "N3",
-          status: "done",
-          work: "Resolve Event-1 / Gate-E authority",
-          surface: "docs#132 grant, docs#115 packet, Hive authority, human operator decision",
-          gate: "External Committee Event-1 grant",
-          href: "gate-k.html",
-          finish: "Done: the External Committee Event-1 / Gate-K authority was granted (decision: Notify; Michael Saucier acting for the Committee, two-human approval waived for this bounded Level-0 grant) and recorded on docs main via #132 (2026-06-15); the Gate-K meta-loop packet merged via #115. Gate-K satisfaction itself is a separate gate — see N4 and the current-gate summary.",
-        },
-        {
-          order: "N4",
-          status: "done",
-          work: "Merge or reissue the Gate-K meta-loop artifacts",
-          surface: "transpara-ai/docs",
-          gate: "Gate-K review convention and data policy",
-          href: "gate-k.html",
-          finish: "Done: meta-loop artifacts (stage-1/stage-3 prompt templates, data-handling policy, review convention) are merged and canonical via #115. The later docs#138 waiver closed N5/Gate K for pre-live sequencing only; go-live still requires revalidation or a production-grade waiver.",
-        },
-        {
-          order: "N5",
-          status: "done",
-          work: "Close out Gate-K for pre-live sequencing by recording the human waiver and live-boundary revalidation obligations",
-          surface: "transpara-ai/docs, human Operator/External Committee waiver",
-          gate: "Gate-K pre-live waiver; go-live revalidation boundary",
-          href: "gate-k.html",
-          finish: "N5/Gate K closed for pre-live sequencing via internal docs#138; private merge evidence was rechecked on 2026-06-17. The waiver explicitly accepts the missing AC-K evidence and status-poster residual for pre-live work only, and preserves the go-live hard stop: live secrets, customer data, customer-facing launch, production deploy, protected runtime execution, value allocation, and autonomy increases still require future evidence or a production-grade waiver.",
-        },
-        {
-          order: "N6",
-          status: "done",
-          work: "Put v3.9 to bed and promote v4.0 to canonical",
-          surface: "transpara-ai/docs",
-          gate: "v4.0 authorization packet",
-          href: "v4-0.html",
-          finish: "v4.0 seed doctrine (DF-V4.0-ADR-001) was accepted via #127 (2026-06-12); reconciliation was certified (Gate-L, Event 2 docs#141) and v4.0 was accepted as the canonical docs baseline via docs#142 (2026-06-18). v3.9 is put to bed (carried forward) and v4.0 is promoted to canonical.",
-        },
-        {
-          order: "N7",
-          status: "active",
-          work: "Wire live observability into task state",
-          surface: "site, hive, work, docs",
-          gate: "Observatory progress read model",
-          href: "the-observatory.html",
-          finish: "Recon, transparency contract, observatory phase-3 plan, and an SSE checkpoint are recorded in docs (#128-#130); the live UI reading PR, check, authority, heartbeat, and review-loop state from live sources is not yet wired.",
-        },
-      ],
-      complete: [
-        {
-          order: "C1",
-          status: "done",
-          work: "Normalize intake into FactoryOrder",
-          surface: "Hive and Work",
-          gate: "FactoryOrder contract",
-          href: "factory-order.html",
-          finish: "Every request has a durable id, target repository, acceptance criteria, and done signal.",
-        },
-        {
-          order: "C2",
-          status: "active",
-          work: "Scaffold new repositories for never-attempted work",
-          surface: "Hive, Work, GitHub",
-          gate: "New-work repo policy",
-          finish: "A new repo is created, seeded with an issue, and made eligible for heartbeat pickup.",
-        },
-        {
-          order: "C3",
-          status: "active",
-          work: "Acquire existing work by scanning source-repo issues",
-          surface: "Work heartbeat and repo registry",
-          gate: "Issue acquisition loop",
-          finish: "Open eligible issues become owned work items without moving durable artifacts out of the source repo.",
-        },
-        {
-          order: "C4",
-          status: "active",
-          work: "Save generated artifacts in the source repository",
-          surface: "Work runners and target repo branches",
-          gate: "Repo-native storage rule",
-          finish: "Complex outputs, evidence, and follow-up docs land beside the work they explain.",
-        },
-        {
-          order: "C5",
-          status: "active",
-          work: "Create governed PRs in the source repository",
-          surface: "Hive protected action and Work PR client",
-          gate: "pull_request.create authority",
-          finish: "A draft PR exists in the correct repo with traceable authority and evidence.",
-        },
-        {
-          order: "C6",
-          status: "done",
-          work: "Run the cross-family adversarial loop",
-          surface: "Codex, Claude, CI status checks",
-          gate: "cross-family-adversarial-review",
-          finish: "The author family and reviewer family differ, the exact head SHA is reviewed, and blockers are zero.",
-        },
-        {
-          order: "C7",
-          status: "active",
-          work: "Promote reviewed PRs to bulletproof",
-          surface: "Hive, Work, Site",
-          gate: "Bulletproof readiness rule",
-          finish: "All checks pass, adversarial findings are resolved, and the PR is ready for human approval.",
-        },
-        {
-          order: "C8",
-          status: "done",
-          work: "Surface human approval through the UI",
-          surface: "Site operator surface and Hive decisions",
-          gate: "AuthorityDecision",
-          href: "authority-request.html",
-          finish: "The human sees the task, evidence, risks, and final approve or reject control outside GitHub review counts.",
-        },
-        {
-          order: "C9",
-          status: "active",
-          work: "Expose full observability while work runs",
-          surface: "Observatory and Civilization Wiki",
-          gate: "Live read-only state",
-          href: "the-observatory.html",
-          finish: "Progress, blockers, authority, PRs, checks, and review loops are inspectable without asking an agent.",
-        },
-        {
-          order: "C10",
-          status: "future",
-          work: "Operate the dark factory on software and non-software tasks",
-          surface: "Transpara-AI civilization",
-          gate: "Expanded audited autonomy",
-          href: "capability-evolution.html",
-          finish: "Long-running complex tasks are shepherded end to end under governance, review, and durable evidence.",
-        },
-      ],
-    },
   };
 
   window.CIVILIZATION_LIVE_READER_CORRECTION = {
