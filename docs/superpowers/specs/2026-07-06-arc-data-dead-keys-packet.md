@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-ARC-DATA-DEADKEYS
 title: Arc data dead-keys removal — retire executionPlan + legendItems (TLC Factory Order + Design Packet)
 doc_type: design
-version: 0.3.2
+version: 0.3.3
 status: draft
 canonical: false
 created: 2026-07-06
@@ -173,6 +173,14 @@ lifecycle ends at ready PR. This IADA does not replace external CFADA.
 > reading is faithful for the narrow ready-PR lifecycle with stage-12 merge
 > reserved to Michael). This appendix is a record added after the audit; the
 > gate credit binds to the audited blob above, not to this file's later SHAs.
+
+> **Rounds 3–4:** r3 `FAIL blockers=1` at v0.3.1 blob `b34c3412` — R3-B1:
+> the R2-B1 disposition's sweep claim ("only two historical records") was
+> falsified by its own row containing the stale number; repaired at v0.3.2
+> as a class assertion that cannot self-invalidate. r4
+> `CFADA_DEADKEYS_R4 PASS blockers=0 majors=0 minors=0` at v0.3.2 blob
+> `8c125aae48dc6c3d93e9f63dc469e54666b3eed1` — the design-gate credit binds
+> to those bytes; this v0.3.3 record is post-pass bookkeeping.
 
 ## Appendix — CFADA round 2 (Codex) → FAIL, repaired at v0.3.1
 
