@@ -2295,6 +2295,300 @@ def test_cfar7_expiry_enforced_at_lock_time():
     print("ok test_cfar7_expiry_enforced_at_lock_time")
 
 
+
+
+# ------------------------------------------------------- fe-ux packet: R6/R2
+# register + previews + manifest shards (TAI-WIKI-FRONTEND-UX AC3/AC6/AC7)
+
+SESSION_DOC = "raw/civilization/external-landscape/alpha-topic-eval.md"
+
+
+def session_doc(root, content="# session-authored eval\n", ref=SESSION_DOC):
+    p = root / ref
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(content)
+    return ref
+
+
+def register_auth(slug="alpha-topic", source_ref=SESSION_DOC, **over):
+    merged = dict(operation="register", slug=slug, source_ref=source_ref)
+    merged.update(over)
+    return good_auth(**merged)
+
+
+def do_register(root, **over):
+    kw = dict(slug="alpha-topic", source_ref=SESSION_DOC, note="", now=NOW)
+    kw.update(over)
+    return ops.register_source(root, **kw)
+
+
+def test_register_authorization_domain():
+    root = fresh_root()
+    article(root, "alpha-topic")
+    session_doc(root)
+    auth_path = root / "compile" / "ingest-authorization.json"
+
+    # no artifact
+    before = tree_snapshot(root)
+    try:
+        do_register(root)
+        raise AssertionError("expected AuthRefused")
+    except ops.AuthRefused:
+        pass
+    assert tree_snapshot(root) == before, "refusal must write nothing"
+
+    # wrong-operation artifact (replace) refuses register
+    write_auth(root, good_auth())
+    try:
+        do_register(root)
+        raise AssertionError("expected AuthRefused")
+    except ops.AuthRefused:
+        pass
+
+    # wrong instance: different source_ref
+    write_auth(root, register_auth(source_ref="raw/other/place.md"))
+    try:
+        do_register(root)
+        raise AssertionError("expected AuthRefused")
+    except ops.AuthRefused:
+        pass
+
+    # register artifact must carry a non-empty source_ref
+    write_auth(root, register_auth(source_ref=""))
+    try:
+        ops.load_authorization(auth_path, NOW, operation="register",
+                               slug="alpha-topic", source_ref="")
+        raise AssertionError("expected AuthRefused")
+    except ops.AuthRefused:
+        pass
+
+    # expired window
+    write_auth(root, register_auth(expires_at="2026-07-04T00:30:00Z"))
+    try:
+        do_register(root, now="2026-07-04T12:00:00+00:00")
+        raise AssertionError("expected AuthRefused")
+    except ops.AuthRefused:
+        pass
+
+    # every refusal above left the artifact unconsumed (still parseable live)
+    live = json.loads(auth_path.read_text())
+    assert live["df"] == "ingest-authorization", "artifact must stay unconsumed"
+    print("ok test_register_authorization_domain")
+
+
+def test_register_preflight_domain_refuses_writing_nothing():
+    root = fresh_root()
+    article(root, "alpha-topic")
+    session_doc(root)
+
+    cases = [
+        dict(slug="no-such-article"),                       # unknown slug
+        dict(source_ref="https://example.com/x.md"),        # URL source
+        dict(source_ref="compile/edge-states.json"),        # outside raw/
+        dict(source_ref="raw/../compile/secrets.md"),       # traversal
+        dict(source_ref="raw/inbox/missing/doc.md"),        # file absent
+    ]
+    for over in cases:
+        auth = register_auth(**{k: v for k, v in over.items()
+                                if k in ("slug", "source_ref")})
+        write_auth(root, auth)
+        before = tree_snapshot(root)
+        msg = refused(do_register, root, **over)
+        assert tree_snapshot(root) == before, \
+            "refusal (%s) must write nothing" % msg
+
+    # retired target
+    (root / "wiki" / "alpha-topic.md").write_text(
+        "---\nentity: A\nretired_on: \"2026-07-01\"\n---\n\n# gone\n")
+    write_auth(root, register_auth())
+    before = tree_snapshot(root)
+    refused(do_register, root)
+    assert tree_snapshot(root) == before
+
+    # secret-bearing session doc refuses via quarantine, redacted
+    root2 = fresh_root()
+    article(root2, "alpha-topic")
+    session_doc(root2, content="key: %s\n" % AWS_KEY)
+    write_auth(root2, register_auth())
+    msg = refused(do_register, root2)
+    assert AWS_KEY not in msg, "refusal must never echo secret bytes"
+
+    # already registered IN THE MANIFEST (frozen file) refuses pre-consumption
+    root3 = fresh_root()
+    article(root3, "alpha-topic")
+    session_doc(root3)
+    manifest = root3 / "raw" / "inbox" / "manifest.jsonl"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(json.dumps({
+        "ingested_at": NOW, "mode": "browser-ingest",
+        "target_slug": "alpha-topic", "source_path": SESSION_DOC,
+        "sha256": "0" * 64, "original_name": "x.md", "note": "",
+        "supersedes": ""}) + "\n")
+    auth_path = write_auth(root3, register_auth())
+    msg = refused(do_register, root3)
+    assert "already registered" in msg
+    assert json.loads(auth_path.read_text())["df"] == "ingest-authorization", \
+        "already-registered must refuse BEFORE consumption"
+
+    # corrupt manifest row: the dedup gate cannot vouch -> refuse (fail closed)
+    manifest.write_text("{not json\n")
+    write_auth(root3, register_auth())
+    refused(do_register, root3)
+    print("ok test_register_preflight_domain_refuses_writing_nothing")
+
+
+def test_register_happy_path_and_first_consumer_shape():
+    root = fresh_root()
+    article(root, "alpha-topic")
+    ref = session_doc(root)
+    write_auth(root, register_auth())
+    row = do_register(root, rebuild_runner=lambda: True)
+
+    sha = hashlib.sha256((root / ref).read_bytes()).hexdigest()
+    # ledger row shape (register), appended last and valid
+    ledger = (root / "compile" / "ingest-ledger.jsonl").read_text().splitlines()
+    last = json.loads(ledger[-1])
+    assert last == row
+    assert last["operation"] == "register" and last["sha256"] == sha
+    assert last["result"] == "completed" and last["rebuild"] == "ok"
+    # single-row shard exists; frozen manifest untouched (was never created)
+    shards = sorted((root / "raw" / "inbox" / "manifest.d").glob("*.jsonl"))
+    assert len(shards) == 1
+    srow = json.loads(shards[0].read_text())
+    assert srow["mode"] == "session-author" and srow["source_path"] == ref
+    assert srow["sha256"] == sha
+    assert not (root / "raw" / "inbox" / "manifest.jsonl").exists()
+    # frontmatter now carries the ref
+    fm = (root / "wiki" / "alpha-topic.md").read_text()
+    assert ref in fm
+    # artifact consumed exactly once
+    consumed = json.loads((root / "compile" / "ingest-authorization.json").read_text())
+    assert consumed["df"] == "ingest-authorization-consumed"
+
+    # FIRST-CONSUMER shape: frontmatter ALREADY carries the pointer, manifest
+    # does not -> register SUCCEEDS (manifest-presence is the dedup gate) and
+    # the frontmatter is not duplicated
+    root2 = fresh_root()
+    article(root2, "alpha-topic")
+    ref2 = session_doc(root2)
+    # seed the pointer into raw_documents (interim provenance, issue #50)
+    art = root2 / "wiki" / "alpha-topic.md"
+    art.write_text(art.read_text().replace(
+        "raw_documents:\n", "raw_documents:\n  - %s\n" % ref2, 1))
+    write_auth(root2, register_auth())
+    do_register(root2, rebuild_runner=lambda: True)
+    fm2 = (root2 / "wiki" / "alpha-topic.md").read_text()
+    assert fm2.count(ref2) == 1, "no duplicate raw_documents entry"
+    shards2 = sorted((root2 / "raw" / "inbox" / "manifest.d").glob("*.jsonl"))
+    assert len(shards2) == 1, "manifest row still written for first consumer"
+    print("ok test_register_happy_path_and_first_consumer_shape")
+
+
+def test_register_ledger_row_is_last():
+    root = fresh_root()
+    article(root, "alpha-topic")
+    session_doc(root)
+    write_auth(root, register_auth())
+
+    real = ops._run_rebuild
+    def boom(*a, **kw):
+        raise RuntimeError("forced failure before ledger append")
+    ops._run_rebuild = boom
+    try:
+        do_register(root)
+        raise AssertionError("expected the forced failure to propagate")
+    except RuntimeError:
+        pass
+    finally:
+        ops._run_rebuild = real
+    # durable artifacts may exist (shard), but the ledger NEVER claims the op
+    ledger = root / "compile" / "ingest-ledger.jsonl"
+    assert not ledger.exists() or "register" not in ledger.read_text(), \
+        "ledger must not claim an op that did not complete"
+    shards = sorted((root / "raw" / "inbox" / "manifest.d").glob("*.jsonl"))
+    assert len(shards) == 1, "shard-without-ledger-row is the detectable " \
+        "signature of an incomplete op"
+    print("ok test_register_ledger_row_is_last")
+
+
+def test_manifest_shard_never_mutates_existing_files():
+    root = fresh_root()
+    article(root, "alpha-topic")
+    ref1 = session_doc(root)
+    write_auth(root, register_auth())
+    do_register(root, rebuild_runner=lambda: True)
+    after_first = tree_snapshot(root / "raw" / "inbox")
+
+    ref2 = session_doc(root, content="# a second eval\n",
+                       ref="raw/civilization/external-landscape/alpha-2.md")
+    write_auth(root, register_auth(source_ref=ref2))
+    do_register(root, source_ref=ref2, rebuild_runner=lambda: True,
+                now="2026-07-04T12:00:01+00:00")
+    after_second = tree_snapshot(root / "raw" / "inbox")
+    for path, blob in after_first.items():
+        assert after_second.get(path) == blob, \
+            "existing manifest surface mutated: %s" % path
+    assert len(after_second) == len(after_first) + 1
+
+    # direct collision: identical row + identical now -> exclusive create refuses
+    row = {"ingested_at": NOW, "mode": "session-author",
+           "target_slug": "alpha-topic", "source_path": ref1,
+           "sha256": hashlib.sha256(b"x").hexdigest(), "original_name": "x",
+           "note": "", "supersedes": ""}
+    ops.write_manifest_shard(root, row, NOW)
+    refused(ops.write_manifest_shard, root, row, NOW)
+    print("ok test_manifest_shard_never_mutates_existing_files")
+
+
+def test_preview_remove_parity_and_readonly():
+    root = fresh_root()
+    article(root, "alpha-topic")
+    # beta links to alpha -> one inbound edge
+    article(root, "beta-topic", body="# beta\n\nSee [[alpha-topic]].\n")
+    before = tree_snapshot(root)
+    prev = ops.preview_remove(root, "alpha-topic")
+    assert tree_snapshot(root) == before, "preview must be read-only"
+    assert prev["inbound"] == ops.find_inbound_edges(root, "alpha-topic")
+    assert prev["edges_would_pend"] == len(prev["inbound"]) >= 1
+    assert prev["tombstone"] == "alpha-topic.html"
+
+    # parity with the real operation's affected_edges on an identical tree
+    write_auth(root, remove_auth("alpha-topic"))
+    row = ops.remove_topic(root, slug="alpha-topic", now=NOW,
+                           rebuild_runner=lambda: True)
+    assert row["affected_edges"] == prev["inbound"]
+
+    # doomed previews surface the same refusal lanes the op enforces
+    refused(ops.preview_remove, root, "alpha-topic")      # now retired
+    refused(ops.preview_remove, root, "index")            # protected
+    refused(ops.preview_remove, root, "no-such-slug")     # unknown
+    print("ok test_preview_remove_parity_and_readonly")
+
+
+def test_preview_replace_surfaces_exact_refusal():
+    root = fresh_root()
+    article(root, "alpha-topic")
+    article(root, "gamma-topic")
+    # shared source: gamma also cites alpha's OLD_REF
+    art = root / "wiki" / "gamma-topic.md"
+    art.write_text(art.read_text().replace(
+        "sources:\n", "sources:\n  - %s\n" % OLD_REF, 1))
+    before = tree_snapshot(root)
+    msg_preview = refused(ops.preview_replace, root, "alpha-topic", OLD_REF)
+    assert tree_snapshot(root) == before, "preview must be read-only"
+    write_auth(root, good_auth())
+    msg_op = refused(do_replace, root)
+    assert msg_preview == msg_op, \
+        "preview must surface the operation's EXACT refusal (parity)"
+
+    # happy preview on an unshared tree
+    root2 = fresh_root()
+    article(root2, "alpha-topic")
+    prev = ops.preview_replace(root2, "alpha-topic", OLD_REF)
+    assert prev["superseded"] == OLD_REF and prev["will_recompile"] is True
+    print("ok test_preview_replace_surfaces_exact_refusal")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

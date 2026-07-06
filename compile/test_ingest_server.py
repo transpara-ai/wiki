@@ -554,6 +554,117 @@ def test_refresh_lock_contract_is_owned_by_callers():
     assert "compile/.wiki-write.lock" in systemd_text
     print("ok test_refresh_lock_contract_is_owned_by_callers")
 
+# ------------------------------------------------- fe-ux packet: R2/R6 server
+
+def _preview_root():
+    import tempfile, json as _json
+    root = pathlib.Path(tempfile.mkdtemp())
+    (root / "compile").mkdir(parents=True)
+    (root / "PROVENANCE.md").write_text("# Provenance\n")
+    wiki = root / "wiki"
+    wiki.mkdir()
+    (wiki / "alpha-topic.md").write_text(
+        "---\nentity: Alpha\nsources:\n  - raw/inbox/2026-07-01/alpha-topic/doc.md\n"
+        "raw_documents:\n  - raw/inbox/2026-07-01/alpha-topic/doc.md\n---\n\n# A\n")
+    (wiki / "beta-topic.md").write_text(
+        "---\nentity: Beta\n---\n\n# B\n\nSee [[alpha-topic]].\n")
+    raw = root / "raw" / "inbox" / "2026-07-01" / "alpha-topic"
+    raw.mkdir(parents=True)
+    (raw / "doc.md").write_text("# doc\n")
+    return root
+
+
+def test_preview_payload_shapes_and_readonly():
+    import ingest_ops as ops
+    root = _preview_root()
+    def snap(r):
+        return {str(p): p.read_bytes() for p in sorted(r.rglob("*")) if p.is_file()}
+    before = snap(root)
+
+    # happy remove preview: parity with the ops helper
+    payload = srv.preview_payload(root, "remove", "alpha-topic", "")
+    assert payload["preview"] == ops.preview_remove(root, "alpha-topic")
+    assert payload["preview"]["inbound"] == ["beta-topic"]
+
+    # happy replace preview
+    payload = srv.preview_payload(
+        root, "replace", "alpha-topic", "raw/inbox/2026-07-01/alpha-topic/doc.md")
+    assert payload["preview"]["superseded"].endswith("doc.md")
+
+    # doomed operation previews its EXACT refusal in the refuses shape
+    payload = srv.preview_payload(root, "remove", "no-such-slug", "")
+    assert payload["preview"]["refuses"] == "unknown article slug"
+
+    # unknown operation / malformed params raise (422 at the route)
+    for args in (("frobnicate", "alpha-topic", ""),
+                 ("remove", "alpha-topic", "raw/x.md"),
+                 ("replace", "alpha-topic", "")):
+        try:
+            srv.preview_payload(root, *args)
+            raise AssertionError("expected OpRefused for %r" % (args,))
+        except ops.OpRefused:
+            pass
+
+    # echo-quarantine: a secret-bearing param refuses WITHOUT echoing bytes
+    secret = "AK" + "IA" + "ABCDEFGHIJKLMNOP"
+    try:
+        srv.preview_payload(root, "remove", secret, "")
+        raise AssertionError("expected OpRefused")
+    except ops.OpRefused as exc:
+        assert secret not in str(exc), "refusal must never echo secret bytes"
+
+    assert snap(root) == before, "preview must be strictly read-only"
+    print("ok test_preview_payload_shapes_and_readonly")
+
+
+def test_preview_and_register_route_wiring():
+    src = (pathlib.Path(__file__).resolve().parent / "ingest_server.py").read_text()
+    get_seg = src.split("def do_GET", 1)[1].split("\n    def ", 1)[0]
+    assert "/api/preview" in get_seg, "preview must be a GET route"
+    assert "require_authoring" in get_seg.split("/api/preview")[0] or \
+        "require_authoring" in get_seg.split("/api/preview", 1)[1], \
+        "preview must sit behind require_authoring (stricter than /api/articles)"
+    post_seg = src.split("def do_POST", 1)[1].split("\n    def ", 1)[0]
+    assert '"/api/register"' in post_seg, "register must be a POST route"
+    reg_seg = src.split("def handle_register", 1)[1].split("\n    def ", 1)[0]
+    lock_at = reg_seg.index("wiki_write_lock()")
+    now_at = reg_seg.index("dt.datetime.now", reg_seg.index("load_authorization"))
+    assert now_at > lock_at or "load_authorization" in reg_seg[:lock_at], \
+        "artifact gate fires before the lock; now is captured inside it"
+    seg_lock = reg_seg[lock_at:]
+    assert "dt.datetime.now" in seg_lock, "now must be captured inside the lock (CFAR r7)"
+    print("ok test_preview_and_register_route_wiring")
+
+
+def test_add_manifest_writes_are_sharded():
+    import tempfile, json as _json
+    import ingest_ops as ops
+    root = pathlib.Path(tempfile.mkdtemp())
+    row = {"ingested_at": "2026-07-06T12:00:00+00:00", "mode": "browser-ingest",
+           "target_slug": "alpha-topic", "source_path": "raw/inbox/x/doc.md",
+           "sha256": "a" * 64, "original_name": "doc.md", "note": "",
+           "supersedes": ""}
+    old_root = srv.ROOT
+    srv.ROOT = root
+    try:
+        srv.append_manifest(dict(row))
+        shards = sorted((root / "raw" / "inbox" / "manifest.d").glob("*.jsonl"))
+        assert len(shards) == 1, "Add manifest row must land as a shard"
+        assert _json.loads(shards[0].read_text()) == row
+        assert not (root / "raw" / "inbox" / "manifest.jsonl").exists(), \
+            "the frozen manifest file must never grow a new row"
+        # identical row again -> exclusive-create refusal, first shard intact
+        try:
+            srv.append_manifest(dict(row))
+            raise AssertionError("expected OpRefused on shard collision")
+        except ops.OpRefused:
+            pass
+        assert len(sorted((root / "raw" / "inbox" / "manifest.d").glob("*.jsonl"))) == 1
+    finally:
+        srv.ROOT = old_root
+    print("ok test_add_manifest_writes_are_sharded")
+
+
 
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())

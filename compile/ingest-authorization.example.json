@@ -1,8 +1,8 @@
 {
   "df": "ingest-authorization",
-  "operation": "replace",
+  "operation": "replace | remove | register",
   "slug": "REPLACE-WITH-TARGET-ARTICLE-SLUG",
-  "source_ref": "raw/REPLACE-WITH-EXACT-SOURCE-REF (or \"\" for remove)",
+  "source_ref": "raw/REPLACE-WITH-EXACT-SOURCE-REF (\"\" for remove; the in-repo raw/ path for register)",
   "authority": "name / role of the human authorizing this ONE operation",
   "authorized_at": "2026-01-01T00:00:00Z",
   "expires_at": "2026-01-01T12:00:00Z",

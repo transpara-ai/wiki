@@ -60,7 +60,16 @@ LEDGER_SHAPES = {
     "remove": {"ts", "operation", "slug", "reason", "authorized_by",
                "authorization_sha256", "affected_edges", "repaired_edges",
                "result", "rebuild"},
+    "register": {"ts", "operation", "slug", "source_path", "sha256",
+                 "authorized_by", "authorization_sha256", "result",
+                 "rebuild"},
 }
+# manifest rows (frozen raw/inbox/manifest.jsonl + manifest.d/ shards):
+# exact key sets for NEW rows; historical rows are read for source_path only
+MANIFEST_FILE_KEYS = {"ingested_at", "mode", "target_slug", "source_path",
+                      "sha256", "original_name", "note", "supersedes"}
+MANIFEST_URL_KEYS = {"ingested_at", "mode", "target_slug", "source_url",
+                     "note", "supersedes"}
 
 
 class OpRefused(Exception):
@@ -133,7 +142,7 @@ def load_authorization(path, now, *, operation, slug, source_ref):
     """Deny-by-default, per-ingestion, instance-scoped. Grant ONLY on the
     single fully-proven branch: exact key set, exact instance match
     (operation/slug/source_ref), valid <=24h window. Everything else refuses."""
-    if operation not in ("replace", "remove"):
+    if operation not in ("replace", "remove", "register"):
         raise AuthRefused("unknown operation: %r" % operation)
     path = pathlib.Path(path)
     if not path.exists():
@@ -173,12 +182,14 @@ def load_authorization(path, now, *, operation, slug, source_ref):
         auth[key] = auth[key].strip()
         if not auth[key]:
             raise AuthRefused("field %s must be non-blank" % key)
-    if auth["operation"] not in ("replace", "remove"):
-        raise AuthRefused("artifact operation must be replace or remove")
+    if auth["operation"] not in ("replace", "remove", "register"):
+        raise AuthRefused("artifact operation must be replace, remove, "
+                          "or register")
     if auth["operation"] == "remove" and auth["source_ref"] != "":
         raise AuthRefused("a remove artifact must carry source_ref \"\"")
-    if auth["operation"] == "replace" and not auth["source_ref"]:
-        raise AuthRefused("a replace artifact must name its source_ref")
+    if auth["operation"] in ("replace", "register") and not auth["source_ref"]:
+        raise AuthRefused("a %s artifact must name its source_ref"
+                          % auth["operation"])
     # instance binding: this artifact authorizes ONE payload, not a class
     if auth["operation"] != operation:
         raise AuthRefused("artifact authorizes %r, not %r"
@@ -311,6 +322,14 @@ def _validate_ledger_row(row, where="ledger row"):
             raise OpRefused("%s: result must be completed|stale" % where)
         if (row["result"] == "completed") != (row["engine"] == "ok"):
             raise OpRefused("%s: result is completed iff engine ok" % where)
+        return
+    if operation == "register":
+        _require_row_str(row, ("source_path",), where)
+        if not isinstance(row["sha256"], str) \
+                or not SHA256_RE.match(row["sha256"]):
+            raise OpRefused("%s: sha256 must be hex sha256" % where)
+        if row["result"] != "completed":
+            raise OpRefused("%s: register result must be completed" % where)
         return
     _require_row_str(row, ("reason",), where)
     for key in ("affected_edges", "repaired_edges"):
@@ -778,6 +797,40 @@ def run_engine(engine_command, timeout, job, cwd=None):
 
 # ------------------------------------------------------------------ replace
 
+def _replace_preflight(root, slug, source_ref):
+    """Shared READ-ONLY preflight for replace and its consequence preview —
+    one implementation, so the preview can never drift from the operation
+    (fe-ux packet §2.3 parity-by-construction)."""
+    if not SLUG_RE.match(slug):
+        raise OpRefused("invalid article slug")
+    article_path = root / "wiki" / ("%s.md" % slug)
+    if not article_path.exists():
+        raise OpRefused("unknown article slug")
+    fm_lines, tail = _parse_article(article_path.read_text())
+    if fm_scalar(fm_lines, "retired_on"):
+        raise OpRefused("article is retired — replace refused")
+    if URL_RE.match(source_ref):
+        raise OpRefused("replace of an external URL source is not supported in v1")
+    if not source_ref.startswith("raw/"):
+        raise OpRefused("source_ref must be a local raw/ path")
+    live_sources = fm_list_values(fm_lines, "sources")
+    live_raw_docs = fm_list_values(fm_lines, "raw_documents")
+    if source_ref not in live_sources and source_ref not in live_raw_docs:
+        raise OpRefused("source_ref is not referenced by this article")
+    for other in sorted((root / "wiki").glob("*.md")):
+        if other.stem == slug:
+            continue
+        try:
+            other_fm, _ = _parse_article(other.read_text())
+        except OpRefused:
+            continue
+        if source_ref in fm_list_values(other_fm, "sources") \
+                or source_ref in fm_list_values(other_fm, "raw_documents"):
+            raise OpRefused("source_ref is shared by another article — "
+                            "shared-source replace is refused in v1")
+    return article_path, fm_lines, tail
+
+
 def replace_source(root, *, slug, source_ref, data, filename, note, now,
                    rebuild_runner=None):
     root = pathlib.Path(root)
@@ -801,34 +854,8 @@ def replace_source(root, *, slug, source_ref, data, filename, note, now,
         raise OpRefused("replacement upload is empty")
 
     # preflight — read-only; refusal leaves the tree byte-identical
-    if not SLUG_RE.match(slug):
-        raise OpRefused("invalid article slug")
-    article_path = root / "wiki" / ("%s.md" % slug)
-    if not article_path.exists():
-        raise OpRefused("unknown article slug")
-    raw = article_path.read_text()
-    fm_lines, tail = _parse_article(raw)
-    if fm_scalar(fm_lines, "retired_on"):
-        raise OpRefused("article is retired — replace refused")
-    if URL_RE.match(source_ref):
-        raise OpRefused("replace of an external URL source is not supported in v1")
-    if not source_ref.startswith("raw/"):
-        raise OpRefused("source_ref must be a local raw/ path")
-    live_sources = fm_list_values(fm_lines, "sources")
-    live_raw_docs = fm_list_values(fm_lines, "raw_documents")
-    if source_ref not in live_sources and source_ref not in live_raw_docs:
-        raise OpRefused("source_ref is not referenced by this article")
-    for other in sorted((root / "wiki").glob("*.md")):
-        if other.stem == slug:
-            continue
-        try:
-            other_fm, _ = _parse_article(other.read_text())
-        except OpRefused:
-            continue
-        if source_ref in fm_list_values(other_fm, "sources") \
-                or source_ref in fm_list_values(other_fm, "raw_documents"):
-            raise OpRefused("source_ref is shared by another article — "
-                            "shared-source replace is refused in v1")
+    # (shared with preview_replace — parity by construction)
+    article_path, fm_lines, tail = _replace_preflight(root, slug, source_ref)
     ledger_path = root / "compile" / "ingest-ledger.jsonl"
     ledger_preflight(ledger_path)
     # corrupt edge state refuses EVERY operation, not only Remove (§2.7
@@ -1028,6 +1055,227 @@ def find_inbound_edges(root, target_slug):
     return sources
 
 
+def _remove_preflight(root, slug):
+    """Shared READ-ONLY preflight for remove and its consequence preview —
+    one implementation, so the preview can never drift from the operation
+    (fe-ux packet §2.3 parity-by-construction)."""
+    if not SLUG_RE.match(slug):
+        raise OpRefused("invalid article slug")
+    # generated/structural pages cannot be retired: the builder always
+    # regenerates them (index; arc_page rebuilds civilization-arc.html and its
+    # alias regardless of retired_on), so a tombstone would be reanimated and
+    # the completed-retirement ledger row would be a lie (CFAR r25)
+    if slug in PROTECTED_SLUGS:
+        raise OpRefused("the %s page is generated/structural and cannot be "
+                        "retired" % slug)
+    article_path = root / "wiki" / ("%s.md" % slug)
+    if not article_path.exists():
+        raise OpRefused("unknown article slug")
+    fm_lines, tail = _parse_article(article_path.read_text())
+    if fm_scalar(fm_lines, "retired_on"):
+        raise OpRefused("article is already retired")
+    return article_path, fm_lines, tail
+
+
+def preview_remove(root, slug):
+    """Read-only consequence preview (fe-ux packet §2.3): the SAME preflight
+    and edge enumeration the operation runs. Consumes no authorization, takes
+    no lock, writes nothing."""
+    root = pathlib.Path(root)
+    _remove_preflight(root, slug)
+    inbound = find_inbound_edges(root, slug)
+    return {"operation": "remove", "slug": slug, "inbound": inbound,
+            "edges_would_pend": len(inbound),
+            "tombstone": "%s.html" % slug, "will_recompile": True}
+
+
+def preview_replace(root, slug, source_ref):
+    """Read-only consequence preview for replace — same preflight helper the
+    operation runs, so a doomed request previews its EXACT refusal."""
+    root = pathlib.Path(root)
+    _replace_preflight(root, slug, source_ref)
+    return {"operation": "replace", "slug": slug, "source_ref": source_ref,
+            "superseded": source_ref, "will_recompile": True}
+
+
+# ----------------------------------------------------- manifest (shards, R6)
+
+def _validate_manifest_row(row):
+    if not isinstance(row, dict):
+        raise OpRefused("manifest row: not an object")
+    keys = set(row)
+    if keys == MANIFEST_FILE_KEYS:
+        if not isinstance(row["sha256"], str) \
+                or not SHA256_RE.match(row["sha256"]):
+            raise OpRefused("manifest row: sha256 must be hex sha256")
+    elif keys != MANIFEST_URL_KEYS:
+        raise OpRefused("manifest row: keys must be exactly the file or "
+                        "URL shape")
+    for key in sorted(keys):
+        if not isinstance(row[key], str):
+            raise OpRefused("manifest row: %r must be a string" % key)
+        if key not in ("note", "supersedes") and not row[key]:
+            raise OpRefused("manifest row: %r must be non-empty" % key)
+
+
+def write_manifest_shard(root, row, now):
+    """One immutable single-row shard file per manifest row (fe-ux packet
+    §2.5): raw/inbox/manifest.jsonl is FROZEN as the historical segment and
+    never rewritten; every new row is created exactly once via O_CREAT|O_EXCL.
+    Every manifest blob is therefore immutable from birth — which is what
+    closes the #50 secret-scan re-clearance class: no clearance pinned to a
+    blob sha ever goes stale, and neither a PR nor a runtime append can
+    poison a later commit. An existing path REFUSES — never overwrite, never
+    append. The complete audit surface = frozen file + shards
+    (`cat raw/inbox/manifest.jsonl raw/inbox/manifest.d/*.jsonl`); a shard
+    without a matching ledger row is the detectable signature of an
+    incomplete operation."""
+    root = pathlib.Path(root)
+    _validate_manifest_row(row)
+    if not _valid_ts(now):
+        raise OpRefused("now must be an ISO-8601 timestamp with a timezone")
+    stamp = _parse_iso(now).astimezone(datetime.timezone.utc) \
+        .strftime("%Y%m%dT%H%M%S.%f")
+    digest = row.get("sha256") or hashlib.sha256(
+        json.dumps(row, sort_keys=True).encode("utf-8")).hexdigest()
+    shard_dir = root / "raw" / "inbox" / "manifest.d"
+    shard_dir.mkdir(parents=True, exist_ok=True)
+    path = shard_dir / ("%sZ-%s.jsonl" % (stamp, digest[:12]))
+    try:
+        fd = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        raise OpRefused("manifest shard already exists (%s) — refusing to "
+                        "overwrite or append" % path.name)
+    with os.fdopen(fd, "w") as f:
+        f.write(json.dumps(row, sort_keys=True) + "\n")
+    return str(path.relative_to(root))
+
+
+def manifest_registered_paths(root):
+    """Every source_path recorded across the frozen manifest + shards.
+    STRICT parse: the register dedup gate cannot vouch over unreadable audit
+    rows, so a corrupt line refuses (fail closed) rather than risking a
+    missed registration. Historical rows are read for source_path only —
+    their key sets are historical audit shapes, not re-validated here."""
+    root = pathlib.Path(root)
+    files = []
+    frozen = root / "raw" / "inbox" / "manifest.jsonl"
+    if frozen.exists():
+        files.append(frozen)
+    shard_dir = root / "raw" / "inbox" / "manifest.d"
+    if shard_dir.exists():
+        files.extend(sorted(shard_dir.glob("*.jsonl")))
+    paths = set()
+    for path in files:
+        for lineno, line in enumerate(path.read_text().splitlines(), 1):
+            where = "%s line %d" % (path.name, lineno)
+            if not line.strip():
+                raise OpRefused("%s: blank line — strict JSONL" % where)
+            try:
+                row = json.loads(line, object_pairs_hook=_no_dup)
+            except (json.JSONDecodeError, ValueError):
+                raise OpRefused("%s: not valid JSON (or duplicate key)"
+                                % where)
+            if not isinstance(row, dict):
+                raise OpRefused("%s: not an object" % where)
+            source_path = row.get("source_path")
+            if isinstance(source_path, str) and source_path:
+                paths.add(source_path)
+    return paths
+
+
+# ----------------------------------------------------------- register (R6)
+
+def register_source(root, *, slug, source_ref, note, now, rebuild_runner=None):
+    """Sanctioned session-author registration (issue #50; fe-ux packet §2.5).
+    Registers an ALREADY-COMMITTED in-repo raw document in the manifest +
+    article frontmatter + ops ledger under the same deny-by-default
+    single-use artifact contract as Replace/Remove. The operation writes
+    content NEVER — the document arrived via a gated PR; this records it.
+    Write order: preflights (all read-only) -> consume -> manifest shard ->
+    frontmatter -> rebuild -> LEDGER ROW LAST (append-last: the ledger never
+    claims an operation that did not complete)."""
+    root = pathlib.Path(root)
+    now = _now_str(now)
+    if not _valid_ts(now):
+        raise OpRefused("now must be an ISO-8601 timestamp with a timezone")
+    auth_path = root / "compile" / "ingest-authorization.json"
+    auth = load_authorization(auth_path, now, operation="register",
+                              slug=slug, source_ref=source_ref)
+    quarantine_fields({"slug": slug, "source_ref": source_ref, "note": note,
+                       "authorized_by": auth["authority"]})
+
+    # preflight — read-only; refusal leaves the tree byte-identical AND the
+    # artifact unconsumed
+    if not SLUG_RE.match(slug):
+        raise OpRefused("invalid article slug")
+    article_path = root / "wiki" / ("%s.md" % slug)
+    if not article_path.exists():
+        raise OpRefused("unknown article slug")
+    fm_lines, tail = _parse_article(article_path.read_text())
+    if fm_scalar(fm_lines, "retired_on"):
+        raise OpRefused("article is retired — register refused")
+    if URL_RE.match(source_ref):
+        raise OpRefused("register records in-repo raw documents, not URLs")
+    if not source_ref.startswith("raw/"):
+        raise OpRefused("source_ref must be a local raw/ path")
+    parts = source_ref.split("/")
+    if "\\" in source_ref or "" in parts or "." in parts or ".." in parts:
+        raise OpRefused("source_ref must be a canonical raw/ path")
+    doc_path = root / source_ref
+    if not doc_path.is_file():
+        raise OpRefused("source file not found in the tree")
+    raw_root = (root / "raw").resolve()
+    if not str(doc_path.resolve()).startswith(str(raw_root) + os.sep):
+        raise OpRefused("source_ref escapes raw/ — refused")
+    data = doc_path.read_bytes()
+    if not data:
+        raise OpRefused("session document is empty")
+    quarantine_payload(data)
+    # dedup gate = the MANIFEST (frozen + shards), NOT the frontmatter: the
+    # first consumer (#50) already carries the raw_documents pointer while
+    # the manifest does not — that missing row is exactly the gap this
+    # operation closes. Refuse BEFORE consumption so a wasted grant is
+    # structurally impossible.
+    if source_ref in manifest_registered_paths(root):
+        raise OpRefused("source_ref is already registered in the manifest")
+    ledger_path = root / "compile" / "ingest-ledger.jsonl"
+    ledger_preflight(ledger_path)
+    load_edge_states(root / "compile" / "edge-states.json")
+    sha = hashlib.sha256(data).hexdigest()
+
+    # durable write #0: burn the single-use authorization (intent record)
+    digest = consume_authorization(auth_path, auth, now)
+
+    # 1. manifest shard (immutable single-row file)
+    write_manifest_shard(root, {
+        "ingested_at": now, "mode": "session-author", "target_slug": slug,
+        "source_path": source_ref, "sha256": sha,
+        "original_name": pathlib.Path(source_ref).name, "note": note,
+        "supersedes": ""}, now)
+
+    # 2. frontmatter: add-iff-absent — an existing pointer is legal interim
+    # provenance (#50 first consumer); the manifest above is the dedup gate
+    fm_lines = _normalize_list_to_block(fm_lines, "raw_documents")
+    if source_ref not in fm_list_values(fm_lines, "raw_documents"):
+        fm_lines = _append_list_value(fm_lines, "raw_documents", source_ref)
+        _atomic_write_text(article_path, _assemble_article(fm_lines, tail))
+
+    _append_provenance(root, "- %s register: `%s` (sha256 %s…) recorded for "
+                       "article `%s` (authorized by %s)"
+                       % (_date_of(now), source_ref, sha[:12], slug,
+                          auth["authority"]))
+
+    # 3. rebuild, then 4. ledger row LAST — the completion claim
+    rebuild = _run_rebuild(root, rebuild_runner)
+    row = {"ts": now, "operation": "register", "slug": slug,
+           "source_path": source_ref, "sha256": sha,
+           "authorized_by": auth["authority"], "authorization_sha256": digest,
+           "result": "completed", "rebuild": rebuild}
+    append_ledger(ledger_path, row)
+    return row
+
+
 def remove_topic(root, *, slug, now, rebuild_runner=None):
     root = pathlib.Path(root)
     now = _now_str(now)  # reject a naive timestamp before any write (CFAR r14)
@@ -1045,22 +1293,9 @@ def remove_topic(root, *, slug, now, rebuild_runner=None):
     quarantine_fields({"slug": slug, "reason": reason,
                        "authorized_by": auth["authority"]})
 
-    # preflight — read-only
-    if not SLUG_RE.match(slug):
-        raise OpRefused("invalid article slug")
-    # generated/structural pages cannot be retired: the builder always
-    # regenerates them (index; arc_page rebuilds civilization-arc.html and its
-    # alias regardless of retired_on), so a tombstone would be reanimated and
-    # the completed-retirement ledger row would be a lie (CFAR r25)
-    if slug in PROTECTED_SLUGS:
-        raise OpRefused("the %s page is generated/structural and cannot be "
-                        "retired" % slug)
-    article_path = root / "wiki" / ("%s.md" % slug)
-    if not article_path.exists():
-        raise OpRefused("unknown article slug")
-    fm_lines, _tail = _parse_article(article_path.read_text())
-    if fm_scalar(fm_lines, "retired_on"):
-        raise OpRefused("article is already retired")
+    # preflight — read-only (shared with preview_remove — parity by
+    # construction)
+    article_path, fm_lines, _tail = _remove_preflight(root, slug)
     ledger_path = root / "compile" / "ingest-ledger.jsonl"
     ledger_preflight(ledger_path)
     edge_path = root / "compile" / "edge-states.json"
