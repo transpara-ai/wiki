@@ -2,8 +2,8 @@
 doc_id: FO-WIKI-FRONTEND-UX
 title: Front-end requirements completion — §7 ingest UX + honest-state styling (Factory Order)
 doc_type: factory-order
-version: 0.3.0
-status: confirmed (channel-A intake confirm, Michael, 2026-07-06 — answers archived in §5; R5 factual predicate corrected at v0.3.0, scope narrowed, intent unchanged)
+version: 0.3.1
+status: confirmed (channel-A intake confirm, Michael, 2026-07-06 — answers archived in §5; R5 factual predicate corrected at v0.3.x, scope narrowed, intent unchanged)
 canonical: false
 created: 2026-07-06
 updated: 2026-07-06
@@ -97,8 +97,10 @@ the house pattern (unit + dom-smoke + py builder guards + Playwright);
 
 - Ops packet §2.1: "Out of v1 (explicit): `ingest.html` UI for the new
   operations (API-first; curl is the v1 surface)…" — the deferral record.
-- `grep -c "deploy-foot\|deploy-blocked" compile/assets/style.css` → 0;
-  `grep -c "wl-pending" compile/assets/style.css` → 0; both class names are
+- `grep -c "deploy-foot\|deploy-blocked" compile/assets/style.css` → 0
+  (the R4 gap); `grep -c "wl-pending" compile/assets/style.css` → **1**
+  (`style.css:35` — corrected at v0.3.1 with R5; the v0.2.0 "0" was a
+  misread of this same command's output); the deploy class names are
   emitted by the builder.
 - The Arc 1 API is live on :8787 as of 2026-07-06 (service restarted,
   endpoints verified 403 deny-closed) — the UI has a real backend to talk to.

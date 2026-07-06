@@ -2,7 +2,7 @@
 doc_id: TAI-WIKI-FRONTEND-UX
 title: Front-end requirements completion — §7 ingest UX, honest-state styling, sanctioned session-author registration (TLC Design Packet)
 doc_type: design
-version: 0.3.0
+version: 0.3.1
 status: draft
 canonical: false
 created: 2026-07-06
@@ -11,7 +11,7 @@ owner: Michael Saucier
 steward: Claude (Fable 5)
 authority: planning
 tlc_stage: design
-factory_order: FO-WIKI-FRONTEND-UX v0.2.0 (blob 7d32e332ed2095a56533b10ac06d2a34e887bdb7, confirmed channel-A 2026-07-06)
+factory_order: FO-WIKI-FRONTEND-UX v0.3.1 (blob 8beb807911f4b2c37c62b8a57fff2a7187b58657, confirmed channel-A 2026-07-06; R5 survey-corrected at v0.3.x)
 source_of_intent:
   - the Factory Order above (its §5 archives Michael's intake answers verbatim)
   - docs/superpowers/specs/2026-07-01-per-ingestion-operations-design.md §7 (blob d21e2fef)
@@ -21,7 +21,7 @@ intake_channel: A (owner-directed session 2026-07-06)
 
 # Front-end requirements completion — TLC Design Packet
 
-> Answers FO-WIKI-FRONTEND-UX v0.2.0 (R1–R6) against measured live code
+> Answers FO-WIKI-FRONTEND-UX v0.3.1 (R1–R6) against measured live code
 > (wiki main @ `ca23a85`, survey 2026-07-06). Design rule inherited from the
 > house: every state indicator renders from an allowlist; unknown, missing,
 > or unreadable state renders degraded/explicit — never healthy.
@@ -253,8 +253,11 @@ the two auth layers cannot be conflated by a reviewer or a future editor).
 
 House-palette rules, both themes: `.deploy-foot` (muted footer line),
 deploy blocked banner (warn accent, visible only when the script un-hides
-it), `.wl-pending` (dashed underline + pending tint + marker glyph —
-distinct from live links AND from plain non-links; tooltip retained).
+it). `.wl-pending` keeps its EXISTING rule (`style.css:35`, dashed
+underline + muted tint, distinct from live links and plain text, tooltip
+retained) — R5 is the coverage guard, no restyling (R2-002): a named test
+asserts every emitted honest-state class has rules in the built sheet,
+which is also R4's regression net.
 Playwright asserts computed visibility in both themes; a py test asserts
 the classes exist in the built sheet (regrowth guard for the styling gap).
 
@@ -350,3 +353,14 @@ before Human Design Review (stage 6) approves.
 | 004 (major) | Shard filename collision safety asserted, not bound | FIXED — microsecond UTC stamp + `O_CREAT\|O_EXCL` exclusive create; existing path refuses; named in AC6/AC7 |
 | 005 (minor) | Survey claimed `.wl-pending` unstyled; it is styled at `style.css:35` | FIXED — survey corrected here AND in the FO (v0.3.0): R5 narrows to the emitted-state-class coverage guard; file plan no longer restyles it |
 | 006 (minor) | "/api/preview same posture as /api/articles" — false comparison (articles is host-gated only) | FIXED — §2.3 states preview is deliberately stricter (host + authoring), with the live-code cite |
+
+## Appendix — CFADA round 2 (Codex) → FAIL, repaired at v0.3.1
+
+> `CFADA_FEUX_R2 FAIL blockers=0 majors=2 minors=0` at v0.3.0 blob
+> `c4f383ae` (2026-07-06). All six r1 findings verified repaired; two NEW
+> incoherences introduced by the repairs themselves.
+
+| # | Finding | Disposition (v0.3.1) |
+|---|---|---|
+| R2-001 | Packet still bound source-of-intent to FO v0.2.0 blob `7d32e332` after the FO bumped to v0.3.0 — stale truth-chain link | FIXED — packet bound to the FO's CURRENT bytes: v0.3.1 blob `8beb8079` (computed via `git hash-object` on the co-committed file, so binding and bytes land in the same commit — the stale-binding lane is closed by procedure, not by luck) |
+| R2-002 | R5 repair incoherent across surfaces: §2.6 still promised marker-glyph restyling; FO §3 still claimed grep → 0 | FIXED — §2.6 restated guard-only; FO §3 corrected to grep → 1 with the misread recorded; third instance-not-class failure this session — repair procedure now REQUIRES a whole-corpus grep sweep for the changed fact before every commit (applied here) |
