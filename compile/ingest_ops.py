@@ -1299,6 +1299,20 @@ def register_source(root, *, slug, source_ref, note, now, rebuild_runner=None):
     data = doc_path.read_bytes()
     if not data:
         raise OpRefused("session document is empty")
+    # register records PR-LANDED documents only (#50 contract): the source
+    # must exist at HEAD byte-exactly, else a clearance committed ahead of
+    # its file could vouch for working-tree bytes that never went through
+    # the committed-file scan (CFAR r4 P1) — and the manifest would record
+    # state git cannot reproduce
+    committed = subprocess.run(
+        ["git", "-C", str(root), "show", "HEAD:%s" % source_ref],
+        capture_output=True)
+    if committed.returncode != 0:
+        raise OpRefused("source_ref is not a committed file at HEAD — "
+                        "register records PR-landed documents only")
+    if committed.stdout != data:
+        raise OpRefused("source_ref differs from its committed bytes at "
+                        "HEAD; refused")
     # committed-file attestation lane — see quarantine_payload_attested
     quarantine_payload_attested(data, canonical_path=source_ref, root=root)
     # dedup gate = the MANIFEST (frozen + shards), NOT the frontmatter: the

@@ -2310,6 +2310,17 @@ def session_doc(root, content="# session-authored eval\n", ref=SESSION_DOC):
     return ref
 
 
+def commit_tree(root):
+    """Register records PR-landed docs only: fixtures commit the tree so
+    source_ref exists at HEAD byte-exactly (CFAR r4 P1)."""
+    subprocess.run(["git", "-C", str(root), "init", "-q"], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "commit", "-qm", "fixture",
+                    "--no-verify"], check=True)
+
+
 def register_auth(slug="alpha-topic", source_ref=SESSION_DOC, **over):
     merged = dict(operation="register", slug=slug, source_ref=source_ref)
     merged.update(over)
@@ -2424,6 +2435,7 @@ def test_register_preflight_domain_refuses_writing_nothing():
         "target_slug": "alpha-topic", "source_path": SESSION_DOC,
         "sha256": "0" * 64, "original_name": "x.md", "note": "",
         "supersedes": ""}) + "\n")
+    commit_tree(root3)
     auth_path = write_auth(root3, register_auth())
     msg = refused(do_register, root3)
     assert "already registered" in msg
@@ -2441,6 +2453,7 @@ def test_register_happy_path_and_first_consumer_shape():
     root = fresh_root()
     article(root, "alpha-topic")
     ref = session_doc(root)
+    commit_tree(root)
     write_auth(root, register_auth())
     row = do_register(root, rebuild_runner=lambda: True)
 
@@ -2475,6 +2488,7 @@ def test_register_happy_path_and_first_consumer_shape():
     art = root2 / "wiki" / "alpha-topic.md"
     art.write_text(art.read_text().replace(
         "raw_documents:\n", "raw_documents:\n  - %s\n" % ref2, 1))
+    commit_tree(root2)
     write_auth(root2, register_auth())
     do_register(root2, rebuild_runner=lambda: True)
     fm2 = (root2 / "wiki" / "alpha-topic.md").read_text()
@@ -2488,6 +2502,7 @@ def test_register_ledger_row_is_last():
     root = fresh_root()
     article(root, "alpha-topic")
     session_doc(root)
+    commit_tree(root)
     write_auth(root, register_auth())
 
     real = ops._run_rebuild
@@ -2515,12 +2530,18 @@ def test_manifest_shard_never_mutates_existing_files():
     root = fresh_root()
     article(root, "alpha-topic")
     ref1 = session_doc(root)
+    commit_tree(root)
     write_auth(root, register_auth())
     do_register(root, rebuild_runner=lambda: True)
     after_first = tree_snapshot(root / "raw" / "inbox")
 
     ref2 = session_doc(root, content="# a second eval\n",
                        ref="raw/civilization/external-landscape/alpha-2.md")
+    subprocess.run(["git", "-C", str(root), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "commit", "-qm", "second",
+                    "--no-verify"], check=True)
     write_auth(root, register_auth(source_ref=ref2))
     do_register(root, source_ref=ref2, rebuild_runner=lambda: True,
                 now="2026-07-04T12:00:01+00:00")
@@ -2668,6 +2689,7 @@ def test_register_attests_committed_clearances():
     # (a) finding + NO clearance -> refuse, artifact unconsumed
     root = fresh_root()
     build(root, content)
+    commit_tree(root)
     msg = refused(do_register, root)
     assert "uncleared" in msg or "finding" in msg
     auth_path = root / "compile" / "ingest-authorization.json"
@@ -2682,15 +2704,8 @@ def test_register_attests_committed_clearances():
            "reason": "test", "owner": "o@x", "reviewed_by": "t",
            "reviewed_on": _today, "expires_on": _far}
     (root / "compile" / ".secretsallow").write_text(json.dumps(row) + "\n")
+    commit_tree(root)
     refused(do_register, root)
-
-    def commit_allowlist(root):
-        subprocess.run(["git", "-C", str(root), "init", "-q"], check=True)
-        subprocess.run(["git", "-C", str(root), "-c", "user.email=t@t",
-                        "-c", "user.name=t", "add", "-A"], check=True)
-        subprocess.run(["git", "-C", str(root), "-c", "user.email=t@t",
-                        "-c", "user.name=t", "commit", "-qm", "fixture",
-                        "--no-verify"], check=True)
 
     # (c) exact-identity clearance, COMMITTED -> register SUCCEEDS
     root = fresh_root()
@@ -2698,7 +2713,7 @@ def test_register_attests_committed_clearances():
     blob = hashlib.sha256((root / ref).read_bytes()).hexdigest()
     row = dict(row, canonical_path=ref, blob_sha256=blob)
     (root / "compile" / ".secretsallow").write_text(json.dumps(row) + "\n")
-    commit_allowlist(root)
+    commit_tree(root)
     out = do_register(root, rebuild_runner=lambda: True)
     assert out["result"] == "completed" and out["sha256"] == blob
 
@@ -2708,7 +2723,7 @@ def test_register_attests_committed_clearances():
     ref = build(root, content)
     blob = hashlib.sha256((root / ref).read_bytes()).hexdigest()
     (root / "compile" / ".secretsallow").write_text("")
-    commit_allowlist(root)
+    commit_tree(root)
     good = dict(row, canonical_path=ref, blob_sha256=blob)
     (root / "compile" / ".secretsallow").write_text(json.dumps(good) + "\n")
     refused(do_register, root)
@@ -2720,7 +2735,23 @@ def test_register_attests_committed_clearances():
     bad = dict(row, canonical_path=ref, blob_sha256=blob,
                byte_offset=f.byte_offset + 1)
     (root / "compile" / ".secretsallow").write_text(json.dumps(bad) + "\n")
+    commit_tree(root)
     refused(do_register, root)
+
+    # (e) the CFAR-r4 P1 attack: clearance committed AHEAD of its file —
+    # working-tree doc bytes match the clearance but are NOT at HEAD -> refuse
+    root = fresh_root()
+    article(root, "alpha-topic")
+    write_auth(root, register_auth())
+    blob_planned = hashlib.sha256(content.encode()).hexdigest()
+    ahead = dict(row, canonical_path=SESSION_DOC, blob_sha256=blob_planned,
+                 byte_offset=f.byte_offset)
+    (root / "compile" / ".secretsallow").write_text(json.dumps(ahead) + "\n")
+    commit_tree(root)                      # HEAD has the clearance, NOT the doc
+    session_doc(root, content=content)     # doc appears only in the working tree
+    write_auth(root, register_auth())
+    msg = refused(do_register, root)
+    assert "committed" in msg, msg
     print("ok test_register_attests_committed_clearances")
 
 
