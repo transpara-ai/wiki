@@ -37,7 +37,8 @@ confidence:
   civilization_baseline: high — quoted from the accepted v4.0 doctrine set and shipped gate tool; Level 0 state taken from doc 06's own gate table
   learning_opportunities: medium-high — patterns are text-verifiable; the hive review-capacity-throttle gap should be re-verified before implementation
 raw_documents:
-  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # sha256 6b97d23751d8ca079718fb27df0c218f6e2b6845c997c1aae7e4de8f5a6f305b (v1.1.0); session-authored (PR #49) Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter; registered in the live ingestion ledger at v1.0.0 via the wiki#50 register path (first consumer, 2026-07-07); post-merge, the v1.1.0 bytes supersede the registered v1.0.0 via the authorized REPLACE operation for this source ref (register rejects an already-registered path by design) — operator step
+  - "raw/civilization/external-landscape/tai-res-2026-006-v1.1.0-owainlewis-evaluation.md"  # sha256 800495012f1054c90587a70a706f83d35a5f7adcfdd461053e06123b0da1f916 — v1.1.0, current revision (this PR); session-authored Civilization external-landscape research; provenance = git history + frontmatter supersedes linkage; may later become the ledgered ref via the authorized replace operation (operator's option, not a correctness dependency)
+  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # sha256 38b8d05a519ca5321a826c9be406182dea7cb695a6c65ff12f250aee55913e90 — v1.0.0, REGISTERED in the live ingestion ledger (wiki#50 register path, first consumer, 2026-07-07); byte-identical at its registered path per ledger immutability; superseded in presentation by the v1.1.0 row above
 ---
 
 # Owain Lewis Work System (Blueprint & Factory)
