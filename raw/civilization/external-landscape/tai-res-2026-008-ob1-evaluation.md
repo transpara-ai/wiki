@@ -48,7 +48,7 @@ The evaluation covers:
 - **The storage and retrieval path** — the canonical `thoughts` schema mirrored in `integrations/local-docker/db-init/01-schema.sql` and `docs/01-getting-started.md`: `pgvector`, HNSW cosine index, `content_fingerprint` dedup, the `match_thoughts` / `upsert_thought` RPCs, and the OpenRouter embedding path [1][4].
 - **The two Transpara hardening PRs** — PR #5 (`1d1d6e2`, verifiable + embedding-failure-safe `capture_thought`) and PR #6 (`1c4c906`, `deno check` resolution + empty-error guard) — the two most substantive of the fork's Transpara commits, and the only ones after the 2026-06-14 page [1][6].
 - **License, security, and supply chain** — `LICENSE.md` (FSL-1.1-MIT), `SECURITY.md`, `AGENTS.md`, `.gitignore`, and the community-contribution posture [2][3][5].
-- **The Civilization v4.0 baseline** — the accepted memory/knowledge boundary (doc `03:36`, `05:523`), the external-framework law (Decision 15; v4.0 `03:158`, `04:252`), and Base Slice 0 (`04:220`), plus the operative preserved-v3.9 OpenBrain decision (Decision 12; the crosswalk row and per-item note) [8][9][13–19].
+- **The Civilization v4.0 baseline** — the accepted memory/knowledge boundary (doc `03:36`, `05:523`), the external-framework law (Decision 15; v4.0 `03:158` and doc 04), and Base Slice 0 (v4.0 doc 04), plus the operative preserved-v3.9 OpenBrain decision (Decision 12; the crosswalk row and per-item note) [8][9][13–19].
 
 **Evidence base and source discipline.** Per the standing rule that *code is ground truth while READMEs and marketing may be aspirational*, every claim about OB1's server, storage, and capture path is **code-anchored** with `file:line` provenance [1][4]. Upstream identity, community-contribution, and maturity claims are **repo-metadata- or README-cited** and carried at appropriate confidence [2][7]. The Civilization side is **doctrine-anchored**: quotes come from the accepted v4.0 docs and the preserved-v3.9 Decision 12/15 + crosswalk, distinguishing accepted-canonical law (Decision 12/15, coverage matrix) from the `status: review` crosswalk that elaborates it [8][9][13–19]. One deliberate distinction runs throughout: **"OB1 the upstream repository" (the artifact surveyed) is kept separate from "Open Brain the running internal store" (a source, and the realization of the borrowed pattern)** — they share code, but they are different objects and are treated as such [1][20].
 
@@ -118,11 +118,11 @@ The Civilization already has a governed home for advisory memory. Accepted v4.0 
 
 ### 3.2 The truth / certification boundary
 
-Only the Release cell may certify releases (`04:195`), and the factory must **stop** when *"memory/knowledge contradicts EventGraph in high-risk planning"* (`05:523`) [17]. Memory may recover intent; it may never certify truth. This is the exact line OB1's own in-house framing draws — *"the event chain is a ledger of what happened; Open Brain captures what the agent was thinking and why"* [20].
+Only the Release cell may certify releases (v4.0 doc 04), and the factory must **stop** when *"memory/knowledge contradicts EventGraph in high-risk planning"* (`05:523`) [17]. Memory may recover intent; it may never certify truth. This is the exact line OB1's own in-house framing draws — *"the event chain is a ledger of what happened; Open Brain captures what the agent was thinking and why"* [20].
 
 ### 3.3 The external-frameworks law (Decision 15) and its v4.0 carry-forward
 
-The ratified boundary is **v3.9 Decision 15**: external frameworks *"must not become kernel, truth source, Work replacement, policy owner, release authority, certification authority, capability promoter, factory controller, or Site replacement"* (`01:174`) [8]. v4.0 carries the *principle* forward generically — *"External policy engines are optional references or adapters only. They do not own policy, release authority, certification authority, or factory control"* (`03:158`); *"External runtimes such as Hermes, OpenManus, OpenClaw-like workers, Codex, CI, or future backends are references or adapters only"* (`04:252`) [15][16] — but **names no OpenBrain**. The OB1-specific decision therefore lives, un-superseded, in v3.9 (§4.4).
+The ratified boundary is **v3.9 Decision 15**: external frameworks *"must not become kernel, truth source, Work replacement, policy owner, release authority, certification authority, capability promoter, factory controller, or Site replacement"* (`01:174`) [8]. v4.0 carries the *principle* forward generically — *"External policy engines are optional references or adapters only. They do not own policy, release authority, certification authority, or factory control"* (`03:158`); *"External runtimes such as Hermes, OpenManus, OpenClaw-like workers, Codex, CI, or future backends are references or adapters only"* (v4.0 doc 04) [15][16] — but **names no OpenBrain**. The OB1-specific decision therefore lives, un-superseded, in v3.9 (§4.4).
 
 ---
 
@@ -186,7 +186,7 @@ The six-tool read-mostly + single-annotated-writer surface [1] is a good shape f
 
 ## 6. The Inverse: What OB1 Cannot Take From the Civilization by Adoption Alone
 
-Trust-accounted memory that knows its own freshness and contradictions (`MemoryReference` fields OB1's `metadata jsonb` does not carry); a binding to an append-only truth ledger that outlives any session; fail-closed certification that no recall can satisfy (`04:195`); the stop-on-contradiction rule that halts high-risk planning when memory disagrees with EventGraph (`05:523`); and an institution in which memory is *advisory by construction*, not by convention. OB1 supplies recall; it cannot supply the governance that makes recall safe to act on — that is the Civilization boundary, and it is the half OB1 was never built to provide.
+Trust-accounted memory that knows its own freshness and contradictions (`MemoryReference` fields OB1's `metadata jsonb` does not carry); a binding to an append-only truth ledger that outlives any session; fail-closed certification that no recall can satisfy (v4.0 doc 04); the stop-on-contradiction rule that halts high-risk planning when memory disagrees with EventGraph (`05:523`); and an institution in which memory is *advisory by construction*, not by convention. OB1 supplies recall; it cannot supply the governance that makes recall safe to act on — that is the Civilization boundary, and it is the half OB1 was never built to provide.
 
 ---
 
@@ -223,7 +223,7 @@ OB1 is a credible, running, memory-of-intent substrate, and the pattern it embod
 [13] `DF-V4.0-README` (accepted, canonical, v4.0.54) — scoped supersession; does **not** supersede `DF-V3.9-ADR-001` or the crosswalk.
 [14] v4.0 doc 01 — development process as governed Civilization function (accepted).
 [15] v4.0 doc `03` — Civilization Governance & Authority: "EventGraph remains the source of truth… Memory and knowledge are advisory only" (`03:36`); "External policy engines are optional references or adapters only…" (`03:158`).
-[16] v4.0 doc `04` — Production Workflow Runtime: Release-only certification (`04:195`); Base Slice 0 (`04:199-220`, "must not use… memory recall, knowledge reuse"); external runtimes are references/adapters only (`04:252`).
+[16] v4.0 doc `04` — Production Workflow Runtime: Release-only certification; Base Slice 0 ("must not use… memory recall, knowledge reuse"); external runtimes are references/adapters only. (Cited by rule rather than line: doc 04 is under active revision, so its line anchors drift.)
 [17] v4.0 doc `05` — Verification/Audit/Risk/Eval: the factory must stop when "memory/knowledge contradicts EventGraph in high-risk planning" (`05:523`).
 [18] v4.0 docs `06`/`07` — autonomy gates / current state; CFAR-CFADA dev-arc gate standard (accepted).
 [19] `grep -rniE 'openbrain|ob1|cognitive planning' v4.0/0[1-7]-*.md` → zero matches (2026-07-07): OB1 is not restated in accepted v4.0 core doctrine.
