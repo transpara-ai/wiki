@@ -55,8 +55,10 @@ plus each document's own frontmatter (doc id, version) and the citing article's
 `raw_documents` entry (which records the content sha256); they are deliberately
 outside `raw/inbox/manifest.jsonl`, which remains the exclusive ledger of the
 authorized ingest machinery (see issues #50/#52 for the sanctioned-path work).
-Once a revision in this tier is registered in the live ingestion ledger (the
-#50 register path), its file is immutable at its registered path; a later
+Once a revision in this tier is registered via the #50 register path (the
+durable shard/ledger artifacts live with the ingest service and reach this
+repo through the service's own sync arc), its file is immutable at its
+registered path; a later
 revision lands as a NEW versioned file carrying `supersedes:` frontmatter, and
 may optionally be promoted to the ledgered ref via the authorized replace
 operation — so registered ledger rows stay verifiable forever. Do not read an empty

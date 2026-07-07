@@ -27,7 +27,7 @@ spawned_planning:  # research→planning provenance: intake-only issues filed 20
   - https://github.com/transpara-ai/docs/issues/261  # §8.6 crosswalk decision row: pattern-only, no ADR, no control roles
   - https://github.com/transpara-ai/wiki/issues/54  # §8.7 ~2026-Q4 re-scan / version-bump of the eval
 gate_arc_defects:  # repo defects surfaced by this eval's own PR gate arc — NOT spawned planning; tracked for completeness with live state
-  - https://github.com/transpara-ai/wiki/issues/50  # sanctioned register path — CLOSED COMPLETED 2026-07-06 (shipped as FO-WIKI-FRONTEND-UX R6; this eval was its first registered consumer, 2026-07-07)
+  - https://github.com/transpara-ai/wiki/issues/50  # sanctioned register path — CLOSED COMPLETED 2026-07-06 (shipped as FO-WIKI-FRONTEND-UX R6; this eval was its first registered consumer 2026-07-07 — evidence is the #50 closure record, service-side)
   - https://github.com/transpara-ai/wiki/issues/52  # inherited CONFIDENTIAL frontmatter in ledgered inbox evals — open
 confidence:
   enforcement_posture: high — every enforcement claim is code- or prompt-text-anchored (exec lines, prompt wrapper, audit heuristics, cage constants read directly)
@@ -37,8 +37,8 @@ confidence:
   civilization_baseline: high — quoted from the accepted v4.0 doctrine set and shipped gate tool; Level 0 state taken from doc 06's own gate table
   learning_opportunities: medium-high — patterns are text-verifiable; the hive review-capacity-throttle gap should be re-verified before implementation
 raw_documents:
-  - "raw/civilization/external-landscape/tai-res-2026-006-v1.1.0-owainlewis-evaluation.md"  # sha256 800495012f1054c90587a70a706f83d35a5f7adcfdd461053e06123b0da1f916 — v1.1.0, current revision (this PR); session-authored Civilization external-landscape research; provenance = git history + frontmatter supersedes linkage; may later become the ledgered ref via the authorized replace operation (operator's option, not a correctness dependency)
-  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # sha256 38b8d05a519ca5321a826c9be406182dea7cb695a6c65ff12f250aee55913e90 — v1.0.0, REGISTERED in the live ingestion ledger (wiki#50 register path, first consumer, 2026-07-07); byte-identical at its registered path per ledger immutability; superseded in presentation by the v1.1.0 row above
+  - "raw/civilization/external-landscape/tai-res-2026-006-v1.1.0-owainlewis-evaluation.md"  # sha256 ebe04c30c2690a9e5f198b904c7964e83dc7a2c29a36800db088068f70b6e550 — v1.1.0, current revision (this PR); session-authored Civilization external-landscape research; provenance = git history + frontmatter supersedes linkage; may later become the ledgered ref via the authorized replace operation (operator's option, not a correctness dependency)
+  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # sha256 38b8d05a519ca5321a826c9be406182dea7cb695a6c65ff12f250aee55913e90 — v1.0.0, registered on the live ingest service 2026-07-07 per the wiki#50 closure record (service-side manifest shard + ledger row; those artifacts reach this repo through the ingest service's own sync arc — a checkout of this PR alone does not yet carry them); kept byte-identical at its path per the tier's immutability rule; superseded in presentation by the v1.1.0 row above
 ---
 
 # Owain Lewis Work System (Blueprint & Factory)
@@ -83,7 +83,7 @@ The determination above is not shelf-ware: on 2026-07-07, after the eval merged 
 | Crosswalk decision row: pattern-only, no ADR, no control roles (§8.6) | [docs#261](https://github.com/transpara-ai/docs/issues/261) | docs (decision record) |
 | ~2026-Q4 re-scan / version-bump of this eval (§8.7) | [wiki#54](https://github.com/transpara-ai/wiki/issues/54) | wiki (eval series) |
 
-Every issue is intake-only: it authorizes nothing, work enters through the normal Factory Order → TLC gate arc, and readiness labeling stays human-set. The eval's own gate arc also surfaced two wiki repo defects: [wiki#50](https://github.com/transpara-ai/wiki/issues/50) — **closed COMPLETED** 2026-07-06 (the sanctioned register path shipped as FO-WIKI-FRONTEND-UX R6, and this eval became its first registered consumer on 2026-07-07) — and [wiki#52](https://github.com/transpara-ai/wiki/issues/52), still open.
+Every issue is intake-only: it authorizes nothing, work enters through the normal Factory Order → TLC gate arc, and readiness labeling stays human-set. The eval's own gate arc also surfaced two wiki repo defects: [wiki#50](https://github.com/transpara-ai/wiki/issues/50) — **closed COMPLETED** 2026-07-06 (the sanctioned register path shipped as FO-WIKI-FRONTEND-UX R6, and this eval became its first registered consumer on 2026-07-07, per the #50 closure record — the service-side ledger artifacts sync to this repo via the ingest service's own arc) — and [wiki#52](https://github.com/transpara-ai/wiki/issues/52), still open.
 
 ## What his system cannot take from prompts alone (the inverse)
 
