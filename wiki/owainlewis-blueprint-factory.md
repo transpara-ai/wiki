@@ -11,7 +11,7 @@ status: compiled
 last_compiled: 2026-07-07
 civilization_contribution: "Pattern-only; no ADR. Contributes six mineable patterns — review-capacity throttle, definition-of-ready as Factory Order lint, density-over-length gate prose, audit→objective compiler, single-mover/stale-claim label invariants, Neo's runtime cage as worked example — and the strongest independent confirmation yet of the dev-arc's two-human-gate topology. Blueprint/Factory/Neo are never eligible as runtime, gate authority, certification, or truth store."
 sources:
-  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # TAI-RES-2026-006 v1.1.0, code-anchored evaluation (this page's primary source)
+  - "raw/civilization/external-landscape/tai-res-2026-006-v1.1.0-owainlewis-evaluation.md"  # TAI-RES-2026-006 v1.1.0, code-anchored evaluation (this page's primary source; supersedes the v1.0.0 file below)
   - https://github.com/owainlewis/blueprint/tree/3815669  # evaluated commit, 2026-07-05 — read in full from local clone
   - https://github.com/owainlewis/factory/tree/8b346d7  # evaluated commit, 2026-07-05 — all ~1,895 Go lines read as ground truth
   - https://github.com/owainlewis/neo/tree/022d001  # evaluated commit — harness/orchestrator; the code-enforced "cage"
