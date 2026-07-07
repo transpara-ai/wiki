@@ -268,6 +268,67 @@ def quarantine_payload(data):
     return None
 
 
+def _git_no_fetch(root, *args):
+    """git for attestation reads: lazy fetching disabled (mirrors the secret
+    scanner's wrapper) so a missing blob refuses instead of doing network
+    I/O or hanging under the write lock in air-gapped deployments."""
+    env = dict(os.environ)
+    env["GIT_NO_LAZY_FETCH"] = "1"
+    return subprocess.run(["git", "-C", str(root), *args],
+                          capture_output=True, env=env)
+
+
+def quarantine_payload_attested(data, *, canonical_path, root, commit):
+    """quarantine_payload with the ONE principled runtime attestation lane
+    (wiki#52 path A): a register payload is a COMMITTED file, so its findings
+    can attest against the commit-time allowlist at the exact identity the
+    scanner itself uses — (rule_id, canonical_path, sha256(bytes),
+    match_sha256, byte_offset). Every finding must carry a live clearance;
+    any unmatched finding, an unreadable/invalid allowlist, or any
+    size/binary/UTF-8 condition refuses (those stay absolute — attestation
+    never applies to unscannable payloads). Add/Replace uploads keep the
+    bare quarantine: uploaded bytes have no reviewed blob to attest."""
+    if len(data) > MAX_QUARANTINE_BYTES:
+        raise OpRefused("payload exceeds %d bytes — unscannable at runtime; "
+                        "refused" % MAX_QUARANTINE_BYTES)
+    if b"\x00" in data:
+        raise OpRefused("binary payload cannot be text-scanned; refused")
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        raise OpRefused("payload is not valid UTF-8 — binary/unscannable; "
+                        "refused")
+    findings = secret_scan.scan_text(text)
+    if not findings:
+        return None
+    # the trust root is the COMMITTED allowlist (CFAR r3): a mutable
+    # working-tree copy would let an unstaged local edit clear a finding —
+    # read the immutable HEAD snapshot instead; anything short of a clean
+    # read + strict parse refuses
+    proc = _git_no_fetch(root, "show", "%s:compile/.secretsallow" % commit)
+    if proc.returncode != 0:
+        raise OpRefused("%d secret finding(s) and no committed allowlist "
+                        "snapshot to attest against; refused" % len(findings))
+    try:
+        # decode INSIDE the refusal path: a non-UTF-8 committed allowlist
+        # must refuse through the same controlled lane as an invalid one
+        # (CFAR r5), never escape as a bare decode error
+        allow = secret_scan.parse_allowlist(proc.stdout.decode("utf-8"))
+    except Exception as exc:
+        raise OpRefused("%d secret finding(s) and the committed allowlist "
+                        "cannot vouch (invalid: %s); refused"
+                        % (len(findings), type(exc).__name__))
+    blob = hashlib.sha256(data).hexdigest()
+    uncleared = [f for f in findings
+                 if (f.rule_id, canonical_path, blob, f.match_sha256,
+                     f.byte_offset) not in allow.fingerprints]
+    if uncleared:
+        rules = sorted({f.rule_id for f in uncleared})
+        raise OpRefused("%d uncleared secret finding(s) in payload [%s]; "
+                        "refused" % (len(uncleared), ", ".join(rules)))
+    return None
+
+
 def quarantine_fields(fields):
     """scan_text over EVERY string headed for the ledger, frontmatter,
     PROVENANCE, edge-states, manifest, logs, or the HTTP response. Findings
@@ -1249,7 +1310,28 @@ def register_source(root, *, slug, source_ref, note, now, rebuild_runner=None):
     data = doc_path.read_bytes()
     if not data:
         raise OpRefused("session document is empty")
-    quarantine_payload(data)
+    # register records PR-LANDED documents only (#50 contract): the source
+    # must exist at HEAD byte-exactly, else a clearance committed ahead of
+    # its file could vouch for working-tree bytes that never went through
+    # the committed-file scan (CFAR r4 P1) — and the manifest would record
+    # state git cannot reproduce. HEAD is resolved ONCE and the same pinned
+    # commit backs both this check and the allowlist attestation, so a
+    # deploy advancing HEAD mid-request cannot split the trust root
+    # (ready-state CFAR TOCTOU)
+    head = _git_no_fetch(root, "rev-parse", "HEAD")
+    if head.returncode != 0:
+        raise OpRefused("cannot resolve the repository HEAD — refused")
+    pinned = head.stdout.decode("utf-8", "replace").strip()
+    committed = _git_no_fetch(root, "show", "%s:%s" % (pinned, source_ref))
+    if committed.returncode != 0:
+        raise OpRefused("source_ref is not a committed file at HEAD — "
+                        "register records PR-landed documents only")
+    if committed.stdout != data:
+        raise OpRefused("source_ref differs from its committed bytes at "
+                        "HEAD; refused")
+    # committed-file attestation lane — see quarantine_payload_attested
+    quarantine_payload_attested(data, canonical_path=source_ref, root=root,
+                                commit=pinned)
     # dedup gate = the MANIFEST (frozen + shards), NOT the frontmatter: the
     # first consumer (#50) already carries the raw_documents pointer while
     # the manifest does not — that missing row is exactly the gap this
