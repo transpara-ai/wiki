@@ -2657,8 +2657,9 @@ def test_register_attests_committed_clearances():
         return ref
 
     import datetime as _dt
-    _today = _dt.date.today().isoformat()
-    _far = (_dt.date.today() + _dt.timedelta(days=170)).isoformat()
+    _utc_today = _dt.datetime.now(_dt.timezone.utc).date()
+    _today = _utc_today.isoformat()
+    _far = (_utc_today + _dt.timedelta(days=170)).isoformat()
     content = "# eval\n\nidentifier: %s\n" % AWS_KEY
     findings = list(_scan.scan_text(content))
     assert findings, "fixture must trip the scanner"
