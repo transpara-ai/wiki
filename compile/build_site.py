@@ -1284,11 +1284,19 @@ def build_source_pages(status):
 
 def _supersedes_target(comment):
     """Extract the superseded ref from a source-line annotation. Segments
-    are '; '-joined (see ingest_server.source_line), so the value runs to
-    the next ';' or end of comment — free-text refs with spaces included
-    (wiki#60 CFAR r1). Returns "" when there is no annotation."""
-    m = re.search(r"supersedes:\s*([^;]+)", comment or "")
-    return source_ref_clean(m.group(1).strip()) if m else ""
+    are '; '-joined (see ingest_server.source_line) and the writer always
+    appends the annotation LAST, so only a standalone FINAL
+    'supersedes:' segment counts (ready-state CFAR): the phrase appearing
+    mid-note, at a non-final segment, or more than once is ambiguous free
+    text and marks nothing — the allowlist direction. Free-text refs with
+    spaces are captured whole (CFAR r1). Note and annotation share one
+    authorized form, so this is accident-proofing, not a privilege
+    boundary."""
+    parts = [s.strip() for s in (comment or "").split(";")]
+    hits = [s for s in parts if s.startswith("supersedes:")]
+    if len(hits) != 1 or not parts[-1].startswith("supersedes:"):
+        return ""
+    return source_ref_clean(hits[0][len("supersedes:"):].strip())
 
 
 def build_source_panel(fm):

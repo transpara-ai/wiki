@@ -143,7 +143,11 @@ def test_superseded_sources_render_badged():
     st = build_site._supersedes_target
     assert st("added 2026-07-07; supersedes: GitHub API: repos/x/y (live)") \
         == "GitHub API: repos/x/y (live)"
-    assert st("note: a; supersedes: raw/inbox/a b c.md; extra: z") == "raw/inbox/a b c.md"
+    # ready-state CFAR: only a standalone FINAL segment counts — the phrase
+    # mid-note, non-final, or repeated is ambiguous free text and marks nothing
+    assert st("note: this supersedes: that idea; supersedes: raw/x.md") == ""
+    assert st("note: mentions supersedes: raw/x.md mid-text") == ""
+    assert st("supersedes: raw/x.md; note: trailing") == ""
     assert st("no annotation here") == ""
     print("ok test_superseded_sources_render_badged")
 
