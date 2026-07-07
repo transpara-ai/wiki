@@ -2656,6 +2656,9 @@ def test_register_attests_committed_clearances():
         write_auth(root, register_auth())
         return ref
 
+    import datetime as _dt
+    _today = _dt.date.today().isoformat()
+    _far = (_dt.date.today() + _dt.timedelta(days=170)).isoformat()
     content = "# eval\n\nidentifier: %s\n" % AWS_KEY
     findings = list(_scan.scan_text(content))
     assert findings, "fixture must trip the scanner"
@@ -2676,7 +2679,7 @@ def test_register_attests_committed_clearances():
            "canonical_path": ref, "blob_sha256": "0" * 64,
            "match_sha256": f.match_sha256, "byte_offset": f.byte_offset,
            "reason": "test", "owner": "o@x", "reviewed_by": "t",
-           "reviewed_on": "2026-07-07", "expires_on": "2026-12-29"}
+           "reviewed_on": _today, "expires_on": _far}
     (root / "compile" / ".secretsallow").write_text(json.dumps(row) + "\n")
     refused(do_register, root)
 
