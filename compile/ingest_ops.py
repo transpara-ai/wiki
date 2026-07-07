@@ -268,7 +268,7 @@ def quarantine_payload(data):
     return None
 
 
-def quarantine_payload_attested(data, *, canonical_path, root):
+def quarantine_payload_attested(data, *, canonical_path, root, commit):
     """quarantine_payload with the ONE principled runtime attestation lane
     (wiki#52 path A): a register payload is a COMMITTED file, so its findings
     can attest against the commit-time allowlist at the exact identity the
@@ -296,7 +296,8 @@ def quarantine_payload_attested(data, *, canonical_path, root):
     # read the immutable HEAD snapshot instead; anything short of a clean
     # read + strict parse refuses
     proc = subprocess.run(
-        ["git", "-C", str(root), "show", "HEAD:compile/.secretsallow"],
+        ["git", "-C", str(root), "show",
+         "%s:compile/.secretsallow" % commit],
         capture_output=True)
     if proc.returncode != 0:
         raise OpRefused("%d secret finding(s) and no committed allowlist "
@@ -1306,9 +1307,17 @@ def register_source(root, *, slug, source_ref, note, now, rebuild_runner=None):
     # must exist at HEAD byte-exactly, else a clearance committed ahead of
     # its file could vouch for working-tree bytes that never went through
     # the committed-file scan (CFAR r4 P1) — and the manifest would record
-    # state git cannot reproduce
+    # state git cannot reproduce. HEAD is resolved ONCE and the same pinned
+    # commit backs both this check and the allowlist attestation, so a
+    # deploy advancing HEAD mid-request cannot split the trust root
+    # (ready-state CFAR TOCTOU)
+    head = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
+                          capture_output=True, text=True)
+    if head.returncode != 0:
+        raise OpRefused("cannot resolve the repository HEAD — refused")
+    pinned = head.stdout.strip()
     committed = subprocess.run(
-        ["git", "-C", str(root), "show", "HEAD:%s" % source_ref],
+        ["git", "-C", str(root), "show", "%s:%s" % (pinned, source_ref)],
         capture_output=True)
     if committed.returncode != 0:
         raise OpRefused("source_ref is not a committed file at HEAD — "
@@ -1317,7 +1326,8 @@ def register_source(root, *, slug, source_ref, note, now, rebuild_runner=None):
         raise OpRefused("source_ref differs from its committed bytes at "
                         "HEAD; refused")
     # committed-file attestation lane — see quarantine_payload_attested
-    quarantine_payload_attested(data, canonical_path=source_ref, root=root)
+    quarantine_payload_attested(data, canonical_path=source_ref, root=root,
+                                commit=pinned)
     # dedup gate = the MANIFEST (frozen + shards), NOT the frontmatter: the
     # first consumer (#50) already carries the raw_documents pointer while
     # the manifest does not — that missing row is exactly the gap this
