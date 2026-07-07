@@ -1282,25 +1282,66 @@ def build_source_pages(status):
         })
 
 
+def _supersedes_target(comment):
+    """Extract the superseded ref from a source-line annotation. Segments
+    are '; '-joined (see ingest_server.source_line) and the writer always
+    appends the annotation LAST, so only a standalone FINAL
+    'supersedes:' segment counts (ready-state CFAR): the phrase appearing
+    mid-note, at a non-final segment, or more than once is ambiguous free
+    text and marks nothing — the allowlist direction. Free-text refs with
+    spaces are captured whole (CFAR r1). Note and annotation share one
+    authorized form, so this is accident-proofing, not a privilege
+    boundary."""
+    parts = [s.strip() for s in (comment or "").split(";")]
+    hits = [s for s in parts if s.startswith("supersedes:")]
+    if len(hits) != 1 or not parts[-1].startswith("supersedes:"):
+        return ""
+    return source_ref_clean(hits[0][len("supersedes:"):].strip())
+
+
 def build_source_panel(fm):
-    refs = [source_ref_clean(r) for r in fm_list(fm, "sources") if source_ref_clean(r)]
-    if not refs:
+    # wiki#60: a source named as supersedes-target by another entry's
+    # annotation renders de-emphasized with an explicit badge. Driven by the
+    # EXISTING `supersedes: <ref>` comments the ingest lanes write — no
+    # article bytes change, so no allowlist pins are disturbed. Display
+    # order stays historical (append-only honesty); the badge carries the
+    # signal. Only an annotation naming another listed ref counts — the
+    # allowlist direction (unknown/malformed annotations mark nothing).
+    entries = []
+    superseded_by = {}
+    for raw_ref, comment in fm_list_with_comments(fm, "sources"):
+        ref = source_ref_clean(raw_ref)
+        if not ref:
+            continue
+        entries.append(ref)
+        old = _supersedes_target(comment)
+        if old:
+            superseded_by[old] = ref
+    if not entries:
         return ""
     rows = []
-    for ref in refs:
+    for ref in entries:
         href = source_href(ref)
         label = source_title(ref, safe_source_path(ref))
         if href:
             link = '<a href="%s">%s</a>' % (html.escape(href), html.escape(label))
         else:
             link = '<span class="source-unserved">%s</span>' % html.escape(label)
-        rows.append('<li>%s</li>' % link)
+        if ref in superseded_by:
+            newer = superseded_by[ref]
+            badge = ('<span class="source-superseded-badge">superseded by '
+                     '%s</span>') % html.escape(
+                         source_title(newer, safe_source_path(newer)))
+            rows.append('<li class="source-superseded">%s %s</li>'
+                        % (link, badge))
+        else:
+            rows.append('<li>%s</li>' % link)
     return (
         '<details class="source-panel">'
         '<summary>Article sources (%d)</summary>'
         '<ul>%s</ul>'
         '</details>'
-    ) % (len(refs), "".join(rows))
+    ) % (len(entries), "".join(rows))
 
 
 def build_source_update_panel(fm):
