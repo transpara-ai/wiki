@@ -135,7 +135,7 @@ The ratified boundary is **v3.9 Decision 15**: external frameworks *"must not be
 | Core role | Persistent memory/recall substrate (thoughts + vector search) [1] | Advisory memory behind `MemoryReference`; EventGraph is truth [15][21] | Adapter/pattern only |
 | Retrieval | pgvector HNSW cosine + fingerprint dedup [4] | Governed recall improving a gated decision [21] | Useful shape; not authority |
 | Embeddings | API (OpenRouter) [1] | Air-gap default; local-first required [21] | Gap — must vendor local path |
-| Write contract | Verifiable, fail-closed capture (PR #5) [6] | "Confirmed only by read-back" durability [2] | Strong convergence (§5.2) |
+| Write contract | Verifiable, fail-closed capture (PR #5) [6] | Read-back durability discipline for Open Brain writes (Transpara operating practice) | Strong convergence (§5.2) |
 | Truth / certification | None — deliberately fail-open recall | Release-only certification; stop-on-contradiction [17] | Off-limits |
 | Governance metadata | `metadata jsonb`, no trust/freshness/contradiction fields [4] | `MemoryReference` trust-accounting [21] | Civilization must supply it |
 | License | FSL-1.1-MIT, internal use OK [3] | Internal advisory tooling permitted | Compatible for internal use |
@@ -168,7 +168,7 @@ All six translate OB1's mechanisms into the Civilization's record-and-gate frame
 Make "memory of intent" a first-class, reboot-survival primitive **distinct from EventGraph**, exactly as the 2026-04-09 hive decision drew it [20]. v4.0 already treats OpenBrain captures as *"advisory-memory hygiene"*; the learning is to elevate that from dev-loop hygiene to a governed `MemoryReference`-class primitive with trust/freshness/contradiction fields, so intent-recall is auditable rather than incidental.
 
 ### 5.2 The verifiable, fail-closed capture contract → the reference durability gate
-PR #5's contract — *committed-but-no-id ⇒ "treat as NOT saved"*, a post-commit embedding-*update* failure ⇒ success-with-`pending` (never a duplicate-creating error), id echoed for `fetch()` verification [6] — is the **server-side implementation of the Civilization's own "capture is confirmed only by read-back" rule** [2]. Adopt it as the worked example for any governed memory adapter's durability gate: never emit success on an unconfirmed write; make the permissive outcome the explicitly-proven branch.
+PR #5's contract — *committed-but-no-id ⇒ "treat as NOT saved"*, a post-commit embedding-*update* failure ⇒ success-with-`pending` (never a duplicate-creating error), id echoed for `fetch()` verification [6] — is the **server-side embodiment of the read-back durability discipline Transpara already applies to Open Brain writes** (never trust a success string; confirm by read-back). Adopt it as the worked example for any governed memory adapter's durability gate: never emit success on an unconfirmed write; make the permissive outcome the explicitly-proven branch.
 
 ### 5.3 DB-side content-fingerprint dedup → idempotent memory writes
 The SHA-256 `content_fingerprint` + `ON CONFLICT DO UPDATE` upsert [4] gives idempotency across capture paths (byte-identical normalization avoids JS-vs-Postgres drift). A clean pattern for a recall adapter that must not double-count the same evidence.

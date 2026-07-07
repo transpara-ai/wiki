@@ -34,7 +34,7 @@ confidence:
   license: high — FSL-1.1-MIT; internal use / modification / non-commercial research are Permitted Purposes; each version converts to MIT two years after its publication; the only bar is commercial Competing Use.
   fork_date: thin — 2026-04-08 rests on a GitHub-createdAt "grounded fork chronology" line, not on any contemporaneous thought. Plausible, weakly corroborated, not independently proven.
 raw_documents:
-  - "raw/civilization/external-landscape/tai-res-2026-008-ob1-evaluation.md"  # sha256 9eb3212f9a26afd4b1172d6040b919b815037e9dd789205c5021573acbfd862c — TAI-RES-2026-008 v1.0.0; session-authored Civilization external-landscape research, placed outside the browser-ingest inbox by design; provenance = git history + this sha256 anchor
+  - "raw/civilization/external-landscape/tai-res-2026-008-ob1-evaluation.md"  # sha256 333dd696b33a309c85e94f42d35f6d3935885e3ec3decce9391ce5a4c443b6be — TAI-RES-2026-008 v1.0.0; session-authored Civilization external-landscape research, placed outside the browser-ingest inbox by design; provenance = git history + this sha256 anchor
 ---
 
 # OB1 (Open Brain)
