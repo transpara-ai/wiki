@@ -32,7 +32,7 @@ confidence:
   maturity_and_provenance: code-verified — Microsoft-authored (Copyright (c) Microsoft Corporation in 128 agent-os/src files; nothing Transpara-authored), MIT, "Public Preview" / Development Status 4-Beta (README.md:29), three majors in ~2 months. The "13,000+ tests" figure is corroborated as a Python-only magnitude (12,617 def test_ / 563 files / ~1.6% skipped).
   open_schema_defect: RESOLVED — the prior page's HIGH-severity H3 (PolicyEngineAdapterDecision Tier 0 node with no per-node schema) is fixed: a full schema block now lives at 02-kernel-schema-and-state-v3.9.md:345-363.
 raw_documents:
-  - "raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md"  # sha256 dfd9371aeefbb459ee1f8a60e065c2768925f4fd43330ab93b3c9bbd1daedf97; TAI-RES-2026-009 v1.0.0; session-authored Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter
+  - "raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md"  # sha256 f45a122536eef535f95ceed421d6b2838442bc03c6bc204f46597d153b9fb061; TAI-RES-2026-009 v1.0.0; session-authored Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter
 ---
 
 # Agent Governance Toolkit
@@ -88,7 +88,7 @@ The distinction that matters for a governance architect: **absorb AGT's evaluato
 
 ## Why an adapter reference, not policy authority
 
-The investigation's marginal-contribution verdict was that AGT is the *"strongest candidate for deterministic policy enforcement and runtime governance reference"* that *"could accelerate `GovernancePolicyEngine` and `RuntimeBroker` enforcement design"* — and the code raises that assessment (the no-LLM evaluator is exactly Decision 13's required shape; AGT's `canonical_decision` vocabulary `autonomous | notify | approval_required | forbidden` is a 1:1 match for the kernel node's outcomes). The recorded risks all hold, now code-anchored: an external policy engine **can become a competing authority** if its decisions are not mapped into EventGraph (AGT literally carries its own audit chain and trust economy); **application-layer governance does not replace container/kernel isolation** (the OWASP mapping cites an in-process linter, not the real `agent-sandbox`); and **Public Preview may break before GA** (three majors in two months). The recommendation is the containment logic the arc applies to every external control-plane candidate: absorb the capability behind an adapter; never cede the authority.
+The investigation's marginal-contribution verdict was that AGT is the *"strongest candidate for deterministic policy enforcement and runtime governance reference"* that *"could accelerate `GovernancePolicyEngine` and `RuntimeBroker` enforcement design"* — and the code raises that assessment (the no-LLM evaluator is exactly Decision 13's required shape; AGT emits a deterministic action — `allow | deny | audit | block` (`schema.py:34`) — that is exactly the adapter schema's `raw_decision`, leaving Transpara to define the `raw_decision → canonical_decision` mapping to the kernel node's `autonomous | notify | approval_required | forbidden` outcomes, which are the Civilization's, not AGT's). The recorded risks all hold, now code-anchored: an external policy engine **can become a competing authority** if its decisions are not mapped into EventGraph (AGT literally carries its own audit chain and trust economy); **application-layer governance does not replace container/kernel isolation** (the OWASP mapping cites an in-process linter, not the real `agent-sandbox`); and **Public Preview may break before GA** (three majors in two months). The recommendation is the containment logic the arc applies to every external control-plane candidate: absorb the capability behind an adapter; never cede the authority.
 
 ## How it entered the arc (reference)
 
@@ -123,7 +123,7 @@ Primary source is the code-anchored evaluation; doctrine and prior research are 
 - Gap G2 (`…2026-05-13-08-…`) and U2 (`…2026-05-13-09-…`) — the gap AGT was selected to help close and the proposed pattern that became doctrine.
 
 **Reference / context:**
-- `raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md` — **TAI-RES-2026-009 v1.0.0**, the code-anchored evaluation (sha256 `dfd9371aee…`); this page is its digest and carries the full `file:line` anchors, the doctrine map, and the §4.4 determination.
+- `raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md` — **TAI-RES-2026-009 v1.0.0**, the code-anchored evaluation (sha256 `f45a122536…`); this page is its digest and carries the full `file:line` anchors, the doctrine map, and the §4.4 determination.
 - `dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (`status: review`) — the AGT decision row (`L82`) + seven-point pre-integration gate (`L175-189`).
 - `dark-factory/v4.0/.../epic-21-residual-risk-r003-reidentification/01-…-design-v4.0.md` (`L69-89`) — the open R-003 production-adapter gate.
 - `dark-factory/research/checkpoints/2026-05-13-06-…` — the Phase 4 Batch D **README-only** candidate analysis, superseded for "what it is" by TAI-RES-2026-009.
