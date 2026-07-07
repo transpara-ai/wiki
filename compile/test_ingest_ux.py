@@ -139,6 +139,12 @@ def test_superseded_sources_render_badged():
     # allowlist direction: entries with no annotation are never marked
     plain = [li for li in lis if "source-superseded" not in li]
     assert len(plain) == len(lis) - 1, "exactly one superseded entry on this page"
+    # CFAR r1: free-text refs with spaces are captured to the ';' boundary
+    st = build_site._supersedes_target
+    assert st("added 2026-07-07; supersedes: GitHub API: repos/x/y (live)") \
+        == "GitHub API: repos/x/y (live)"
+    assert st("note: a; supersedes: raw/inbox/a b c.md; extra: z") == "raw/inbox/a b c.md"
+    assert st("no annotation here") == ""
     print("ok test_superseded_sources_render_badged")
 
 

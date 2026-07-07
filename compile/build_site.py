@@ -1282,6 +1282,15 @@ def build_source_pages(status):
         })
 
 
+def _supersedes_target(comment):
+    """Extract the superseded ref from a source-line annotation. Segments
+    are '; '-joined (see ingest_server.source_line), so the value runs to
+    the next ';' or end of comment — free-text refs with spaces included
+    (wiki#60 CFAR r1). Returns "" when there is no annotation."""
+    m = re.search(r"supersedes:\s*([^;]+)", comment or "")
+    return source_ref_clean(m.group(1).strip()) if m else ""
+
+
 def build_source_panel(fm):
     # wiki#60: a source named as supersedes-target by another entry's
     # annotation renders de-emphasized with an explicit badge. Driven by the
@@ -1297,11 +1306,9 @@ def build_source_panel(fm):
         if not ref:
             continue
         entries.append(ref)
-        m = re.search(r"supersedes:\s*(\S+)", comment or "")
-        if m:
-            old = source_ref_clean(m.group(1))
-            if old:
-                superseded_by[old] = ref
+        old = _supersedes_target(comment)
+        if old:
+            superseded_by[old] = ref
     if not entries:
         return ""
     rows = []
