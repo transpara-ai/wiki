@@ -36,7 +36,7 @@ confidence:
   fork_date_and_existence: thin / asserted by task framing — the original seed asserts a 2026-05-13 fork into transpara-ai. No transpara-ai/pageindex repo was found; treated as reconstructed. What IS dated is the 2026-05-13 study and now the 2026-07-07 code read at f413c66.
   integration_state: thin — no implementation owner is selected; nothing in the surveyed sources shows PageIndex wired into the platform. Adapter evaluation is gated behind [[base-slice-0|Base Slice 0]].
 raw_documents:
-  - "raw/civilization/external-landscape/tai-res-2026-007-pageindex-evaluation.md"  # TAI-RES-2026-007 v1.0.0; session-authored Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter
+  - "raw/civilization/external-landscape/tai-res-2026-007-pageindex-evaluation.md"  # sha256 69be51cd789bf6504a56d61813848818b7f2e4c1721a014215d02eefe6b7ae63; TAI-RES-2026-007 v1.0.0; session-authored Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter
 ---
 
 # PageIndex
