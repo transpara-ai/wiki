@@ -26,8 +26,9 @@ spawned_planning:  # research→planning provenance: intake-only issues filed 20
   - https://github.com/transpara-ai/work/issues/87  # §5.6 Neo budget-cage reference for the local worker envelope (allowlist correction)
   - https://github.com/transpara-ai/docs/issues/261  # §8.6 crosswalk decision row: pattern-only, no ADR, no control roles
   - https://github.com/transpara-ai/wiki/issues/54  # §8.7 ~2026-Q4 re-scan / version-bump of the eval
-  - https://github.com/transpara-ai/wiki/issues/50  # gate-arc repo defect: sanctioned register path — CLOSED COMPLETED 2026-07-06 (shipped as FO-WIKI-FRONTEND-UX R6; this eval was its first registered consumer, 2026-07-07)
-  - https://github.com/transpara-ai/wiki/issues/52  # gate-arc repo defect: inherited CONFIDENTIAL frontmatter in ledgered inbox evals
+gate_arc_defects:  # repo defects surfaced by this eval's own PR gate arc — NOT spawned planning; tracked for completeness with live state
+  - https://github.com/transpara-ai/wiki/issues/50  # sanctioned register path — CLOSED COMPLETED 2026-07-06 (shipped as FO-WIKI-FRONTEND-UX R6; this eval was its first registered consumer, 2026-07-07)
+  - https://github.com/transpara-ai/wiki/issues/52  # inherited CONFIDENTIAL frontmatter in ledgered inbox evals — open
 confidence:
   enforcement_posture: high — every enforcement claim is code- or prompt-text-anchored (exec lines, prompt wrapper, audit heuristics, cage constants read directly)
   methodology_read: high — all 17 Blueprint skills, guides, Factory PRD/standard/spec, and dogfood files read in full
@@ -68,7 +69,7 @@ The deepest split is the truth object: for Lewis, running code + tests is truth 
 
 ## Planning provenance — where the ideas went
 
-The determination above is not shelf-ware: on 2026-07-07, after the eval merged (PR #49), every §5 learning and material §8 step was filed as a **source-of-intent issue in its owning repo** (the same list is machine-readable in this page's `spawned_planning` frontmatter, and annotated item-by-item in the eval's §8 as of v1.1.0):
+The determination above is not shelf-ware: on 2026-07-07, after the eval merged (PR #49), every §5 learning and material §8 step was filed as a **source-of-intent issue in its owning repo** (machine-readable in this page's `spawned_planning` frontmatter — planning issues only; gate-arc defects are listed separately under `gate_arc_defects` — and annotated item-by-item in the eval's §8 as of v1.1.0):
 
 | Idea (eval §) | Planned as | Owning repo |
 |---|---|---|
