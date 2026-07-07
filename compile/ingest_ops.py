@@ -291,12 +291,21 @@ def quarantine_payload_attested(data, *, canonical_path, root):
     findings = secret_scan.scan_text(text)
     if not findings:
         return None
-    allow_path = pathlib.Path(root) / "compile" / ".secretsallow"
+    # the trust root is the COMMITTED allowlist (CFAR r3): a mutable
+    # working-tree copy would let an unstaged local edit clear a finding —
+    # read the immutable HEAD snapshot instead; anything short of a clean
+    # read + strict parse refuses
+    proc = subprocess.run(
+        ["git", "-C", str(root), "show", "HEAD:compile/.secretsallow"],
+        capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise OpRefused("%d secret finding(s) and no committed allowlist "
+                        "snapshot to attest against; refused" % len(findings))
     try:
-        allow = secret_scan.parse_allowlist(allow_path.read_text())
+        allow = secret_scan.parse_allowlist(proc.stdout)
     except Exception as exc:
-        raise OpRefused("%d secret finding(s) and the allowlist cannot "
-                        "vouch (unreadable/invalid: %s); refused"
+        raise OpRefused("%d secret finding(s) and the committed allowlist "
+                        "cannot vouch (invalid: %s); refused"
                         % (len(findings), type(exc).__name__))
     blob = hashlib.sha256(data).hexdigest()
     uncleared = [f for f in findings

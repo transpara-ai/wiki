@@ -2684,14 +2684,34 @@ def test_register_attests_committed_clearances():
     (root / "compile" / ".secretsallow").write_text(json.dumps(row) + "\n")
     refused(do_register, root)
 
-    # (c) exact-identity live clearance -> register SUCCEEDS
+    def commit_allowlist(root):
+        subprocess.run(["git", "-C", str(root), "init", "-q"], check=True)
+        subprocess.run(["git", "-C", str(root), "-c", "user.email=t@t",
+                        "-c", "user.name=t", "add", "-A"], check=True)
+        subprocess.run(["git", "-C", str(root), "-c", "user.email=t@t",
+                        "-c", "user.name=t", "commit", "-qm", "fixture",
+                        "--no-verify"], check=True)
+
+    # (c) exact-identity clearance, COMMITTED -> register SUCCEEDS
     root = fresh_root()
     ref = build(root, content)
     blob = hashlib.sha256((root / ref).read_bytes()).hexdigest()
     row = dict(row, canonical_path=ref, blob_sha256=blob)
     (root / "compile" / ".secretsallow").write_text(json.dumps(row) + "\n")
+    commit_allowlist(root)
     out = do_register(root, rebuild_runner=lambda: True)
     assert out["result"] == "completed" and out["sha256"] == blob
+
+    # (c2) the CFAR-r3 attack: clearance present ONLY in the mutable working
+    # tree (uncommitted) -> refuses; the trust root is the HEAD snapshot
+    root = fresh_root()
+    ref = build(root, content)
+    blob = hashlib.sha256((root / ref).read_bytes()).hexdigest()
+    (root / "compile" / ".secretsallow").write_text("")
+    commit_allowlist(root)
+    good = dict(row, canonical_path=ref, blob_sha256=blob)
+    (root / "compile" / ".secretsallow").write_text(json.dumps(good) + "\n")
+    refused(do_register, root)
 
     # (d) clearance present but for a DIFFERENT offset -> refuse
     root = fresh_root()
