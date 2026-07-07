@@ -297,12 +297,15 @@ def quarantine_payload_attested(data, *, canonical_path, root):
     # read + strict parse refuses
     proc = subprocess.run(
         ["git", "-C", str(root), "show", "HEAD:compile/.secretsallow"],
-        capture_output=True, text=True)
+        capture_output=True)
     if proc.returncode != 0:
         raise OpRefused("%d secret finding(s) and no committed allowlist "
                         "snapshot to attest against; refused" % len(findings))
     try:
-        allow = secret_scan.parse_allowlist(proc.stdout)
+        # decode INSIDE the refusal path: a non-UTF-8 committed allowlist
+        # must refuse through the same controlled lane as an invalid one
+        # (CFAR r5), never escape as a bare decode error
+        allow = secret_scan.parse_allowlist(proc.stdout.decode("utf-8"))
     except Exception as exc:
         raise OpRefused("%d secret finding(s) and the committed allowlist "
                         "cannot vouch (invalid: %s); refused"
