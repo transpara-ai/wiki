@@ -306,6 +306,11 @@ summary.fresh::after{content:"▾";margin-left:6px;font-size:9px;opacity:.75}
 .confirm-line{font-weight:400}
 .pending-edges{margin-left:8px}
 
+/* wiki#60: superseded sources render de-emphasized with an explicit badge */
+.source-superseded{opacity:.62}
+.source-superseded-badge{margin-left:6px;padding:1px 6px;border:1px solid var(--bd2);background:var(--panel);color:var(--muted);font-size:11px;white-space:nowrap}
+
+
 /* fe-ux packet §2.6 / R4: deploy-status visibility surface (was emitted
    unstyled — the FO's measured gap) */
 .deploy-foot{font-size:12px;color:var(--muted);padding:6px 16px;text-align:right}
