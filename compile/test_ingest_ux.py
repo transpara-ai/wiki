@@ -100,7 +100,8 @@ def test_style_sheet_covers_emitted_state_classes():
     sheet = (ROOT / "compile" / "assets" / "style.css").read_text()
     for cls in ("deploy-foot", "deploy-blocked", "wl-pending",
                 "ingest-modes", "ingest-destructive", "consequence-panel",
-                "preview-refuses", "pending-edges"):
+                "preview-refuses", "pending-edges",
+                "source-superseded", "source-superseded-badge"):
         assert ".%s" % cls in sheet, "emitted state class unstyled: .%s" % cls
     print("ok test_style_sheet_covers_emitted_state_classes")
 
@@ -118,6 +119,27 @@ def test_token_field_shared_across_modes_and_sources_union():
     assert "raw_documents" in html, \
         "replace source selector must offer raw_documents refs too"
     print("ok test_token_field_shared_across_modes_and_sources_union")
+
+
+def test_superseded_sources_render_badged():
+    # wiki#60: a source named as supersedes-target by another entry's
+    # annotation renders de-emphasized with an explicit badge — driven
+    # entirely by the existing frontmatter annotations, zero article-byte
+    # churn. The superseding (current) entry stays plain.
+    import re
+    page = (DIST / "hermes-agent.html").read_text()
+    panel = re.search(r'<details class="source-panel">.*?</details>', page, re.S).group(0)
+    lis = re.findall(r"<li[^>]*>.*?</li>", panel, re.S)
+    old_li = [li for li in lis if "Capability Evaluation v1.0.0</a>" in li]
+    new_li = [li for li in lis if "Capability Evaluation v1.0.1</a>" in li]
+    assert old_li and new_li, "both lineage entries must render"
+    assert 'class="source-superseded"' in old_li[0], "old ref de-emphasized"
+    assert "superseded by" in old_li[0], "old ref carries the badge"
+    assert "source-superseded" not in new_li[0], "current entry stays plain"
+    # allowlist direction: entries with no annotation are never marked
+    plain = [li for li in lis if "source-superseded" not in li]
+    assert len(plain) == len(lis) - 1, "exactly one superseded entry on this page"
+    print("ok test_superseded_sources_render_badged")
 
 
 
