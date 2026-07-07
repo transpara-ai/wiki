@@ -18,6 +18,7 @@ investigation_topic: Hermes Agent
 civilization_contribution: "Contributed the governed optimizer pattern behind U7 CapabilityArtifact governance and U8 CapabilityEvolution sequencing; Hermes itself remains deferred and pattern-only."
 raw_documents:
   - raw/inbox/2026-06-24/hermes-agent/TAI-RES-2026-002-v1.0.0-Hermes-Agent-Self-Evolution-Evaluation-a7b119333702.md
+  - "raw/inbox/2026-07-07/hermes-agent/tai-res-2026-002-v1.0.1-hermes-agent-self-evolution-evaluation.md"
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md
@@ -35,6 +36,7 @@ sources:
   - "GitHub API: repos/transpara-ai/hermes-agent-self-evolution (fork metadata, 2026-06-13 live)"  # isFork=true, parent=NousResearch/hermes-agent-self-evolution, createdAt 2026-05-11T11:32:06Z, description "Evolutionary self-improvement … DSPy + GEPA"
   - "GitHub API: repos/transpara-ai/hermes-example-plugins (fork metadata, 2026-06-13 live)"  # isFork=true, parent=NousResearch/hermes-example-plugins, createdAt 2026-05-13T03:42:39Z, MIT
   - raw/inbox/2026-06-24/hermes-agent/TAI-RES-2026-002-v1.0.0-Hermes-Agent-Self-Evolution-Evaluation-a7b119333702.md  # repo-local copy of released internal research report; advisory, not doctrine
+  - "raw/inbox/2026-07-07/hermes-agent/tai-res-2026-002-v1.0.1-hermes-agent-self-evolution-evaluation.md"  # added via gated supersession PR 2026-07-07 (wiki#52 path A); note: classification corrected for the record; supersedes: raw/inbox/2026-06-24/hermes-agent/TAI-RES-2026-002-v1.0.0-Hermes-Agent-Self-Evolution-Evaluation-a7b119333702.md
   - /Transpara/transpara-ai/repos/docs/civilization/v4.1/implementation/epics/epic-15-institutional-substrate-doctrine/corpus/copied/civilization/knowledge/external-landscape/hermes-agent-self-evolution/TAI-RES-2026-002-v1.0.0-Hermes-Agent-Self-Evolution-Evaluation.md  # original Stage 0 copied-corpus path; provenance context only
   - "Upstream context only (not re-published): github.com/NousResearch/hermes-agent (+ -self-evolution, -example-plugins)"  # cited as context for why we forked to read; never mirrored
 confidence:
