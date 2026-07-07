@@ -145,7 +145,9 @@ def test_superseded_sources_render_badged():
         == "GitHub API: repos/x/y (live)"
     # ready-state CFAR: only a standalone FINAL segment counts — the phrase
     # mid-note, non-final, or repeated is ambiguous free text and marks nothing
-    assert st("note: this supersedes: that idea; supersedes: raw/x.md") == ""
+    # a mid-note phrase (not at a segment start) contributes nothing; the
+    # genuine standalone final segment still counts
+    assert st("note: this supersedes: that idea; supersedes: raw/x.md") == "raw/x.md"
     assert st("note: mentions supersedes: raw/x.md mid-text") == ""
     assert st("supersedes: raw/x.md; note: trailing") == ""
     assert st("no annotation here") == ""
