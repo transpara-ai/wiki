@@ -26,7 +26,7 @@ spawned_planning:  # research→planning provenance: intake-only issues filed 20
   - https://github.com/transpara-ai/work/issues/87  # §5.6 Neo budget-cage reference for the local worker envelope (allowlist correction)
   - https://github.com/transpara-ai/docs/issues/261  # §8.6 crosswalk decision row: pattern-only, no ADR, no control roles
   - https://github.com/transpara-ai/wiki/issues/54  # §8.7 ~2026-Q4 re-scan / version-bump of the eval
-  - https://github.com/transpara-ai/wiki/issues/50  # gate-arc repo defect: sanctioned ingest path for session-authored raw docs
+  - https://github.com/transpara-ai/wiki/issues/50  # gate-arc repo defect: sanctioned register path — CLOSED COMPLETED 2026-07-06 (shipped as FO-WIKI-FRONTEND-UX R6; this eval was its first registered consumer, 2026-07-07)
   - https://github.com/transpara-ai/wiki/issues/52  # gate-arc repo defect: inherited CONFIDENTIAL frontmatter in ledgered inbox evals
 confidence:
   enforcement_posture: high — every enforcement claim is code- or prompt-text-anchored (exec lines, prompt wrapper, audit heuristics, cage constants read directly)
@@ -36,7 +36,7 @@ confidence:
   civilization_baseline: high — quoted from the accepted v4.0 doctrine set and shipped gate tool; Level 0 state taken from doc 06's own gate table
   learning_opportunities: medium-high — patterns are text-verifiable; the hive review-capacity-throttle gap should be re-verified before implementation
 raw_documents:
-  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # sha256 81cad0ff1fc3461d217cbdcdfc58faa921c68c658f54127bbdad87816552c1f7 (v1.1.0); session-authored (PR #49) Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter; wiki#50 tracks a sanctioned ingest path for session-authored docs
+  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # sha256 7d99d0b08c1b69bc468eeff391393dca881afbfaf26bcb168682544863801c71 (v1.1.0); session-authored (PR #49) Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter; registered in the live ingestion ledger at v1.0.0 via the wiki#50 register path (first consumer, 2026-07-07); the v1.1.0 bytes need re-registration post-merge (operator step via POST /api/register)
 ---
 
 # Owain Lewis Work System (Blueprint & Factory)
@@ -81,7 +81,7 @@ The determination above is not shelf-ware: on 2026-07-07, after the eval merged 
 | Crosswalk decision row: pattern-only, no ADR, no control roles (§8.6) | [docs#261](https://github.com/transpara-ai/docs/issues/261) | docs (decision record) |
 | ~2026-Q4 re-scan / version-bump of this eval (§8.7) | [wiki#54](https://github.com/transpara-ai/wiki/issues/54) | wiki (eval series) |
 
-Every issue is intake-only: it authorizes nothing, work enters through the normal Factory Order → TLC gate arc, and readiness labeling stays human-set. The eval's own gate arc also surfaced two wiki repo defects, tracked as [wiki#50](https://github.com/transpara-ai/wiki/issues/50) and [wiki#52](https://github.com/transpara-ai/wiki/issues/52).
+Every issue is intake-only: it authorizes nothing, work enters through the normal Factory Order → TLC gate arc, and readiness labeling stays human-set. The eval's own gate arc also surfaced two wiki repo defects: [wiki#50](https://github.com/transpara-ai/wiki/issues/50) — **closed COMPLETED** 2026-07-06 (the sanctioned register path shipped as FO-WIKI-FRONTEND-UX R6, and this eval became its first registered consumer on 2026-07-07) — and [wiki#52](https://github.com/transpara-ai/wiki/issues/52), still open.
 
 ## What his system cannot take from prompts alone (the inverse)
 

@@ -264,7 +264,7 @@ None of this is a rebuke at his scale: for `risk:low` work on small MIT repos, t
 6. **Add a per-item crosswalk/decision row** for "owainlewis work system (Blueprint/Factory/Neo): pattern-only, no ADR, no control roles" through the normal docs process, closing the decision-record gap this eval would otherwise leave (per §4.4 and the standing determination rule). → *filed as [docs#261](https://github.com/transpara-ai/docs/issues/261).*
 7. **Watch, don't adopt:** re-scan his repos in ~2 quarters (factory daemon/verification modes and the goal-runner are unimplemented designs that may mature into stronger comparators) [4][7]. → *filed as [wiki#54](https://github.com/transpara-ai/wiki/issues/54).*
 
-Repo defects surfaced by this eval's own gate arc, tracked separately: [wiki#50](https://github.com/transpara-ai/wiki/issues/50) (sanctioned ingest path for session-authored raw docs) and [wiki#52](https://github.com/transpara-ai/wiki/issues/52) (inherited CONFIDENTIAL frontmatter in ledgered inbox evals).
+Repo defects surfaced by this eval's own gate arc: [wiki#50](https://github.com/transpara-ai/wiki/issues/50) (sanctioned register path for session-authored raw docs — **closed COMPLETED** 2026-07-06 via FO-WIKI-FRONTEND-UX R6; this document was the path's first registered consumer on 2026-07-07, so the v1.1.0 bytes require re-registration after this revision merges) and [wiki#52](https://github.com/transpara-ai/wiki/issues/52) (inherited CONFIDENTIAL frontmatter in ledgered inbox evals — open).
 
 ---
 
