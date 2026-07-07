@@ -268,6 +268,16 @@ def quarantine_payload(data):
     return None
 
 
+def _git_no_fetch(root, *args):
+    """git for attestation reads: lazy fetching disabled (mirrors the secret
+    scanner's wrapper) so a missing blob refuses instead of doing network
+    I/O or hanging under the write lock in air-gapped deployments."""
+    env = dict(os.environ)
+    env["GIT_NO_LAZY_FETCH"] = "1"
+    return subprocess.run(["git", "-C", str(root), *args],
+                          capture_output=True, env=env)
+
+
 def quarantine_payload_attested(data, *, canonical_path, root, commit):
     """quarantine_payload with the ONE principled runtime attestation lane
     (wiki#52 path A): a register payload is a COMMITTED file, so its findings
@@ -295,10 +305,7 @@ def quarantine_payload_attested(data, *, canonical_path, root, commit):
     # working-tree copy would let an unstaged local edit clear a finding —
     # read the immutable HEAD snapshot instead; anything short of a clean
     # read + strict parse refuses
-    proc = subprocess.run(
-        ["git", "-C", str(root), "show",
-         "%s:compile/.secretsallow" % commit],
-        capture_output=True)
+    proc = _git_no_fetch(root, "show", "%s:compile/.secretsallow" % commit)
     if proc.returncode != 0:
         raise OpRefused("%d secret finding(s) and no committed allowlist "
                         "snapshot to attest against; refused" % len(findings))
@@ -1311,14 +1318,11 @@ def register_source(root, *, slug, source_ref, note, now, rebuild_runner=None):
     # commit backs both this check and the allowlist attestation, so a
     # deploy advancing HEAD mid-request cannot split the trust root
     # (ready-state CFAR TOCTOU)
-    head = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
-                          capture_output=True, text=True)
+    head = _git_no_fetch(root, "rev-parse", "HEAD")
     if head.returncode != 0:
         raise OpRefused("cannot resolve the repository HEAD — refused")
-    pinned = head.stdout.strip()
-    committed = subprocess.run(
-        ["git", "-C", str(root), "show", "%s:%s" % (pinned, source_ref)],
-        capture_output=True)
+    pinned = head.stdout.decode("utf-8", "replace").strip()
+    committed = _git_no_fetch(root, "show", "%s:%s" % (pinned, source_ref))
     if committed.returncode != 0:
         raise OpRefused("source_ref is not a committed file at HEAD — "
                         "register records PR-landed documents only")
