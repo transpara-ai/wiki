@@ -11,7 +11,8 @@ status: compiled
 last_compiled: 2026-07-07
 civilization_contribution: "Pattern-only; no ADR. Contributes six mineable patterns — review-capacity throttle, definition-of-ready as Factory Order lint, density-over-length gate prose, audit→objective compiler, single-mover/stale-claim label invariants, Neo's runtime cage as worked example — and the strongest independent confirmation yet of the dev-arc's two-human-gate topology. Blueprint/Factory/Neo are never eligible as runtime, gate authority, certification, or truth store."
 sources:
-  - "raw/civilization/external-landscape/tai-res-2026-006-v1.1.0-owainlewis-evaluation.md"  # TAI-RES-2026-006 v1.1.0, code-anchored evaluation (this page's primary source; supersedes the v1.0.0 file below)
+  - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # TAI-RES-2026-006 v1.0.0 — superseded revision, listed FIRST so the later v1.1.0 ref wins the shared document-id alias (build_site alias_link_map: later refs win)
+  - "raw/civilization/external-landscape/tai-res-2026-006-v1.1.0-owainlewis-evaluation.md"  # TAI-RES-2026-006 v1.1.0, code-anchored evaluation (this page's primary source; supersedes the v1.0.0 file above)
   - https://github.com/owainlewis/blueprint/tree/3815669  # evaluated commit, 2026-07-05 — read in full from local clone
   - https://github.com/owainlewis/factory/tree/8b346d7  # evaluated commit, 2026-07-05 — all ~1,895 Go lines read as ground truth
   - https://github.com/owainlewis/neo/tree/022d001  # evaluated commit — harness/orchestrator; the code-enforced "cage"
@@ -37,8 +38,8 @@ confidence:
   civilization_baseline: high — quoted from the accepted v4.0 doctrine set and shipped gate tool; Level 0 state taken from doc 06's own gate table
   learning_opportunities: medium-high — patterns are text-verifiable; the hive review-capacity-throttle gap should be re-verified before implementation
 raw_documents:
-  - "raw/civilization/external-landscape/tai-res-2026-006-v1.1.0-owainlewis-evaluation.md"  # sha256 ebe04c30c2690a9e5f198b904c7964e83dc7a2c29a36800db088068f70b6e550 — v1.1.0, current revision (this PR); session-authored Civilization external-landscape research; provenance = git history + frontmatter supersedes linkage; may later become the ledgered ref via the authorized replace operation (operator's option, not a correctness dependency)
   - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # sha256 38b8d05a519ca5321a826c9be406182dea7cb695a6c65ff12f250aee55913e90 — v1.0.0, registered on the live ingest service 2026-07-07 per the wiki#50 closure record (service-side manifest shard + ledger row; those artifacts reach this repo through the ingest service's own sync arc — a checkout of this PR alone does not yet carry them); kept byte-identical at its path per the tier's immutability rule; superseded in presentation by the v1.1.0 row above
+  - "raw/civilization/external-landscape/tai-res-2026-006-v1.1.0-owainlewis-evaluation.md"  # sha256 ebe04c30c2690a9e5f198b904c7964e83dc7a2c29a36800db088068f70b6e550 — v1.1.0, current revision (this PR); session-authored Civilization external-landscape research; provenance = git history + frontmatter supersedes linkage; may later become the ledgered ref via the authorized replace operation (operator's option, not a correctness dependency)
 ---
 
 # Owain Lewis Work System (Blueprint & Factory)
