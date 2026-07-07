@@ -2641,6 +2641,65 @@ def test_manifest_shard_names_bind_row_identity():
     print("ok test_manifest_shard_names_bind_row_identity")
 
 
+def test_register_attests_committed_clearances():
+    # wiki#52 path A: register's payload is a COMMITTED file, so its findings
+    # attest against the commit-time allowlist at exact blob identity — the
+    # ONE principled runtime attestation lane. Every finding must carry a
+    # live clearance; anything else refuses (fail closed).
+    import sys as _sys
+    _sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import secret_scan as _scan
+
+    def build(root, content):
+        article(root, "alpha-topic")
+        ref = session_doc(root, content=content)
+        write_auth(root, register_auth())
+        return ref
+
+    content = "# eval\n\nidentifier: %s\n" % AWS_KEY
+    findings = list(_scan.scan_text(content))
+    assert findings, "fixture must trip the scanner"
+    f = findings[0]
+
+    # (a) finding + NO clearance -> refuse, artifact unconsumed
+    root = fresh_root()
+    build(root, content)
+    msg = refused(do_register, root)
+    assert "uncleared" in msg or "finding" in msg
+    auth_path = root / "compile" / "ingest-authorization.json"
+    assert json.loads(auth_path.read_text())["df"] == "ingest-authorization"
+
+    # (b) clearance at the WRONG blob -> refuse
+    root = fresh_root()
+    ref = build(root, content)
+    row = {"type": "fingerprint", "rule_id": f.rule_id,
+           "canonical_path": ref, "blob_sha256": "0" * 64,
+           "match_sha256": f.match_sha256, "byte_offset": f.byte_offset,
+           "reason": "test", "owner": "o@x", "reviewed_by": "t",
+           "reviewed_on": "2026-07-07", "expires_on": "2026-12-29"}
+    (root / "compile" / ".secretsallow").write_text(json.dumps(row) + "\n")
+    refused(do_register, root)
+
+    # (c) exact-identity live clearance -> register SUCCEEDS
+    root = fresh_root()
+    ref = build(root, content)
+    blob = hashlib.sha256((root / ref).read_bytes()).hexdigest()
+    row = dict(row, canonical_path=ref, blob_sha256=blob)
+    (root / "compile" / ".secretsallow").write_text(json.dumps(row) + "\n")
+    out = do_register(root, rebuild_runner=lambda: True)
+    assert out["result"] == "completed" and out["sha256"] == blob
+
+    # (d) clearance present but for a DIFFERENT offset -> refuse
+    root = fresh_root()
+    ref = build(root, content)
+    blob = hashlib.sha256((root / ref).read_bytes()).hexdigest()
+    bad = dict(row, canonical_path=ref, blob_sha256=blob,
+               byte_offset=f.byte_offset + 1)
+    (root / "compile" / ".secretsallow").write_text(json.dumps(bad) + "\n")
+    refused(do_register, root)
+    print("ok test_register_attests_committed_clearances")
+
+
 
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
