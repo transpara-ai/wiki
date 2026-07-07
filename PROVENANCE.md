@@ -53,8 +53,18 @@ authored directly in this repo through cross-family-gated PRs rather than
 ingested: their provenance is the git history of the gated PR that landed them,
 plus each document's own frontmatter (doc id, version) and the citing article's
 `raw_documents` entry (which records the content sha256); they are deliberately
-outside `raw/inbox/manifest.jsonl`, which remains the exclusive ledger of the
-authorized ingest machinery (see issues #50/#52 for the sanctioned-path work). Do not read an empty
+outside the ingest machinery's ledger surface — `raw/inbox/manifest.jsonl`
+(browser-ingest rows) plus, since the #50 register path shipped, per-operation
+`raw/inbox/manifest.d/*` shards and the `compile/ingest-ledger.jsonl` operation
+rows — all of which remain the exclusive domain of the authorized ingest
+machinery (see issues #50/#52 for the sanctioned-path work).
+Once a revision in this tier is registered via the #50 register path (the
+durable shard/ledger artifacts live with the ingest service and reach this
+repo through the service's own sync arc), its file is immutable at its
+registered path; a later
+revision lands as a NEW versioned file carrying `supersedes:` frontmatter, and
+may optionally be promoted to the ledgered ref via the authorized replace
+operation — so registered ledger rows stay verifiable forever. Do not read an empty
 `raw/` subdirectory as "no such source" — read it as "not yet mirrored." The
 nightly keep-current job in `DESIGN.md` is what will populate them.
 
