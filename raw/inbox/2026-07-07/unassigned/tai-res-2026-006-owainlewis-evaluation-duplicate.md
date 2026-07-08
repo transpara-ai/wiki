@@ -1,0 +1,291 @@
+---
+document_id: TAI-RES-2026-006
+title: Owain Lewis Work-System Capability Evaluation (Blueprint & Factory)
+subtitle: Comparative Analysis Against the Transpara-AI Civilization and Strategic Learning Opportunities
+version: 1.0.0
+status: RELEASED
+date: 2026-07-06
+author: Michael Saucier
+reviewer: Transpara AI Hive
+owner: Research & Strategic Intelligence
+org: Transpara AI
+repo: transpara-ai/wiki
+classification: PUBLIC — external-landscape research (this repo is public; no secrets; Civilization doctrine is quoted at the same depth as the previously published TAI-RES evaluations)
+companion_to: TAI-RES-2026-001 (Sakana AI), TAI-RES-2026-002 (Hermes Agent & Self-Evolution), TAI-RES-2026-003 (Google Open Knowledge Format), TAI-RES-2026-004 (MemPalace), TAI-RES-2026-005 (Solo Orchestrator)
+---
+
+## Revision History
+
+| Version | Date | Description | Author |
+|---|---|---|---|
+| 1.0.0 | 2026-07-06 | Initial release — full code-anchored evaluation of the Owain Lewis work system, emphasizing `owainlewis/blueprint` @ `3815669` and `owainlewis/factory` @ `8b346d7`, with the supporting stack (`neo` @ `022d001`, `skills` @ `e8cadb3`, pi-extensions, push, slate.do) read for methodology signals; capability comparison against the Civilization's accepted v4.0 doctrine baseline (first eval in the series to use v4.0 rather than v3.9); §4.4 decision-record determination (no ADR exists; none created; pattern-only contribution); six strategic learning opportunities and the inverse analysis. | M. Saucier / Hive |
+
+---
+
+## Abstract
+
+This document evaluates the public work system of **Owain Lewis** (GitHub `owainlewis`) — a UK-based former Director of Engineering, 20-year polyglot engineer, and founder of GradientWork and the "AI Engineer" community — with emphasis on **Blueprint** (`owainlewis/blueprint` @ `3815669`, 2026-07-05, 211★, his flagship: "The best agent skills in the world for software development") and **Factory** (`owainlewis/factory` @ `8b346d7`, 2026-07-05, 2★, early: "The most important AI project in the world"), read together with the supporting stack that completes his methodology: **Neo** (a ~21.5k-line Go agent harness with a code-enforced orchestration cage), **skills** (a cross-agent SKILL.md installer), pi-extensions, push, and slate.do [1][4][7][8][9][11]. It is the sixth in the external-landscape evaluation series [21], and the first to take the **accepted v4.0 doctrine set** as the Civilization baseline [12–19].
+
+The central finding is that Lewis is building, in public and at solo scale, a system aimed at almost exactly the Dark Factory's goal — *"Every software project should have a permanent autonomous engineering team. Humans define direction… The objective is not to automate coding. The objective is to automate software engineering"* [4] — and has independently converged on a remarkable share of the Civilization's structure: a two-human-gate topology (spec approval before code, human-only merge), adversarial review before PR by a reviewer that must not share the author's context, a definition-of-ready that is a compressed Factory Order, work orders called *objectives* in repo-owned markdown, risk labels gating autonomy, evidence-not-assertion reporting, and a deterministic-orchestration/agent-reasoning split stated in words the doctrine could have written: *"agents decide — planning, sequencing, triage, judgment / code constrains — depth, fanout, agent count, time / code observes — events, attribution, rendering / code never interprets"* [7].
+
+The two systems then split along one seam, and it is the same seam TAI-RES-2026-005 found in Solo Orchestrator, in purer form: **where the process lives and what happens at the trust boundary.** Lewis's process is *prompts plus platform state* — skills are markdown instructions, the unattended control plane is GitHub labels, Factory's safety rules ("Do not merge PRs. Do not push to a default branch") are lines of prompt text wrapped around `claude -p --permission-mode auto`, run records are mutable local JSON, and the only broadly fail-closed controls are the human merge decision and Neo's resource cage [2][3][5][7]. He bets the residual risk is acceptable: *"Bet on the model."* The Civilization refuses that bet as a matter of doctrine: gates are typed records bound to exact SHAs, review independence is a cross-family floor ("Same-family or same-lineage self-review never satisfies either gate"), authority is an allowlist that fails closed on unknowns, and certification is a store-boundary predicate, not a promise [12][14][15][18][19]. Where Lewis does harden something in code — Neo's cage — his gate lists are heuristic **denylists** (a `dangerousBashReason` list that unknown destructive commands walk past), the exact construction the Civilization's fail-safe doctrine forbids [7][14].
+
+The one-line result: **Lewis writes the factory's discipline as prompts an agent is trusted to follow; the Civilization writes the same discipline as records a kernel refuses to certify around.** His system runs today and ships real leverage at solo scale; the Civilization is at Level 0 by its own state-proof, proving each gate before granting autonomy [17]. Six learning opportunities follow — all pattern-only, none adopting his code as runtime, gate authority, or truth store — the highest-value being his **review-capacity throttle** (*"finishing reviewed work beats starting new work"*), which directly operationalizes the single-human posture the Civilization already names as its scarcest resource [3][13].
+
+---
+
+## 1. Introduction and Scope
+
+This evaluation was commissioned to analyze the works of `owainlewis` with emphasis on Blueprint and Factory, determine whether his methodology and workstreams represent a comparable capability to the Civilization's governed development machinery, and extract actionable learnings consistent with the ratified rule that external frameworks stay outside control roles [21][24].
+
+The evaluation covers:
+
+- **Blueprint** @ `3815669` (2026-07-05) — 17 markdown skills, one agent definition, three operating guides, and the unattended-loop model; read in full [1][2][3].
+- **Factory** @ `8b346d7` (2026-07-05) — the PRD, the Factory Standard, the runner spec, the `.factory/` repo contract, and all ~1,900 lines of Go source as ground truth [4][5][6].
+- **The supporting stack**, read for methodology signals and enforcement posture: Neo @ `022d001` (agent harness + subagent supervisor), skills @ `e8cadb3` (installer), pi-extensions, pi-dynamic-workflows, push, slate.do, promptly [7][8][9].
+- **The author's public methodology writing** — the Blueprint principles, the Factory PRD and "What makes a great software project" essay, and his Substack/community output ("We are all AI agent managers now," "How I'm building autonomous agent loops") [1][4][6][10].
+- The **Civilization v4.0 baseline** — the accepted doctrine set (docs 01–07 + README, all `status: accepted, canonical: true`), the CFAR/CFADA gate standard and its shipped gate tool, and the doc-06 state proof of what is code-enforced today versus doctrine [12–19].
+
+**Evidence base and source discipline.** Per the standing rule that *code is ground truth while READMEs and marketing may be aspirational*, every enforcement-posture claim about Blueprint/Factory/Neo is **code- or prompt-text-anchored** (the runner's exec line, the prompt wrapper, the audit heuristics, Neo's cage constants were read directly) [2][5][7]. Landscape, biography, and reception claims are **third-party-cited** and carried at lower confidence [10][11][23]. The Civilization side is **doctrine- and tool-anchored**: quotes come from the accepted v4.0 docs and the gate-tool README, and the doctrine-versus-enforced distinction is taken from doc 06's own gate table rather than asserted [12–19]. One deliberate asymmetry is acknowledged throughout: Lewis's system is *running* (his loops file issues and open PRs on his repos today), while much of the Civilization's runtime chain exists as Level 0 bounded evidence [17]; §4 and §7 treat that honestly in both directions.
+
+---
+
+## 2. The Owain Lewis Work System: Capability Overview
+
+### 2.1 The Author and the Workstream (Third-Party-Cited)
+
+Owain Lewis is a UK software engineer ("20 years of production experience. Former Director of Engineering… I've owned and operated large-scale cloud services"), a long-time polyglot open-source author (Haskell, Clojure, OCaml, Scala, Go, Rust; `awesome-artificial-intelligence` 15.2k★ dates to 2015), now founder of GradientWork (AI consulting) and the paid "AI Engineer" community, with a newsletter and YouTube channel as the teaching arm [10][11]. The Oracle chapter is **verified, not inferred**: archived GitHub profiles ("Director Of Engineering At OCI") and his leaddev.com bio — "a Director of Engineering at Oracle Cloud Infrastructure… over 15 years of experience working as a principal engineer, tech lead, manager, and director," leading OCI's API organisation — survived 3–0 adversarial verification [23]. His current thesis, in his own words: *"We are all AI agent managers now — The work is no longer writing the code. The work is designing and scaling agent systems"* and *"Practical AI engineering for serious builders. Building a one-person AI business"* [10].
+
+His written methodology corpus was verified claim-by-claim [23]. "My 8 Principles for Agentic Coding" (2025-12) prescribes plan/execute separation in **fresh agent sessions**; doneness defined by runnable tests (*"When done is defined by a passing test, the agent knows when to stop"*); the position that the traditional **SDLC still applies** to agent work; and — notable for an eval-driven Civilization — three concrete progress metrics for agent management (longer autonomous runs ~10 min, fewer iteration cycles, higher first-try test-pass rate). His spec-driven-development material (2026-01) adds a three-document taxonomy — PRD *for humans*, technical design doc *for engineers*, and an "AI spec" that is *"specifically an execution document for agents, not humans"* — decomposed into discrete tasks each naming what to build, which files to touch, and how to verify, "explicitly mirroring how engineering teams break down work, with agents replacing individual developers" [23].
+
+The repos form a deliberate stack, one small piece per layer: **blueprint** (process skills — the methodology), **skills** (distribution — installs SKILL.md dirs into Claude Code, Codex, Hermes, Pi), **neo** (harness — his own minimalist coding agent + orchestrator), **factory** (runtime — scheduled runs of agents against repo-owned process), **push** (access — messaging gateway to headless agents), **slate.do** (work state — WIP-limited task lists for humans and agents), with pi-extensions/pi-dynamic-workflows as experiments in gated, context-isolated workflows [1][4][7][8][9]. The stated bet behind the stack: *"Coding agents are becoming commodity runtimes… the agent runtime is deliberately disposable"* [9] — process, state, and distribution are the durable layers, never the model. Repo descriptions carry deliberate bravado ("The best agent skills in the world," "The most important AI project in the world") that his own standards then discipline: *"Public claims must be backed by code, docs, tests, issues, or pull requests"* [6].
+
+### 2.2 Blueprint — Process as Skills (Prompt-Anchored)
+
+Blueprint's thesis sentence is the purest statement of the field's post-vibe-coding consensus: *"Coding agents don't fail for lack of intelligence. They fail for lack of process: no spec, no plan, no tests, no review, just a confident 2,000-line PR nobody asked for. Blueprint fixes the process and trusts the intelligence"* [1]. Its published principles are load-bearing for the comparison: **"Encode process, not knowledge"**, **"Verification is non-negotiable"**, **"Bet on the model"** ("Use clear instructions, not heavy rules"), **"Density over length"** ("Every word competes for attention"), **"Focused skills, not big catalogues"**, and **"Specs are prompts with weight… Once the code is right, the spec's job is done"** [1].
+
+Mechanically, Blueprint is 17 SKILL.md files in two flows [1][2]:
+
+- **Decide** (`design-doc` → `spec` → `plan`): design docs when architecture is unclear; specs when "requirements, function signatures, return values, data shapes, or error behavior need review" — written to `docs/<feature-slug>/spec.md`, then **"Stop and ask for review. Do not plan or implement"**; plans split work into "tasks sized for agents, review, and rollback." Plans are explicitly *temporary*; specs are disposable once code lands.
+- **Deliver** (`task-to-pr`, `milestone`, `multitask`, `pr-to-ready`, plus `implement`/`tdd`/`debug`/`refactor`/`review`): the single-ticket loop implements, tests, gets the diff reviewed "by another agent or reviewer," checks *each acceptance criterion* before opening the PR, writes proof back to the ticket, and **never merges**. `multitask` is coordinator/worker: one worktree-isolated worker per ticket, "the coordinator never edits code," parallelism capped "around five."
+
+The verification posture is real and specific: *"Tests are the default proof… Review checks that the proof is real"* [1]; the `review` skill instructs *"Try to prove the change wrong, not right. Trust code and tests, not confident explanations,"* and makes tests-that-fake-proof a typed blocker: "Tests that don't run the changed branch, mock the function under test, or assert what the code did instead of what it should do are blockers" [2]. The shipped `code-reviewer` agent definition is a genuine internal-adversarial-review analog: *"You are a fresh-context senior reviewer. You did not write this change and owe it nothing: review to disprove, not to approve. The author's session has accumulated assumptions you don't share. That is your advantage; don't inherit their framing"* [2]. The independence axis is **context freshness within the same model family** — Blueprint has no cross-family concept.
+
+Two more rules matter for §4: *"If implementation reveals the instructions are wrong, stop. Update the task, spec, or plan, then continue from the updated source. Do not push through stale instructions"* [1] — a prompt-level version of the deny-→-upstream repair loop and of the forbidden-anti-pattern "editing ACs to match output"; and the repo's meta-review rules for skill changes themselves: "Minimal instruction count: nothing should be included 'just in case'… Real verification: checks should confirm outcomes, not ceremony… Simple language: assume agents are already smart and getting smarter" [2].
+
+### 2.3 Blueprint Unattended — the Label State Machine and the Three Loops (Prompt-Anchored)
+
+Blueprint's unattended mode is *"deliberately prompts and external state, not a bespoke runner"* [3] — cron/GitHub Actions/Claude scheduled prompts over a GitHub-issue control plane. Namespaced labels form the state machine (`agent:ready|working|complete`, `needs:spec|human`, `blocked`, `risk:low|high`) with a stated single-mover invariant: *"Exactly one loop or human moves an issue out of each state"* [3]. Three scheduled loops:
+
+1. **Ready:** agents file every issue and judge it at creation — "decided work gets `agent:ready`; real work with open decisions gets `needs:spec`… Nothing unjudged enters the tracker. Do not pad a thin idea into fake completeness." The **definition of ready** is five predicates: goal stated as a result; enough background for a fresh agent; testable acceptance criteria; a specific check command; decision-complete [1][3].
+2. **Work:** one tick claims one `agent:ready` + `risk:low` issue and runs `task-to-pr`. Three mechanics carry the operational wisdom: **"The throttle is review capacity, not frequency"** — "Count issues labeled agent:complete… If there are 3 or more, exit: finishing reviewed work beats starting new work. Without this it manufactures stale PRs faster than you can read them"; **claims are atomic** (label swap before any work); **stale claims release** after 24 hours of no branch/PR activity [3].
+3. **Review:** a watch loop runs `pr-to-ready` on new feedback after a grace window; "Leave ready PRs open for human merge… Never merge" [3].
+
+What stays human is exactly three things: *"Flipping `needs:spec` to `agent:ready` after reviewing a spec. Reviewing PRs when human judgment is needed. Merging"* [3]. The one sanctioned exception is the attended Codex-coordinator pattern, where merge is allowed *"only because this prompt explicitly authorizes it"* for a finite issue set — per-run, explicit, attended [3].
+
+### 2.4 Factory — the Local Runner and the Repo Contract (Code-Anchored)
+
+Factory is the runtime ambition: *"a local CLI for running coding agents against repo-owned engineering process"* whose PRD states the Dark Factory's own goal in miniature — *"Every software project should have a permanent autonomous engineering team… The bottleneck is no longer writing code. The bottleneck is continuously deciding what should happen next… Factory is not the engineer. Factory runs engineers"* [4]. Its philosophy section could be quoted from doc 04: *"Factory separates deterministic work from reasoning. Factory performs deterministic orchestration. Agents perform reasoning… Factory never decides what code to write"* [4].
+
+The **repo contract** puts process ownership in the target repo: `.factory/AGENTS.md` (agent instructions), `STANDARDS.md` ("what good looks like"), `WORKFLOWS/` ("repeatable process" — prefer exactly one), `OBJECTIVES/` (*"Repo-owned work orders"* — "goal, context, scope, done conditions, selected workflow, runtime mode, stop rules"), `JOURNAL.md` (*"append-only engineering handover… The journal is continuity, not memory"*) [4]. The compilation model is `workflow = repeatable process; objective = current desired outcome; goal = runtime prompt sent to the coding agent` [4]. The **Factory Standard** is a 12-bucket senior-engineer checklist (identity → usability → build → testing → CI → GitHub hygiene → code quality → docs → release → security → operations → governance → agent readiness) with per-language answers and four intake labels (`factory-ready/-triage/-needs-human/-blocked`), and an explicit evidence culture: *"Agents should not only say a repo is healthy. They should show evidence… Bad evidence: vague confidence, unsupported claims, broad cleanup, hidden assumptions"* [6].
+
+**Code truth (~1,895 lines of Go, read in full).** The V1 loop is exactly `config → clone/fetch → build prompt → run agent → save log → save run record` [5]:
+
+- Real, code-enforced hygiene: per-repo `flock`-style locks; factory-owned clones under `.factory-state/repos`; **execute-mode runs get per-run git worktrees** so agent edits never dirty the cache (`runner.go:192-203`); plan mode runs `claude -p --permission-mode plan` (delegating no-edit enforcement to the agent vendor's permission layer) [5].
+- Everything else is prompt text. Execute mode is `claude -p --permission-mode auto` (`claude.go:23,41-48`) — full local permissions — and the safety rules exist solely as the wrapper string: *"Do not merge pull requests. Do not push to the default branch. In execute mode, make only the smallest workflow-scoped change, create a non-default branch… open a draft pull request"* (`prompt.go:48-67`). No hook, no allowlist, no post-run verification that the rules held [5].
+- The run record's `status:"success"` means the `claude` process exited 0; the only richer detection is a **one-string denylist** — `claudeBlocked()` matches the literal `"Credit balance is too low"` (`claude.go:50-52`). Run records are mutable local JSON; the journal is honest-effort markdown [5].
+- `factory audit` is read-only and honest about being shallow: existence-and-keyword heuristics ("README documents how to install" = README contains "install" or "setup"), each finding carrying a `SuggestedObjective` + `Workflow`, compiled into ranked `CandidateObjectives` (`audit.go`) — a mechanical gap→work-order generator [5].
+- Factory dogfoods itself: its own `.factory/` contract, a "Dogfood Factory" objective, and a journal whose first recorded blocker is, fittingly, *"Claude Code returned `Credit balance is too low`"* [6].
+
+### 2.5 Neo and the Supporting Stack — Where He Does Put Enforcement in Code (Code-Anchored)
+
+Neo matters because it shows what Lewis hardens when he owns the runtime. Its factory package opens with the stack's clearest doctrine statement: *"agents decide — planning, sequencing, triage, judgment / code constrains — depth, fanout, agent count, time / code observes — events, attribution, rendering / code never interprets — no state machines over agent outcomes"* (`factory.go:8-12`) [7]. Code-enforced, "regardless of what any agent asks for": **the cage** (MaxDepth 3, MaxChildren 8, MaxAgents 20 tree-wide, 15-minute wall clock per step); subagents are **amnesiac by construction** ("You have no memory of the parent conversation except the prompt you receive") and their tool registry omits the `agent` tool so they cannot recursively spawn; role = filtered tool set ("role enforcement by construction, not prose"); workspace path boundary with symlink resolution; readonly propagates into delegated steps ("must not gain write access through the side door"); a transcript invariant commits every `tool_use` with its `tool_result` as a pair; events tee to append-only JSONL [7]. His design notes even refuse boolean-collapse of judgment: StepResult "Ok means 'the step completed', NOT 'the answer is yes'… Collapsing agent judgment into a boolean is the classic mistake this design exists to avoid" [7]; and the unimplemented goal-runner design says the quiet part aloud: *"Neo should enforce the threshold in code, not only in prose"* while consciously accepting "the model is partly grading its own work" in phase 1 [7].
+
+Two enforcement caveats are load-bearing for §4: Neo's dangerous-command gate is a **heuristic denylist** (`dangerousBashReason`: sudo, `rm -rf`, `chmod -R`, `git reset --hard`… — unknown destructive commands pass in trusted mode; the README concedes bash is "not a true filesystem sandbox"), and `ask` mode silently degrades to trusted inside delegated steps because no approver exists mid-step [7]. The rest of the stack repeats the pattern at smaller scale: pi-dynamic-workflows mixes deterministic `command` gates ("fixes until a deterministic command passes"; "can enforce hard gates, like `test -s PLAN.md`") with agent steps; pi-extensions compacts context before review so the reviewer has "fresh eyes, no implementation bias" and parses "actual exit codes, no guessing"; skills records resolved commits in a lockfile and installs atomically; slate.do makes WIP limits a feature; promptly (2025) shows the prompts-as-versioned-files conviction predates the agent era [8][9].
+
+### 2.6 Enforcement Posture Across the Stack — the Section the Comparison Turns On
+
+Sorting every mechanism in §2.2–2.5 by what actually backs it:
+
+| Mechanism | Backing | Fails |
+|---|---|---|
+| Human-only merge; spec approval; `needs:spec`→`agent:ready` flip | Human act (plus whatever branch protection the repo owner configured — Blueprint never instructs enabling it) | closed at the human, **open around them** |
+| All skill rules (never merge, acceptance checks, adversarial review, stop-on-stale-spec) | Prompt text | open |
+| Factory safety rules; plan/execute behavior contract | Prompt text (+ vendor `--permission-mode plan` for plan mode) | open |
+| Label state machine, atomic claims, throttle, stale release | Prompt text over mutable GitHub labels | open |
+| Factory worktree isolation, repo locks, run/log records | Go code | closed (narrow) |
+| Neo cage (depth/fanout/count/time), no-recursive-spawn, path boundary, readonly propagation, amnesiac subagents | Go code | closed (narrow) |
+| Neo dangerous-bash gate | Code, but **denylist** | open on unknowns |
+| Run records / journal / lockfile provenance | Plain files, mutable, unsigned | open |
+
+The pattern: **judgment lives in prompts; the only fail-closed surfaces are resource/isolation envelopes and the human merge click.** Nothing binds review evidence to a SHA, nothing distinguishes an agent that followed `task-to-pr` from one that claims it did, and nothing but instructions stops a `--permission-mode auto` agent from pushing to main. Lewis knows this and prices it: unattended loops claim `risk:low` only; `risk:high` "waits for an attended session" [3].
+
+### 2.7 Supply Chain & Maturity
+
+All repos are MIT, single-maintainer, bus-factor 1 — with real but modest traction concentrated in the methodology layer (blueprint 211★/40 forks; pi-extensions 87★; neo 15★) and near-zero on the runtime (factory 2★, roughly a week old at evaluation time — created 2026-06-28 [23]; slate.do/push 0–3★) [11]. Development is active (every repo pushed 2026-07-05/06) and heavily agent-authored via his own loops. Because the recommendation below is pattern-only — the Civilization would never run his code in the factory — maturity is a low-stakes concern; the patterns are documented well enough to mine from the texts alone [1][3][4][6].
+
+### 2.8 Competitive Context (Third-Party-Cited)
+
+Lewis's *ideas* sit squarely in the mid-2026 spec-driven/agentic-SDLC consensus — GitHub Spec Kit (~90k★), BMAD-METHOD, AWS Kiro, Anthropic's Claude Code best practices, Harper Reed's workflow — and TAI-RES-2026-005 already mapped that landscape [21][23]. Within it he occupies the **minimalist pole, deliberately and on the record** (verified verbatim, 3–0 [23]): GitHub Spec Kit is *"pretty heavyweight. It generates tons of files"*; Kiro-style requirements/design/tasks phases are *"overkill"*; OpenSpec is named as the lighter alternative he prefers; and PRDs/user stories belong with humans — *"I don't think product managers should necessarily be editing markdown files."* What distinguishes him is otherwise the **combination**: (a) skills as the portable process unit across competing agent vendors, with an installer treating SKILL.md as a de-facto standard; (b) the unattended label-driven loop layer done with zero bespoke infrastructure; (c) an explicit, published operating philosophy (minimalism, "bet on the model," density) rather than a template pile; and (d) a distribution flywheel (community, newsletter, YouTube) that makes the methodology itself the product of his one-person business [1][3][8][10]. Blueprint's ~211★ places it far below Spec Kit/BMAD but with an unusually high methodology-per-line density; Factory is pre-adoption ("one author's prescribed methodology, not an adopted community standard" [23]). The sweep's reception verdict is definitive on thinness: **no substantive third-party critiques, reviews, or adoption case studies of either project surfaced during adversarial verification** [23].
+
+---
+
+## 3. Transpara-AI Civilization: Baseline Architecture (v4.0)
+
+This section states the baseline from the **accepted v4.0 doctrine set** (all numbered docs `status: accepted, canonical: true`; folder accepted 2026-06-18 by merged checkpoint PR #142) — the first eval in the series to use v4.0 — foregrounding the machinery a work-system comparison needs [12–19].
+
+### 3.1 Motive and the Civilization Doctrine
+
+The Dark Factory exists because *"AI-assisted software production creates a structural accountability problem… the human has to trust summaries, screenshots, chat transcripts, and tool behavior that may be incomplete, stale, self-serving, or impossible to reproduce"*; the core move is *"Do not ask whether an AI, tool, worker, runtime, or human claims it did the right thing. Require every material action to leave evidence in a causal, auditable chain"* [20]. Doc 01 makes development itself a governed Civilization function: all development enters as FactoryOrders under EventGraph truth, authority outcomes, protected-action gates, risk classes, trace completeness, verification, and audit; *"The factory builds the factory, under the accountability it imposes on what it builds"*; humans act as the External Committee with three permanently-human classes — decision, review, and value-allocation (*"The Civilization never self-allocates value"*) [12].
+
+### 3.2 TLC — the Dev Arc and Its Gates
+
+Doc 07 defines the mandatory stage flow: intake (issues are *"source-of-intent, routing, readiness labels"* — never authority) → Factory Order → design packet (*"A CFADA-clean design packet authorizes nothing by itself"*) → IADA (self-directed, "drives self-blockers to zero… does not satisfy CFADA") → CFADA (cross-family design audit) → **human AuthorityDecision before code** → code → IAR → draft PR → CFAR at the **exact head SHA** ("If the PR head changes after CFAR, the gate is stale") → ready transition (*"starts a new exact-head gate… even when the ready transition preserves the same head SHA"*) → exact-head human approval → merge → bounded closeout [18]. PR-visible evidence is mandatory and self-report is disqualified: *"Self-reported validation in a PR body is never enough"* [18]. The **Cross-Family Independence Floor**: reviewer family "materially independent from the author family… author-relative, bidirectional, and model-agnostic"; *"Same-family or same-lineage self-review never satisfies either gate"* — repo standards may strengthen but never weaken it [18].
+
+### 3.3 Sovereign Record, Authority, and Fail-Closed Certification
+
+EventGraph "remains the source of truth for evidence, authority, release, and capability state" [14]; the production chain is the mandatory gate DAG `FactoryOrder → Requirement → AcceptanceCriterion → Task → … → GateResult → TraceCompletenessGate → ReleaseCandidate → Certification/Rejection → AuditReport`, where "The Release cell is the only cell that may certify releases, and only through `release.certify` authority and TraceCompletenessGate evidence" and `trace_score` must equal 1.00 [15][16]. Authority is typed (`AuthorityRequest → AuthorityDecision → ExecutionReceipt`) with allowlist outcomes (`Autonomous/Notify/ApprovalRequired/Forbidden`; "`PolicyMissing` defaults to `Forbidden` for high-risk and critical actions"), a 25-action protected baseline (`repo.merge.main`, `repo.push.default_branch`, `production.deploy`, `release.certify`… — names removable only by a later accepted ADR), and the explicit rule that *"Proposal artifacts, review reports, branch names, and PR bodies do not count as approval"* [14]. Doc 02 defines the operating posture this runs under today: single human (Michael Saucier, acting for the External Committee) with **cross-family adversarial review as the compensating control**, and the context-budget checkpoint rule as a formal resource limit on governance itself [13].
+
+### 3.4 What Is Code-Enforced Today (Doc 06 Honesty)
+
+The Civilization's own state-proof keeps the comparison honest: current state is **Level 0** everywhere — deterministic evidence harnesses, bounded fixtures, dry-runs; "No autonomy level above the current bootstrap is granted" [12][17]. What is *live and fail-closed today* is the review-gate layer: the shipped gate tool posts the `cross-family-adversarial-review` commit status and "fails closed. Missing author-family metadata, a same-family review, a stale reviewed SHA, a non-pass verdict, or non-zero blockers all produce a failing status," with conflicting author-family signals also failing closed [19]; exact-head human approval is process-required evidence (deliberately not branch-protection-required — docs#177 Option B) [13]; plus repo CI and fail-closed issue intake in the hive (`cc:pr-ready` must be present AND no deny label; the code enforces the label's presence, and the operating rule reserves setting it to humans — unlike Blueprint's agent-set `agent:ready`) [22]. The full FactoryOrder→Certification runtime remains doctrine plus Level 0 evidence [17]. The gate tool's own README states the residual trust boundary plainly: "It does not cryptographically prove which process produced the artifact" [19].
+
+---
+
+## 4. Comparative Analysis
+
+### 4.1 Capability Comparison Matrix
+
+| Dimension | Lewis work system (blueprint/factory/neo) | Transpara-AI Civilization (v4.0) | Verdict |
+|---|---|---|---|
+| Goal | "Automate software engineering," permanent autonomous engineering team per repo [4] | Governed autonomous software production with structural accountability [12][20] | **Same goal, different non-negotiables** |
+| Process carrier | Markdown skills + prompts; "Specs are prompts with weight… Once the code is right, the spec's job is done" [1] | Governed docs with semver frontmatter at exact blob SHA; the packet is a durable truth object [18] | Opposite theories of where truth lives |
+| Orchestration split | "Factory performs deterministic orchestration. Agents perform reasoning" [4]; "agents decide / code constrains / code never interprets" [7] | Doc 04 runtime: deterministic workers, RuntimeBroker envelope, LLM excluded from Base Slice 0 [15] | **Convergent doctrine**, divergent depth |
+| Human gates | Two: spec approval (label flip) + merge; "Merging is always a human decision" [1][3] | Two: Human Design Review (AuthorityDecision before code) + exact-head Human Review/merge [18] | **Same two-gate topology** |
+| Intake readiness | 5-point definition of ready; filing *agent* sets `agent:ready`; `needs:spec` flip is human [3] | Factory Order with verifiable requirements; intake label `cc:pr-ready` is human-set (operating rule), fail-closed (code) [18][22] | Convergent shape; intake trust inverted |
+| Adversarial review | Fresh-context same-family reviewer, "review to disprove, not to approve" [2] | IADA/IAR internal + CFADA/CFAR **cross-family floor**; same-family never satisfies [18] | Lewis stops at the Civilization's IAR |
+| Gate evidence | Chat/ticket text; no SHA binding, no staleness rule | Exact-head SHA, stale-on-change, fresh gate at ready, tool-posted commit status, read-back [18][19] | Only the Civilization can prove review-of-*this*-code |
+| Enforcement boundary | Prompt rules + narrow code cages; denylists where coded [5][7] | Allowlists failing closed on unknowns; store-boundary certification predicates [14][15] | **Opposite by design** — the seam |
+| State/record | GitHub labels/issues; mutable JSON run records; markdown journal [3][5] | EventGraph append-only causal chain as sovereign record [14][15] | Platform-state vs sovereign-record |
+| Autonomy control | `risk:low`-only unattended; review-capacity throttle; Neo cage [3][7] | Autonomy Levels 0–7, per-gate non-authorizations, protected-action allowlist [14][17] | Both graduated; his is judged, theirs is proven |
+| Authority concept | None (implicit repo ownership; per-run merge authorization in one prompt) [3] | Typed AuthorityRequest/Decision/Receipt; quorums; separation of duties; value-allocation permanently human [12][14] | Civilization-only |
+| Scale of ambition | One person, many small repos, one-person business [10] | Institution designed to outlive its single human; economy, 13 product layers [12] | Different destinies |
+| Operational status | Running today on his repos (fail-open) | Level 0 bounded evidence (fail-closed), gate layer live [17][19] | His runs; theirs proves |
+
+### 4.2 Shared Territory — the Convergences Are Structural, Not Cosmetic
+
+The two systems agree on far more than the Solo Orchestrator comparison did, and at deeper levels: (1) the **two-human-gate topology** (design/spec approval before code; human-only merge) arrived at independently; (2) **adversarial review before PR** with the reviewer denied the author's framing — Blueprint's fresh-context reviewer is a working IAR; (3) the **deterministic-orchestration/agent-reasoning split** stated almost identically on both sides; (4) **work orders as repo-owned markdown** — Factory's *objectives* ("Repo-owned work orders": goal, context, scope, done conditions, stop rules) are small Factory Orders, down to the phrase; (5) **evidence culture** — "show evidence… Bad evidence: vague confidence" vs. "Self-reported validation in a PR body is never enough"; (6) **stop-and-repair-upstream** when instructions prove wrong, vs. the deny→upstream loop and the ban on editing ACs to match output; (7) **graduated autonomy by risk** (`risk:low` unattended-only vs. risk classes and autonomy levels); (8) **WIP/attention limits as first-class controls** (review-capacity throttle; slate.do WIP limits) vs. doc 02's context-budget checkpoints; (9) even the **multi-vendor posture** — he installs the same skills into Claude Code and Codex for *portability*; the Civilization requires plural families for *independence* — same plumbing, different theorem [1–9][12–18].
+
+This breadth of convergence is itself evidence for the doctrine: two unrelated efforts, one solo-minimalist and one institutional, pressed by the same failure modes ("a confident 2,000-line PR nobody asked for" [1]; "summaries… that may be incomplete, stale, self-serving" [20]), rediscovered the same control points.
+
+### 4.3 The Seam — and the Critique in Both Directions
+
+**Critique of the Lewis system from the Civilization's ground.** Every safeguard listed in §2.6 that is not a human click or a resource cage is advisory. The unattended work loop runs in a GitHub Action with `contents: write` and nothing but prompt text between the agent and the default branch; Factory's execute mode grants `--permission-mode auto` and asks nicely; the "success" in a run record certifies only an exit code; review evidence binds to no SHA, so a post-review push is invisible; the filing agent may promote its own issue to `agent:ready` (agent-judged intake where the hive deliberately requires a human-set label [22]); the adversarial reviewer shares the author's model family, so correlated family-level blind spots — the exact reason the independence floor exists — pass both "reviews"; and where he does gate in code, he gates by denylist, which "silently permits everything you forgot plus every enum value added later." His own artifacts concede each point: risk:high waits for attended sessions, the goal-runner design admits "the model is partly grading its own work," Neo's README admits the sandbox gap [3][5][7]. In doctrine terms: his gates are Tier-guided controls with no backstop; **fail-open at the trust boundary is not an oversight of the system — it is the system**, priced by keeping blast radius small.
+
+**Critique of the Civilization from Lewis's ground — taken seriously.** Blueprint's principles read as a direct indictment of process mass: *"No ceremony, no mazes of rules, no thousand-line process files before work starts… Every word competes for attention… nothing should be included 'just in case'… assume agents are already smart and getting smarter"* [1][2]. The v4.0 set is seven canonical docs plus a README at version 4.0.54; TLC is twelve stages with four review gates; and doc 07's own layering rule ("Skills define judgment. Scripts execute repeatable mechanics. Hooks enforce minimum invariants") means today's gate execution still rides on long skill prompts — so the per-change attention cost the doctrine hopes to move into tools is, at Level 0, still paid in context windows. Lewis would predict, correctly, that this mass slows every change including safe ones, and that agents follow short instructions more reliably than long ones — his density rule is an *empirical claim about agent compliance*, not just taste. The honest disposition: the Civilization's answer to "why carry the mass" is the cost asymmetry of its domain (an ungated protected action is silent and possibly irreversible; a stalled work item is visible and recoverable), and its own mechanical-edit opt-out and risk classes already concede that not all work deserves the full arc. What it should *take* from Lewis is not lighter gates but **denser gate prose** — §5.3.
+
+**The deepest single difference is what each system treats as the durable truth object.** For Lewis, running code plus its tests is truth; specs are scaffolding ("Once the code is right, the spec's job is done"), plans are disposable, the journal is "continuity, not memory." For the Civilization, the *record* is truth — the design packet at its blob SHA, the gate result, the authority decision — because its founding problem is precisely that at industrial scale and above-solo autonomy, "the code plus a confident summary" is exactly the thing that cannot be trusted [18][20]. Neither position is confused; they are correct answers to differently-sized blast radii. The Civilization should hold its position *and* notice that Lewis's position explains his velocity.
+
+### 4.4 Decision Record, ADR Disposition, and Contribution Determination
+
+**Decision-record determination (stated crisply per the standing rule):**
+
+1. **Does a dark-factory ADR exist for this subject?** **No.** As of 2026-07-06, before this evaluation landed, no pre-existing ADR, decision row, or doctrine text in `transpara-ai/docs` or the wiki named owainlewis, Blueprint, Factory, or Neo (repo-wide search; this evaluation and its wiki article are deliberately the first mentions). The v3 archive holds precedent for external-*pattern* ADRs (ADR-0014 MetaGPT SOP pattern, ADR-0015 OpenManus worker reference), but no v4.0-era equivalent exists for this subject.
+2. **Should one be created?** **No ADR.** Nothing here is adopted as a dependency, runtime, or control-plane component, so there is no architecture decision to record; that is the same disposition TAI-RES-2026-005 reached for Solo Orchestrator. The durable record should be: this evaluation, plus a per-item crosswalk/decision row added through the normal docs process, plus — if any §5 learning is pursued — its own issue → Factory Order → TLC arc, where design-stage CFADA provides the decision record for the *adopted pattern* (not for Lewis's works).
+3. **Does it contribute to the Civilization, and how?** **Pattern-only; reject as runtime/authority/truth.** Blueprint, Factory, and Neo contribute six concrete, mineable patterns (§5) — operational mechanisms and prose disciplines, not code. Under the ratified rule that external frameworks stay outside control roles [24], none of his components may hold work-scheduling, gate, certification, or truth responsibilities, and no learning below proposes otherwise. Net contribution: **high as a mirror** (the strongest independent confirmation yet that the dev-arc's control points are the naturally-selected ones, plus the sharpest available critique of gate-prose mass), **moderate as a source** (the throttle and DoR-lint patterns are immediately actionable).
+
+---
+
+## 5. Strategic Learning Opportunities
+
+All six translate Lewis's patterns into the Civilization's record-and-gate frame; none import his code or weaken a gate.
+
+### 5.1 Review-Capacity Throttle → a WIP Gate on the Human Review Queue (highest value)
+
+Blueprint's work loop refuses to start work when ≥3 agent PRs await human review: *"The throttle is review capacity, not frequency… finishing reviewed work beats starting new work. Without this it manufactures stale PRs faster than you can read them"* [3]. The Civilization names Michael's attention as the scarce resource (doc 02) and fail-closes intake on `cc:pr-ready`, but no reviewed artifact was found that throttles *work start* on the size of the awaiting-human-review queue (no such mechanism appears in the hive issue-intake path read for this eval [22]; verify before implementing). Translate as: an issue-scan/work-loop predicate — count open agent PRs lacking exact-head human approval; at N, stop claiming, fail-idle, record the throttle event. This is a pure fail-closed addition (it can only *prevent* work-start) and directly serves the single-human posture.
+
+### 5.2 The Five-Predicate Definition of Ready → a Factory Order Lint
+
+Blueprint's DoR — goal as result, fresh-agent context, testable acceptance criteria, a runnable check, decision-complete, with the anti-confabulation rule *"Do not pad a thin idea into fake completeness"* [1][3] — is a compressed validity predicate for exactly what TLC stage 2 requires of a Factory Order ("requirements individually verifiable; cites source-of-intent"). Adopt it as an FO-crafting lint in the intake wizard and issue templates: five checkboxes plus the padding ban. Keep the trust inversion: readiness is still asserted by a human-set label, never by the filing agent [22].
+
+### 5.3 Density-Over-Length as a Governance-Prose Standard (docs hygiene)
+
+Blueprint's meta-review rules for its own skills — "Minimal instruction count: nothing should be included 'just in case'… Real verification: checks should confirm outcomes, not ceremony" [2] — applied to the CFAR/CFADA/TLC skill layer. Doc 07 already mandates the right split ("Hooks enforce minimum invariants… not the governance judgment"); the learning is a *density pass* over the skill/runbook prose that executes the gates, measured the way Lewis measures ("Every word competes for attention"), with zero change to gate semantics. Rationale: at Level 0 the gates are executed through context windows, so prose mass is an operational cost and a compliance risk, not just style.
+
+### 5.4 Audit→Objective Compiler → Gap-to-FactoryOrder-Candidate Generator (pattern-only)
+
+Factory's `audit.go` maps every failed health check to a `SuggestedObjective` + `Workflow` and ranks `CandidateObjectives` [5]; the Factory Standard's 12 buckets define the checklist [6]. Translate as a Level 0 read-only repo-health harness whose output is *FactoryOrder proposals* (never self-authorized work): findings → typed gap records → candidate FOs a human promotes via the normal intake gate. The 12-bucket checklist itself is a good seed for per-repo standards files; the keyword-grep shallowness is fine because the output is only a proposal queue.
+
+### 5.5 Single-Mover Invariant and Stale-Claim Release → Label-Doctrine Hardening
+
+Two crisp invariants worth adopting as *stated rules* in the cc:* label documentation (and eventually as EventGraph-record predicates): *"Exactly one loop or human moves an issue out of each state"* and the 24-hour stale-claim release ("A claim with no linked branch or PR activity after 24 hours is stale; release it back") with atomic claim-before-work [3]. The hive's intake gating is already fail-closed [22]; these add liveness (no issue poisoned by a crashed worker) and auditability (every transition has exactly one authorized mover) to the same label plane.
+
+### 5.6 Neo's Cage and Transcript Invariant → Worked Examples for the Local Worker Envelope
+
+Neo demonstrates, in ~200 lines, runtime-enforced budgets "regardless of what any agent asks for" (depth/fanout/agent-count/wall-clock), no-recursive-spawn by tool-registry construction, role-as-toolset, and a transcript that cannot contain a `tool_use` without its `tool_result` [7]. These are miniature, single-process versions of doc 04's RuntimeBroker envelope and are useful as *reference implementations* when the Work runtime's local deterministic worker grows orchestration — with the doctrine-mandated correction applied: replace his dangerous-command **denylist** with the command **allowlist** doc 04 already specifies ("allow commands by explicit binary and allowed argument patterns") [15].
+
+---
+
+## 6. The Inverse: What the Lewis System Cannot Take From the Civilization by Prompting Alone
+
+The mirror matters because it marks capabilities that are *structural*, not stylistic — things no density of prompt-craft provides:
+
+1. **Proof that review happened to *this* code.** Without exact-head SHA binding, staleness rules, and a tool-posted status with read-back, "reviewed" is a claim in a transcript. His own gate tool analog does not exist; the Civilization's does and fails closed [18][19].
+2. **Independence that survives correlated model failure.** Fresh context removes the *author's session* bias; it cannot remove the *family's* bias. The cross-family floor exists precisely because a lineage shares blind spots with itself [18].
+3. **Fail-closed protected actions.** "Do not merge" as prompt text stops a cooperative model. An allowlist policy engine returning `Forbidden` on `PolicyMissing` for high-risk and critical actions stops any model [14]. Between those two sits every prompt-injection, tool-error, and jailbreak scenario his system prices as residual risk.
+4. **Authority as a typed record.** Per-run merge authorization inside one coordinator prompt [3] is the informal ancestor of `AuthorityDecision` — but it cannot express scope, expiry, quorum, separation of duties, or "value allocation is permanently human" [12][14].
+5. **A record that outlives the session.** Journals and run-record JSON are honest-effort files the next writer can rewrite. An append-only causal chain is what makes "audit" a query instead of an act of faith [14][15][20].
+6. **An institution.** His system's continuity *is* Owain Lewis — bus factor 1 by design, monetized as a personal brand [10][11]. The Civilization's founding constraint is to survive and outgrow its single human [12][13].
+
+None of this is a rebuke at his scale: for `risk:low` work on small MIT repos, the cost asymmetry genuinely favors his posture. It becomes a rebuke exactly at the boundary the Civilization is built for — industrial software, above-solo autonomy, silent-failure blast radii.
+
+---
+
+## 7. Conclusions
+
+1. **The convergence is the headline.** An unaffiliated, credible, 20-year practitioner building in public has independently arrived at the dev-arc's control points: two human gates in the same places, adversarial pre-PR review, work orders, risk-graded autonomy, evidence-not-assertion, deterministic-orchestration/agent-reasoning split. This is the strongest external confirmation to date that the Civilization's gate topology is discovered, not invented [1–9][18].
+2. **The divergence is the same seam as TAI-RES-2026-005, radicalized.** Solo Orchestrator wrote gates as documents a session hook half-enforces; Lewis writes them as prompts nothing enforces, plus narrow code cages — and, unlike Solo Orchestrator, he does it *on purpose*, prices it with risk labels, and publishes the bet ("Bet on the model") [1][3][5][7][21].
+3. **Blueprint is the best available external benchmark for gate-prose density**; Factory is the best available miniature of the FactoryOrder/objective compilation model; Neo is the best available miniature of the runtime envelope — each valuable as a mirror, none eligible as a component [1][4][7][24].
+4. **Adopt the throttle, the DoR lint, and the density pass; keep the records, the allowlists, and the cross-family floor.** The Civilization's structural position — truth in sovereign records, gates that fail closed, independence across model families — is not weakened by this comparison; it is sharpened by having to say *why* against the most disciplined minimalist counterexample found so far.
+5. His work also supplies the Civilization with a usable one-line warning it should keep taped to the doctrine: process mass that lives in prompts is paid on every change — so keep moving enforcement into tools and records, and keep the prose dense.
+
+---
+
+## 8. Recommended Next Steps
+
+1. **File the throttle issue** (hive): review-capacity WIP gate on work-start, per §5.1 — verify no existing equivalent, then intake via `cc:` labels as a normal TLC arc.
+2. **File the FO-lint issue** (docs/platform intake tooling): the five-predicate DoR + padding ban as Factory Order crafting checks, per §5.2.
+3. **Schedule a density pass** over the CFAR/CFADA/TLC skill and runbook prose as docs hygiene, per §5.3 — semantics frozen, wording compressed.
+4. **Seed the repo-health harness proposal** (Level 0, read-only, proposals-only) from the Factory Standard's 12 buckets, per §5.4.
+5. **Add the single-mover and stale-claim invariants** to the cc:* label documentation, per §5.5.
+6. **Add a per-item crosswalk/decision row** for "owainlewis work system (Blueprint/Factory/Neo): pattern-only, no ADR, no control roles" through the normal docs process, closing the decision-record gap this eval would otherwise leave (per §4.4 and the standing determination rule).
+7. **Watch, don't adopt:** re-scan his repos in ~2 quarters (factory daemon/verification modes and the goal-runner are unimplemented designs that may mature into stronger comparators) [4][7].
+
+---
+
+## 9. References
+
+[1] `owainlewis/blueprint` @ `3815669` (2026-07-05): `README.md`, `AGENTS.md`, `CLAUDE.md`. Local clone read in full.
+[2] Blueprint skills & reviewer: `skills/{spec,plan,implement,tdd,review,task-to-pr,multitask,pr-to-ready,goal-design,…}/SKILL.md`, `agents/code-reviewer.md`, `REVIEW.md`.
+[3] Blueprint operating guides: `guides/loops.md`, `guides/labels.md`, `guides/codex-coordinator.md`, `examples/workflows/triage.yml`.
+[4] `owainlewis/factory` @ `8b346d7` (2026-07-05): `README.md`, `ARCHITECTURE.md`, `docs/prd.md`, `docs/factory-runner/spec.md`.
+[5] Factory Go source (code truth): `internal/runner/runner.go`, `internal/agent/claude.go`, `internal/prompt/prompt.go`, `internal/audit/audit.go` (~1,895 lines total).
+[6] Factory standard & dogfood: `docs/factory-standard.md`, `docs/what-makes-a-great-software-project.md`, `.factory/{STANDARDS.md,WORKFLOWS/standards-check.md,OBJECTIVES/*,JOURNAL.md}`.
+[7] `owainlewis/neo` @ `022d001` (2026-07-05): `internal/factory/{factory.go,supervisor.go,runner.go}`, `internal/agent/agent.go`, `internal/permission/policy.go`, `docs/design/goal-runner.md`, `docs/robust-core-plan.md`, `.neo/skills/coordinator-worker/SKILL.md`.
+[8] `owainlewis/skills` @ `e8cadb3`: `internal/{skill,installer,agents,config}/`.
+[9] Supporting repos (READMEs + gh api): `pi-extensions`, `pi-dynamic-workflows`, `push`, `slate.do`, `promptly`, `infographer`.
+[10] Author's public materials: github.com/owainlewis profile & profile README; owainlewis.com; aiengineer.co; Substack "The AI Engineer" (incl. "We are all AI agent managers now," 2026-07-03). Third-party-cited; lower confidence.
+[11] GitHub API repo/user metadata snapshot, 2026-07-06 (stars, forks, created/push dates, bio).
+[12] `DF-V4.0-ADR-001` — Development Process as Governed Civilization Function, v4.0.4, accepted (`docs/dark-factory/v4.0/01-…`).
+[13] `DF-V4.0-SINGLE-HUMAN-ADVERSARIAL-POSTURE`, v4.0.5, accepted (`02-…`).
+[14] `DF-V4.0-GOV-003` — Civilization Governance and Authority, v4.0.3, accepted (`03-…`).
+[15] `DF-V4.0-RUNTIME-004` — Production Workflow Runtime, v4.0.3, accepted (`04-…`).
+[16] `DF-V4.0-EVAL-005` — Verification, Audit, Risk, Eval, v4.0.4, accepted (`05-…`).
+[17] `DF-V4.0-STATE-006` — Autonomy Gates and Current State, v4.0.38, accepted (`06-…`).
+[18] `DF-V4.0-CFAR-CFADA-DEV-ARC-GATE-STANDARD`, v4.0.3, accepted (`07-…`).
+[19] Cross-family review gate tool: `docs/tools/cross-family-review-gate/` (`cross_family_review_gate.py` + README); exact-head approval gate: `docs/tools/exact-head-approval-gate/`.
+[20] "Dark Factory — Motive, Goal, Approach" (`DF-MOTIVE-GOAL-APPROACH` v0.1.5, draft, non-canonical — quoted for motive framing only).
+[21] TAI-RES-2026-001 (Sakana), -002 (Hermes), -003 (OKF), -004 (MemPalace), -005 (Solo Orchestrator) — the companion series; -005 supplies the session-hook-vs-sovereign-record precedent and the spec-driven landscape survey.
+[22] `transpara-ai/hive` `pkg/hive/issue_intake.go` — fail-closed, human-set `cc:pr-ready` intake gate.
+[23] Deep-research web sweep for this evaluation, 2026-07-06: 101-agent workflow (search → fetch → 3-vote adversarial verification per claim → synthesis); 11 merged findings, every constituent claim surviving 3–0 (zero refuted). Primary sources verified verbatim: blueprint/factory raw GitHub content; "My 8 Principles for Agentic Coding" (newsletter.aiengineer.co, 2025-12-14); "How I Code With AI Agents (Spec-Driven Development)" (YouTube RhaF4LVAVng + companion newsletter post, 2026-01-30, via transcript); Wayback snapshots of the github.com/owainlewis profile (2023/2024, "Director Of Engineering At OCI", worksFor: Oracle); leaddev.com/community/owain-lewis.
+[24] Ratified external-framework boundary: v3.9 Decision 15 lineage ("external frameworks stay outside control roles"), carried into v4.0 doc 03/04 boundaries ("external runtimes are references or adapters only… They do not own execution policy… release authority, certification, or factory control").

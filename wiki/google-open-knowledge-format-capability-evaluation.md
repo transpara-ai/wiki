@@ -13,9 +13,11 @@ investigation_topic: Google Open Knowledge Format
 civilization_contribution: "slated as potential future usage."
 raw_documents:
   - "raw/inbox/2026-06-24/unassigned/TAI-RES-2026-003-v1.0.0-Google-Open-Knowledge-Format-Evaluation-180085523fa5.md"
+  - "raw/inbox/2026-07-07/unassigned/tai-res-2026-003-v1.0.1-google-open-knowledge-format-evaluation.md"
 sources:
   - "raw/inbox/2026-06-24/unassigned/TAI-RES-2026-003-v1.0.0-Google-Open-Knowledge-Format-Evaluation-180085523fa5.md"
   - "https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing"
+  - "raw/inbox/2026-07-07/unassigned/tai-res-2026-003-v1.0.1-google-open-knowledge-format-evaluation.md"  # added via wiki browser ingest 2026-07-07; note: classification corrected for the record; supersedes: raw/inbox/2026-06-24/unassigned/TAI-RES-2026-003-v1.0.0-Google-Open-Knowledge-Format-Evaluation-180085523fa5.md
 confidence:
   sources: browser-ingested internal research plus external Google Cloud announcement
   claims: summary of TAI-RES-2026-003; raw source is served directly
