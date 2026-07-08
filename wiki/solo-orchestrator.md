@@ -17,6 +17,7 @@ sources:
   - "Upstream context only (not re-published): github.com/kraulerson/solo-orchestrator — fork parent, fetched 2026-06-13"
   - "raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.0.0-Solo-Orchestrator-Evaluation-69a6250ee846.md"  # added via wiki browser ingest 2026-06-24
   - "raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.1.0-Solo-Orchestrator-Evaluation-959878a544d6.md"  # added via wiki browser ingest 2026-06-24
+  - "raw/inbox/2026-07-07/solo-orchestrator/TAI-RES-2026-005-v1.1.1-Solo-Orchestrator-Evaluation-d5c0989f3d71.md"  # added via wiki browser ingest 2026-07-07; note: classification corrected for the record; supersedes: raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.1.0-Solo-Orchestrator-Evaluation-959878a544d6.md
 confidence:
   decision: high — but indirect. Solo Orchestrator has NO individual row in the v3.9.1 crosswalk; its ratified decision is the grouped legacy-matrix line (L257) plus Phase 4/5/closeout. Stated as such below.
   fork_date_and_identity: high — confirmed live via GitHub fork metadata (createdAt 2026-05-01T08:59:49Z, parent kraulerson/solo-orchestrator)
@@ -25,6 +26,7 @@ confidence:
 raw_documents:
   - "raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.0.0-Solo-Orchestrator-Evaluation-69a6250ee846.md"
   - "raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.1.0-Solo-Orchestrator-Evaluation-959878a544d6.md"
+  - "raw/inbox/2026-07-07/solo-orchestrator/TAI-RES-2026-005-v1.1.1-Solo-Orchestrator-Evaluation-d5c0989f3d71.md"
 
 ---
 

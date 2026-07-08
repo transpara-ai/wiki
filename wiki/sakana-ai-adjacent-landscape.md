@@ -13,11 +13,13 @@ civilization_contribution: "Not directly included, but used as reference."
 raw_documents:
   - raw/inbox/2026-06-24/sakana-ai-adjacent-landscape/TAI-RES-2026-002-v1.0.0-Sakana-AI-Adjacent-Landscape-7e4c149494c7.md
   - "raw/inbox/2026-06-24/sakana-ai-evaluation/TAI-RES-2026-001-v1.1.0-Sakana-AI-Evaluation-06d812cc043c.md"
+  - "raw/inbox/2026-07-07/sakana-ai-adjacent-landscape/TAI-RES-2026-002-v1.0.1-Sakana-AI-Adjacent-Landscape-1a9415e42999.md"
 sources:
   - raw/inbox/2026-06-24/sakana-ai-adjacent-landscape/TAI-RES-2026-002-v1.0.0-Sakana-AI-Adjacent-Landscape-7e4c149494c7.md
   - /Transpara/transpara-ai/repos/docs/civilization/v4.1/implementation/epics/epic-15-institutional-substrate-doctrine/corpus/copied/civilization/knowledge/external-landscape/sakana-ai/TAI-RES-2026-002-v1.0.0-Sakana-AI-Adjacent-Landscape.md  # original Stage 0 copied-corpus path; provenance context only
   - raw/civilization/stage-0-institutional-substrate/08-external-research-placement-index-v0.1.0.md
   - raw/civilization/stage-0-institutional-substrate/02-stage-0-provenance-manifest-v0.1.0.md
+  - "raw/inbox/2026-07-07/sakana-ai-adjacent-landscape/TAI-RES-2026-002-v1.0.1-Sakana-AI-Adjacent-Landscape-1a9415e42999.md"  # added via wiki browser ingest 2026-07-07; note: classification corrected for the record; supersedes: raw/inbox/2026-06-24/sakana-ai-adjacent-landscape/TAI-RES-2026-002-v1.0.0-Sakana-AI-Adjacent-Landscape-7e4c149494c7.md
 confidence:
   sources: primary copied internal research
   claims: summary of copied report and placement index

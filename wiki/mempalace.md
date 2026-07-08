@@ -18,6 +18,7 @@ sources:
   - https://github.com/transpara-ai/mempalace/blob/main/README.md  # forked README context; upstream-authored and not a Transpara finding
   - "raw/inbox/2026-06-24/mempalace/TAI-RES-2026-004-v1.0.0-MemPalace-Evaluation-01583dbd30c3.md"  # TAI-RES-2026-004 v1.0.0, code-anchored MemPalace capability evaluation
   - "raw/inbox/2026-06-24/mempalace/TAI-RES-2026-004-v1.1.0-MemPalace-Evaluation-185593e1b62f.md"  # added via wiki browser ingest 2026-06-24; supersedes: raw/inbox/2026-06-24/mempalace/TAI-RES-2026-004-v1.0.0-MemPalace-Evaluation-01583dbd30c3.md
+  - "raw/inbox/2026-07-07/mempalace/TAI-RES-2026-004-v1.1.1-MemPalace-Evaluation-ed94a22035e5.md"  # added via wiki browser ingest 2026-07-07; note: classification corrected for the record; supersedes: raw/inbox/2026-06-24/mempalace/TAI-RES-2026-004-v1.1.0-MemPalace-Evaluation-185593e1b62f.md
 current_research_version: 1.1.0
 confidence:
   decision_row: high — quoted verbatim from the v3.9.1 crosswalk decision table and per-item note; the row exists (this is NOT a thin/no-row case)
@@ -29,6 +30,7 @@ confidence:
 raw_documents:
   - "raw/inbox/2026-06-24/mempalace/TAI-RES-2026-004-v1.0.0-MemPalace-Evaluation-01583dbd30c3.md"
   - "raw/inbox/2026-06-24/mempalace/TAI-RES-2026-004-v1.1.0-MemPalace-Evaluation-185593e1b62f.md"
+  - "raw/inbox/2026-07-07/mempalace/TAI-RES-2026-004-v1.1.1-MemPalace-Evaluation-ed94a22035e5.md"
 
 ---
 
