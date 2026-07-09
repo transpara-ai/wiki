@@ -2,8 +2,8 @@
 doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
-version: 0.9.5
-status: draft (IADA-passed; CFADA r1-r13 repaired; re-audit pending)
+version: 0.9.6
+status: draft (IADA-passed; CFADA r1-r14 repaired; re-audit pending)
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -28,7 +28,7 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 > operator-supplied name); every other path appends or refuses — never creates.
 > The builder stays no-LLM, no-network. Two-phase delivery (one FO, §6): Phase
 > 1 machinery (code PR), Phase 2 retrofit (data-only PR[s]). Repaired through
-> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2), 11 (v0.9.3), 12 (v0.9.4), 13 (v0.9.5).
+> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2), 11 (v0.9.3), 12 (v0.9.4), 13 (v0.9.5), 14 (v0.9.6).
 
 ## 1. Survey — measured, not assumed (file:line evidence)
 
@@ -235,7 +235,7 @@ page conforms (IADA-I6). The hard corpus gate turns on only when satisfiable.
 
 | # | Phase | Criterion (risk) | Verification — named test (in a package.json-wired module) |
 |---|---|---|---|
-| AC1 | 1 | Topic Details row lists every `raw_documents` AND `superseded_raw_documents` entry (superseded included, marked), falling back to local `sources` when both are empty; no "Raw docs" label survives in `dist/` (low) | py: `test_topic_details_lists_all_versions_incl_superseded`, `test_topic_details_falls_back_to_local_sources` |
+| AC1 | 1 | Topic Details row lists every `raw_documents` AND `superseded_raw_documents` entry (superseded included, marked), falling back to raw-INGESTED local sources (`raw/inbox/...`) only when both are empty — doctrine/absolute citations render in the source panel, NOT Topic Details (CFADA-r14 #31); no "Raw docs" label survives in `dist/` (low) | py: `test_topic_details_lists_all_versions_incl_superseded`, `test_topic_details_fallback_is_raw_ingested_only` |
 | AC2 | 1 | Investigation-tier page renders no `.toc`; a ≥3-heading non-investigation page still renders one (med) | py: `test_investigation_pages_have_no_toc`; playwright |
 | AC3 | 1 | Default ADD with a resolvable investigation `target_slug` appends + sets `stale_since`, `wiki/*.md` count unchanged, rebuilds; a non-investigation target appends WITHOUT a stale stamp (preserved) (high) | server: `test_add_default_appends_and_flags_stale`, `test_add_to_non_investigation_preserves_behavior` |
 | AC4 | 1 | Fail-closed guard, full domain — default ADD with (a) no target, (b) retired/nonexistent target → REFUSE; (c) non-investigation target → APPENDS (no refuse/stale); new-investigation with (d) empty name OR a name whose compact/slug-driving form is empty (e.g. "!!!", "()"), (e) `slugify(name)` collides with an existing slug (active/tombstone), INCLUDING when the compact key differs (e.g. "Foo (Bar)" → slug `foo` vs existing `foo.md`), (f) name/entity/alias/cluster collision via the compact `collision_key` incl. case/whitespace/no-space/punctuation/parenthesis variants (e.g. "Sakana-AI", "Sakana (AI)" vs "Sakana AI"; "Mem Palace" vs "MemPalace"), against ACTIVE and RETIRED pages (a name matching the owainlewis tombstone's `TAI-RES-2026-006` alias → REFUSE, no reanimation — CFADA-r12 #28), (g) name = an existing `investigation_topic` cluster label (e.g. "Sakana AI") → REFUSE; (h) doc title ≠ operator name → NAME drives slug/entity+guard (no bypass); (i) distinct entities sharing a cluster (Sakana) → allowed; (j) absent subject → created (high) | server: `test_ingest_guard_domain` (cases a–j) |
@@ -401,5 +401,10 @@ NEXT commit and is re-audited by the following round.
 |---|---|---|
 | C30 | The C29 wording made AC6(P2) unsatisfiable: it required support-only pages to have empty Topic Details, but the fallback is preserved in Phase-1 code and Phase 2 is data-only, so a data-only retrofit cannot stop the fallback rendering doctrine citations | FIXED — the fallback is SCOPED in Phase-1 machinery to raw-INGESTED sources only; support-only pages get empty Topic Details from Phase 1, so AC6(P2) is satisfiable with Phase 2 data-only (§2.1, §2.2, §3, §6). |
 
-Re-audit (CFADA round 14, confirming) pending at v0.9.5. No code before Human
+**Round 14 → FAIL** — audited at packet blob `93443287273846c16e01d370f382c15824c19b4f` (commit `6d988ed`, the v0.9.5 state; no P1 — 5th consecutive zero-blocker round); repaired to v0.9.6:
+| # | Finding | Disposition |
+|---|---|---|
+| C31 | AC1 still said "fall back to local `sources`" (the old broad behavior), contradicting §2.2/AC6's raw-ingested-scoped fallback — an implementer following AC1 would reintroduce C29/C30 | FIXED — AC1 now specifies the raw-INGESTED-scoped fallback, consistent with §2.1/§2.2/§2.5/§6 (§3). |
+
+Re-audit (CFADA round 15, confirming) pending at v0.9.6. No code before Human
 Design Review (stage 6) approves.
