@@ -834,6 +834,14 @@ def build_toc(tokens):
     return '<div class="toc"><div class="toctitle">Contents</div>%s</div>' % render(tokens)
 
 
+def article_toc(meta, toc_tokens, is_home=False):
+    # R4 (Investigation Topic Standard): tier: investigation pages render no
+    # in-topic Table of Contents; every other tier keeps its Contents box.
+    if is_home or (meta or {}).get("tier") == "investigation":
+        return ""
+    return build_toc(toc_tokens)
+
+
 def mark_generated(path):
     GENERATED_DIST_PATHS.add(path.resolve())
 
@@ -2178,7 +2186,7 @@ def build_board(fm):
 def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home=False, extra_head="", main_class="content"):
     sidebar = build_sidebar(slug if not is_home else "")
     infobox = "" if is_home else build_infobox(meta, fm)
-    toc = "" if is_home else build_toc(toc_tokens)
+    toc = article_toc(meta, toc_tokens, is_home=is_home)
     seealso = "" if is_home else build_seealso(links, slug)
     source_updates = "" if is_home else build_source_update_panel(fm)
     source_panel = "" if is_home else build_source_panel(fm)
