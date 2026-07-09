@@ -2,8 +2,8 @@
 doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
-version: 0.9.0
-status: draft (IADA-passed; CFADA r1-r8 repaired; re-audit pending)
+version: 0.9.1
+status: draft (IADA-passed; CFADA r1-r9 repaired; re-audit pending)
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -28,7 +28,7 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 > operator-supplied name); every other path appends or refuses — never creates.
 > The builder stays no-LLM, no-network. Two-phase delivery (one FO, §6): Phase
 > 1 machinery (code PR), Phase 2 retrofit (data-only PR[s]). Repaired through
-> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0).
+> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1).
 
 ## 1. Survey — measured, not assumed (file:line evidence)
 
@@ -80,7 +80,7 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 | Phase | Action | File | Change |
 |---|---|---|---|
 | 1 | EDIT | `compile/build_site.py` | **R3:** relabel `"Raw docs"` → `"Topic Details"` (`:1530`) AND source the list from `raw_documents` ∪ `superseded_raw_documents` (deduped, superseded marked, newest primary — CFADA-r3 #8). **R4:** tier-gate the TOC at `:2181`. **R7 banner:** reason-neutral `stale_since` text (`:2200`). **R2 predicate:** `investigation_conformance(slug)`. |
-| 1 | EDIT | `compile/ingest_server.py` | **R5/R6/R1 (§2.4):** intent model + fail-closed guard; `create_article_from_source(name=…)` keyed on the operator name (CFADA-r2 #4); `prospective_unassigned_slug` in lockstep; collision set includes `investigation_topic` cluster labels (CFADA-r3 #9), matched on `collision_key` forms incl. parentheses (CFADA-r5 #13, r8 #21); the operator name is quarantined pre-write (CFADA-r6 #16); ADD keeps `require_authoring` (CFADA-r6 #15). Default lane appends (any tier), stamps `stale_since` only for investigation targets. |
+| 1 | EDIT | `compile/ingest_server.py` | **R5/R6/R1 (§2.4):** intent model + fail-closed guard; `create_article_from_source(name=…)` keyed on the operator name (CFADA-r2 #4); `prospective_unassigned_slug` in lockstep; collision set includes `investigation_topic` cluster labels (CFADA-r3 #9), matched on the compact `collision_key` (CFADA-r5 #13, r8 #21, r9 #22); the operator name is quarantined pre-write (CFADA-r6 #16); ADD keeps `require_authoring` (CFADA-r6 #15). Default lane appends (any tier), stamps `stale_since` only for investigation targets. |
 | 1 | EDIT | `compile/ingest_ops.py` | `set_article_stale(root, slug, now)` wrapping `_set_scalar` — reused by ADD + Replace; no new op, no auth contract (Q4). |
 | 1 | EDIT | `ingest_page()` region in `compile/build_site.py` | "New investigation" toggle (default OFF) reveals a **required name** field, the ONLY creation path; checking it ignores `target_slug`. Both themes. |
 | 1 | ADD/EDIT | tests — land in already-wired modules (`test_build_site_nav.py`, `test_ingest_server.py`, `test_ingest_ops.py`, `test_ingest_ux.py`) OR add any new file to `package.json` `test:py` (CFADA-r3 #10); `tests/*.spec.js` for Playwright | AC1–AC5, AC6(P1), AC7–AC9. |
@@ -115,15 +115,19 @@ transport gate (loopback/same-origin or `CIVWIKI_AUTHORING_TOKEN`) —
 Only the `stale_since` stamp reaches `ingest_ops`, via `set_article_stale`.
 
 **Collision key (defined, distinct from `slugify`):** `collision_key(s)` =
-Unicode-casefold `s`, then replace every run of non-alphanumeric characters
-(whitespace, hyphens, AND punctuation INCLUDING parentheses) with a single
-hyphen, then strip leading/trailing hyphens. Unlike `ingest_server.slugify`,
+Unicode-casefold `s`, then remove ALL non-alphanumeric characters (whitespace,
+hyphens, punctuation, and parentheses — everything), giving a COMPACT form. The
+compact form collapses every separator variant, including no-space vs space
+(CFADA-r9 #22), which a hyphen-folding key would miss. Unlike `ingest_server.slugify`,
 which drops parenthesized text before folding (CFADA-r8 #21), `collision_key`
 never drops text. A new name **collides** when `collision_key(name)` equals
 `collision_key(x)` for x ∈ {an active investigation page's `entity` ∪ its
 `aliases` ∪ its `investigation_topic` cluster label ∪ its slug} ∪ {any existing
-page's slug, active OR tombstone}. So "Sakana AI", "Sakana-AI", and
-"Sakana (AI)" all key to `sakana-ai` and collide (CFADA-r3 #9, r5 #13, r8 #21).
+page's slug, active OR tombstone}. So "MemPalace"/"Mem Palace"/"Mem-Palace" all key to `mempalace`, and
+"Sakana AI"/"Sakana-AI"/"Sakana (AI)" all key to `sakanaai` — no separator
+variant slips through (CFADA-r3 #9, r5 #13, r8 #21, r9 #22). Over-collision (two
+genuinely distinct subjects sharing a compact form) is a deliberate fail-closed
+stall, operator-recoverable (residual a).
 The created page's slug still comes from `slugify(name)`; only the collision
 test uses `collision_key`. The
 cluster label is a collision surface even though it is neither a slug nor an
@@ -219,7 +223,7 @@ page conforms (IADA-I6). The hard corpus gate turns on only when satisfiable.
 | AC1 | 1 | Topic Details row lists every `raw_documents` AND `superseded_raw_documents` entry (superseded included, marked), falling back to local `sources` when both are empty; no "Raw docs" label survives in `dist/` (low) | py: `test_topic_details_lists_all_versions_incl_superseded`, `test_topic_details_falls_back_to_local_sources` |
 | AC2 | 1 | Investigation-tier page renders no `.toc`; a ≥3-heading non-investigation page still renders one (med) | py: `test_investigation_pages_have_no_toc`; playwright |
 | AC3 | 1 | Default ADD with a resolvable investigation `target_slug` appends + sets `stale_since`, `wiki/*.md` count unchanged, rebuilds; a non-investigation target appends WITHOUT a stale stamp (preserved) (high) | server: `test_add_default_appends_and_flags_stale`, `test_add_to_non_investigation_preserves_behavior` |
-| AC4 | 1 | Fail-closed guard, full domain — default ADD with (a) no target, (b) retired/nonexistent target → REFUSE; (c) non-investigation target → APPENDS (no refuse/stale); new-investigation with (d) empty name, (e) slug collision (active/tombstone), (f) name/entity/alias/cluster collision via `collision_key` incl. case/whitespace/punctuation/parenthesis variants (e.g. "Sakana-AI", "Sakana (AI)" vs "Sakana AI"), (g) name = an existing `investigation_topic` cluster label (e.g. "Sakana AI") → REFUSE; (h) doc title ≠ operator name → NAME drives slug/entity+guard (no bypass); (i) distinct entities sharing a cluster (Sakana) → allowed; (j) absent subject → created (high) | server: `test_ingest_guard_domain` (cases a–j) |
+| AC4 | 1 | Fail-closed guard, full domain — default ADD with (a) no target, (b) retired/nonexistent target → REFUSE; (c) non-investigation target → APPENDS (no refuse/stale); new-investigation with (d) empty name, (e) slug collision (active/tombstone), (f) name/entity/alias/cluster collision via the compact `collision_key` incl. case/whitespace/no-space/punctuation/parenthesis variants (e.g. "Sakana-AI", "Sakana (AI)" vs "Sakana AI"; "Mem Palace" vs "MemPalace"), (g) name = an existing `investigation_topic` cluster label (e.g. "Sakana AI") → REFUSE; (h) doc title ≠ operator name → NAME drives slug/entity+guard (no bypass); (i) distinct entities sharing a cluster (Sakana) → allowed; (j) absent subject → created (high) | server: `test_ingest_guard_domain` (cases a–j) |
 | AC5 | 1 | New-investigation builds FROM the operator name (not the doc title), emits the R2 skeleton (bold-lead placeholder + `stale_since` + `status: awaiting synthesis`, no auto `investigation_topic`); toggle defaults OFF, only creation path; `prospective_unassigned_slug` matches the creator (high) | server: `test_new_investigation_uses_operator_name`, `test_new_investigation_emits_canonical_skeleton`, `test_new_investigation_name_is_quarantined`, `test_ingest_still_requires_authoring`, `test_prospective_slug_matches_creator` |
 | AC6 | 1 → 2 | **P1:** predicate → ∅ for a conformant fixture; exact deficiency for missing-key / missing-heading / non-bold-lead / out-of-order / Integration-Packet-misordered fixtures; skeleton conforms. **P2:** every live-enumerated active investigation page (i) conforms (R2), (ii) has `investigation_topic` shared by ≥2 active pages (no stray/self-topic), AND (iii) has Topic Details covering ALL raw versions — `raw_documents` ∪ `superseded_raw_documents` is non-empty and includes every safe LOCAL source ref in its `sources` — both `raw/*` and allowed absolute `/Transpara/transpara-ai/...` paths, the full set `safe_source_path` admits (CFADA-r8 #20) — so no local source link vanishes when the Phase-1 fallback turns off (R3/R8 completeness; CFADA-r6 #17) (med) | py: `test_investigation_conformance_predicate` (P1); `test_all_active_investigations_conform`, `test_investigation_topic_clusters_have_multiple_members`, `test_all_active_investigations_topic_details_complete` (P2) |
 | AC7 | 1 | Builder imports no network/model client; a `stale_since` page renders the banner until cleared, with reason-neutral text (no Replace-specific "sources were replaced"/"authorization" wording) (med) | py: `test_builder_has_no_network_client`, `test_stale_banner_is_reason_neutral` |
@@ -353,5 +357,10 @@ NEXT commit and is re-audited by the following round.
 | C20 | Topic Details completeness checked only `raw/*` sources, not the allowed absolute `/Transpara/...` local sources the fallback also serves — links could vanish when the fallback turns off | FIXED — AC6(P2)(iii) covers every safe local source ref `safe_source_path` admits (§3). |
 | C21 | `slugify` drops parenthesized text, so "Sakana (AI)" slipped the collision guard | FIXED — a dedicated `collision_key` folds all punctuation incl. parentheses without dropping text; AC4(f) adds the parenthesis case (§2.4, AC4). |
 
-Re-audit (CFADA round 9) pending at v0.9.0. No code before Human Design Review
+**Round 9 → FAIL** — audited at packet blob `84a0cf9b2cf56b81de97eff6cdd18b17e584847d` (commit `e74b7af`, the v0.9.0 state); repaired to v0.9.1:
+| # | Finding | Disposition |
+|---|---|---|
+| C22 | The hyphen-folding `collision_key` missed no-space/space variants ("Mem Palace" → `mem-palace` ≠ MemPalace's `mempalace`), leaving an R1 duplicate path | FIXED — `collision_key` is now the COMPACT alphanumeric-only form ("MemPalace"/"Mem Palace" → `mempalace`); AC4(f) adds the no-space case (§2.4, AC4). |
+
+Re-audit (CFADA round 10) pending at v0.9.1. No code before Human Design Review
 (stage 6) approves.
