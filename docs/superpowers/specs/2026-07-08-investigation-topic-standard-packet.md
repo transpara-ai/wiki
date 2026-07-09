@@ -3,7 +3,7 @@ doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
 version: 0.10.0
-status: AMENDED v0.10.0 — CFADA re-PASS (2026-07-09): folds in R9 (single nav entry via `investigation_primary`) + revises R8 per Michael's Option-A nav decision; IADA + CFADA re-run (7 amendment rounds 17–23, findings C35–C46 all repaired) returned 0 design blockers at the round-23-audited blob f54544fa444774a2ea12e03843d426563afd9ce1. READY for Human Design Review (stage 6). No code before Michael approves.
+status: AMENDED v0.10.0 — CFADA re-PASS (2026-07-09) — folds in R9 (single nav entry via `investigation_primary`) + revises R8 per Michael's Option-A nav decision; IADA + CFADA re-run (7 amendment rounds 17–23, findings C35–C46 all repaired) returned 0 design blockers at the round-23-audited blob f54544fa444774a2ea12e03843d426563afd9ce1. READY for Human Design Review (stage 6). No code before Michael approves.
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -618,6 +618,8 @@ Both accepted-repaired (0 rejected, 0 waived); round 23 re-audited the new blob 
 
 **Ready for Human Design Review (stage 6): YES** — 0 design blockers at the audited v0.10.0 bytes.
 
+**Post-pass bookkeeping — round 24.** Recording this PASS (the status flip, this verdict, the banner) introduced two documentation-correctness defects that the confirming round 24 caught and are fixed here: C47 (the amended `status:` scalar held an unquoted `: `, making the frontmatter invalid YAML — verified fixed with `yaml.safe_load` on both docs) and C48 (the historical v0.9.7 ready-line still read "re-audit pending"). Both are documentation-only; the design PASS credit is unaffected — it binds to the round-23-audited design bytes `f54544f`. Round 25 re-confirms the bookkeeping head is clean before the gate is posted.
+
 ## Appendix — CFADA VERDICT (v0.9.7, historical)
 
 > ⚠️ **SUPERSEDED BY AMENDMENT v0.10.0 (2026-07-09).** The PASS recorded below
@@ -640,4 +642,4 @@ Both accepted-repaired (0 rejected, 0 waived); round 23 re-audited the new blob 
 
 **Non-authorizations:** this CFADA PASS authorizes no code, grants no authority, does not mark any PR ready, does not close any issue/risk, and does not substitute for Human Design Review. Code begins only after Human Design Review (stage 6, Michael) approves.
 
-**Ready for Human Design Review (stage 6): YES** — 0 design blockers at the audited v0.9.7 bytes. *(Superseded: v0.10.0 adds R9 / revises R8 — re-audit pending, see the Amendment log.)*
+**Ready for Human Design Review (stage 6): YES** — 0 design blockers at the audited v0.9.7 bytes. *(Superseded by the v0.10.0 Amendment CFADA VERDICT above — re-PASS, 0 blockers at round 23; this appendix is the historical v0.9.7 record.)*
