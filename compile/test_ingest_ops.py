@@ -2784,6 +2784,16 @@ def test_set_article_stale_stamps_and_refuses_unknown():
     print("ok test_set_article_stale_stamps_and_refuses_unknown")
 
 
+def test_fm_list_values_strips_inline_comment():
+    # CFAR (Codex): the ops inline-list parser strips a trailing comment too, so
+    # replace/remove agree with the UI/renderer on a commented inline list.
+    lines = ["raw_documents: [raw/inbox/a.md, raw/inbox/b.md]  # note"]
+    assert ops.fm_list_values(lines, "raw_documents") == ["raw/inbox/a.md", "raw/inbox/b.md"]
+    block = ops._normalize_list_to_block(lines, "raw_documents")
+    assert ops.fm_list_values(block, "raw_documents") == ["raw/inbox/a.md", "raw/inbox/b.md"]
+    print("ok test_fm_list_values_strips_inline_comment")
+
+
 def test_new_investigation_ingest_ignores_supersedes():
     """CFAR (Codex): a new-investigation ingest carrying a stray `supersedes`
     (a stale browser selection or an API field) records NO misleading cross-topic
