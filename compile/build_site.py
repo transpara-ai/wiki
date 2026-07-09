@@ -1010,6 +1010,13 @@ def is_raw_ingested_research(ref):
         return False
     if low.startswith("raw/inbox/"):
         return True
+    # a TAI-RES evaluation qualifies only as a RELATIVE raw/ path (wherever under
+    # raw/ it sits, e.g. raw/civilization/external-landscape/tai-res-*.md).
+    # Absolute /Transpara/ paths and every other non-raw/ ref are doctrine/
+    # provenance citations that stay in the source panel, so reject them BEFORE
+    # the basename allowlist admits a bare tai-res-*.md filename (CFAR: Codex).
+    if not low.startswith("raw/"):
+        return False
     base = low.rsplit("/", 1)[-1]
     return base.startswith("tai-res-") and base.endswith(".md")
 

@@ -130,13 +130,19 @@ def test_topic_details_fallback_is_raw_ingested_only():
         "  - index.md  # provenance/index\n"
         "  - raw/inbox/2026-07-09/acme/TAI-RES-2026-009-v1.0.0-Acme-Evaluation.md  # ingested eval\n"
         "  - raw/civilization/external-landscape/tai-res-2026-010-beta-evaluation.md  # tai-res outside inbox\n"
+        "  - /Transpara/transpara-ai/wiki/raw/x/TAI-RES-2026-011-abs-evaluation.md  # absolute path — source panel only\n"
     )
     box = site.build_infobox(_INV, fm)
     assert "Topic Details" in box
     assert "TAI-RES-2026-009-v1.0.0-Acme-Evaluation.md" in box, "raw/inbox upload listed"
-    assert "tai-res-2026-010-beta-evaluation.md" in box, "tai-res anywhere listed"
+    assert "tai-res-2026-010-beta-evaluation.md" in box, "tai-res anywhere (relative raw/) listed"
     assert "06-memory-knowledge-v3.9.md" not in box, "doctrine excluded from Topic Details"
     assert "2026-06.md" not in box, "open-brain doctrine excluded"
+    # CFAR (Codex): an absolute /Transpara/ tai-res citation is doctrine/provenance
+    # — it must NOT be admitted to Topic Details by the basename allowlist.
+    assert "TAI-RES-2026-011-abs-evaluation.md" not in box, "absolute path excluded"
+    assert site.is_raw_ingested_research(
+        "/Transpara/transpara-ai/wiki/raw/x/TAI-RES-2026-011-abs-evaluation.md") is False
     # a support-only page (only doctrine sources) → EMPTY Topic Details (no row).
     support_only = (
         "tier: investigation\n"
