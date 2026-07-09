@@ -2,8 +2,8 @@
 doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
-version: 0.9.6
-status: draft (IADA-passed; CFADA r1-r14 repaired; re-audit pending)
+version: 0.9.7
+status: draft (IADA-passed; CFADA r1-r15 repaired; re-audit pending)
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -28,7 +28,7 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 > operator-supplied name); every other path appends or refuses — never creates.
 > The builder stays no-LLM, no-network. Two-phase delivery (one FO, §6): Phase
 > 1 machinery (code PR), Phase 2 retrofit (data-only PR[s]). Repaired through
-> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2), 11 (v0.9.3), 12 (v0.9.4), 13 (v0.9.5), 14 (v0.9.6).
+> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2), 11 (v0.9.3), 12 (v0.9.4), 13 (v0.9.5), 14 (v0.9.6), 15 (v0.9.7).
 
 ## 1. Survey — measured, not assumed (file:line evidence)
 
@@ -94,14 +94,17 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 sourced from `raw_documents` **∪** `superseded_raw_documents` (deduped, newest
 primary, superseded entries marked), because the Replace op moves superseded
 refs into the latter key (`ingest_ops.py:952`) and R3 requires all versions,
-superseded included (CFADA-r3 #8). The empty-both fallback is SCOPED
-in Phase-1 machinery to raw-INGESTED local sources (`raw/inbox/...`) only —
+superseded included (CFADA-r3 #8). The Topic Details renderer (Phase-1
+machinery) filters its ENTIRE input — `raw_documents` ∪ `superseded_raw_documents`
+AND the empty-both fallback — to raw-INGESTED refs (`raw/inbox/...`) only;
 doctrine citations (`raw/transpara/...`, `raw/open-brain/...`, absolute
-`/Transpara/...`) NEVER render as Topic Details (they belong to the source
-panel). So a support-only page (doctrine citations, no ingested file) has EMPTY
-Topic Details from Phase 1 onward, un-retrofitted pages keep only their
-ingested-file links, and Phase 2 stays data-only (CFADA-r4 #11, r10 #24,
-r12 #29, r13 #30). AC1 asserts the "Topic Details" row lists a
+`/Transpara/...`) NEVER render as Topic Details wherever they sit (CFADA-r15 #32),
+including a doctrine ref already mis-placed in `raw_documents` (e.g.
+hermes-agent). So a support-only page has EMPTY Topic Details from Phase 1
+onward, un-retrofitted pages keep only their ingested-file links, and Phase 2
+stays data-only; the Phase-2 retrofit additionally moves mis-placed doctrine
+refs out of `raw_documents` for hygiene, but the invariant does not depend on it
+(CFADA-r4 #11, r10 #24, r12 #29, r13 #30, r15 #32). AC1 asserts the "Topic Details" row lists a
 superseded entry and that no "Raw docs" label survives in `dist/`.
 
 ### 2.3 R4 — No in-topic Table of Contents
@@ -250,8 +253,9 @@ explicit, mandatory obligation per phase (AC6 splits into P1/P2 halves; AC9 runs
 in both PRs) — no AC is optional and no PR may drop its assigned obligation
 (CFADA-r5 #14). The Phase-1 PR is satisfied only when
 AC1–AC5, AC6(P1), AC7, AC8, AC9 are green at its reviewed head AND
-`npm run verify` exits 0. The Phase-2 PR is satisfied only when AC6(P2) and AC9
-are green. The FO is satisfied only when BOTH phases are. Any unproven assigned
+`npm run verify` exits 0. The FINAL Phase-2 PR is satisfied only when AC6(P2) (all-corpus) and AC9 are
+green; an intermediate split-cluster PR asserts only that ITS OWN pages conform
++ AC9 (CFADA-r15 #33). The FO is satisfied only when BOTH phases are. Any unproven assigned
 criterion ⇒ not satisfied (IADA-I4).
 
 ## 4. Fail-safe analysis (the §8 house rule, applied)
@@ -300,7 +304,7 @@ criterion ⇒ not satisfied (IADA-I4).
   code ⇒ deploy = reset serving clone to main + `npm run build` + **restart**.
 - **Phase 2 — retrofit (data-only PR[s]).** The 19 pages → R2 (R8), MemPalace
   heading generalized, bold leads, `stale_since` where needed, AC6(P2) on.
-  Data-only ⇒ `npm run build`, **no restart**. May split by cluster.
+  Data-only ⇒ `npm run build`, **no restart**. It may be ONE all-19-page PR, or split by cluster — if split, each intermediate PR asserts ITS OWN pages conform + AC9, and the FINAL Phase-2 PR flips AC6(P2) to the all-corpus assertion (that test-flip is a small test edit, the only non-data change in Phase 2); the all-corpus AC6(P2) gate is satisfied only at that final PR (CFADA-r15 #33).
 
 Each PR runs stages 7→11 (IAR → CFAR at exact head → ready → fresh ready-state
 CFAR). Merge is Michael's (stage 12).
@@ -406,5 +410,11 @@ NEXT commit and is re-audited by the following round.
 |---|---|---|
 | C31 | AC1 still said "fall back to local `sources`" (the old broad behavior), contradicting §2.2/AC6's raw-ingested-scoped fallback — an implementer following AC1 would reintroduce C29/C30 | FIXED — AC1 now specifies the raw-INGESTED-scoped fallback, consistent with §2.1/§2.2/§2.5/§6 (§3). |
 
-Re-audit (CFADA round 15, confirming) pending at v0.9.6. No code before Human
+**Round 15 → FAIL** — audited at packet blob `7ad1605220958fb39fb089d3010fa7265d0f51a7` (commit `8c2f82a`, the v0.9.6 state; no P1 — 5th consecutive zero-blocker round); repaired to v0.9.7:
+| # | Finding | Disposition |
+|---|---|---|
+| C32 | The raw-ingested filter applied only to the fallback; `raw_documents` was taken verbatim, so a mis-placed doctrine ref (hermes-agent) would still render as Topic Details, breaking the invariant | FIXED — the Topic Details renderer filters its ENTIRE input (union + fallback) to raw-ingested refs; Phase-2 additionally tidies `raw_documents` (§2.2). |
+| C33 | "Split by cluster" contradicted the all-corpus AC6(P2) gate and the data-only scope (a test-flip) | FIXED — the all-corpus AC6(P2) gate is final-Phase-2-PR only; intermediate cluster PRs assert their own pages; the test-flip is a named small edit (§3, §6). |
+
+Re-audit (CFADA round 16, confirming) pending at v0.9.7. No code before Human
 Design Review (stage 6) approves.
