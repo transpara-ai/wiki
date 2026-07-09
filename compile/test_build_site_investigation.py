@@ -148,6 +148,157 @@ def test_topic_details_fallback_is_raw_ingested_only():
     print("ok test_topic_details_fallback_is_raw_ingested_only")
 
 
+# ---- R2 / AC6(P1) — investigation conformance predicate ----
+
+_CONFORMANT_FM = (
+    "entity: Acme\n"
+    "aliases:\n"
+    "  - Acme\n"
+    "tier: investigation\n"
+    "status: compiled\n"
+    "last_compiled: 2026-07-09\n"
+    'civilization_contribution: "Contributed the widget governance pattern."\n'
+    "raw_documents:\n"
+    "  - raw/inbox/2026-07-09/acme/TAI-RES-2026-009-v1.0.0-Acme-Evaluation.md\n"
+    "current_research_version: 1.0.0\n"
+    "sources:\n"
+    "  - raw/inbox/2026-07-09/acme/TAI-RES-2026-009-v1.0.0-Acme-Evaluation.md\n"
+)
+
+_CONFORMANT_BODY = (
+    "# Acme\n"
+    "\n"
+    "**Acme is a strong external match for the advisory recall layer.** It does X.\n"
+    "\n"
+    "## What Changed with the Research\n"
+    "Body.\n"
+    "\n"
+    "## The Boundary\n"
+    "Body.\n"
+    "\n"
+    "## Capability Read\n"
+    "Body.\n"
+    "\n"
+    "## Benchmark Reality\n"
+    "Body.\n"
+    "\n"
+    "## Sources & Provenance\n"
+    "Body.\n"
+)
+
+
+def test_investigation_conformance_predicate():
+    # conformant fixture -> empty deficiency set.
+    assert site.investigation_conformance(_CONFORMANT_FM, _CONFORMANT_BODY) == set(), \
+        "a canonical investigation page conforms"
+
+    # missing required frontmatter key (entity).
+    no_entity = "\n".join(
+        l for l in _CONFORMANT_FM.splitlines() if not l.startswith("entity:")) + "\n"
+    d = site.investigation_conformance(no_entity, _CONFORMANT_BODY)
+    assert d and any("entity" in x for x in d), "missing entity is a deficiency"
+
+    # present-but-empty render-driving field (presence != non-empty).
+    empty_contrib = _CONFORMANT_FM.replace(
+        'civilization_contribution: "Contributed the widget governance pattern."',
+        'civilization_contribution: ""')
+    d = site.investigation_conformance(empty_contrib, _CONFORMANT_BODY)
+    assert any("civilization_contribution" in x for x in d), "empty contribution is a deficiency"
+
+    # missing required heading.
+    no_boundary = _CONFORMANT_BODY.replace("## The Boundary\nBody.\n\n", "")
+    d = site.investigation_conformance(_CONFORMANT_FM, no_boundary)
+    assert any("Boundary" in x for x in d), "a missing heading is a deficiency"
+
+    # non-bold Summary lead.
+    plain_lead = _CONFORMANT_BODY.replace(
+        "**Acme is a strong external match for the advisory recall layer.**",
+        "Acme is a strong external match for the advisory recall layer.")
+    assert "non-bold-lead" in site.investigation_conformance(_CONFORMANT_FM, plain_lead), \
+        "a non-bold lead is a deficiency"
+
+    # out-of-order headings.
+    swapped = _CONFORMANT_BODY.replace(
+        "## What Changed with the Research\nBody.\n\n## The Boundary\nBody.\n\n",
+        "## The Boundary\nBody.\n\n## What Changed with the Research\nBody.\n\n")
+    assert "out-of-order" in site.investigation_conformance(_CONFORMANT_FM, swapped), \
+        "misordered headings are a deficiency"
+
+    # Integration Packet present but AFTER Sources & Provenance -> out of order.
+    ip_after = _CONFORMANT_BODY.replace(
+        "## Sources & Provenance\nBody.\n",
+        "## Sources & Provenance\nBody.\n\n## Integration Packet\nBody.\n")
+    assert "out-of-order" in site.investigation_conformance(_CONFORMANT_FM, ip_after), \
+        "Integration Packet after Sources is out of order"
+
+    # Integration Packet in the canonical slot (before Sources) -> conformant.
+    ip_before = _CONFORMANT_BODY.replace(
+        "## Sources & Provenance\nBody.\n",
+        "## Integration Packet\nBody.\n\n## Sources & Provenance\nBody.\n")
+    assert site.investigation_conformance(_CONFORMANT_FM, ip_before) == set(), \
+        "Integration Packet before Sources is conformant"
+
+    # a free extra heading (## Placement) is ignored by the order check.
+    with_extra = _CONFORMANT_BODY.replace(
+        "## What Changed with the Research\n",
+        "## Placement\nBody.\n\n## What Changed with the Research\n")
+    assert site.investigation_conformance(_CONFORMANT_FM, with_extra) == set(), \
+        "a free extra heading does not break conformance"
+    print("ok test_investigation_conformance_predicate")
+
+
+def test_support_only_empty_raw_documents_conforms():
+    # CFADA-r20 #41: a support-only page with an EMPTY raw_documents list still
+    # conforms — raw_documents is exempt from the non-empty check (else AC6/P2
+    # would be unsatisfiable for support-only pages).
+    empty_raw = _CONFORMANT_FM.replace(
+        "raw_documents:\n"
+        "  - raw/inbox/2026-07-09/acme/TAI-RES-2026-009-v1.0.0-Acme-Evaluation.md\n",
+        "raw_documents: []\n")
+    assert site.investigation_conformance(empty_raw, _CONFORMANT_BODY) == set(), \
+        "support-only page (empty raw_documents) conforms"
+    print("ok test_support_only_empty_raw_documents_conforms")
+
+
+# ---- AC8 — MemPalace render diff is exactly {label, TOC, supersession} ----
+
+def test_mempalace_render_diff_is_label_toc_and_supersession():
+    # AC8: Phase-1 machinery changes MemPalace's render in EXACTLY three ways —
+    # the infobox label (Raw docs -> Topic Details), the removed in-topic TOC
+    # (R4), and the Topic Details supersession markers (older versions marked,
+    # newest primary; AC1/CFADA-r21 #43). Nothing else: all 8 body headings and
+    # the Civilization Contribution box are still present (the dated-heading
+    # generalization is Phase-2 data-only, not machinery).
+    fm, body = site.split_fm((site.WIKI / "mempalace.md").read_text())
+    meta = site.article_meta()["mempalace"]
+    body_html, toc_tokens = site.to_html(
+        body, {}, site.article_source_refs(fm), source_slug="mempalace")
+    infobox = site.build_infobox(meta, fm)
+
+    # (1) infobox label change.
+    assert "Topic Details" in infobox and "Raw docs" not in infobox, "Raw docs -> Topic Details"
+    # (2) no in-topic TOC on an investigation-tier page (R4).
+    assert site.article_toc(meta, toc_tokens, is_home=False) == "", "in-topic TOC removed"
+    # (3) Topic Details supersession markers — exactly two older versions marked,
+    #     the newest (v1.1.1) the unmarked primary.
+    assert infobox.count("source-superseded-badge") == 2, "two superseded versions marked"
+    assert "v1.1.1" in infobox and "source-superseded" not in _li_containing(infobox, "v1.1.1"), \
+        "newest version is the unmarked primary"
+
+    # no other change: all 8 MemPalace body headings still present (asserted on
+    # stable heading ids, robust to inline auto-linking in heading text) ...
+    for hid in (
+        "placement", "decision-record-and-adr-disposition",
+        "what-changed-with-tai-res-2026-004", "the-boundary", "capability-read",
+        "benchmark-reality", "integration-packet", "sources-provenance",
+    ):
+        assert ('id="%s"' % hid) in body_html, "body heading preserved: %s" % hid
+    # ... and the Civilization Contribution box is intact.
+    contribution = site.build_contribution_box(fm)
+    assert "contribution-box" in contribution, "Civilization Contribution box preserved"
+    print("ok test_mempalace_render_diff_is_label_toc_and_supersession")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

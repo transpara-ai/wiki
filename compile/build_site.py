@@ -1056,6 +1056,84 @@ def topic_details_superseded(fm):
     return superseded
 
 
+# R2 — Investigation Topic Standard schema (the "standard"). Required frontmatter
+# keys; the render-driving subset that must additionally be non-empty; the required
+# `## ` headings; and the canonical order (Integration Packet optional, immediately
+# before Sources & Provenance).
+INVESTIGATION_REQUIRED_FM = (
+    "entity", "aliases", "tier", "status", "last_compiled",
+    "civilization_contribution", "raw_documents", "current_research_version", "sources",
+)
+# Present AND non-empty (presence != non-empty; CFADA-r19 #40). raw_documents and
+# aliases are EXEMPT — legitimately empty on a conformant page (a support-only page
+# has no ingested research file; CFADA-r20 #41), so requiring them non-empty would
+# make AC6/P2 unsatisfiable.
+INVESTIGATION_NONEMPTY_FM = ("civilization_contribution", "entity", "status", "last_compiled")
+INVESTIGATION_REQUIRED_HEADINGS = (
+    "What Changed with the Research", "The Boundary", "Capability Read",
+    "Benchmark Reality", "Sources & Provenance",
+)
+INVESTIGATION_OPTIONAL_HEADING = "Integration Packet"
+INVESTIGATION_CANONICAL_ORDER = (
+    "What Changed with the Research", "The Boundary", "Capability Read",
+    "Benchmark Reality", "Integration Packet", "Sources & Provenance",
+)
+
+
+def _fm_has_key(fm, key):
+    return re.search(r"^%s:" % re.escape(key), fm, re.M) is not None
+
+
+def _body_level2_headings(body):
+    """Ordered level-2 (`## `) heading texts in a page body (level-1/3+ ignored)."""
+    return [m.group(1).strip() for m in re.finditer(r"^##[ \t]+(.+?)[ \t]*$", body, re.M)]
+
+
+def _lead_is_bold(body):
+    """R2 Summary: the first paragraph before the first `## ` heading must be
+    non-empty and carry bold emphasis (a `**…**` pair or `<strong>`). Fail-closed:
+    a lone `**` or a plain paragraph is NOT bold (CFADA-r2 #7)."""
+    pre = re.split(r"^##[ \t]+.+$", body, maxsplit=1, flags=re.M)[0]
+    lines = [ln for ln in pre.splitlines() if not re.match(r"^#[ \t]+", ln)]
+    text = "\n".join(lines).strip()
+    para = re.split(r"\n[ \t]*\n", text, maxsplit=1)[0].strip() if text else ""
+    if not para:
+        return False
+    return para.count("**") >= 2 or "<strong>" in para.lower()
+
+
+def investigation_conformance(fm, body):
+    """R2 conformance predicate for the Investigation Topic Standard. Returns the
+    SET of deficiency tags for a page's frontmatter + body; conformant ⟺ the set
+    is empty. Checks: the required frontmatter keys are present, the render-driving
+    subset is non-empty, the required `## ` headings are present, the Summary lead
+    is bold, and the standard headings (incl. a present Integration Packet) are in
+    canonical order. Free extra headings (## Placement, ## Decision Record) are
+    ignored by the order check. Fail-closed: any missing / empty / misordered
+    element is a deficiency. Phase 2 wraps this per active investigation slug
+    (AC6/P2)."""
+    deficiencies = set()
+    for key in INVESTIGATION_REQUIRED_FM:
+        if not _fm_has_key(fm, key):
+            deficiencies.add("missing-fm:%s" % key)
+    for key in INVESTIGATION_NONEMPTY_FM:
+        if _fm_has_key(fm, key) and not fm_val(fm, key):
+            deficiencies.add("empty-fm:%s" % key)
+    headings = _body_level2_headings(body)
+    hset = set(headings)
+    for heading in INVESTIGATION_REQUIRED_HEADINGS:
+        if heading not in hset:
+            deficiencies.add("missing-heading:%s" % heading)
+    if not _lead_is_bold(body):
+        deficiencies.add("non-bold-lead")
+    standard = set(INVESTIGATION_REQUIRED_HEADINGS) | {INVESTIGATION_OPTIONAL_HEADING}
+    seq = [h for h in headings if h in standard]
+    canon = [h for h in INVESTIGATION_CANONICAL_ORDER if h in seq]
+    if seq != canon:
+        deficiencies.add("out-of-order")
+    return deficiencies
+
+
 def article_frontmatter(slug):
     p = WIKI / ("%s.md" % slug)
     if not p.exists():
