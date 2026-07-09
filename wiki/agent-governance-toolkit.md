@@ -10,9 +10,9 @@ tier: investigation
 status: compiled
 last_compiled: 2026-07-07
 civilization_contribution: "Reference + pattern; the ratified PolicyEngineAdapter boundary (Decision 13), carried into accepted v4.0 (03:121). From a code-anchored read of transpara-ai/agent-governance-toolkit @ 6dc05da (v3.6.0; TAI-RES-2026-009), AGT is the strongest code-verified external reference for the deterministic, no-LLM policy-adapter contract — its allow/deny path contains zero LLM (Decision 13's hardest constraint, met) — but its empty-policy baseline is fail-OPEN, its '10/10 OWASP' is SAMPLE-grade regex, and it carries its own competing trust/audit/identity planes. Eligible only as an optional deterministic PolicyEngineAdapter reference whose decisions are advisory until recorded as an EventGraph AuthorityDecision + ExecutionReceipt; never policy owner, release/certification authority, kernel, or factory controller (Decision 13, Decision 15). Production adapter use gated behind Base Slice 0 and the open R-003 residual risk."
-current_research_version: 1.0.0
+current_research_version: 1.0.1
 sources:
-  - "raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md"  # TAI-RES-2026-009 v1.0.0 — the code-anchored evaluation (this page's primary source); read transpara-ai/agent-governance-toolkit @ 6dc05da
+  - "raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md"  # TAI-RES-2026-009 v1.0.1 — the code-anchored evaluation (this page's primary source); read transpara-ai/agent-governance-toolkit @ 6dc05da
   - https://github.com/transpara-ai/agent-governance-toolkit/tree/6dc05da  # evaluated commit 6dc05da5efcddddf711164d6cd973fcfc19a0625, VERSION 3.6.0; fork of microsoft/agent-governance-toolkit — read from a local clone. UPSTREAM/FORK CONTEXT ONLY, never re-published, never a push/PR target
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 13 (PolicyEngineAdapter Is Optional And Non-Canonical, names agent-governance-toolkit, L149-164); Decision 15 (L172-174)
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/02-kernel-schema-and-state-v3.9.md  # PolicyEngineAdapterDecision node schema (L345-363, H3 RESOLVED); "adapter evidence only" (L522)
@@ -32,7 +32,7 @@ confidence:
   maturity_and_provenance: code-verified — Microsoft-authored (Copyright (c) Microsoft Corporation in 128 agent-os/src files; nothing Transpara-authored), MIT, "Public Preview" / Development Status 4-Beta (README.md:29), three majors in ~2 months. The "13,000+ tests" figure is corroborated as a Python-only magnitude (12,617 def test_ / 563 files / ~1.6% skipped).
   open_schema_defect: RESOLVED — the prior page's HIGH-severity H3 (PolicyEngineAdapterDecision Tier 0 node with no per-node schema) is fixed: a full schema block now lives at 02-kernel-schema-and-state-v3.9.md:345-363.
 raw_documents:
-  - "raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md"  # sha256 f45a122536eef535f95ceed421d6b2838442bc03c6bc204f46597d153b9fb061; TAI-RES-2026-009 v1.0.0; session-authored Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter
+  - "raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md"  # sha256 daa00d1c1c57daf1b9774717943ea1b24135c612965edff6610f35153400ccc4; TAI-RES-2026-009 v1.0.1; session-authored Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter
 ---
 
 # Agent Governance Toolkit
@@ -107,7 +107,7 @@ The adoption verdict: **carry AGT forward as the reference implementation of the
 ## Fail-legible notes
 
 - **Internal evidence is now code-anchored (was README-only).** The primitive list, the no-LLM decision path, the fail-open baseline, the twelve primitives, the multi-language parity, and the test magnitude are all read from the fork @ `6dc05da`. The prior "thin — README only" confidence is retired.
-- **Provenance: Microsoft-authored, nothing Transpara-original.** `Copyright (c) Microsoft Corporation` appears in every source file (128 under `agent-os/src` alone); the fork inherited the upstream verbatim. License MIT. Per org rule the upstream is context only — never re-published, pushed, or PR'd.
+- **Provenance: Microsoft-authored, nothing Transpara-original.** `Copyright (c) Microsoft Corporation` appears on most source files (128 under `agent-os/src` alone; a few, e.g. `agent-governance-golang/packages/agentmesh/identity.go` and `agent-os/src/agent_os/cli/cmd_policy_gen.py`, omit it); the fork inherited the upstream verbatim. License MIT. Per org rule the upstream is context only — never re-published, pushed, or PR'd.
 - **"10/10 OWASP" and maturity are upstream claims, not evidence.** The coverage is a mapping-plus-SAMPLE-rules claim; the status is explicitly "Public Preview / Beta, breaking changes before GA." Carried as context; they did not drive the decision.
 - **The central risk is asserted-then-code-corroborated, not observed harm.** AGT was never integrated, so there is no record of it bypassing an authority boundary in our systems — but the code now *shows* the mechanisms (fail-open baseline; its own trust/audit/identity planes) that make the "competing authority" risk concrete rather than hypothetical. It is fenced behind Decision 13's fail-closed, non-canonical contract.
 - **"R-003" is overloaded in v4.0.** The `05` risk register's R-003 ("repo creation/deletion without authority") is a *different* item from the *implementation-residual* R-003 (production policy-adapter reliance) that gates AGT; `epic-21` states they are two registers. This page means the implementation-residual one.
@@ -123,7 +123,7 @@ Primary source is the code-anchored evaluation; doctrine and prior research are 
 - Gap G2 (`…2026-05-13-08-…`) and U2 (`…2026-05-13-09-…`) — the gap AGT was selected to help close and the proposed pattern that became doctrine.
 
 **Reference / context:**
-- `raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md` — **TAI-RES-2026-009 v1.0.0**, the code-anchored evaluation (sha256 `f45a122536…`); this page is its digest and carries the full `file:line` anchors, the doctrine map, and the §4.4 determination.
+- `raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md` — **TAI-RES-2026-009 v1.0.1**, the code-anchored evaluation (sha256 `daa00d1c1c…`); this page is its digest and carries the full `file:line` anchors, the doctrine map, and the §4.4 determination.
 - `dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (`status: review`) — the AGT decision row (`L82`) + seven-point pre-integration gate (`L175-189`).
 - `dark-factory/v4.0/.../epic-21-residual-risk-r003-reidentification/01-…-design-v4.0.md` (`L69-89`) — the open R-003 production-adapter gate.
 - `dark-factory/research/checkpoints/2026-05-13-06-…` — the Phase 4 Batch D **README-only** candidate analysis, superseded for "what it is" by TAI-RES-2026-009.
