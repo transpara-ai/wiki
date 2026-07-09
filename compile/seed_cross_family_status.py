@@ -108,29 +108,31 @@ def current_context_status(
 ) -> tuple[str, str | None, str | None]:
     """Return (state, updated_at, target_url) of the effective status for context.
 
-    ("none", None, None) when no status for the context exists on the SHA. The
-    combined /commits/{sha}/status endpoint already reduces to the latest status
-    per context, so no history walk or pagination is needed.
+    ("none", None, None) when no status for the context exists on the SHA. Fully
+    paginate the /commits/{sha}/statuses list (returned newest-first) so our
+    context cannot hide on a later page and get misread as "none" -> a clobbering
+    re-pend; the first match is the effective (latest) status.
 
-    On any read error return the ("unreadable", None, None) sentinel: decide()
-    maps it to "pending", so an unreadable state fails closed (re-pend / block)
-    rather than leaving a possibly-stale success in place.
+    On any read/parse error return the ("unreadable", None, None) sentinel:
+    decide() maps it to "pending", so an unreadable state fails closed (re-pend /
+    block) rather than leaving a possibly-stale success in place.
     """
     try:
-        # per_page=100 so a commit with many status contexts cannot hide ours on a
-        # later page (default 30) and get misread as "none" -> a clobbering re-pend.
-        raw = _run(["gh", "api",
-                    f"repos/{github_repo}/commits/{sha}/status?per_page=100"])
-        statuses = json.loads(raw).get("statuses", [])
+        raw = _run([
+            "gh", "api", "--paginate",
+            f"repos/{github_repo}/commits/{sha}/statuses?per_page=100",
+            "--jq", f'.[] | select(.context == "{CONTEXT}")',
+        ])
+        lines = [line for line in raw.splitlines() if line.strip()]
+        entry = json.loads(lines[0]) if lines else None
     except (subprocess.SubprocessError, json.JSONDecodeError, OSError) as exc:
         print(f"warning: could not read current status ({exc}); failing closed "
               "to pending.", file=sys.stderr)
         return "unreadable", None, None
-    for entry in statuses:
-        if entry.get("context") == CONTEXT:
-            return (str(entry.get("state") or "none"),
-                    entry.get("updated_at"), entry.get("target_url"))
-    return "none", None, None
+    if entry is None:
+        return "none", None, None
+    return (str(entry.get("state") or "none"),
+            entry.get("updated_at"), entry.get("target_url"))
 
 
 def post_pending(github_repo: str, sha: str, pr_url: str, description: str) -> None:

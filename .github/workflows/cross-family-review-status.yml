@@ -19,14 +19,15 @@ jobs:
     timeout-minutes: 5
     steps:
       # pull_request_target runs with a privileged token (statuses: write). Check
-      # out the BASE branch — never the PR head — so we only ever run trusted,
-      # already-reviewed code. A PR editing compile/seed_cross_family_status.py
-      # cannot affect its own seed run; the change takes effect only after merge
-      # (i.e. after CFAR). Same trust model as ci.yml's base-ref secret scan.
+      # out the BASE commit the event fired against (base.sha) — never the PR head,
+      # and pinned to a SHA so a base-branch advance before this queued run starts
+      # cannot swap in a different (or moved-away) revision. We only ever run
+      # trusted, already-reviewed code; a PR editing the seed script cannot affect
+      # its own seed run (it takes effect only after merge, i.e. after CFAR).
       - name: Check out trusted base-branch code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
+          ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
       - name: Seed or preserve cross-family review status
         env:
