@@ -618,7 +618,7 @@ Both accepted-repaired (0 rejected, 0 waived); round 23 re-audited the new blob 
 
 **Ready for Human Design Review (stage 6): YES** — 0 design blockers at the audited v0.10.0 bytes.
 
-**Post-pass bookkeeping — round 24.** Recording this PASS (the status flip, this verdict, the banner) introduced two documentation-correctness defects that the confirming round 24 caught and are fixed here: C47 (the amended `status:` scalar held an unquoted `: `, making the frontmatter invalid YAML — verified fixed with `yaml.safe_load` on both docs) and C48 (the historical v0.9.7 ready-line still read "re-audit pending"). Both are documentation-only; the design PASS credit is unaffected — it binds to the round-23-audited design bytes `f54544f`. Round 25 re-confirms the bookkeeping head is clean before the gate is posted.
+**Post-pass bookkeeping.** Recording this PASS (the status flip, this verdict, the banner) is documentation that changes the packet blob without changing the design. The confirming rounds 24–25 found the DESIGN and frontmatter clean at the post-pass bytes; their only findings were documentation-consistency fixes, all applied here — C47 (an unquoted `: ` in the `status:` scalar → invalid YAML, verified fixed via `yaml.safe_load` on both docs), C48 (a stale "re-audit pending" line in the historical v0.9.7 appendix), and C49 (this note must not self-claim an in-document exact-head confirmation). The design PASS credit binds to the round-23-audited design bytes `f54544f`. **Exact-head gate verification for the pushed head is the posted `cross-family-adversarial-review` commit status on PR #70 — not a claim inside this mutable document.**
 
 ## Appendix — CFADA VERDICT (v0.9.7, historical)
 
