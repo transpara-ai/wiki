@@ -1126,6 +1126,11 @@ def investigation_conformance(fm, body):
     for key in INVESTIGATION_NONEMPTY_FM:
         if _fm_has_key(fm, key) and not fm_val(fm, key):
             deficiencies.add("empty-fm:%s" % key)
+    # the standard is `tier: investigation` specifically — presence alone is not
+    # enough, so a mistiered page (architecture / blank / any other value) cannot
+    # pass the structural gate or render in the wrong nav group (CFAR: Codex).
+    if fm_val(fm, "tier") != "investigation":
+        deficiencies.add("wrong-tier")
     headings = _body_level2_headings(body)
     hset = set(headings)
     for heading in INVESTIGATION_REQUIRED_HEADINGS:
@@ -2161,11 +2166,13 @@ def ingest_page(status):
         'loadArticles();if(token)token.addEventListener("change",loadArticles);'
         'target.addEventListener("change",function(){sup.innerHTML="<option value=\\"\\">No existing source selected</option>";'
         'var a=articles[target.value];if(!a)return;(a.sources||[]).forEach(function(s){var o=document.createElement("option");o.value=s;o.textContent=s;sup.appendChild(o);});});'
-        # R6/2.1: toggling "New investigation" reveals the required name field
-        # and disables the target select, so a create ignores (and never sends)
-        # target_slug; default OFF, so create is never the accidental path.
+        # R6/2.1: toggling "New investigation" reveals the required name field and
+        # disables the target select (a create ignores + never sends target_slug),
+        # while a default Add REQUIRES a target so the client blocks the
+        # server-refused empty-target path (CFAR: Codex); default OFF, so create is
+        # never the accidental path.
         'var newInv=document.getElementById("new-investigation"),nameRow=document.getElementById("new-investigation-name-row"),nameField=document.getElementById("new-investigation-name");'
-        'function syncNewInvestigation(){var on=!!(newInv&&newInv.checked);if(nameRow)nameRow.hidden=!on;if(nameField)nameField.required=on;if(target)target.disabled=on;}'
+        'function syncNewInvestigation(){var on=!!(newInv&&newInv.checked);if(nameRow)nameRow.hidden=!on;if(nameField)nameField.required=on;if(target){target.disabled=on;target.required=!on;}}'
         'if(newInv){newInv.addEventListener("change",syncNewInvestigation);syncNewInvestigation();}'
         'form.addEventListener("submit",function(e){e.preventDefault();say("Ingesting...");fetch("/api/ingest",{method:"POST",headers:headers(),body:new FormData(form)})'
         '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(reloadWithResult).catch(function(e){say(e);});});'

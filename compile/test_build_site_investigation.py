@@ -250,6 +250,12 @@ def test_investigation_conformance_predicate():
         "## Placement\nBody.\n\n## What Changed with the Research\n")
     assert site.investigation_conformance(_CONFORMANT_FM, with_extra) == set(), \
         "a free extra heading does not break conformance"
+
+    # CFAR (Codex): tier must be exactly `investigation` — a mistiered page (a
+    # present-but-wrong tier) is non-conformant, not merely present-key-OK.
+    mistiered = _CONFORMANT_FM.replace("tier: investigation", "tier: architecture")
+    assert "wrong-tier" in site.investigation_conformance(mistiered, _CONFORMANT_BODY), \
+        "a non-investigation tier is a deficiency"
     print("ok test_investigation_conformance_predicate")
 
 

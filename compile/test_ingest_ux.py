@@ -172,6 +172,9 @@ def test_ingest_new_investigation_toggle():
     # the JS reveals the name row + disables the target when the toggle is on
     assert "syncNewInvestigation" in html
     assert "target.disabled=on" in html, "checking the toggle ignores the target select"
+    # CFAR (Codex): a default Add (toggle off) REQUIRES a target client-side, so
+    # the empty-target path the server refuses is blocked before submit.
+    assert "target.required=!on" in html, "default Add requires a target client-side"
     print("ok test_ingest_new_investigation_toggle")
 
 
