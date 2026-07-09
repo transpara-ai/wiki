@@ -5,7 +5,8 @@ on:
     types: [opened, reopened, synchronize, ready_for_review]
 
 permissions:
-  statuses: write
+  contents: read      # actions/checkout of the trusted base branch
+  statuses: write     # read + write the cross-family-adversarial-review status
 
 concurrency:
   group: cross-family-review-status-${{ github.event.pull_request.number }}
@@ -17,23 +18,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Post pending cross-family review status
+      # pull_request_target runs the BASE-branch workflow with a privileged token
+      # (statuses: write). Check out github.sha — for pull_request_target this is
+      # the last commit on the base branch, i.e. the exact revision this workflow
+      # is running from. That is NOT the PR head (so no untrusted PR code runs),
+      # NOT the PR's possibly-stale base.sha (a long-lived PR's old base may lack
+      # this script and fail the job), and is fixed for the run (no drift): the
+      # seed script is therefore always present and trusted.
+      - name: Check out trusted base-branch code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Seed or preserve cross-family review status
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           EVENT_ACTION: ${{ github.event.action }}
-        run: |
-          # This workflow runs from the base branch copy and deliberately does
-          # not check out or execute PR code. It only seeds the external status.
-          description="Waiting for exact-head cross-family adversarial review"
-          if [ "${EVENT_ACTION}" = "ready_for_review" ]; then
-            description="Ready-state exact-head cross-family review required"
-          fi
-
-          gh api --method POST "repos/${GH_REPO}/statuses/${HEAD_SHA}" \
-            -f state=pending \
-            -f context=cross-family-adversarial-review \
-            -f target_url="${PR_URL}" \
-            -f description="${description}"
+          EVENT_TIME: ${{ github.event.pull_request.updated_at }}
+        # Re-seeds pending UNLESS a terminal status is provably newer than this
+        # event, so a queue-delayed run cannot clobber a fresh gate success
+        # (the PR #70 TOCTOU). The script only calls the GitHub API — it never
+        # checks out or executes PR-head code.
+        run: python3 compile/seed_cross_family_status.py
