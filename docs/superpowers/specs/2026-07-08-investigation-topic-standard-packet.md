@@ -2,8 +2,8 @@
 doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
-version: 0.9.2
-status: draft (IADA-passed; CFADA r1-r10 repaired; re-audit pending)
+version: 0.9.3
+status: draft (IADA-passed; CFADA r1-r11 repaired; re-audit pending)
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -11,7 +11,7 @@ owner: Michael Saucier
 steward: Claude (Opus 4.8)
 authority: planning
 tlc_stage: design
-factory_order: FO-WIKI-INVESTIGATION-STANDARD v0.2.2 (blob 4d8beea777af89e40919f9f4f55c6dd8eb132612, confirmed channel-A 2026-07-09; v0.2.2 clarifies ADD retains the require_authoring transport gate)
+factory_order: FO-WIKI-INVESTIGATION-STANDARD v0.2.3 (blob 20d4f35f89299e0da0f0d96cc8b65fb09fe5628e, confirmed channel-A 2026-07-09; v0.2.3 aligns R3 with superseded_raw_documents)
 source_of_intent:
   - the Factory Order above (its §4 archives Michael's request verbatim; §5 archives the intake answers)
   - wiki/mempalace.md (blob a9a9bc6bc83b01a9ba27776bb179e6d8b16de96c) — the content exemplar
@@ -21,14 +21,14 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 
 # Investigation Topic Standard — TLC Design Packet
 
-> Answers FO-WIKI-INVESTIGATION-STANDARD v0.2.2 (R1–R8) against measured live
+> Answers FO-WIKI-INVESTIGATION-STANDARD v0.2.3 (R1–R8) against measured live
 > code (wiki main @ `2c9e672`, survey 2026-07-08/09). House rule inherited:
 > the branch that CREATES a page renders only from a proven allowlist
 > (explicit new-investigation intent AND subject proven absent, keyed on the
 > operator-supplied name); every other path appends or refuses — never creates.
 > The builder stays no-LLM, no-network. Two-phase delivery (one FO, §6): Phase
 > 1 machinery (code PR), Phase 2 retrofit (data-only PR[s]). Repaired through
-> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2).
+> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2), 11 (v0.9.3).
 
 ## 1. Survey — measured, not assumed (file:line evidence)
 
@@ -149,8 +149,11 @@ false):
   `set_article_stale`; rebuild — **create nothing**. Non-investigation targets
   keep today's behavior (CFADA-r1 #1). Absent / retired / non-existent
   `target_slug` → **REFUSE**. No fuzzy title match (IADA-I1).
-- **Explicit new-investigation.** Requires a non-empty operator **name**
-  (empty → refuse). The name — not the doc title — drives the page:
+- **Explicit new-investigation.** Requires an operator **name** whose compact
+  `collision_key` is non-empty AND whose `slugify(name)` does not fall back to a
+  generic default (an empty name, or one with no slug/collision characters like
+  "!!!" or "()", → refuse — else a create could mint a generic
+  `document`/`ingested-document` page unrelated to the subject; CFADA-r11 #26). The name — not the doc title — drives the page:
   `slugify(name)` is the slug, `name` the `entity`;
   `create_article_from_source(name=…)` and `prospective_unassigned_slug` use it
   (CFADA-r2 #4). `target_slug` is ignored here. REFUSE unless the subject is
@@ -229,9 +232,9 @@ page conforms (IADA-I6). The hard corpus gate turns on only when satisfiable.
 | AC1 | 1 | Topic Details row lists every `raw_documents` AND `superseded_raw_documents` entry (superseded included, marked), falling back to local `sources` when both are empty; no "Raw docs" label survives in `dist/` (low) | py: `test_topic_details_lists_all_versions_incl_superseded`, `test_topic_details_falls_back_to_local_sources` |
 | AC2 | 1 | Investigation-tier page renders no `.toc`; a ≥3-heading non-investigation page still renders one (med) | py: `test_investigation_pages_have_no_toc`; playwright |
 | AC3 | 1 | Default ADD with a resolvable investigation `target_slug` appends + sets `stale_since`, `wiki/*.md` count unchanged, rebuilds; a non-investigation target appends WITHOUT a stale stamp (preserved) (high) | server: `test_add_default_appends_and_flags_stale`, `test_add_to_non_investigation_preserves_behavior` |
-| AC4 | 1 | Fail-closed guard, full domain — default ADD with (a) no target, (b) retired/nonexistent target → REFUSE; (c) non-investigation target → APPENDS (no refuse/stale); new-investigation with (d) empty name, (e) `slugify(name)` collides with an existing slug (active/tombstone), INCLUDING when the compact key differs (e.g. "Foo (Bar)" → slug `foo` vs existing `foo.md`), (f) name/entity/alias/cluster collision via the compact `collision_key` incl. case/whitespace/no-space/punctuation/parenthesis variants (e.g. "Sakana-AI", "Sakana (AI)" vs "Sakana AI"; "Mem Palace" vs "MemPalace"), (g) name = an existing `investigation_topic` cluster label (e.g. "Sakana AI") → REFUSE; (h) doc title ≠ operator name → NAME drives slug/entity+guard (no bypass); (i) distinct entities sharing a cluster (Sakana) → allowed; (j) absent subject → created (high) | server: `test_ingest_guard_domain` (cases a–j) |
+| AC4 | 1 | Fail-closed guard, full domain — default ADD with (a) no target, (b) retired/nonexistent target → REFUSE; (c) non-investigation target → APPENDS (no refuse/stale); new-investigation with (d) empty name OR a name whose compact/slug-driving form is empty (e.g. "!!!", "()"), (e) `slugify(name)` collides with an existing slug (active/tombstone), INCLUDING when the compact key differs (e.g. "Foo (Bar)" → slug `foo` vs existing `foo.md`), (f) name/entity/alias/cluster collision via the compact `collision_key` incl. case/whitespace/no-space/punctuation/parenthesis variants (e.g. "Sakana-AI", "Sakana (AI)" vs "Sakana AI"; "Mem Palace" vs "MemPalace"), (g) name = an existing `investigation_topic` cluster label (e.g. "Sakana AI") → REFUSE; (h) doc title ≠ operator name → NAME drives slug/entity+guard (no bypass); (i) distinct entities sharing a cluster (Sakana) → allowed; (j) absent subject → created (high) | server: `test_ingest_guard_domain` (cases a–j) |
 | AC5 | 1 | New-investigation builds FROM the operator name (not the doc title), emits the R2 skeleton (bold-lead placeholder + `stale_since` + `status: awaiting synthesis`, no auto `investigation_topic`); toggle defaults OFF, only creation path; `prospective_unassigned_slug` matches the creator (high) | server: `test_new_investigation_uses_operator_name`, `test_new_investigation_emits_canonical_skeleton`, `test_new_investigation_name_is_quarantined`, `test_ingest_still_requires_authoring`, `test_prospective_slug_matches_creator` |
-| AC6 | 1 → 2 | **P1:** predicate → ∅ for a conformant fixture; exact deficiency for missing-key / missing-heading / non-bold-lead / out-of-order / Integration-Packet-misordered fixtures; skeleton conforms. **P2:** every live-enumerated active investigation page (i) conforms (R2), (ii) has `investigation_topic` shared by ≥2 active pages (no stray/self-topic), AND (iii) has Topic Details covering ALL raw versions — `raw_documents` ∪ `superseded_raw_documents` includes every RAW INGESTED file for the topic — the browser-ingest `raw/inbox/...` uploads and the topic's TAI-RES evaluation versions — so no ingested version is lost. Supporting doctrine citations (`raw/transpara/...`, `raw/open-brain/...`, absolute `/Transpara/...`) stay in `sources` and render via the source panel/links, NOT forced into Topic Details (R3 is scoped to raw ingested files, not every citation — CFADA-r10 #24); a page with no ingested research file legitimately keeps empty `raw_documents` + the fallback (R3/R8 completeness; CFADA-r6 #17, r8 #20) (med) | py: `test_investigation_conformance_predicate` (P1); `test_all_active_investigations_conform`, `test_investigation_topic_clusters_have_multiple_members`, `test_all_active_investigations_topic_details_complete` (P2) |
+| AC6 | 1 → 2 | **P1:** predicate → ∅ for a conformant fixture; exact deficiency for missing-key / missing-heading / non-bold-lead / out-of-order / Integration-Packet-misordered fixtures; skeleton conforms. **P2:** every live-enumerated active investigation page (i) conforms (R2), (ii) carries NO `investigation_topic` UNLESS ≥2 active pages share that exact value — the check is conditional (single-page investigations omit the field; it is never forced onto a lone topic — CFADA-r11 #25), AND (iii) has Topic Details covering ALL raw versions — `raw_documents` ∪ `superseded_raw_documents` includes every RAW INGESTED file for the topic — the browser-ingest `raw/inbox/...` uploads and the topic's TAI-RES evaluation versions — so no ingested version is lost. Supporting doctrine citations (`raw/transpara/...`, `raw/open-brain/...`, absolute `/Transpara/...`) stay in `sources` and render via the source panel/links, NOT forced into Topic Details (R3 is scoped to raw ingested files, not every citation — CFADA-r10 #24); a page with no ingested research file legitimately keeps empty `raw_documents` + the fallback (R3/R8 completeness; CFADA-r6 #17, r8 #20) (med) | py: `test_investigation_conformance_predicate` (P1); `test_all_active_investigations_conform`, `test_investigation_topic_clusters_have_multiple_members`, `test_all_active_investigations_topic_details_complete` (P2) |
 | AC7 | 1 | Builder imports no network/model client; a `stale_since` page renders the banner until cleared, with reason-neutral text (no Replace-specific "sources were replaced"/"authorization" wording) (med) | py: `test_builder_has_no_network_client`, `test_stale_banner_is_reason_neutral` |
 | AC8 | 1 | MemPalace's rendered HTML changes in exactly two ways — the infobox label and the removed `.toc` — no other: all 8 headings + contribution box still present (med) | py: `test_mempalace_render_diff_is_label_and_toc_only` |
 | AC9 | 1 & 2 | Every new/edited Python test above is wired into `package.json` `test:py` (or lands in an already-wired module); full chain green, zero regression (low) | `npm run verify` exit 0 at each PR's reviewed head; `test_py_targets_are_wired` asserts the module list runs the new tests |
@@ -374,5 +377,12 @@ NEXT commit and is re-audited by the following round.
 | C23 (P1) | The guard compared `collision_key` but the created file is `slugify(name)`, which drops text ("Foo (Bar)" → `foo`) — the compact key could differ while `slugify` targets an existing slug, a non-fail-closed create path | FIXED — the guard ALSO checks `slugify(name)` against all slugs (active + tombstone), the ground truth for the created file; either collision refuses (§2.4, AC4e). |
 | C24 | Completeness demanded every local `sources` ref be in `raw_documents`, forcing supporting doctrine citations (e.g. `raw/open-brain/2026-06.md`) into Topic Details beyond R3's raw-ingested scope | FIXED — completeness scoped to RAW INGESTED files; supporting citations stay in `sources` and render via the source panel (§3). |
 
-Re-audit (CFADA round 11) pending at v0.9.2. No code before Human Design Review
+**Round 11 → FAIL** — audited at packet blob `242a054e918c81ca65d41b08194e6d455b18f15f` (commit `c8b4f85`, the v0.9.2 state); repaired to v0.9.3 (no P1 — the design is at zero blockers; these are refinements):
+| # | Finding | Disposition |
+|---|---|---|
+| C25 | AC6(P2) could be read as "every page must have a shared `investigation_topic`," conflicting with R2/§2.5 (single-page investigations omit it) | FIXED — AC6(ii) made conditional: no page carries `investigation_topic` unless ≥2 pages share it (§3). |
+| C26 | An explicit new-investigation name with no slug/collision characters ("!!!", "()") passed the non-empty check but `slugify` falls back to a generic page and `collision_key` is empty | FIXED — refuse when the compact `collision_key` is empty or `slugify` falls back to a default (§2.4, AC4d). |
+| C27 | FO R3 verified only `raw_documents`, so an FO-keyed implementation could drop Replace-`superseded_raw_documents` from Topic Details | FIXED — FO v0.2.3 R3 covers `raw_documents` ∪ `superseded_raw_documents`; packet rebound to blob `20d4f35f…`. |
+
+Re-audit (CFADA round 12) pending at v0.9.3. No code before Human Design Review
 (stage 6) approves.

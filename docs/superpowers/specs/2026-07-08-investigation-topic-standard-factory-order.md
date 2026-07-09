@@ -2,8 +2,8 @@
 doc_id: FO-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — the Investigation Topic Standard (Factory Order)
 doc_type: factory-order
-version: 0.2.2
-status: confirmed (channel-A intake confirm, Michael, 2026-07-09 — answers archived in §5; R1–R8 confirmed as read; one FO / two phases; ADD unauthenticated + fail-closed duplicate guard). v0.2.1 corrects the MemPalace conformance claim per CFADA-r1 #2 — MemPalace is the content exemplar, not literally conformant; intent R1–R8 unchanged. v0.2.2 clarifies ADD retains the require_authoring transport gate (CFADA-r6 #15), intent unchanged
+version: 0.2.3
+status: confirmed (channel-A intake confirm, Michael, 2026-07-09 — answers archived in §5; R1–R8 confirmed as read; one FO / two phases; ADD unauthenticated + fail-closed duplicate guard). v0.2.1 corrects the MemPalace conformance claim per CFADA-r1 #2 — MemPalace is the content exemplar, not literally conformant; intent R1–R8 unchanged. v0.2.2 clarifies ADD retains the require_authoring transport gate (CFADA-r6 #15), intent unchanged. v0.2.3 makes R3 cover `superseded_raw_documents` too (CFADA-r11 #27), intent unchanged
 canonical: false
 created: 2026-07-08
 updated: 2026-07-09
@@ -66,10 +66,10 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
   (`create_article_from_source()`, `ingest_server.py:602`).
 
 - **R3 — Topic Details lists every raw ingested file.** The infobox field
-  labeled "Raw docs" is relabeled **"Topic Details"** and lists every
-  `raw_documents` entry (all versions, superseded included, newest linked
-  primary). *Verifiable:* a rendered investigation page shows a "Topic Details"
-  infobox row listing each `raw_documents` entry; no "Raw docs" label remains.
+  labeled "Raw docs" is relabeled **"Topic Details"** and lists every raw
+  ingested version — the `raw_documents` list AND the `superseded_raw_documents`
+  list Replace moves superseded refs into (all versions, newest linked primary). *Verifiable:* a rendered investigation page shows a "Topic Details"
+  infobox row listing each raw ingested version (`raw_documents` ∪ `superseded_raw_documents`); no "Raw docs" label remains.
   *Today:* `build_infobox()` (`build_site.py:1530`) emits the label "Raw docs".
 
 - **R4 — No in-topic Table of Contents.** `tier: investigation` pages render
