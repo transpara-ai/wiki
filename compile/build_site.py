@@ -994,6 +994,68 @@ def raw_doc_refs(fm):
     return out
 
 
+def is_raw_ingested_research(ref):
+    """R3/§2.2: a Topic-Details-eligible ref is a raw INGESTED RESEARCH file — a
+    browser-ingest upload under raw/inbox/, or a TAI-RES evaluation (tai-res-*.md)
+    wherever placed (e.g. pageindex's external-landscape path). Doctrine/
+    provenance citations (raw/transpara/, raw/open-brain/, index/PROVENANCE),
+    absolute /Transpara/ paths, and external URLs are NOT Topic Details — they
+    render in the source panel. Allowlist direction: only the two proven-eligible
+    forms qualify; everything unknown is excluded (fail-closed)."""
+    ref = source_ref_clean(ref)
+    if not ref:
+        return False
+    low = ref.lower()
+    if low.startswith(("http://", "https://")):
+        return False
+    if low.startswith("raw/inbox/"):
+        return True
+    base = low.rsplit("/", 1)[-1]
+    return base.startswith("tai-res-") and base.endswith(".md")
+
+
+def topic_details_refs(fm):
+    """R3: the ordered, deduped ref list for the Topic Details infobox row —
+    raw_documents UNION superseded_raw_documents (Replace moves superseded refs
+    into the latter key), filtered to raw-ingested-research refs. When both keys
+    are empty, fall back to the raw-ingested-research refs among `sources` (so an
+    un-retrofitted page keeps its ingested-file links); a support-only page whose
+    sources are all doctrine gets an EMPTY row (§2.2)."""
+    union = fm_list(fm, "raw_documents") + fm_list(fm, "superseded_raw_documents")
+    refs = [source_ref_clean(r) for r in union if source_ref_clean(r)]
+    refs = [r for r in refs if is_raw_ingested_research(r)]
+    if not refs:
+        refs = [
+            source_ref_clean(r)
+            for r in fm_list(fm, "sources")
+            if is_raw_ingested_research(source_ref_clean(r))
+        ]
+    out, seen = [], set()
+    for ref in refs:
+        if ref not in seen:
+            seen.add(ref)
+            out.append(ref)
+    return out
+
+
+def topic_details_superseded(fm):
+    """Refs a newer version supersedes: the `superseded_raw_documents` key
+    (Replace) UNION the `supersedes:` targets annotated on `sources` (an
+    ADD-with-supersedes topic keeps all versions in raw_documents and marks
+    supersession only in the comments — CFADA-r21 #43). The non-superseded
+    ref(s) render as the current primary."""
+    superseded = {
+        source_ref_clean(r)
+        for r in fm_list(fm, "superseded_raw_documents")
+        if source_ref_clean(r)
+    }
+    for _ref, comment in fm_list_with_comments(fm, "sources"):
+        old = _supersedes_target(comment)
+        if old:
+            superseded.add(old)
+    return superseded
+
+
 def article_frontmatter(slug):
     p = WIKI / ("%s.md" % slug)
     if not p.exists():
@@ -1587,18 +1649,24 @@ def build_infobox(meta, fm):
     nsrc = len(fm_list(fm, "sources"))
     if nsrc:
         row("Sources", "%d" % nsrc)
-    docs = raw_doc_refs(fm)
+    docs = topic_details_refs(fm)
     if docs:
+        superseded = topic_details_superseded(fm)
         items = []
         for ref in docs:
             path = safe_source_path(ref)
             href = source_href(ref)
             label = source_title(ref, path)
             if href:
-                items.append('<li><a href="%s">%s</a></li>' % (html.escape(href), html.escape(label)))
+                link = '<a href="%s">%s</a>' % (html.escape(href), html.escape(label))
             else:
-                items.append('<li><span class="source-unserved">%s</span></li>' % html.escape(label))
-        row("Raw docs", '<ul class="raw-doc-links">%s</ul>' % "".join(items))
+                link = '<span class="source-unserved">%s</span>' % html.escape(label)
+            if ref in superseded:
+                items.append('<li class="source-superseded">%s '
+                             '<span class="source-superseded-badge">superseded</span></li>' % link)
+            else:
+                items.append('<li>%s</li>' % link)
+        row("Topic Details", '<ul class="raw-doc-links">%s</ul>' % "".join(items))
     if not rows:
         return ""
     return ('<aside class="infobox"><div class="infobox-title">%s</div><table>%s</table>'
