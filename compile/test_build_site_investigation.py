@@ -154,6 +154,25 @@ def test_topic_details_fallback_is_raw_ingested_only():
     print("ok test_topic_details_fallback_is_raw_ingested_only")
 
 
+def test_topic_details_includes_superseded_sources():
+    # CFAR (Codex): a legacy sources-only Replace moves the old ingested ref into
+    # `superseded_sources` (not superseded_raw_documents); Topic Details must still
+    # list it, marked superseded, so no raw ingested version is dropped (R3).
+    fm = (
+        "tier: investigation\n"
+        "raw_documents:\n"
+        "  - raw/inbox/2026-07-09/acme/TAI-RES-2026-009-v2.0.0-Acme-Evaluation.md\n"
+        "superseded_sources:\n"
+        "  - raw/inbox/2026-06-01/acme/TAI-RES-2026-009-v1.0.0-Acme-Evaluation.md\n"
+    )
+    box = site.build_infobox(_INV, fm)
+    assert "Topic Details" in box
+    assert "v1.0.0" in box and "v2.0.0" in box, "both versions are listed"
+    assert "source-superseded" in _li_containing(box, "v1.0.0"), "the superseded_sources ref is marked"
+    assert "source-superseded" not in _li_containing(box, "v2.0.0"), "the current version is the primary"
+    print("ok test_topic_details_includes_superseded_sources")
+
+
 # ---- R2 / AC6(P1) — investigation conformance predicate ----
 
 _CONFORMANT_FM = (

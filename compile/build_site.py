@@ -1023,12 +1023,18 @@ def is_raw_ingested_research(ref):
 
 def topic_details_refs(fm):
     """R3: the ordered, deduped ref list for the Topic Details infobox row —
-    raw_documents UNION superseded_raw_documents (Replace moves superseded refs
-    into the latter key), filtered to raw-ingested-research refs. When both keys
-    are empty, fall back to the raw-ingested-research refs among `sources` (so an
-    un-retrofitted page keeps its ingested-file links); a support-only page whose
-    sources are all doctrine gets an EMPTY row (§2.2)."""
-    union = fm_list(fm, "raw_documents") + fm_list(fm, "superseded_raw_documents")
+    raw_documents UNION superseded_raw_documents UNION superseded_sources, filtered
+    to raw-ingested-research refs. Replace moves a superseded ref into
+    superseded_raw_documents, OR — for a legacy page whose ingested doc lived only
+    under `sources` — into superseded_sources; both superseded keys are unioned so
+    R3's "every raw ingested version" holds for that path too (CFAR: Codex, an
+    extension of §2.2's two-key mechanism to be formalized in the Phase-2 packet).
+    When all are empty, fall back to the raw-ingested-research refs among `sources`
+    (so an un-retrofitted page keeps its ingested-file links); a support-only page
+    whose sources are all doctrine gets an EMPTY row (§2.2)."""
+    union = (fm_list(fm, "raw_documents")
+             + fm_list(fm, "superseded_raw_documents")
+             + fm_list(fm, "superseded_sources"))
     refs = [source_ref_clean(r) for r in union if source_ref_clean(r)]
     refs = [r for r in refs if is_raw_ingested_research(r)]
     if not refs:
@@ -1046,14 +1052,16 @@ def topic_details_refs(fm):
 
 
 def topic_details_superseded(fm):
-    """Refs a newer version supersedes: the `superseded_raw_documents` key
-    (Replace) UNION the `supersedes:` targets annotated on `sources` (an
+    """Refs a newer version supersedes: the `superseded_raw_documents` AND
+    `superseded_sources` keys (Replace moves a superseded ref into one or the
+    other) UNION the `supersedes:` targets annotated on `sources` (an
     ADD-with-supersedes topic keeps all versions in raw_documents and marks
     supersession only in the comments — CFADA-r21 #43). The non-superseded
     ref(s) render as the current primary."""
     superseded = {
         source_ref_clean(r)
-        for r in fm_list(fm, "superseded_raw_documents")
+        for key in ("superseded_raw_documents", "superseded_sources")
+        for r in fm_list(fm, key)
         if source_ref_clean(r)
     }
     for _ref, comment in fm_list_with_comments(fm, "sources"):
