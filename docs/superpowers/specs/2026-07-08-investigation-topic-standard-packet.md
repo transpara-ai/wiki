@@ -2,8 +2,8 @@
 doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
-version: 0.6.0
-status: draft (IADA-passed; CFADA r1-r4 repaired; re-audit pending)
+version: 0.7.0
+status: draft (IADA-passed; CFADA r1-r5 repaired; re-audit pending)
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -28,7 +28,7 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 > operator-supplied name); every other path appends or refuses — never creates.
 > The builder stays no-LLM, no-network. Two-phase delivery (one FO, §6): Phase
 > 1 machinery (code PR), Phase 2 retrofit (data-only PR[s]). Repaired through
-> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0).
+> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0).
 
 ## 1. Survey — measured, not assumed (file:line evidence)
 
@@ -115,7 +115,7 @@ Only the `stale_since` stamp reaches `ingest_ops`, via `set_article_stale`.
 whitespace to one space, strip surrounding whitespace/punctuation. A new name
 **collides** when `norm(name)` equals `norm(x)` for x ∈ {an active investigation
 page's `entity` ∪ its `aliases` ∪ its `investigation_topic` cluster label}, or
-when `slugify(name)` equals any existing page's slug (active OR tombstone). The
+when `slugify(name)` equals `slugify(x)` for x ∈ {those same entity/alias/cluster labels} ∪ {any existing page's slug, active OR tombstone} — the slugified form folds case, spacing, AND punctuation to one key, so a new "Sakana-AI" collides with "Sakana AI" (both `sakana-ai`; CFADA-r5 #13). The
 cluster label is a collision surface even though it is neither a slug nor an
 entity — else a new "Sakana AI" upload could spawn a spurious third cluster
 member (CFADA-r3 #9).
@@ -200,15 +200,17 @@ page conforms (IADA-I6). The hard corpus gate turns on only when satisfiable.
 | AC1 | 1 | Topic Details row lists every `raw_documents` AND `superseded_raw_documents` entry (superseded included, marked), falling back to local `sources` when both are empty; no "Raw docs" label survives in `dist/` (low) | py: `test_topic_details_lists_all_versions_incl_superseded`, `test_topic_details_falls_back_to_local_sources` |
 | AC2 | 1 | Investigation-tier page renders no `.toc`; a ≥3-heading non-investigation page still renders one (med) | py: `test_investigation_pages_have_no_toc`; playwright |
 | AC3 | 1 | Default ADD with a resolvable investigation `target_slug` appends + sets `stale_since`, `wiki/*.md` count unchanged, rebuilds; a non-investigation target appends WITHOUT a stale stamp (preserved) (high) | server: `test_add_default_appends_and_flags_stale`, `test_add_to_non_investigation_preserves_behavior` |
-| AC4 | 1 | Fail-closed guard, full domain — default ADD with (a) no target, (b) retired/nonexistent target → REFUSE; (c) non-investigation target → APPENDS (no refuse/stale); new-investigation with (d) empty name, (e) slug collision (active/tombstone), (f) name/entity/alias collision (case/whitespace), (g) name = an existing `investigation_topic` cluster label (e.g. "Sakana AI") → REFUSE; (h) doc title ≠ operator name → NAME drives slug/entity+guard (no bypass); (i) distinct entities sharing a cluster (Sakana) → allowed; (j) absent subject → created (high) | server: `test_ingest_guard_domain` (cases a–j) |
+| AC4 | 1 | Fail-closed guard, full domain — default ADD with (a) no target, (b) retired/nonexistent target → REFUSE; (c) non-investigation target → APPENDS (no refuse/stale); new-investigation with (d) empty name, (e) slug collision (active/tombstone), (f) name/entity/alias/cluster collision via slugified form incl. case/whitespace/punctuation variants (e.g. "Sakana-AI" vs "Sakana AI"), (g) name = an existing `investigation_topic` cluster label (e.g. "Sakana AI") → REFUSE; (h) doc title ≠ operator name → NAME drives slug/entity+guard (no bypass); (i) distinct entities sharing a cluster (Sakana) → allowed; (j) absent subject → created (high) | server: `test_ingest_guard_domain` (cases a–j) |
 | AC5 | 1 | New-investigation builds FROM the operator name (not the doc title), emits the R2 skeleton (bold-lead placeholder + `stale_since` + `status: awaiting synthesis`, no auto `investigation_topic`); toggle defaults OFF, only creation path; `prospective_unassigned_slug` matches the creator (high) | server: `test_new_investigation_uses_operator_name`, `test_new_investigation_emits_canonical_skeleton`, `test_prospective_slug_matches_creator` |
 | AC6 | 1 → 2 | **P1:** predicate → ∅ for a conformant fixture; exact deficiency for missing-key / missing-heading / non-bold-lead / out-of-order / Integration-Packet-misordered fixtures; skeleton conforms. **P2:** every live-enumerated active investigation page conforms AND every `investigation_topic` is shared by ≥2 active pages (no stray/self-topic) (med) | py: `test_investigation_conformance_predicate` (P1); `test_all_active_investigations_conform`, `test_investigation_topic_clusters_have_multiple_members` (P2) |
 | AC7 | 1 | Builder imports no network/model client; a `stale_since` page renders the banner until cleared, with reason-neutral text (no Replace-specific "sources were replaced"/"authorization" wording) (med) | py: `test_builder_has_no_network_client`, `test_stale_banner_is_reason_neutral` |
 | AC8 | 1 | MemPalace's rendered HTML changes in exactly two ways — the infobox label and the removed `.toc` — no other: all 8 headings + contribution box still present (med) | py: `test_mempalace_render_diff_is_label_and_toc_only` |
 | AC9 | 1 & 2 | Every new/edited Python test above is wired into `package.json` `test:py` (or lands in an already-wired module); full chain green, zero regression (low) | `npm run verify` exit 0 at each PR's reviewed head; `test_py_targets_are_wired` asserts the module list runs the new tests |
 
-**Gate satisfied-only-when (allowlist, phase-total):** every AC is assigned to
-exactly one phase; no AC is optional. The Phase-1 PR is satisfied only when
+**Gate satisfied-only-when (allowlist, phase-total):** every AC carries an
+explicit, mandatory obligation per phase (AC6 splits into P1/P2 halves; AC9 runs
+in both PRs) — no AC is optional and no PR may drop its assigned obligation
+(CFADA-r5 #14). The Phase-1 PR is satisfied only when
 AC1–AC5, AC6(P1), AC7, AC8, AC9 are green at its reviewed head AND
 `npm run verify` exits 0. The Phase-2 PR is satisfied only when AC6(P2) and AC9
 are green. The FO is satisfied only when BOTH phases are. Any unproven assigned
@@ -305,5 +307,11 @@ Reviewer: Codex (`codex-cli 0.142.5`, gpt-5.5, xhigh). `codex exec review
 | C11 | Topic Details `raw_documents ∪ superseded_raw_documents` dropped the existing local-`sources` fallback — un-retrofitted pages (bitsandpieces, ob1, …) would lose infobox links in Phase 1 | FIXED — fallback preserved when both raw-doc keys empty (§2.2, AC1). |
 | C12 | Conformance didn't reject stray `investigation_topic` on single-page investigations — the AC6/P2 corpus gate could pass them | FIXED — cluster invariant (topic shared by ≥2 active pages); Phase 2 removes strays (§2.5, §2.1, AC6). |
 
-Re-audit (CFADA round 5) pending at v0.6.0. No code before Human Design Review
+**Round 5 → FAIL, repaired v0.7.0** (packet blob `a15dc23a04f6ce1cb313d53f181ce091f5c66098`, commit `ce0d750`):
+| # | Finding | Disposition |
+|---|---|---|
+| C13 | `norm()` kept internal punctuation and `slugify(name)` was compared only with page slugs — a new "Sakana-AI" would not collide with the "Sakana AI" cluster, leaving a duplicate-page path | FIXED — collision now compares `slugify` forms across entity ∪ aliases ∪ cluster label ∪ slugs (folds punctuation/spacing); AC4 case (f) adds the variant (§2.4, AC4). |
+| C14 (P3) | The gate said "every AC assigned to exactly one phase" but AC6 (1→2) and AC9 (1&2) span phases — self-contradictory as a literal checklist | FIXED — reworded to "explicit mandatory obligation per phase" (§3). |
+
+Re-audit (CFADA round 6) pending at v0.7.0. No code before Human Design Review
 (stage 6) approves.
