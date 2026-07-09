@@ -2,8 +2,8 @@
 doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
-version: 0.9.7
-status: draft (IADA-passed; CFADA r1-r15 repaired; re-audit pending)
+version: 0.9.8
+status: CFADA PASS — 0 design blockers at the round-16-audited v0.9.7 blob 4bd40ec07c17360328df9da5c8fead0bab890d83; v0.9.8 is post-pass bookkeeping; READY for Human Design Review (stage 6). No code before Michael approves.
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -28,7 +28,7 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 > operator-supplied name); every other path appends or refuses — never creates.
 > The builder stays no-LLM, no-network. Two-phase delivery (one FO, §6): Phase
 > 1 machinery (code PR), Phase 2 retrofit (data-only PR[s]). Repaired through
-> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2), 11 (v0.9.3), 12 (v0.9.4), 13 (v0.9.5), 14 (v0.9.6), 15 (v0.9.7).
+> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2), 11 (v0.9.3), 12 (v0.9.4), 13 (v0.9.5), 14 (v0.9.6), 15 (v0.9.7), 16 (PASS at v0.9.7).
 
 ## 1. Survey — measured, not assumed (file:line evidence)
 
@@ -416,5 +416,25 @@ NEXT commit and is re-audited by the following round.
 | C32 | The raw-ingested filter applied only to the fallback; `raw_documents` was taken verbatim, so a mis-placed doctrine ref (hermes-agent) would still render as Topic Details, breaking the invariant | FIXED — the Topic Details renderer filters its ENTIRE input (union + fallback) to raw-ingested refs; Phase-2 additionally tidies `raw_documents` (§2.2). |
 | C33 | "Split by cluster" contradicted the all-corpus AC6(P2) gate and the data-only scope (a test-flip) | FIXED — the all-corpus AC6(P2) gate is final-Phase-2-PR only; intermediate cluster PRs assert their own pages; the test-flip is a named small edit (§3, §6). |
 
-Re-audit (CFADA round 16, confirming) pending at v0.9.7. No code before Human
-Design Review (stage 6) approves.
+**Round 16 → audited at packet blob `4bd40ec07c17360328df9da5c8fead0bab890d83` (commit `3ac5ade`, the v0.9.7 state) — no P1; 6th consecutive zero-blocker round.** One P2 (C34), carried as a named residual:
+| # | Finding | Disposition |
+|---|---|---|
+| C34 | The §2.2 raw-ingested classifier is stated as `raw/inbox/`; a TAI-RES evaluation doc relocated outside inbox (e.g. `raw/civilization/external-landscape/`) would be wrongly excluded from Topic Details | CARRIED (residual a) — conceptually the classifier is "raw ingested RESEARCH docs wherever placed (browser-ingest uploads + TAI-RES-* versions), excluding doctrine citations"; pinned by the named Topic-Details tests against the real corpus at implementation/IAR. Non-blocking, risk-reducing to fix. |
+
+## Appendix — CFADA VERDICT
+
+**gate: CFADA — PASS, 0 design blockers.** Author family: **Claude (Opus 4.8)**. Reviewer family: **Codex** (`codex-cli 0.142.5`, gpt-5.5, xhigh) — materially independent of the author lineage (independence floor satisfied; provider openai). Command: `codex exec review --base origin/main`, bare, from the worktree; **16 rounds**.
+
+**Packet binding (gate credit):** the round-16-audited bytes — v0.9.7, blob `4bd40ec07c17360328df9da5c8fead0bab890d83`, commit `3ac5ade` — which returned **zero design blockers**. This v0.9.8 record is post-pass bookkeeping; per the truth-object rule credit attaches to those audited bytes, not to this note.
+
+**FO binding:** FO-WIKI-INVESTIGATION-STANDARD v0.2.3, blob `20d4f35f89299e0da0f0d96cc8b65fb09fe5628e`, confirmed channel-A 2026-07-09.
+
+**Three fidelities:** internal coherence **PASS** (test-first ACs with `risk_class` + named tests + allowlist gate predicate; every contradiction found across 16 rounds repaired); packet-vs-FO **PASS** (R1–R8 all trace to ACs; nothing material dropped; ADD-auth / superseded / MemPalace-conformance re-aligned to the FO); FO-vs-source **PASS** (the FO faithfully derives from Michael's archived 2026-07-08 request + the plan-mode pre-design content hash).
+
+**Journey:** IADA (v0.2.0, 0 blockers) → CFADA rounds 1–16. **Two P1 blockers** — r8 C19 (a quarantine-set narrowing the fix itself introduced) and r10 C23 (a generated-slug collision gap) — were caught, fixed, and re-verified clean; **rounds 11–16 (six consecutive) returned zero blockers**. 34 findings (C1–C34), all accepted-repaired except the named residuals.
+
+**Residual risks (named, non-blocking):** (a) [C34] the raw-ingested classifier's exact path-set (conceptual; pinned by tests); (b) operator-recoverable over-collision stall (§5a); (c) manual `stale_since` clearing (§5b); (d) Phase-2 prose quality is judgment, not gated (§5c).
+
+**Non-authorizations:** this CFADA PASS authorizes no code, grants no authority, does not mark any PR ready, does not close any issue/risk, and does not substitute for Human Design Review. Code begins only after Human Design Review (stage 6, Michael) approves.
+
+**Ready for Human Design Review (stage 6): YES** — 0 design blockers at the audited bytes.
