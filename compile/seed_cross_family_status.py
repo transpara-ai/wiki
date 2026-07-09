@@ -117,7 +117,10 @@ def current_context_status(
     rather than leaving a possibly-stale success in place.
     """
     try:
-        raw = _run(["gh", "api", f"repos/{github_repo}/commits/{sha}/status"])
+        # per_page=100 so a commit with many status contexts cannot hide ours on a
+        # later page (default 30) and get misread as "none" -> a clobbering re-pend.
+        raw = _run(["gh", "api",
+                    f"repos/{github_repo}/commits/{sha}/status?per_page=100"])
         statuses = json.loads(raw).get("statuses", [])
     except (subprocess.SubprocessError, json.JSONDecodeError, OSError) as exc:
         print(f"warning: could not read current status ({exc}); failing closed "
