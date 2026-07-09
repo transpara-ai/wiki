@@ -87,6 +87,18 @@ def fm_val(fm, key):
     return m.group(1).strip().strip('"') if m else ""
 
 
+def fm_scalar(fm, key):
+    """A frontmatter scalar with any inline comment stripped BEFORE quote removal,
+    so `entity: Foo # canonical` reads as `Foo` (not `Foo # canonical`). Use this
+    where a scalar's VALUE feeds the fail-closed collision guard, so a normal
+    inline comment cannot pollute the compact key and let a duplicate through
+    (CFAR: Codex)."""
+    m = re.search(r"^%s:[ \t]*(.+)$" % re.escape(key), fm, re.M)
+    if not m:
+        return ""
+    return strip_inline_comment(m.group(1)).strip().strip('"').strip("'")
+
+
 def fm_list(fm, key):
     m = re.search(r"^%s:[ \t]*(.*)$" % re.escape(key), fm, re.M)
     if not m:
@@ -334,8 +346,11 @@ def _investigation_collision_corpus():
         fm, _, _ = split_fm(p.read_text())
         slugs.add(p.stem)
         keys.add(collision_key(p.stem))
-        if fm_val(fm, "tier") == "investigation" or fm_val(fm, "retired_on"):
-            for value in ([fm_val(fm, "entity"), fm_val(fm, "investigation_topic")]
+        # fm_scalar (not fm_val): a normal inline comment on entity/topic/tier must
+        # not pollute the compact collision key, else a commented `entity: Foo #x`
+        # would key as `foox` and a duplicate `Foo` could slip the guard (CFAR: Codex).
+        if fm_scalar(fm, "tier") == "investigation" or fm_scalar(fm, "retired_on"):
+            for value in ([fm_scalar(fm, "entity"), fm_scalar(fm, "investigation_topic")]
                           + fm_list(fm, "aliases")):
                 if value:
                     keys.add(collision_key(value))

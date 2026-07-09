@@ -780,6 +780,15 @@ def test_ingest_guard_domain():
             assert srv.new_investigation_name_ok("Tab\tName") is False, "(l) control char rejected"
             assert _refuses(lambda: route(new_investigation=True, name="Foo\nBar")), \
                 "(l) multiline name refuses via the router"
+            # (m) a commented entity/topic scalar must not pollute the collision key —
+            #     a new name matching the comment-STRIPPED value still collides.
+            (wiki / "commented.md").write_text(
+                "---\nentity: Commented Subject  # canonical\ntier: investigation\n"
+                "investigation_topic: Commented Cluster  # grp\nstatus: compiled\n---\n\n# X\n")
+            assert _refuses(lambda: route(new_investigation=True, name="Commented Subject")), \
+                "(m) a commented entity still collides"
+            assert _refuses(lambda: route(new_investigation=True, name="Commented Cluster")), \
+                "(m) a commented cluster label still collides"
         finally:
             srv.ROOT, srv.WIKI = old_root, old_wiki
     print("ok test_ingest_guard_domain")

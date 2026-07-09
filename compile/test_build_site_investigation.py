@@ -275,6 +275,20 @@ def test_investigation_conformance_predicate():
     mistiered = _CONFORMANT_FM.replace("tier: investigation", "tier: architecture")
     assert "wrong-tier" in site.investigation_conformance(mistiered, _CONFORMANT_BODY), \
         "a non-investigation tier is a deficiency"
+
+    # CFAR (Codex): fm_scalar strips inline comments, so a comment-only required
+    # field reads as EMPTY (deficiency) and a commented tier value still reads as
+    # investigation (no false wrong-tier).
+    comment_only = _CONFORMANT_FM.replace(
+        'civilization_contribution: "Contributed the widget governance pattern."',
+        "civilization_contribution: # TBD")
+    assert any("civilization_contribution" in x for x
+               in site.investigation_conformance(comment_only, _CONFORMANT_BODY)), \
+        "a comment-only required field is a deficiency"
+    commented_tier = _CONFORMANT_FM.replace(
+        "tier: investigation", "tier: investigation  # canonical")
+    assert "wrong-tier" not in site.investigation_conformance(commented_tier, _CONFORMANT_BODY), \
+        "a commented tier value still reads as investigation"
     print("ok test_investigation_conformance_predicate")
 
 

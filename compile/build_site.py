@@ -275,6 +275,18 @@ def fm_val(fm, key):
     return m.group(1).strip().strip('"') if m else ""
 
 
+def fm_scalar(fm, key):
+    """A frontmatter scalar with any inline comment stripped BEFORE quote removal,
+    so `entity: Foo # note` reads as `Foo` and a comment-only `entity: # TODO`
+    reads as empty. Use this wherever a scalar's VALUE is load-bearing — grouping,
+    conformance emptiness, the primary flag — so a normal inline comment can't
+    pollute the value (CFAR: Codex)."""
+    m = re.search(r"^%s:[ \t]*(.+)$" % re.escape(key), fm, re.M)
+    if not m:
+        return ""
+    return strip_inline_comment(m.group(1)).strip().strip('"').strip("'")
+
+
 def strip_inline_comment(s):
     return split_inline_comment(s)[0]
 
@@ -1132,12 +1144,14 @@ def investigation_conformance(fm, body):
         if not _fm_has_key(fm, key):
             deficiencies.add("missing-fm:%s" % key)
     for key in INVESTIGATION_NONEMPTY_FM:
-        if _fm_has_key(fm, key) and not fm_val(fm, key):
+        # fm_scalar (not fm_val): a comment-only required field (`entity: # TODO`)
+        # reads as empty, so it still produces an empty-fm deficiency (CFAR: Codex).
+        if _fm_has_key(fm, key) and not fm_scalar(fm, key):
             deficiencies.add("empty-fm:%s" % key)
     # the standard is `tier: investigation` specifically — presence alone is not
     # enough, so a mistiered page (architecture / blank / any other value) cannot
     # pass the structural gate or render in the wrong nav group (CFAR: Codex).
-    if fm_val(fm, "tier") != "investigation":
+    if fm_scalar(fm, "tier") != "investigation":
         deficiencies.add("wrong-tier")
     headings = _body_level2_headings(body)
     hset = set(headings)
@@ -1163,8 +1177,9 @@ def article_frontmatter(slug):
 
 
 def investigation_topic_for(slug, meta):
-    fm = article_frontmatter(slug)
-    return fm_val(fm, "investigation_topic")
+    # fm_scalar: a commented `investigation_topic: Sakana AI # cluster` must group
+    # by "Sakana AI", not "Sakana AI # cluster" (CFAR: Codex).
+    return fm_scalar(article_frontmatter(slug), "investigation_topic")
 
 
 def investigation_primary_flag(slug):
@@ -1172,7 +1187,7 @@ def investigation_primary_flag(slug):
     # of a multi-page investigation cluster. `false`, `"false"`, `yes`, `1`, an
     # empty value, or an absent key are all NOT primary, so a malformed flag can
     # only ever fail to collapse (show all) — it can never hide a page.
-    return fm_val(article_frontmatter(slug), "investigation_primary").lower() == "true"
+    return fm_scalar(article_frontmatter(slug), "investigation_primary").lower() == "true"
 
 
 def cluster_representative(articles):
