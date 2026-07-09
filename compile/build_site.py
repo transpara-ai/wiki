@@ -2095,6 +2095,12 @@ def ingest_page(status):
         '<h2>Batch ingest</h2>'
         '<form id="ingest-form">'
         '<label>Target article<select name="target_slug" id="target-slug">%s</select></label>'
+        # R6/§2.1: the "New investigation" toggle (default OFF) is the ONLY
+        # browser page-creation path. Checking it reveals a required name field
+        # (the name — not the doc title — drives the new page) and ignores the
+        # target above; the server-side fail-closed guard is the real gate.
+        '<label class="confirm-line"><input type="checkbox" name="new_investigation" id="new-investigation" value="true"> New investigation — create a new topic page (ignores the target above)</label>'
+        '<label id="new-investigation-name-row" hidden>Investigation name<input name="name" id="new-investigation-name" type="text" placeholder="subject name — drives the new page slug and entity"></label>'
         '<label>Documents<input name="documents" id="documents" type="file" multiple></label>'
         '<label>External URLs<textarea name="external_urls" id="external-urls" rows="4" placeholder="https://..."></textarea></label>'
         '<label>Supersedes<select name="supersedes" id="supersedes"><option value="">No existing source selected</option></select></label>'
@@ -2148,6 +2154,12 @@ def ingest_page(status):
         'loadArticles();if(token)token.addEventListener("change",loadArticles);'
         'target.addEventListener("change",function(){sup.innerHTML="<option value=\\"\\">No existing source selected</option>";'
         'var a=articles[target.value];if(!a)return;(a.sources||[]).forEach(function(s){var o=document.createElement("option");o.value=s;o.textContent=s;sup.appendChild(o);});});'
+        # R6/2.1: toggling "New investigation" reveals the required name field
+        # and disables the target select, so a create ignores (and never sends)
+        # target_slug; default OFF, so create is never the accidental path.
+        'var newInv=document.getElementById("new-investigation"),nameRow=document.getElementById("new-investigation-name-row"),nameField=document.getElementById("new-investigation-name");'
+        'function syncNewInvestigation(){var on=!!(newInv&&newInv.checked);if(nameRow)nameRow.hidden=!on;if(nameField)nameField.required=on;if(target)target.disabled=on;}'
+        'if(newInv){newInv.addEventListener("change",syncNewInvestigation);syncNewInvestigation();}'
         'form.addEventListener("submit",function(e){e.preventDefault();say("Ingesting...");fetch("/api/ingest",{method:"POST",headers:headers(),body:new FormData(form)})'
         '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(reloadWithResult).catch(function(e){say(e);});});'
         'rebuild.addEventListener("click",function(){say("Refreshing status and rebuilding...");fetch("/api/rebuild",{method:"POST",headers:headers()})'

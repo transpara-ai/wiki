@@ -155,6 +155,26 @@ def test_superseded_sources_render_badged():
 
 
 
+def test_ingest_new_investigation_toggle():
+    # Investigation Topic Standard R6/§2.1: the Add form carries a "New
+    # investigation" toggle (default OFF) that reveals a required name field —
+    # the ONLY browser create path; checking it disables/ignores the target.
+    import re
+    html = ingest_html()
+    assert 'name="new_investigation"' in html and 'id="new-investigation"' in html
+    assert 'value="true"' in html, "toggle sends an explicit affirmative token"
+    # fail-safe: create is NEVER the default — the checkbox is unchecked at birth
+    m = re.search(r'<input type="checkbox" name="new_investigation"[^>]*>', html)
+    assert m and "checked" not in m.group(0), "new-investigation toggle must default OFF"
+    # the name field exists and its row is hidden until the toggle is on
+    assert 'name="name"' in html and 'id="new-investigation-name"' in html
+    assert 'id="new-investigation-name-row" hidden' in html, "name row hidden until toggled"
+    # the JS reveals the name row + disables the target when the toggle is on
+    assert "syncNewInvestigation" in html
+    assert "target.disabled=on" in html, "checking the toggle ignores the target select"
+    print("ok test_ingest_new_investigation_toggle")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
