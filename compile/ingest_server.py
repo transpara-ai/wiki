@@ -704,7 +704,22 @@ def append_frontmatter_list_items(slug, key, values, line_builder):
 
     fm_start = 3
     fm_text = raw[fm_start:fm_end]
-    m = re.search(r"^%s:[ \t]*.*$" % re.escape(key), fm_text, re.M)
+    m = re.search(r"^%s:[ \t]*(.*)$" % re.escape(key), fm_text, re.M)
+    inline_val = strip_inline_comment(m.group(1)).strip() if m else ""
+    if inline_val.startswith("[") and inline_val.endswith("]"):
+        # NORMALIZE an inline list to block form before appending — otherwise the
+        # new rows would be a mixed inline+block shape the parser ignores, so a
+        # browser Add would silently vanish from sources / Topic Details even
+        # though the request succeeded (CFAR: Codex).
+        existing_items = [x.strip().strip('"').strip("'")
+                          for x in inline_val[1:-1].split(",") if x.strip()]
+        key_line_start = fm_start + m.start()
+        key_line_end = fm_start + m.end()  # end of the inline line, before its \n
+        block = ("%s:\n" % key
+                 + "".join("  - %s\n" % json.dumps(v) for v in existing_items)
+                 + "".join(lines))
+        ingest_ops.atomic_write_text(path, raw[:key_line_start] + block + raw[key_line_end + 1:])
+        return added
     if not m:
         insert_at = fm_end
         block = "\n%s:\n" % key + "".join(lines)

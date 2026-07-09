@@ -801,6 +801,31 @@ def test_ingest_guard_domain():
     print("ok test_ingest_guard_domain")
 
 
+def test_append_normalizes_inline_list_to_block():
+    # CFAR (Codex): appending to an INLINE frontmatter list normalizes it to block
+    # form, so the new row isn't a mixed inline+block shape the parser drops (a
+    # browser Add would otherwise appear to succeed but never render).
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        wiki = root / "wiki"
+        wiki.mkdir(parents=True)
+        (wiki / "acme.md").write_text(
+            "---\nentity: Acme\ntier: investigation\n"
+            "raw_documents: [raw/inbox/a/OLD.md]  # legacy inline\n---\n\n# Acme\n")
+        old = srv.WIKI
+        try:
+            srv.WIKI = wiki
+            srv.append_raw_documents_to_article("acme", ["raw/inbox/a/NEW.md"])
+            text = (wiki / "acme.md").read_text()
+            fm, _, _ = srv.split_fm(text)
+            assert srv.fm_list(fm, "raw_documents") == \
+                ["raw/inbox/a/OLD.md", "raw/inbox/a/NEW.md"], "both refs present in block form"
+            assert "raw_documents: [" not in text, "inline list normalized to block"
+        finally:
+            srv.WIKI = old
+    print("ok test_append_normalizes_inline_list_to_block")
+
+
 def test_article_tier_strips_tier_comment():
     # CFAR (Codex): a commented `tier: investigation # x` still gates the ADD stale
     # stamp — article_tier reads the value clean (fm_scalar).
