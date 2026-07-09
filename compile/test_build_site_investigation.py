@@ -28,6 +28,34 @@ def test_investigation_pages_have_no_toc():
     print("ok test_investigation_pages_have_no_toc")
 
 
+# ---- R7 / AC7 — reason-neutral stale banner + no-network builder ----
+
+def test_stale_banner_is_reason_neutral():
+    banner = site.state_banner_html("stale_since: 2026-07-09\n")
+    assert "2026-07-09" in banner and "stale" in banner.lower()
+    # reason-neutral: correct for an ADD as well as a Replace — no Replace-specific
+    # "replaced" / "authorization" wording (R7/AC7).
+    low = banner.lower()
+    assert "replaced" not in low and "authorization" not in low, "banner must be reason-neutral"
+    # retired takes precedence and is unaffected
+    assert "Retired on 2026-07-01" in site.state_banner_html(
+        "retired_on: 2026-07-01\nretired_reason: dup\n")
+    # neither -> no banner
+    assert site.state_banner_html("entity: x\n") == ""
+    print("ok test_stale_banner_is_reason_neutral")
+
+
+def test_builder_has_no_network_client():
+    # AC7: the builder performs no network/LLM work; it imports no HTTP/socket
+    # client (urllib.parse for URL encoding is not a network client).
+    import inspect
+    src = inspect.getsource(site)
+    for bad in ("import requests", "import httpx", "import socket",
+                "urllib.request", "http.client", ".urlopen("):
+        assert bad not in src, "builder must not use a network client: %s" % bad
+    print("ok test_builder_has_no_network_client")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

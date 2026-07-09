@@ -842,6 +842,24 @@ def article_toc(meta, toc_tokens, is_home=False):
     return build_toc(toc_tokens)
 
 
+def state_banner_html(fm):
+    # Retired takes precedence over stale. R7: the stale-since wording is
+    # reason-neutral ("raw sources changed; summary re-derivation pending"), so it
+    # is correct for an unauthenticated ADD as well as a Replace — the old text
+    # ("raw sources were replaced ... pending authorization") was false for an ADD.
+    retired_on = fm_val(fm, "retired_on")
+    if retired_on:
+        return ('<div class="article-state-banner">Retired on %s — %s</div>'
+                % (html.escape(retired_on),
+                   html.escape(fm_val(fm, "retired_reason") or "no reason recorded")))
+    stale_since = fm_val(fm, "stale_since")
+    if stale_since:
+        return ('<div class="article-state-banner">Synthesis stale since %s'
+                ' — raw sources changed; summary re-derivation pending.</div>'
+                % html.escape(stale_since))
+    return ""
+
+
 def mark_generated(path):
     GENERATED_DIST_PATHS.add(path.resolve())
 
@@ -2241,20 +2259,7 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
         "an article in the %s" % SITE_NAME)
     h1 = SITE_NAME if is_home else html.escape(title)
     page_title = SITE_NAME if is_home or title == SITE_NAME else ("%s — %s" % (title, SITE_NAME))
-    state_banner = ""
-    if not is_home:
-        retired_on = fm_val(fm, "retired_on")
-        stale_since = fm_val(fm, "stale_since")
-        if retired_on:
-            state_banner = ('<div class="article-state-banner">Retired on %s'
-                            ' — %s</div>'
-                            % (html.escape(retired_on),
-                               html.escape(fm_val(fm, "retired_reason") or "no reason recorded")))
-        elif stale_since:
-            state_banner = ('<div class="article-state-banner">Synthesis stale'
-                            ' since %s — raw sources were replaced; prose'
-                            ' re-derivation is pending authorization.</div>'
-                            % html.escape(stale_since))
+    state_banner = "" if is_home else state_banner_html(fm)
     if is_home:
         article_html = '<article class="body">%s</article>' % body_html
     else:
