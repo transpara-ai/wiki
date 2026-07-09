@@ -2,8 +2,8 @@
 doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
-version: 0.7.0
-status: draft (IADA-passed; CFADA r1-r5 repaired; re-audit pending)
+version: 0.8.0
+status: draft (IADA-passed; CFADA r1-r6 repaired; re-audit pending)
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -11,7 +11,7 @@ owner: Michael Saucier
 steward: Claude (Opus 4.8)
 authority: planning
 tlc_stage: design
-factory_order: FO-WIKI-INVESTIGATION-STANDARD v0.2.1 (blob 472bb1623cea3de7b0bf7e7389841affe3d3e589, confirmed channel-A 2026-07-09; v0.2.1 corrects the MemPalace-conformance claim)
+factory_order: FO-WIKI-INVESTIGATION-STANDARD v0.2.2 (blob 4d8beea777af89e40919f9f4f55c6dd8eb132612, confirmed channel-A 2026-07-09; v0.2.2 clarifies ADD retains the require_authoring transport gate)
 source_of_intent:
   - the Factory Order above (its §4 archives Michael's request verbatim; §5 archives the intake answers)
   - wiki/mempalace.md (blob a9a9bc6bc83b01a9ba27776bb179e6d8b16de96c) — the content exemplar
@@ -21,14 +21,14 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 
 # Investigation Topic Standard — TLC Design Packet
 
-> Answers FO-WIKI-INVESTIGATION-STANDARD v0.2.1 (R1–R8) against measured live
+> Answers FO-WIKI-INVESTIGATION-STANDARD v0.2.2 (R1–R8) against measured live
 > code (wiki main @ `2c9e672`, survey 2026-07-08/09). House rule inherited:
 > the branch that CREATES a page renders only from a proven allowlist
 > (explicit new-investigation intent AND subject proven absent, keyed on the
 > operator-supplied name); every other path appends or refuses — never creates.
 > The builder stays no-LLM, no-network. Two-phase delivery (one FO, §6): Phase
 > 1 machinery (code PR), Phase 2 retrofit (data-only PR[s]). Repaired through
-> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0).
+> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0).
 
 ## 1. Survey — measured, not assumed (file:line evidence)
 
@@ -80,7 +80,7 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 | Phase | Action | File | Change |
 |---|---|---|---|
 | 1 | EDIT | `compile/build_site.py` | **R3:** relabel `"Raw docs"` → `"Topic Details"` (`:1530`) AND source the list from `raw_documents` ∪ `superseded_raw_documents` (deduped, superseded marked, newest primary — CFADA-r3 #8). **R4:** tier-gate the TOC at `:2181`. **R7 banner:** reason-neutral `stale_since` text (`:2200`). **R2 predicate:** `investigation_conformance(slug)`. |
-| 1 | EDIT | `compile/ingest_server.py` | **R5/R6/R1 (§2.4):** intent model + fail-closed guard; `create_article_from_source(name=…)` keyed on the operator name (CFADA-r2 #4); `prospective_unassigned_slug` in lockstep; collision set includes `investigation_topic` cluster labels (CFADA-r3 #9). Default lane appends (any tier), stamps `stale_since` only for investigation targets. |
+| 1 | EDIT | `compile/ingest_server.py` | **R5/R6/R1 (§2.4):** intent model + fail-closed guard; `create_article_from_source(name=…)` keyed on the operator name (CFADA-r2 #4); `prospective_unassigned_slug` in lockstep; collision set includes `investigation_topic` cluster labels (CFADA-r3 #9), matched on slugified forms (CFADA-r5 #13); the operator name is quarantined pre-write (CFADA-r6 #16); ADD keeps `require_authoring` (CFADA-r6 #15). Default lane appends (any tier), stamps `stale_since` only for investigation targets. |
 | 1 | EDIT | `compile/ingest_ops.py` | `set_article_stale(root, slug, now)` wrapping `_set_scalar` — reused by ADD + Replace; no new op, no auth contract (Q4). |
 | 1 | EDIT | `ingest_page()` region in `compile/build_site.py` | "New investigation" toggle (default OFF) reveals a **required name** field, the ONLY creation path; checking it ignores `target_slug`. Both themes. |
 | 1 | ADD/EDIT | tests — land in already-wired modules (`test_build_site_nav.py`, `test_ingest_server.py`, `test_ingest_ops.py`, `test_ingest_ux.py`) OR add any new file to `package.json` `test:py` (CFADA-r3 #10); `tests/*.spec.js` for Playwright | AC1–AC5, AC6(P1), AC7–AC9. |
@@ -108,7 +108,10 @@ beside the contribution tier-gate at `:2210`. AC2 proves both directions.
 ### 2.4 R5/R6/R1 — Ingest ADD-default + canonical new-page + fail-closed guard
 
 **FO deferred question resolved:** ADD is a **routing change in
-`ingest_server.py`**, not a new `ingest_ops` op (Q4 keeps it unauthenticated).
+`ingest_server.py`**, not a new `ingest_ops` op. ADD requires no single-use
+authorization artifact (Q4) but KEEPS the existing `require_authoring()`
+transport gate (loopback/same-origin or `CIVWIKI_AUTHORING_TOKEN`) —
+"unauthenticated" never means dropping transport auth (CFADA-r6 #15).
 Only the `stale_since` stamp reaches `ingest_ops`, via `set_article_stale`.
 
 **Normalization (defined):** `norm(s)` = Unicode-casefold, collapse internal
@@ -137,6 +140,12 @@ false):
   proven absent (the collision rule above). Otherwise create with `stale_since`,
   `status: browser-ingested source; awaiting synthesis`, no auto
   `investigation_topic`.
+
+**Quarantine (CFADA-r6 #16).** The operator `name` is a new persisted, echoed
+field, so `handle_ingest` runs `quarantine_fields({name, target_slug, note})`
+BEFORE any validation, slug/entity derivation, write, or refusal echo — a
+secret-shaped name is refused with redacted spans and never reaches
+`wiki/<slug>.md` or a response (the CFAR-r20 echo-quarantine lane).
 
 **Fail-safe statement.** The ONLY branch that creates a page is
 `new_investigation == true` AND a non-empty name AND the subject proven absent.
@@ -201,8 +210,8 @@ page conforms (IADA-I6). The hard corpus gate turns on only when satisfiable.
 | AC2 | 1 | Investigation-tier page renders no `.toc`; a ≥3-heading non-investigation page still renders one (med) | py: `test_investigation_pages_have_no_toc`; playwright |
 | AC3 | 1 | Default ADD with a resolvable investigation `target_slug` appends + sets `stale_since`, `wiki/*.md` count unchanged, rebuilds; a non-investigation target appends WITHOUT a stale stamp (preserved) (high) | server: `test_add_default_appends_and_flags_stale`, `test_add_to_non_investigation_preserves_behavior` |
 | AC4 | 1 | Fail-closed guard, full domain — default ADD with (a) no target, (b) retired/nonexistent target → REFUSE; (c) non-investigation target → APPENDS (no refuse/stale); new-investigation with (d) empty name, (e) slug collision (active/tombstone), (f) name/entity/alias/cluster collision via slugified form incl. case/whitespace/punctuation variants (e.g. "Sakana-AI" vs "Sakana AI"), (g) name = an existing `investigation_topic` cluster label (e.g. "Sakana AI") → REFUSE; (h) doc title ≠ operator name → NAME drives slug/entity+guard (no bypass); (i) distinct entities sharing a cluster (Sakana) → allowed; (j) absent subject → created (high) | server: `test_ingest_guard_domain` (cases a–j) |
-| AC5 | 1 | New-investigation builds FROM the operator name (not the doc title), emits the R2 skeleton (bold-lead placeholder + `stale_since` + `status: awaiting synthesis`, no auto `investigation_topic`); toggle defaults OFF, only creation path; `prospective_unassigned_slug` matches the creator (high) | server: `test_new_investigation_uses_operator_name`, `test_new_investigation_emits_canonical_skeleton`, `test_prospective_slug_matches_creator` |
-| AC6 | 1 → 2 | **P1:** predicate → ∅ for a conformant fixture; exact deficiency for missing-key / missing-heading / non-bold-lead / out-of-order / Integration-Packet-misordered fixtures; skeleton conforms. **P2:** every live-enumerated active investigation page conforms AND every `investigation_topic` is shared by ≥2 active pages (no stray/self-topic) (med) | py: `test_investigation_conformance_predicate` (P1); `test_all_active_investigations_conform`, `test_investigation_topic_clusters_have_multiple_members` (P2) |
+| AC5 | 1 | New-investigation builds FROM the operator name (not the doc title), emits the R2 skeleton (bold-lead placeholder + `stale_since` + `status: awaiting synthesis`, no auto `investigation_topic`); toggle defaults OFF, only creation path; `prospective_unassigned_slug` matches the creator (high) | server: `test_new_investigation_uses_operator_name`, `test_new_investigation_emits_canonical_skeleton`, `test_new_investigation_name_is_quarantined`, `test_ingest_still_requires_authoring`, `test_prospective_slug_matches_creator` |
+| AC6 | 1 → 2 | **P1:** predicate → ∅ for a conformant fixture; exact deficiency for missing-key / missing-heading / non-bold-lead / out-of-order / Integration-Packet-misordered fixtures; skeleton conforms. **P2:** every live-enumerated active investigation page (i) conforms (R2), (ii) has `investigation_topic` shared by ≥2 active pages (no stray/self-topic), AND (iii) has Topic Details covering ALL raw versions — `raw_documents` ∪ `superseded_raw_documents` is non-empty and includes every local `raw/*` ref in its `sources` (R3/R8 completeness; no page still on the Phase-1 sources fallback — CFADA-r6 #17) (med) | py: `test_investigation_conformance_predicate` (P1); `test_all_active_investigations_conform`, `test_investigation_topic_clusters_have_multiple_members`, `test_all_active_investigations_topic_details_complete` (P2) |
 | AC7 | 1 | Builder imports no network/model client; a `stale_since` page renders the banner until cleared, with reason-neutral text (no Replace-specific "sources were replaced"/"authorization" wording) (med) | py: `test_builder_has_no_network_client`, `test_stale_banner_is_reason_neutral` |
 | AC8 | 1 | MemPalace's rendered HTML changes in exactly two ways — the infobox label and the removed `.toc` — no other: all 8 headings + contribution box still present (med) | py: `test_mempalace_render_diff_is_label_and_toc_only` |
 | AC9 | 1 & 2 | Every new/edited Python test above is wired into `package.json` `test:py` (or lands in an already-wired module); full chain green, zero regression (low) | `npm run verify` exit 0 at each PR's reviewed head; `test_py_targets_are_wired` asserts the module list runs the new tests |
@@ -313,5 +322,18 @@ Reviewer: Codex (`codex-cli 0.142.5`, gpt-5.5, xhigh). `codex exec review
 | C13 | `norm()` kept internal punctuation and `slugify(name)` was compared only with page slugs — a new "Sakana-AI" would not collide with the "Sakana AI" cluster, leaving a duplicate-page path | FIXED — collision now compares `slugify` forms across entity ∪ aliases ∪ cluster label ∪ slugs (folds punctuation/spacing); AC4 case (f) adds the variant (§2.4, AC4). |
 | C14 (P3) | The gate said "every AC assigned to exactly one phase" but AC6 (1→2) and AC9 (1&2) span phases — self-contradictory as a literal checklist | FIXED — reworded to "explicit mandatory obligation per phase" (§3). |
 
-Re-audit (CFADA round 6) pending at v0.7.0. No code before Human Design Review
+**Round 5 → FAIL, repaired v0.7.0** (packet blob `a15dc23a04f6ce1cb313d53f181ce091f5c66098`, commit `ce0d750`):
+| # | Finding | Disposition |
+|---|---|---|
+| C13 | Punctuation/spacing variant ("Sakana-AI" vs "Sakana AI") slipped the collision guard | FIXED — slugified-form comparison across the whole collision set (§2.4, AC4f). |
+| C14 (P3) | Gate said "exactly one phase" while AC6/AC9 span phases | FIXED — reworded (§3). |
+
+**Round 6 → FAIL, repaired v0.8.0** (packet blob `1dd15d7ef19a36c98f03762850bb6f3d77aebf9d`, commit `82858b3`):
+| # | Finding | Disposition |
+|---|---|---|
+| C15 | "ADD unauthenticated" could be misread as dropping `require_authoring`, exposing browser writes | FIXED — FO v0.2.2 + §2.4/§2.1 state ADD retains the transport gate; "unauthenticated" = no single-use artifact only (AC5 `test_ingest_still_requires_authoring`). |
+| C16 | The new operator `name` field was not quarantined before write/echo — a secret-shaped name could reach `wiki/<slug>.md` or a response ahead of `secret_scan` | FIXED — `quarantine_fields` over `name` before any derivation/write/echo (§2.4, §2.1, AC5 `test_new_investigation_name_is_quarantined`). |
+| C17 | AC6(P2) checked R2 + clusters but not R3, so a retrofit could pass with incomplete `raw_documents` | FIXED — AC6(P2)(iii) asserts Topic Details covers all raw versions (no page left on the sources fallback); `test_all_active_investigations_topic_details_complete`. |
+
+Re-audit (CFADA round 7) pending at v0.8.0. No code before Human Design Review
 (stage 6) approves.

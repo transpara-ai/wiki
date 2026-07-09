@@ -2,8 +2,8 @@
 doc_id: FO-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — the Investigation Topic Standard (Factory Order)
 doc_type: factory-order
-version: 0.2.1
-status: confirmed (channel-A intake confirm, Michael, 2026-07-09 — answers archived in §5; R1–R8 confirmed as read; one FO / two phases; ADD unauthenticated + fail-closed duplicate guard). v0.2.1 corrects the MemPalace conformance claim per CFADA-r1 #2 — MemPalace is the content exemplar, not literally conformant; intent R1–R8 unchanged
+version: 0.2.2
+status: confirmed (channel-A intake confirm, Michael, 2026-07-09 — answers archived in §5; R1–R8 confirmed as read; one FO / two phases; ADD unauthenticated + fail-closed duplicate guard). v0.2.1 corrects the MemPalace conformance claim per CFADA-r1 #2 — MemPalace is the content exemplar, not literally conformant; intent R1–R8 unchanged. v0.2.2 clarifies ADD retains the require_authoring transport gate (CFADA-r6 #15), intent unchanged
 canonical: false
 created: 2026-07-08
 updated: 2026-07-09
@@ -136,8 +136,9 @@ lane; **no change to how sources are added to existing non-investigation pages**
 no arc/front-page/board changes; no batch/LLM re-synthesis of prose
 (summaries are re-derived per topic by the authoring pass).
 
-Confirmed 2026-07-09 (§5): ADD runs **unauthenticated** (like today's Add) and
-never requires the authorization artifact; a **fail-closed** duplicate/ambiguity
+Confirmed 2026-07-09 (§5): ADD requires **no single-use authorization artifact**
+(like today's Add — the existing `require_authoring` transport gate,
+loopback/same-origin or `CIVWIKI_AUTHORING_TOKEN`, is retained; CFADA-r6 #15); a **fail-closed** duplicate/ambiguity
 guard is the sole gate on page creation/routing and never silently creates or
 mis-routes a page. The standard's normative home is this FO + its design packet
 (a browsable wiki meta-page is an optional later nicety, not part of this
