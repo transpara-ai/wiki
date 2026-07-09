@@ -2,8 +2,8 @@
 doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
-version: 0.8.0
-status: draft (IADA-passed; CFADA r1-r6 repaired; re-audit pending)
+version: 0.8.1
+status: draft (IADA-passed; CFADA r1-r6 repaired, r7 audit-trail corrected; re-audit pending)
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -28,7 +28,7 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 > operator-supplied name); every other path appends or refuses — never creates.
 > The builder stays no-LLM, no-network. Two-phase delivery (one FO, §6): Phase
 > 1 machinery (code PR), Phase 2 retrofit (data-only PR[s]). Repaired through
-> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0).
+> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail).
 
 ## 1. Survey — measured, not assumed (file:line evidence)
 
@@ -286,7 +286,9 @@ FIXED. Verdict v0.2.0: PASS — 0 blockers. Does not replace external CFADA.
 ## Appendix — CFADA rounds (Codex, materially independent of the Claude author)
 
 Reviewer: Codex (`codex-cli 0.142.5`, gpt-5.5, xhigh). `codex exec review
---base origin/main`, bare, from the worktree.
+--base origin/main`, bare, from the worktree. Each round cites the blob/commit
+it AUDITED (the previous version's committed state); the repair lands in the
+NEXT commit and is re-audited by the following round.
 
 **Round 1 → FAIL, repaired v0.3.0** (packet blob `c06d8126ff44feb03bcca8df9099fc9cdca665dc`, commit `c4f8e87`):
 | # | Finding | Disposition |
@@ -322,18 +324,17 @@ Reviewer: Codex (`codex-cli 0.142.5`, gpt-5.5, xhigh). `codex exec review
 | C13 | `norm()` kept internal punctuation and `slugify(name)` was compared only with page slugs — a new "Sakana-AI" would not collide with the "Sakana AI" cluster, leaving a duplicate-page path | FIXED — collision now compares `slugify` forms across entity ∪ aliases ∪ cluster label ∪ slugs (folds punctuation/spacing); AC4 case (f) adds the variant (§2.4, AC4). |
 | C14 (P3) | The gate said "every AC assigned to exactly one phase" but AC6 (1→2) and AC9 (1&2) span phases — self-contradictory as a literal checklist | FIXED — reworded to "explicit mandatory obligation per phase" (§3). |
 
-**Round 5 → FAIL, repaired v0.7.0** (packet blob `a15dc23a04f6ce1cb313d53f181ce091f5c66098`, commit `ce0d750`):
-| # | Finding | Disposition |
-|---|---|---|
-| C13 | Punctuation/spacing variant ("Sakana-AI" vs "Sakana AI") slipped the collision guard | FIXED — slugified-form comparison across the whole collision set (§2.4, AC4f). |
-| C14 (P3) | Gate said "exactly one phase" while AC6/AC9 span phases | FIXED — reworded (§3). |
-
-**Round 6 → FAIL, repaired v0.8.0** (packet blob `1dd15d7ef19a36c98f03762850bb6f3d77aebf9d`, commit `82858b3`):
+**Round 6 → FAIL** — audited at packet blob `1dd15d7ef19a36c98f03762850bb6f3d77aebf9d` (commit `82858b3`, the v0.7.0 state round 6 reviewed); repaired to v0.8.0:
 | # | Finding | Disposition |
 |---|---|---|
 | C15 | "ADD unauthenticated" could be misread as dropping `require_authoring`, exposing browser writes | FIXED — FO v0.2.2 + §2.4/§2.1 state ADD retains the transport gate; "unauthenticated" = no single-use artifact only (AC5 `test_ingest_still_requires_authoring`). |
 | C16 | The new operator `name` field was not quarantined before write/echo — a secret-shaped name could reach `wiki/<slug>.md` or a response ahead of `secret_scan` | FIXED — `quarantine_fields` over `name` before any derivation/write/echo (§2.4, §2.1, AC5 `test_new_investigation_name_is_quarantined`). |
 | C17 | AC6(P2) checked R2 + clusters but not R3, so a retrofit could pass with incomplete `raw_documents` | FIXED — AC6(P2)(iii) asserts Topic Details covers all raw versions (no page left on the sources fallback); `test_all_active_investigations_topic_details_complete`. |
 
-Re-audit (CFADA round 7) pending at v0.8.0. No code before Human Design Review
+**Round 7 → FAIL** — audited at packet blob `750a9c1a2002b986153ef8b0952400a1398bbde2` (commit `6f4ea5d`, the v0.8.0 state); repaired to v0.8.1:
+| # | Finding | Disposition |
+|---|---|---|
+| C18 | The appendix duplicated the Round 5 block, and its round headers were ambiguous about whether the cited commit was the audited or the repaired state — an inaccurate CFADA evidence trail | FIXED — duplicate removed; a convention note states each round cites the AUDITED blob/commit; Round 6/7 headers reworded. Audit-trail only, no design change. |
+
+Re-audit (CFADA round 8) pending at v0.8.1. No code before Human Design Review
 (stage 6) approves.
