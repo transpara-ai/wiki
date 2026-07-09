@@ -32,7 +32,7 @@ confidence:
   maturity_and_provenance: code-verified — Microsoft-authored (Copyright (c) Microsoft Corporation in 128 agent-os/src files; nothing Transpara-authored), MIT, "Public Preview" / Development Status 4-Beta (README.md:29), three majors in ~2 months. The "13,000+ tests" figure is corroborated as a Python-only magnitude (12,617 def test_ / 563 files / ~1.6% skipped).
   open_schema_defect: RESOLVED — the prior page's HIGH-severity H3 (PolicyEngineAdapterDecision Tier 0 node with no per-node schema) is fixed: a full schema block now lives at 02-kernel-schema-and-state-v3.9.md:345-363.
 raw_documents:
-  - "raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md"  # sha256 daa00d1c1c57daf1b9774717943ea1b24135c612965edff6610f35153400ccc4; TAI-RES-2026-009 v1.0.1; session-authored Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter
+  - "raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md"  # sha256 3903b0b0cf24f3d5a1e33af763cbe560ccab233c66590b37d8ed83fe4d3cd1c4; TAI-RES-2026-009 v1.0.1; session-authored Civilization external-landscape research, placed outside the browser-ingest inbox by design — provenance is git history + this frontmatter
 ---
 
 # Agent Governance Toolkit
@@ -123,7 +123,7 @@ Primary source is the code-anchored evaluation; doctrine and prior research are 
 - Gap G2 (`…2026-05-13-08-…`) and U2 (`…2026-05-13-09-…`) — the gap AGT was selected to help close and the proposed pattern that became doctrine.
 
 **Reference / context:**
-- `raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md` — **TAI-RES-2026-009 v1.0.1**, the code-anchored evaluation (sha256 `daa00d1c1c…`); this page is its digest and carries the full `file:line` anchors, the doctrine map, and the §4.4 determination.
+- `raw/civilization/external-landscape/tai-res-2026-009-agent-governance-toolkit-evaluation.md` — **TAI-RES-2026-009 v1.0.1**, the code-anchored evaluation (sha256 `3903b0b0cf…`); this page is its digest and carries the full `file:line` anchors, the doctrine map, and the §4.4 determination.
 - `dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (`status: review`) — the AGT decision row (`L82`) + seven-point pre-integration gate (`L175-189`).
 - `dark-factory/v4.0/.../epic-21-residual-risk-r003-reidentification/01-…-design-v4.0.md` (`L69-89`) — the open R-003 production-adapter gate.
 - `dark-factory/research/checkpoints/2026-05-13-06-…` — the Phase 4 Batch D **README-only** candidate analysis, superseded for "what it is" by TAI-RES-2026-009.
