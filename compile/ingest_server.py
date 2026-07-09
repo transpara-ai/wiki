@@ -103,8 +103,8 @@ def fm_list(fm, key):
     m = re.search(r"^%s:[ \t]*(.*)$" % re.escape(key), fm, re.M)
     if not m:
         return []
-    inline = m.group(1).strip()
-    if inline.startswith("[") and inline.endswith("]"):
+    inline = strip_inline_comment(m.group(1)).strip()  # a trailing `# comment` on an
+    if inline.startswith("[") and inline.endswith("]"):  # inline list must not hide it
         return [x.strip().strip('"').strip("'") for x in inline[1:-1].split(",") if x.strip()]
     items = []
     for line in fm[m.end():].splitlines():
@@ -331,7 +331,9 @@ def article_tier(slug):
     if not path.exists():
         return ""
     fm, _, _ = split_fm(path.read_text())
-    return fm_val(fm, "tier")
+    # fm_scalar: a commented `tier: investigation # x` must still gate the ADD
+    # stale stamp, else no re-derivation banner is produced (CFAR: Codex).
+    return fm_scalar(fm, "tier")
 
 
 def _investigation_collision_corpus():
@@ -349,7 +351,7 @@ def _investigation_collision_corpus():
         # fm_scalar (not fm_val): a normal inline comment on entity/topic/tier must
         # not pollute the compact collision key, else a commented `entity: Foo #x`
         # would key as `foox` and a duplicate `Foo` could slip the guard (CFAR: Codex).
-        if fm_scalar(fm, "tier") == "investigation" or fm_scalar(fm, "retired_on"):
+        if fm_scalar(fm, "tier") == "investigation" or fm_val(fm, "retired_on"):
             for value in ([fm_scalar(fm, "entity"), fm_scalar(fm, "investigation_topic")]
                           + fm_list(fm, "aliases")):
                 if value:

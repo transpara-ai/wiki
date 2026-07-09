@@ -317,8 +317,8 @@ def fm_list(fm, key):
     m = re.search(r"^%s:[ \t]*(.*)$" % re.escape(key), fm, re.M)
     if not m:
         return []
-    inline = m.group(1).strip()
-    if inline.startswith("[") and inline.endswith("]"):
+    inline = strip_inline_comment(m.group(1)).strip()  # a trailing `# comment` on an
+    if inline.startswith("[") and inline.endswith("]"):  # inline list must not hide it
         return [x.strip().strip('"') for x in inline[1:-1].split(",") if x.strip()]
     items, start = [], m.end()
     for line in fm[start:].splitlines():
@@ -334,7 +334,7 @@ def fm_list_with_comments(fm, key):
     if not m:
         return []
     out = []
-    inline = m.group(1).strip()
+    inline = strip_inline_comment(m.group(1)).strip()
     if inline.startswith("[") and inline.endswith("]"):
         for x in inline[1:-1].split(","):
             item = x.strip().strip('"').strip("'")
@@ -359,8 +359,12 @@ def article_meta():
         fm, _ = split_fm(p.read_text())
         meta[p.stem] = {
             "slug": p.stem,
-            "title": fm_val(fm, "entity") or p.stem.replace("-", " "),
-            "tier": fm_val(fm, "tier") or "concept",
+            # fm_scalar for the value-load-bearing title/tier (a commented
+            # `tier: investigation # x` must still gate the TOC, nav group, and
+            # contribution box); retired_on stays fm_val so an ambiguous/comment-
+            # only value still drops the page from nav (fail-safe) (CFAR: Codex).
+            "title": fm_scalar(fm, "entity") or p.stem.replace("-", " "),
+            "tier": fm_scalar(fm, "tier") or "concept",
             "retired_on": fm_val(fm, "retired_on"),
         }
     return meta

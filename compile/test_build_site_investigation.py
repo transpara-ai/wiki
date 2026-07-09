@@ -154,6 +154,19 @@ def test_topic_details_fallback_is_raw_ingested_only():
     print("ok test_topic_details_fallback_is_raw_ingested_only")
 
 
+def test_fm_scalar_and_fm_list_strip_inline_comments():
+    # CFAR (Codex): value-load-bearing scalar/list reads strip inline comments, so
+    # a commented scalar or a commented INLINE list can't pollute a gate.
+    fm = ("entity: Foo  # note\n"
+          "tier: investigation  # canonical\n"
+          "raw_documents: [raw/inbox/a/TAI-RES-1.md, raw/inbox/a/TAI-RES-2.md]  # inline\n")
+    assert site.fm_scalar(fm, "tier") == "investigation"
+    assert site.fm_scalar(fm, "entity") == "Foo"
+    assert site.fm_list(fm, "raw_documents") == \
+        ["raw/inbox/a/TAI-RES-1.md", "raw/inbox/a/TAI-RES-2.md"], "inline commented list parses"
+    print("ok test_fm_scalar_and_fm_list_strip_inline_comments")
+
+
 def test_topic_details_includes_superseded_sources():
     # CFAR (Codex): a legacy sources-only Replace moves the old ingested ref into
     # `superseded_sources` (not superseded_raw_documents); Topic Details must still

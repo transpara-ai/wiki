@@ -789,9 +789,36 @@ def test_ingest_guard_domain():
                 "(m) a commented entity still collides"
             assert _refuses(lambda: route(new_investigation=True, name="Commented Cluster")), \
                 "(m) a commented cluster label still collides"
+            # an INLINE alias list with a trailing comment must still be parsed,
+            # else a reanimation name for that alias would slip the guard.
+            (wiki / "inline-alias.md").write_text(
+                "---\nentity: Inline Alias Page\naliases: [Reanimate Me]  # retired id\n"
+                "tier: investigation\nstatus: compiled\n---\n\n# X\n")
+            assert _refuses(lambda: route(new_investigation=True, name="Reanimate Me")), \
+                "(m) an inline commented alias list still collides"
         finally:
             srv.ROOT, srv.WIKI = old_root, old_wiki
     print("ok test_ingest_guard_domain")
+
+
+def test_article_tier_strips_tier_comment():
+    # CFAR (Codex): a commented `tier: investigation # x` still gates the ADD stale
+    # stamp — article_tier reads the value clean (fm_scalar).
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        wiki = root / "wiki"
+        wiki.mkdir(parents=True)
+        (wiki / "x.md").write_text(
+            "---\nentity: X\ntier: investigation  # canonical\n---\n\n# X\n")
+        old = srv.WIKI
+        try:
+            srv.WIKI = wiki
+            assert srv.article_tier("x") == "investigation", "commented tier reads clean"
+            assert srv.fm_scalar("entity: Foo  # note\n", "entity") == "Foo"
+            assert srv.fm_list("aliases: [Bar, Baz]  # inline\n", "aliases") == ["Bar", "Baz"]
+        finally:
+            srv.WIKI = old
+    print("ok test_article_tier_strips_tier_comment")
 
 
 def test_add_default_appends_and_flags_stale():
