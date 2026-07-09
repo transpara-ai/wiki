@@ -53,8 +53,18 @@ authored directly in this repo through cross-family-gated PRs rather than
 ingested: their provenance is the git history of the gated PR that landed them,
 plus each document's own frontmatter (doc id, version) and the citing article's
 `raw_documents` entry (which records the content sha256); they are deliberately
-outside `raw/inbox/manifest.jsonl`, which remains the exclusive ledger of the
-authorized ingest machinery (see issues #50/#52 for the sanctioned-path work). Do not read an empty
+outside the ingest machinery's ledger surface — `raw/inbox/manifest.jsonl`
+(browser-ingest rows) plus, since the #50 register path shipped, per-operation
+`raw/inbox/manifest.d/*` shards and the `compile/ingest-ledger.jsonl` operation
+rows — all of which remain the exclusive domain of the authorized ingest
+machinery (see issues #50/#52 for the sanctioned-path work).
+Once a revision in this tier is registered via the #50 register path (the
+durable shard/ledger artifacts live with the ingest service and reach this
+repo through the service's own sync arc), its file is immutable at its
+registered path; a later
+revision lands as a NEW versioned file carrying `supersedes:` frontmatter, and
+may optionally be promoted to the ledgered ref via the authorized replace
+operation — so registered ledger rows stay verifiable forever. Do not read an empty
 `raw/` subdirectory as "no such source" — read it as "not yet mirrored." The
 nightly keep-current job in `DESIGN.md` is what will populate them.
 
@@ -316,3 +326,7 @@ knows what is load-bearing **without anything being excluded** (`DESIGN.md`:
 
 *Manifest authored 2026-06-13 alongside Run-1. Fail-legible by construction: empty
 tiers are declared, not hidden; in-place reads are flagged; estimates are labeled.*
+- 2026-07-07 register: `raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md` (sha256 38b8d05a519c…) recorded for article `owainlewis-blueprint-factory` (authorized by Michael Saucier / owner (in-session instruction 2026-07-07: 'run the curl and test all'))
+- 2026-07-07 remove: topic `owain-lewis-work-system-capability-evaluation` retired — redundant duplicate of the curated owainlewis-blueprint-factory article (concurrent browser ingest 2026-07-07); retired at owner's cleanup instruction (authorized by Michael Saucier / owner (in-session instruction 2026-07-07: 'clean up my redundant data entry'); 0 inbound edge(s) queued)
+- 2026-07-07 register: `raw/inbox/2026-07-07/hermes-agent/tai-res-2026-002-v1.0.1-hermes-agent-self-evolution-evaluation.md` (sha256 46a0499af53c…) recorded for article `hermes-agent` (authorized by Michael Saucier / owner (in-session instructions 2026-07-07: 'run path A, let it complete' + 'finish your work'))
+- 2026-07-07 rename (owner-instructed): two runtime-written inbox files renamed hex-free before first commit — the commit-time pathname scan is non-clearable by design and their sha12-suffixed filenames tripped it (wiki#63 tracks the class). New paths: `raw/inbox/2026-07-07/unassigned/tai-res-2026-003-v1.0.1-google-open-knowledge-format-evaluation.md` (TAI-RES-2026-003 v1.0.1, the OKF classification-corrected supersession) and `raw/inbox/2026-07-07/unassigned/tai-res-2026-006-owainlewis-evaluation-duplicate.md` (the retired-stub duplicate). Content bytes and recorded sha256 values unchanged; manifest/ledger/article path references updated to match. The prior sha12-suffixed paths are preserved in git history and the manifest shards and are deliberately NOT re-quoted here — embedding those filenames is exactly what tripped the scan this note documents.
