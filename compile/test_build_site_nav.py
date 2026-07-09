@@ -152,6 +152,9 @@ def test_multiple_primaries_flagged_and_group_rendered():
     def run():
         cluster = [a for a in _r9_articles() if topics[a["slug"]] == "Sakana AI"]
         assert site.cluster_representative(cluster) is None, ">=2 primaries -> no representative"
+        # the corpus cluster invariant REPORTS the >=2-primary deficiency (AC10/P1)
+        assert site.cluster_primary_deficiency(cluster) == "multiple-active-primaries", \
+            ">=2 active primaries must be flagged, not silently treated as fallback"
         return site.build_investigation_nav(_r9_articles(), "eval")
     nav = _with_r9(topics, {"eval", "adjacent"}, run)
     assert '<details class="nav-subgroup"' in nav, "render falls back to the full group"
@@ -167,6 +170,9 @@ def test_retired_primary_falls_back_and_is_flagged():
               {"slug": "adjacent", "title": "Sakana Adjacent", "tier": "investigation"}]
     def run():
         assert site.cluster_representative(active) is None, "no active primary -> no representative"
+        # zero active primaries in a multi-page cluster is flagged (AC10/P1)
+        assert site.cluster_primary_deficiency(active) == "no-active-primary", \
+            "an active cluster with no active primary must be flagged"
         return site.build_investigation_nav(active, "eval")
     nav = _with_r9(topics, {"retired-primary"}, run)  # designated primary is retired/absent
     assert '<details class="nav-subgroup"' in nav
@@ -225,19 +231,24 @@ def test_investigation_primary_strict_boolean():
     cases = {
         "t1": "investigation_primary: true\n",
         "t2": 'investigation_primary: "true"\n',
+        "t3": "investigation_primary: true  # the canonical primary\n",
         "f1": "investigation_primary: false\n",
         "f2": 'investigation_primary: "false"\n',
         "f3": "investigation_primary: yes\n",
         "f4": "investigation_primary: 1\n",
         "f5": "investigation_primary:\n",
         "f6": "entity: x\n",
+        "f7": "investigation_primary: TRUE\n",
+        "f8": "investigation_primary: True\n",
     }
     old = site.article_frontmatter
     try:
         site.article_frontmatter = lambda slug: cases.get(slug, "")
         assert site.investigation_primary_flag("t1") is True
         assert site.investigation_primary_flag("t2") is True
-        for s in ("f1", "f2", "f3", "f4", "f5", "f6"):
+        assert site.investigation_primary_flag("t3") is True, "a trailing comment doesn't change true"
+        # CFAR (Codex): case-variant TRUE/True are NOT primary (exact == "true")
+        for s in ("f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8"):
             assert site.investigation_primary_flag(s) is False, "%s must NOT be primary" % s
     finally:
         site.article_frontmatter = old

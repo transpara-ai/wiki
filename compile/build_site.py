@@ -1187,11 +1187,13 @@ def investigation_topic_for(slug, meta):
 
 
 def investigation_primary_flag(slug):
-    # R9: strict boolean — only the literal `true` scalar marks the primary page
-    # of a multi-page investigation cluster. `false`, `"false"`, `yes`, `1`, an
-    # empty value, or an absent key are all NOT primary, so a malformed flag can
+    # R9: strict boolean — ONLY the exact `true` scalar (bare or quoted, comment
+    # stripped) marks the primary page of a multi-page investigation cluster. The
+    # match is case-SENSITIVE: `TRUE`/`True`, `false`, `"false"`, `yes`, `1`, an
+    # empty value, or an absent key are all NOT primary (CFADA-r19 #39; CFAR:
+    # Codex — a malformed flag must never trigger the lossy collapse), so it can
     # only ever fail to collapse (show all) — it can never hide a page.
-    return fm_scalar(article_frontmatter(slug), "investigation_primary").lower() == "true"
+    return fm_scalar(article_frontmatter(slug), "investigation_primary") == "true"
 
 
 def cluster_representative(articles):
@@ -1203,6 +1205,27 @@ def cluster_representative(articles):
         return None
     primaries = [a for a in articles if investigation_primary_flag(a["slug"])]
     return primaries[0] if len(primaries) == 1 else None
+
+
+def cluster_primary_deficiency(articles):
+    """R9/§2.5 corpus cluster primary invariant: a multi-page cluster (>=2 active
+    members) must carry EXACTLY ONE active investigation_primary. Returns a
+    deficiency tag — 'no-active-primary' (zero) or 'multiple-active-primaries'
+    (>=2) — for a misconfigured multi-page cluster, or '' when valid (exactly one)
+    or not a multi-page cluster. This is corpus-level (needs cross-page counts),
+    distinct from the per-page investigation_conformance and complementary to
+    cluster_representative (which returns None for BOTH the 0 and >=2 render
+    fallbacks). The Phase-2 corpus gate enumerates live clusters and asserts this
+    is '' for every one (AC10; CFAR: Codex — the >=2 case must be reported, not
+    silently treated as a normal fallback)."""
+    if len(articles) < 2:
+        return ""
+    primaries = [a for a in articles if investigation_primary_flag(a["slug"])]
+    if not primaries:
+        return "no-active-primary"
+    if len(primaries) >= 2:
+        return "multiple-active-primaries"
+    return ""
 
 
 def raw_doc_count_for_articles(articles):
