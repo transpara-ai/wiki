@@ -765,10 +765,15 @@ def test_ingest_guard_domain():
             #     created regardless of any doc's title (see AC5 for the creator).
             # (i) distinct entities may share a cluster: a genuinely new name is
             #     still allowed even though the Sakana cluster exists — via (j).
-            # (j) absent subject -> create
+            # (j) absent subject WITH a seeding document -> create
             assert route(new_investigation=True, name="Brand New Subject") == "create", \
                 "(j) absent subject creates"
             assert srv.subject_absent("Brand New Subject") is True
+            # (k) a new investigation with NO uploaded document refuses (a create
+            #     needs a raw doc to seed the page) — write-free, fail-closed.
+            assert _refuses(lambda: srv.resolve_ingest_route(
+                new_investigation=True, target_slug="", name="Brand New Subject",
+                has_document=False)), "(k) new investigation without a document refuses"
         finally:
             srv.ROOT, srv.WIKI = old_root, old_wiki
     print("ok test_ingest_guard_domain")

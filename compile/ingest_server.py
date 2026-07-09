@@ -381,12 +381,13 @@ def form_flag(form, name):
     return first_value(form, name).strip().lower() in {"true", "on", "1", "yes"}
 
 
-def resolve_ingest_route(*, new_investigation, target_slug, name):
+def resolve_ingest_route(*, new_investigation, target_slug, name, has_document=True):
     """Fail-closed ingest router (R1/R5/R6/§2.4). Returns "create" for an explicit
-    new investigation whose name is valid AND whose subject is proven absent, or
-    "append" to add to an existing ACTIVE page (any tier); otherwise raises
-    OpRefused. The ONLY create branch is new_investigation AND a valid name AND the
-    subject proven absent — every other path appends or refuses, and there is no
+    new investigation whose name is valid, that carries a document to seed the
+    page, AND whose subject is proven absent, or "append" to add to an existing
+    ACTIVE page (any tier); otherwise raises OpRefused. The ONLY create branch is
+    new_investigation AND a valid name AND a seeding document AND the subject
+    proven absent — every other path appends or refuses, and there is no
     else/fall-through that creates. For "append" the caller uses target_slug (here
     proven to exist and be active); for "create" the caller derives the slug from
     the name via prospective_unassigned_slug (lockstep with the creator)."""
@@ -395,6 +396,10 @@ def resolve_ingest_route(*, new_investigation, target_slug, name):
             raise ingest_ops.OpRefused(
                 "a new investigation requires a name that yields a slug and a "
                 "non-empty collision key")
+        if not has_document:
+            raise ingest_ops.OpRefused(
+                "a new investigation requires at least one uploaded document to "
+                "seed the page")
         if not subject_absent(name):
             raise ingest_ops.OpRefused(
                 "an investigation for this subject already exists "
@@ -990,7 +995,7 @@ class IngestHandler(SimpleHTTPRequestHandler):
             # race-free against a concurrent Remove (CFAR r11–r14).
             route = resolve_ingest_route(
                 new_investigation=new_investigation, target_slug=target_slug,
-                name=raw_name)
+                name=raw_name, has_document=any_document)
             created_article = {"slug": "", "created": False}
             if route == "create":
                 # the operator NAME drives the slug (lockstep with the creator);
