@@ -18,16 +18,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # pull_request_target runs with a privileged token (statuses: write). Check
-      # out the BASE commit the event fired against (base.sha) — never the PR head,
-      # and pinned to a SHA so a base-branch advance before this queued run starts
-      # cannot swap in a different (or moved-away) revision. We only ever run
-      # trusted, already-reviewed code; a PR editing the seed script cannot affect
-      # its own seed run (it takes effect only after merge, i.e. after CFAR).
+      # pull_request_target runs the BASE-branch workflow with a privileged token
+      # (statuses: write). Check out github.sha — for pull_request_target this is
+      # the last commit on the base branch, i.e. the exact revision this workflow
+      # is running from. That is NOT the PR head (so no untrusted PR code runs),
+      # NOT the PR's possibly-stale base.sha (a long-lived PR's old base may lack
+      # this script and fail the job), and is fixed for the run (no drift): the
+      # seed script is therefore always present and trusted.
       - name: Check out trusted base-branch code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Seed or preserve cross-family review status
         env:
