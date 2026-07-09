@@ -2802,7 +2802,8 @@ def test_new_investigation_ingest_ignores_supersedes():
             srv.subprocess.Popen = lambda *a, **k: _FakeProc()
             ctype, body = _multipart(
                 {"new_investigation": "true", "name": "Fresh Subject",
-                 "supersedes": "raw/inbox/2026-01-01/other/OTHER-Evaluation.md"},
+                 "supersedes": "raw/inbox/2026-01-01/other/OTHER-Evaluation.md",
+                 "external_urls": "https://example.com/fresh"},
                 "seed.md", b"# seed\n\nbody\n", field_name="documents")
             h = make_handler("/api/ingest", body=body, content_type=ctype)
             srv.IngestHandler.do_POST(h)
@@ -2811,6 +2812,11 @@ def test_new_investigation_ingest_ignores_supersedes():
             assert page.exists(), "the new investigation was created"
             assert "supersedes:" not in page.read_text(), \
                 "a create records no supersedes provenance"
+            # the stray supersedes ref must not persist ANYWHERE for a create —
+            # not the article, not the URL manifest shard, not the ledger.
+            leaked = [str(p.relative_to(root)) for p in root.rglob("*")
+                      if p.is_file() and "OTHER-Evaluation.md" in p.read_text(errors="ignore")]
+            assert not leaked, "stray supersedes leaked into: %s" % leaked
         finally:
             (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
              srv.subprocess.Popen) = old

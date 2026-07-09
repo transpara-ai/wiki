@@ -1035,7 +1035,7 @@ class IngestHandler(SimpleHTTPRequestHandler):
                     "target_slug": target_slug,
                     "source_url": url,
                     "note": note,
-                    "supersedes": supersedes,
+                    "supersedes": add_supersedes,  # "" for a create (CFAR: Codex)
                 })
             refresh = run_refresh_unlocked()
             ingest_ops.append_ledger(ROOT / "compile" / "ingest-ledger.jsonl", {
