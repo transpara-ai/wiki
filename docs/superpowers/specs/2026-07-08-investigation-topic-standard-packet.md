@@ -3,7 +3,7 @@ doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
 version: 0.10.0
-status: AMENDED (v0.10.0, 2026-07-09) — folds in R9 (a single nav entry per investigation via `investigation_primary`) and revises R8's Sakana nav, per Michael's 2026-07-09 channel-A nav-semantics decision (Option A). Per the TLC truth-object rule this MUTATION STRANDS the v0.9.7 CFADA PASS (blob 4bd40ec07c17360328df9da5c8fead0bab890d83) on the old bytes; v0.10.0 is NOT a passed gate and must re-run IADA → CFADA before returning to Human Design Review (stage 6). No code before Michael approves the re-audited packet.
+status: AMENDED v0.10.0 — CFADA re-PASS (2026-07-09): folds in R9 (single nav entry via `investigation_primary`) + revises R8 per Michael's Option-A nav decision; IADA + CFADA re-run (7 amendment rounds 17–23, findings C35–C46 all repaired) returned 0 design blockers at the round-23-audited blob f54544fa444774a2ea12e03843d426563afd9ce1. READY for Human Design Review (stage 6). No code before Michael approves.
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -598,15 +598,33 @@ All three accepted-repaired (0 rejected, 0 waived); round 22 re-audited the new 
 | C45 (P2) | The C43 MemPalace supersession-marking fix broke AC8's "exactly TWO render changes" claim — marking the older MemPalace versions is a THIRD change, so AC1 and AC8 could not both pass | accepted-repaired — AC8 now expects exactly three changes (label, `.toc` removal, supersession markers); test renamed `test_mempalace_render_diff_is_label_toc_and_supersession`. |
 | C46 (P2) | C42 clarified the hex-free scope in the packet, but the FO constraint line still read as a normative sha12 ban; the FO binds, so implementers following it get contradictory instructions | accepted-repaired — the FO constraint narrowed to BARE-hex session-authored/renamed names; the browser descriptive-stem+sha12 scheme is named pre-existing and unchanged. FO → v0.3.0 rev (blob re-pinned). |
 
-Both accepted-repaired (0 rejected, 0 waived); round 23 re-audits the new blob SHA. **Amendment CFADA verdict: PENDING round-23 re-review** (this section is the round record, not a PASS).
+Both accepted-repaired (0 rejected, 0 waived); round 23 re-audited the new blob SHA.
 
-## Appendix — CFADA VERDICT
+**Round 23 → PASS (amendment round 7)** — audited packet blob `f54544fa444774a2ea12e03843d426563afd9ce1` (HEAD `45b1151`, the r22-repaired state): **0 design blockers** — Codex "did not find an actionable inconsistency or implementation-breaking issue introduced by these documents." The r22 repairs (AC8 three-way diff, FO hex-free narrow) are confirmed clean.
+
+### Amendment CFADA VERDICT — PASS
+
+**gate: CFADA — PASS, 0 design blockers** (the v0.10.0 amendment). Author family: **Claude (Opus 4.8)**. Reviewer family: **Codex** (`codex-cli 0.142.5`, gpt-5.5, xhigh) — materially independent of the author lineage (provider openai). Command: `codex exec review --base origin/main`, bare, from the worktree; **7 amendment rounds (17–23)**.
+
+**Packet binding (gate credit):** the round-23-audited bytes — v0.10.0, packet blob `f54544fa444774a2ea12e03843d426563afd9ce1` (HEAD `45b1151`) — which returned **zero design blockers**. Any post-pass bookkeeping note is documentation; per the truth-object rule credit attaches to those audited bytes.
+
+**FO binding:** FO-WIKI-INVESTIGATION-STANDARD v0.3.1, blob `62abaf4e9a5909c8003379a95046bdc408402b25`.
+
+**Three fidelities:** internal coherence **PASS** (every contradiction found across rounds 17–23 repaired — the R9 nav mechanism, both nav surfaces, strict-boolean parse, the render-driving conformance set, ADD-supersedes marking, AC8/hex-free reconciliation); packet-vs-FO **PASS** (R9 traces to FO R9; R1–R8 unchanged in intent; the amendment names its new scope); FO-vs-source **PASS** (R9 derives from Michael's archived 2026-07-09 Option-A nav decision, FO §5).
+
+**Journey:** IADA (6 repairs) → CFADA rounds 17–23. Findings **C35–C46** (12), all **accepted-repaired** (0 rejected, 0 waived); round 23 clean. Notable: C38 (a second nav surface, `build_navbox`), C39 (string-truthiness fail-open), and two fix-induced regressions caught and reconciled (C41, C45).
+
+**Non-authorizations:** this CFADA PASS authorizes no code, grants no authority, marks no PR ready, closes no issue/risk, and does not substitute for Human Design Review. Code begins only after Human Design Review (stage 6, Michael) approves.
+
+**Ready for Human Design Review (stage 6): YES** — 0 design blockers at the audited v0.10.0 bytes.
+
+## Appendix — CFADA VERDICT (v0.9.7, historical)
 
 > ⚠️ **SUPERSEDED BY AMENDMENT v0.10.0 (2026-07-09).** The PASS recorded below
 > binds to the **v0.9.7** bytes (blob `4bd40ec07c17360328df9da5c8fead0bab890d83`)
 > and does **not** cover v0.10.0's R9/R8 amendment. It is retained as the
 > historical gate record for v0.9.7; the amended packet re-runs IADA → CFADA
-> (see the Amendment log above). Gate state at v0.10.0: **re-audit pending.**
+> (see the Amendment log above). Gate state at v0.10.0: **re-PASS — 0 blockers at the round-23 blob `f54544fa444774a2ea12e03843d426563afd9ce1`; see the Amendment CFADA VERDICT above.**
 
 **gate: CFADA — PASS, 0 design blockers.** Author family: **Claude (Opus 4.8)**. Reviewer family: **Codex** (`codex-cli 0.142.5`, gpt-5.5, xhigh) — materially independent of the author lineage (independence floor satisfied; provider openai). Command: `codex exec review --base origin/main`, bare, from the worktree; **16 rounds**.
 
