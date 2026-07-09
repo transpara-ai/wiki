@@ -9,7 +9,7 @@
     "test:unit": "node --test tests/arcView.test.js tests/ontology.test.js",
     "test:dom": "node tests/arc-dom-smoke.test.js && node tests/ingest-ux-dom.test.js",
     "test:browser": "playwright install chromium && playwright test",
-    "test:py": "python3 compile/test_live_reader_correction.py && python3 compile/test_inflight.py && python3 compile/test_ingest_server.py && python3 compile/test_build_site_security.py && python3 compile/test_build_site_nav.py && python3 compile/test_build_site_investigation.py && python3 compile/test_stats.py && python3 compile/test_refresh.py && python3 compile/test_build_site_board.py && python3 compile/test_secret_scan.py && python3 compile/test_build_site_arc.py && python3 compile/test_ingest_ops.py && python3 tests/inflight.test.py && python3 compile/test_ingest_ux.py",
+    "test:py": "python3 compile/test_live_reader_correction.py && python3 compile/test_inflight.py && python3 compile/test_ingest_server.py && python3 compile/test_build_site_security.py && python3 compile/test_build_site_nav.py && python3 compile/test_build_site_investigation.py && python3 compile/test_stats.py && python3 compile/test_refresh.py && python3 compile/test_build_site_board.py && python3 compile/test_secret_scan.py && python3 compile/test_build_site_arc.py && python3 compile/test_ingest_ops.py && python3 tests/inflight.test.py && python3 compile/test_ingest_ux.py && python3 compile/test_seed_cross_family_status.py",
     "verify": "npm run build && npm run test:js && npm run test:unit && npm run test:py && npm run test:dom && npm run test:browser"
   },
   "devDependencies": {
