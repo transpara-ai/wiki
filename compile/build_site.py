@@ -989,6 +989,25 @@ def investigation_topic_for(slug, meta):
     return fm_val(fm, "investigation_topic")
 
 
+def investigation_primary_flag(slug):
+    # R9: strict boolean — only the literal `true` scalar marks the primary page
+    # of a multi-page investigation cluster. `false`, `"false"`, `yes`, `1`, an
+    # empty value, or an absent key are all NOT primary, so a malformed flag can
+    # only ever fail to collapse (show all) — it can never hide a page.
+    return fm_val(article_frontmatter(slug), "investigation_primary").lower() == "true"
+
+
+def cluster_representative(articles):
+    # R9: for a multi-page investigation_topic cluster (>=2 active members),
+    # return the single active investigation_primary member (the one nav entry)
+    # iff EXACTLY ONE exists; else None -> show every member (fail-safe: 0 or >=2
+    # active primaries never hides a page). Single-page topics (<2) -> None.
+    if len(articles) < 2:
+        return None
+    primaries = [a for a in articles if investigation_primary_flag(a["slug"])]
+    return primaries[0] if len(primaries) == 1 else None
+
+
 def raw_doc_count_for_articles(articles):
     docs = set()
     for article in articles:
@@ -1423,15 +1442,20 @@ def build_investigation_nav(arts, current):
     out = []
     for topic in sorted(grouped, key=str.lower):
         articles = sorted(grouped[topic], key=lambda a: a["title"].lower())
-        if len(articles) == 1:
-            article = articles[0]
-            cls = ' class="current"' if article["slug"] == current else ""
+        # R9: a single-page topic, OR a multi-page cluster with exactly one active
+        # investigation_primary, renders as ONE flat row (linking the primary,
+        # labeled by the topic); a multi-page cluster with 0 or >=2 active primaries
+        # falls through to the expandable group below (fail-safe — no page is hidden
+        # without a unique active primary).
+        single = articles[0] if len(articles) == 1 else cluster_representative(articles)
+        if single is not None:
+            cls = ' class="current"' if single["slug"] == current else ""
             # Preserve the count the collapsible topic group showed before collapsing.
             count = raw_doc_count_for_articles(articles)
             count_html = '<em>%d</em>' % count if count else ""
             marker = nav_contribution_marker(articles)
             out.append('<li class="nav-article-row"><a%s href="%s.html" title="%s">%s</a>%s%s</li>' %
-                       (cls, article["slug"], html.escape(article["title"]), html.escape(topic), marker, count_html))
+                       (cls, single["slug"], html.escape(single["title"]), html.escape(topic), marker, count_html))
             continue
         open_attr = " open" if any(a["slug"] == current for a in articles) else ""
         marker = nav_contribution_marker(articles)
@@ -1494,6 +1518,25 @@ def build_sidebar(current, current_repo=""):
     return "".join(out)
 
 
+def navbox_investigation_reps(arts):
+    # R9: collapse each multi-page investigation_topic cluster to its single active
+    # primary in the bottom navbox index, mirroring the sidebar nav via the shared
+    # cluster_representative selection so the two surfaces cannot diverge. Single-page
+    # topics, no-topic articles, and clusters without a single primary keep every
+    # member (fail-safe).
+    grouped = {}
+    for a in arts:
+        topic = investigation_topic_for(a["slug"], a)
+        if topic:
+            grouped.setdefault(topic, []).append(a)
+    hidden = set()
+    for members in grouped.values():
+        rep = cluster_representative(members)
+        if rep is not None:
+            hidden.update(a["slug"] for a in members if a["slug"] != rep["slug"])
+    return [a for a in arts if a["slug"] not in hidden]
+
+
 def build_navbox():
     out = ['<nav class="navbox"><div class="navbox-title">%s — index</div><div class="navbox-body">' % html.escape(SITE_NAME)]
     for tier in TIER_ORDER:
@@ -1502,6 +1545,8 @@ def build_navbox():
                       key=lambda m: m["title"].lower())
         if not arts:
             continue
+        if tier == "investigation":
+            arts = navbox_investigation_reps(arts)
         links = " · ".join('<a href="%s.html">%s</a>' % (a["slug"], html.escape(a["title"])) for a in arts)
         out.append('<div class="navbox-row"><span class="navbox-grp">%s</span><span class="navbox-list">%s</span></div>'
                    % (html.escape(TIER_LABEL.get(tier, tier)), links))

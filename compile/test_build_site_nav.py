@@ -106,6 +106,117 @@ def test_single_article_topics_render_as_direct_rows_and_multi_topics_stay_group
     print("ok test_single_article_topics_render_as_direct_rows_and_multi_topics_stay_grouped")
 
 
+# ---- R9 / AC10 — single nav entry per investigation (investigation_primary) ----
+
+def _r9_articles():
+    return [
+        {"slug": "eval", "title": "Sakana Eval", "tier": "investigation"},
+        {"slug": "adjacent", "title": "Sakana Adjacent", "tier": "investigation"},
+        {"slug": "solo", "title": "Solo Topic", "tier": "investigation"},
+    ]
+
+
+def _with_r9(topics, primaries, fn):
+    old = (site.investigation_topic_for, site.investigation_primary_flag,
+           site.raw_doc_count_for_articles, site.nav_contribution_marker)
+    try:
+        site.investigation_topic_for = lambda slug, meta=None: topics.get(slug, "")
+        site.investigation_primary_flag = lambda slug: slug in primaries
+        site.raw_doc_count_for_articles = lambda arts: len(arts)
+        site.nav_contribution_marker = lambda arts: ""
+        return fn()
+    finally:
+        (site.investigation_topic_for, site.investigation_primary_flag,
+         site.raw_doc_count_for_articles, site.nav_contribution_marker) = old
+
+
+def test_multipage_cluster_with_primary_renders_single_row():
+    topics = {"eval": "Sakana AI", "adjacent": "Sakana AI", "solo": "Solo"}
+    nav = _with_r9(topics, {"eval"}, lambda: site.build_investigation_nav(_r9_articles(), "eval"))
+    assert 'href="eval.html"' in nav and '>Sakana AI</a>' in nav, "primary row labeled by topic"
+    assert 'href="adjacent.html"' not in nav, "companion omitted from the nav"
+    assert '<details class="nav-subgroup"' not in nav, "collapsed to a flat row, not a group"
+    print("ok test_multipage_cluster_with_primary_renders_single_row")
+
+
+def test_cluster_without_primary_falls_back_to_group():
+    topics = {"eval": "Sakana AI", "adjacent": "Sakana AI", "solo": "Solo"}
+    nav = _with_r9(topics, set(), lambda: site.build_investigation_nav(_r9_articles(), "eval"))
+    assert '<details class="nav-subgroup"' in nav, "0 primaries -> fail-safe expandable group"
+    assert 'href="eval.html"' in nav and 'href="adjacent.html"' in nav, "both members shown"
+    print("ok test_cluster_without_primary_falls_back_to_group")
+
+
+def test_multiple_primaries_flagged_and_group_rendered():
+    topics = {"eval": "Sakana AI", "adjacent": "Sakana AI", "solo": "Solo"}
+    def run():
+        cluster = [a for a in _r9_articles() if topics[a["slug"]] == "Sakana AI"]
+        assert site.cluster_representative(cluster) is None, ">=2 primaries -> no representative"
+        return site.build_investigation_nav(_r9_articles(), "eval")
+    nav = _with_r9(topics, {"eval", "adjacent"}, run)
+    assert '<details class="nav-subgroup"' in nav, "render falls back to the full group"
+    assert 'href="eval.html"' in nav and 'href="adjacent.html"' in nav
+    print("ok test_multiple_primaries_flagged_and_group_rendered")
+
+
+def test_retired_primary_falls_back_and_is_flagged():
+    # a retired primary is absent from the active `arts`; the active members have
+    # no primary -> no representative -> fail-safe group (the corpus check flags it).
+    topics = {"eval": "Sakana AI", "adjacent": "Sakana AI"}
+    active = [{"slug": "eval", "title": "Sakana Eval", "tier": "investigation"},
+              {"slug": "adjacent", "title": "Sakana Adjacent", "tier": "investigation"}]
+    def run():
+        assert site.cluster_representative(active) is None, "no active primary -> no representative"
+        return site.build_investigation_nav(active, "eval")
+    nav = _with_r9(topics, {"retired-primary"}, run)  # designated primary is retired/absent
+    assert '<details class="nav-subgroup"' in nav
+    assert 'href="eval.html"' in nav and 'href="adjacent.html"' in nav
+    print("ok test_retired_primary_falls_back_and_is_flagged")
+
+
+def test_stray_primary_on_single_page_is_inert():
+    # investigation_primary on a single-page topic has no effect: still one flat
+    # row (the single-article path); the collapse requires >=2 members.
+    topics = {"solo": "Solo"}
+    arts = [{"slug": "solo", "title": "Solo Topic", "tier": "investigation"}]
+    nav = _with_r9(topics, {"solo"}, lambda: site.build_investigation_nav(arts, "solo"))
+    assert 'href="solo.html"' in nav
+    assert '<details class="nav-subgroup"' not in nav
+    print("ok test_stray_primary_on_single_page_is_inert")
+
+
+def test_navbox_investigation_row_collapses_by_primary():
+    topics = {"eval": "Sakana AI", "adjacent": "Sakana AI", "solo": "Solo"}
+    reps = _with_r9(topics, {"eval"}, lambda: site.navbox_investigation_reps(_r9_articles()))
+    slugs = [a["slug"] for a in reps]
+    assert "eval" in slugs and "solo" in slugs, "primary + single-page topic kept"
+    assert "adjacent" not in slugs, "non-primary companion collapsed out of the navbox"
+    print("ok test_navbox_investigation_row_collapses_by_primary")
+
+
+def test_investigation_primary_strict_boolean():
+    cases = {
+        "t1": "investigation_primary: true\n",
+        "t2": 'investigation_primary: "true"\n',
+        "f1": "investigation_primary: false\n",
+        "f2": 'investigation_primary: "false"\n',
+        "f3": "investigation_primary: yes\n",
+        "f4": "investigation_primary: 1\n",
+        "f5": "investigation_primary:\n",
+        "f6": "entity: x\n",
+    }
+    old = site.article_frontmatter
+    try:
+        site.article_frontmatter = lambda slug: cases.get(slug, "")
+        assert site.investigation_primary_flag("t1") is True
+        assert site.investigation_primary_flag("t2") is True
+        for s in ("f1", "f2", "f3", "f4", "f5", "f6"):
+            assert site.investigation_primary_flag(s) is False, "%s must NOT be primary" % s
+    finally:
+        site.article_frontmatter = old
+    print("ok test_investigation_primary_strict_boolean")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
