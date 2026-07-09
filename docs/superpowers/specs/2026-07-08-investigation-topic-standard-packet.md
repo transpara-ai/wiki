@@ -11,7 +11,7 @@ owner: Michael Saucier
 steward: Claude (Opus 4.8)
 authority: planning
 tlc_stage: design
-factory_order: FO-WIKI-INVESTIGATION-STANDARD v0.3.0 (blob pinned at the amendment commit; supersedes v0.2.3 blob 20d4f35f89299e0da0f0d96cc8b65fb09fe5628e; v0.3.0 adds R9 + revises R8 per Michael's 2026-07-09 nav decision)
+factory_order: FO-WIKI-INVESTIGATION-STANDARD v0.3.0 (blob ca2999622ff46e0ab45bfc06294ffb11e45e98ad; supersedes v0.2.3 blob 20d4f35f89299e0da0f0d96cc8b65fb09fe5628e; v0.3.0 adds R9 + revises R8 per Michael's 2026-07-09 nav decision)
 source_of_intent:
   - the Factory Order above (its §4 archives Michael's request verbatim; §5 archives the intake answers)
   - wiki/mempalace.md (blob a9a9bc6bc83b01a9ba27776bb179e6d8b16de96c) — the content exemplar
@@ -282,7 +282,10 @@ so the ingest fail-closed guard and its pre-write quarantine set are unchanged.
 **Fail-safe statement (R9).** The ONLY branch that removes a page from the
 investigation nav is a multi-member cluster with exactly one active
 `investigation_primary`. Zero or ≥2 → show all. No `else`/fall-through hides a
-page. AC10 proves the domain.
+page. `investigation_primary` is honored only as the strict boolean `true`; any
+other value (absent, `false`, or non-boolean) counts as not-primary, so a
+malformed flag can only ever ADD to the zero-primary (show-all) tally — it can
+never hide a page. AC10 proves the domain.
 
 ## 3. Acceptance criteria & named tests
 
@@ -297,7 +300,7 @@ page. AC10 proves the domain.
 | AC7 | 1 | Builder imports no network/model client; a `stale_since` page renders the banner until cleared, with reason-neutral text (no Replace-specific "sources were replaced"/"authorization" wording) (med) | py: `test_builder_has_no_network_client`, `test_stale_banner_is_reason_neutral` |
 | AC8 | 1 | MemPalace's rendered HTML changes in exactly two ways — the infobox label and the removed `.toc` — no other: all 8 headings + contribution box still present (med) | py: `test_mempalace_render_diff_is_label_and_toc_only` |
 | AC9 | 1 & 2 | Every new/edited Python test above is wired into `package.json` `test:py` (or lands in an already-wired module); full chain green, zero regression (low) | `npm run verify` exit 0 at each PR's reviewed head; `test_py_targets_are_wired` asserts the module list runs the new tests |
-| AC10 | 1 → 2 | **R9 nav single-entry (P1, in the wired `test_build_site_nav.py`):** a multi-member `investigation_topic` fixture with exactly one active `investigation_primary` renders ONE flat nav row (primary link, no child rows); a zero-primary multi-member fixture renders the expandable group with every active child (fail-safe); a two-primary fixture renders the group AND is flagged by the cluster primary invariant; a stray `investigation_primary` on a single-page topic is inert. **P2 (live corpus):** Sakana renders as a single primary nav row (`sakana-ai-evaluation` primary; `sakana-ai-adjacent-landscape` omitted from top-level nav yet reachable), the primary carries the editorial cross-link, and exactly one active primary exists in the cluster (med) | py: `test_multipage_cluster_with_primary_renders_single_row`, `test_cluster_without_primary_falls_back_to_group`, `test_multiple_primaries_flagged_and_group_rendered`, `test_stray_primary_on_single_page_is_inert` (P1); `test_sakana_renders_single_primary_row`, `test_sakana_companion_reachable_and_cross_linked` (P2) |
+| AC10 | 1 → 2 | **R9 nav single-entry (P1, in the wired `test_build_site_nav.py`):** a multi-member `investigation_topic` fixture with exactly one active `investigation_primary` renders ONE flat nav row (primary link, no child rows); a zero-primary multi-member fixture renders the expandable group with every active child (fail-safe); a two-primary fixture renders the group AND the conformance predicate returns the deficiency; a cluster whose only primary is retired → zero active primaries → group fallback AND flagged "active cluster, no active primary"; a stray `investigation_primary` on a single-page topic is inert. **P2 (live corpus):** every live-enumerated multi-page cluster (Sakana today: `sakana-ai-evaluation` primary, `sakana-ai-adjacent-landscape` omitted from the top-level nav yet reachable) has exactly one active `investigation_primary`, renders as a single primary nav row, and its primary carries the editorial cross-link to each companion (med) | py: `test_multipage_cluster_with_primary_renders_single_row`, `test_cluster_without_primary_falls_back_to_group`, `test_multiple_primaries_flagged_and_group_rendered`, `test_retired_primary_falls_back_and_is_flagged`, `test_stray_primary_on_single_page_is_inert` (P1); `test_all_multipage_clusters_have_exactly_one_primary`, `test_sakana_renders_single_primary_row`, `test_sakana_companion_reachable_and_cross_linked` (P2) |
 
 **Gate satisfied-only-when (allowlist, phase-total):** every AC carries an
 explicit, mandatory obligation per phase (AC6 and AC10 split into P1/P2 halves;
@@ -357,8 +360,9 @@ satisfied (IADA-I4).
   primary page's companion has reduced NAV discoverability (off the top-level
   list); mitigated by search + direct link + the required editorial cross-link
   from the primary (AC10/P2), and fully reversible (drop `investigation_primary`
-  to restore the expandable group). Fail-closed direction: absent a primary the
-  group shows all (amendment 2026-07-09).
+  to restore the expandable group). Owner-accepted: Michael chose Option A over
+  the discoverability-preserving Option B (FO §5). Fail-closed direction: absent
+  a primary the group shows all (amendment 2026-07-09).
 
 ## 6. Two-phase delivery (one FO)
 

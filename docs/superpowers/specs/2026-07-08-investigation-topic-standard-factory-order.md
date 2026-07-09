@@ -254,6 +254,15 @@ Confirm answers (2026-07-09):
   never requires the authorization artifact; the fail-closed duplicate/ambiguity
   guard is the sole gate on page creation/routing (recorded in §2).
 
+**Nav-semantics confirm (2026-07-09, added with v0.3.0/R9).** Asked: for the sole
+genuine multi-page cluster (Sakana), what does "a single entry per investigation"
+render as — (A) one nav row via an `investigation_primary` page, the companion
+reachable but off the top-level nav; or (B) keep both pages as an expandable
+group with the header linking the primary? **Michael chose Option A.** This is
+the source-of-intent for R9 and the R8 revision; the companion's reduced nav
+visibility (packet residual e) was presented and accepted as the tradeoff of
+A over B.
+
 The arc proceeds: design packet → IADA → CFADA → **Human Design Review
 (stage 6, Michael — required before any code)** → build → draft PR → IAR →
 CFAR → ready. Merge remains stage 12, Michael only.
