@@ -679,6 +679,269 @@ def test_article_records_expose_raw_documents_for_replace():
 
 
 
+# ============================================================================
+# Investigation Topic Standard — R5/R6/R1 ingest ADD-default + fail-closed guard
+# (AC3, AC4, AC5)
+# ============================================================================
+
+def _refuses(fn):
+    try:
+        fn()
+        return False
+    except srv.ingest_ops.OpRefused:
+        return True
+
+
+def _guard_corpus(wiki):
+    """A fixture corpus exercising every collision surface: an active
+    single-page investigation with alias variants, a two-page cluster sharing an
+    investigation_topic, a retired tombstone (entity + alias), a plain slug
+    collision target, and a non-investigation page."""
+    (wiki / "mempalace.md").write_text(
+        "---\nentity: MemPalace\naliases:\n  - MemPalace\n  - mempalace\n"
+        "  - Mem Palace\ntier: investigation\nstatus: compiled\n---\n\n# MemPalace\n")
+    (wiki / "sakana-ai-evaluation.md").write_text(
+        "---\nentity: Sakana AI Evaluation\ntier: investigation\n"
+        "investigation_topic: Sakana AI\nstatus: compiled\n---\n\n# Sakana AI Evaluation\n")
+    (wiki / "sakana-ai-adjacent-landscape.md").write_text(
+        "---\nentity: Sakana AI Adjacent Landscape\ntier: investigation\n"
+        "investigation_topic: Sakana AI\nstatus: compiled\n---\n\n# Sakana AI Adjacent Landscape\n")
+    (wiki / "owainlewis-eval.md").write_text(
+        "---\nentity: OwainLewis\naliases:\n  - TAI-RES-2026-006\ntier: investigation\n"
+        'retired_on: "2026-07-07"\nretired_reason: "duplicate"\n---\n\n# OwainLewis\n\nRetired.\n')
+    (wiki / "foo.md").write_text(
+        "---\nentity: Foo\ntier: investigation\nstatus: compiled\n---\n\n# Foo\n")
+    (wiki / "architecture-overview.md").write_text(
+        "---\nentity: Architecture Overview\ntier: architecture\nstatus: compiled\n---\n\n# Architecture Overview\n")
+
+
+def test_ingest_guard_domain():
+    """AC4: the fail-closed router across its full domain (cases a–j). The ONLY
+    branch that creates a page is new_investigation AND a valid name AND the
+    subject proven absent; every other path appends or refuses."""
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        wiki = root / "wiki"
+        wiki.mkdir(parents=True)
+        _guard_corpus(wiki)
+        old_root, old_wiki = srv.ROOT, srv.WIKI
+        try:
+            srv.ROOT, srv.WIKI = root, wiki
+
+            def route(**kw):
+                kw.setdefault("target_slug", "")
+                kw.setdefault("name", "")
+                return srv.resolve_ingest_route(**kw)
+
+            # (a) no target, not new -> refuse
+            assert _refuses(lambda: route(new_investigation=False)), "(a) no target refuses"
+            # (b) retired target -> refuse
+            assert _refuses(lambda: route(new_investigation=False, target_slug="owainlewis-eval")), \
+                "(b) retired target refuses"
+            # (c) non-investigation target -> append (no refuse, no stale later)
+            assert route(new_investigation=False, target_slug="architecture-overview") == "append", \
+                "(c) non-investigation target appends"
+            assert srv.article_tier("architecture-overview") == "architecture"
+            # (d) new-investigation with an empty / slug-less name -> refuse
+            for bad in ("", "!!!", "()", "   "):
+                assert _refuses(lambda: route(new_investigation=True, name=bad)), \
+                    "(d) name %r refuses" % bad
+            # (e) slugify(name) collides an existing slug even though the compact
+            #     key differs ("Foo (Bar)" -> slug foo; compact foobar) -> refuse
+            assert srv.slugify("Foo (Bar)") == "foo" and srv.collision_key("Foo (Bar)") == "foobar"
+            assert _refuses(lambda: route(new_investigation=True, name="Foo (Bar)")), \
+                "(e) generated-slug collision refuses"
+            # (f) compact collision_key variants (case / space / no-space / hyphen /
+            #     parenthesis) all collide
+            for variant in ("Mem Palace", "MEMPALACE", "mem-palace", "Sakana-AI", "Sakana (AI)"):
+                assert _refuses(lambda v=variant: route(new_investigation=True, name=v)), \
+                    "(f) variant %r refuses" % variant
+            # (g) name == an existing cluster label, or a RETIRED entity/alias
+            #     (no reanimation) -> refuse
+            for name in ("Sakana AI", "OwainLewis", "TAI-RES-2026-006"):
+                assert _refuses(lambda n=name: route(new_investigation=True, name=n)), \
+                    "(g) %r refuses" % name
+            # (h) NAME (not the doc title) drives the guard: an absent name is
+            #     created regardless of any doc's title (see AC5 for the creator).
+            # (i) distinct entities may share a cluster: a genuinely new name is
+            #     still allowed even though the Sakana cluster exists — via (j).
+            # (j) absent subject -> create
+            assert route(new_investigation=True, name="Brand New Subject") == "create", \
+                "(j) absent subject creates"
+            assert srv.subject_absent("Brand New Subject") is True
+        finally:
+            srv.ROOT, srv.WIKI = old_root, old_wiki
+    print("ok test_ingest_guard_domain")
+
+
+def test_add_default_appends_and_flags_stale():
+    """AC3: default ADD to an existing investigation page appends sources +
+    raw_documents and stamps stale_since; no new page is created."""
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        wiki = root / "wiki"
+        wiki.mkdir(parents=True)
+        (wiki / "acme.md").write_text(
+            "---\nentity: Acme\ntier: investigation\nstatus: compiled\n"
+            "raw_documents:\n  - raw/inbox/2026-06-01/acme/old.md\n"
+            "sources:\n  - raw/inbox/2026-06-01/acme/old.md\n---\n\n# Acme\n")
+        old_root, old_wiki = srv.ROOT, srv.WIKI
+        try:
+            srv.ROOT, srv.WIKI = root, wiki
+            assert srv.resolve_ingest_route(
+                new_investigation=False, target_slug="acme", name="") == "append"
+            assert srv.article_tier("acme") == "investigation"
+            new_ref = "raw/inbox/2026-07-09/acme/TAI-RES-2026-009-v1.1.0-Acme-Evaluation.md"
+            srv.append_sources_to_article("acme", [new_ref])
+            srv.append_raw_documents_to_article("acme", [new_ref])
+            srv.ingest_ops.set_article_stale(root, "acme", "2026-07-09T10:00:00+00:00")
+            fm, _, _ = srv.split_fm((wiki / "acme.md").read_text())
+            assert new_ref in srv.fm_list(fm, "sources")
+            assert new_ref in srv.fm_list(fm, "raw_documents")
+            assert srv.fm_val(fm, "stale_since") == "2026-07-09T10:00:00+00:00"
+            assert [p.name for p in wiki.glob("*.md")] == ["acme.md"], "no new page created"
+            # the stale stamp is gated on investigation tier in handle_ingest
+            import inspect
+            hsrc = inspect.getsource(srv.IngestHandler.handle_ingest)
+            assert 'article_tier(target_slug) == "investigation"' in hsrc and \
+                "set_article_stale" in hsrc, "stale stamp gated on investigation tier"
+        finally:
+            srv.ROOT, srv.WIKI = old_root, old_wiki
+    print("ok test_add_default_appends_and_flags_stale")
+
+
+def test_add_to_non_investigation_preserves_behavior():
+    """AC3: adding to a NON-investigation page keeps today's behavior — the
+    source is appended and NO stale_since is stamped (the tier gate)."""
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        wiki = root / "wiki"
+        wiki.mkdir(parents=True)
+        (wiki / "arch.md").write_text(
+            "---\nentity: Arch\ntier: architecture\nstatus: compiled\n"
+            "sources:\n  - raw/x.md\n---\n\n# Arch\n")
+        old_root, old_wiki = srv.ROOT, srv.WIKI
+        try:
+            srv.ROOT, srv.WIKI = root, wiki
+            assert srv.resolve_ingest_route(
+                new_investigation=False, target_slug="arch", name="") == "append"
+            assert srv.article_tier("arch") == "architecture"
+            new_ref = "raw/inbox/2026-07-09/arch/TAI-RES-2026-009-v1.0.0-Arch.md"
+            srv.append_sources_to_article("arch", [new_ref])
+            fm, _, _ = srv.split_fm((wiki / "arch.md").read_text())
+            assert new_ref in srv.fm_list(fm, "sources")
+            assert not srv.fm_val(fm, "stale_since"), "non-investigation add gets no stale stamp"
+        finally:
+            srv.ROOT, srv.WIKI = old_root, old_wiki
+    print("ok test_add_to_non_investigation_preserves_behavior")
+
+
+def _seed_source(root):
+    raw = root / "raw" / "inbox" / "2026-07-09" / "acme"
+    raw.mkdir(parents=True)
+    source = raw / "TAI-RES-2026-009-v1.0.0-Acme-Evaluation.md"
+    source.write_text("---\ntitle: A Totally Different Document Title\n"
+                      "version: 1.0.0\n---\n\n# Doc\n\nBody.\n")
+    return str(source.relative_to(root))
+
+
+def test_new_investigation_uses_operator_name():
+    """AC5: the created page is keyed on the OPERATOR NAME, not the doc title."""
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        wiki = root / "wiki"
+        wiki.mkdir(parents=True)
+        old_root, old_wiki = srv.ROOT, srv.WIKI
+        try:
+            srv.ROOT, srv.WIKI = root, wiki
+            rel = _seed_source(root)
+            slug, created = srv.create_article_from_source(rel, name="Chosen Subject")
+            assert created is True and slug == "chosen-subject", slug
+            fm, _, _ = srv.split_fm((wiki / "chosen-subject.md").read_text())
+            assert srv.fm_val(fm, "entity") == "Chosen Subject", "entity is the NAME, not the title"
+        finally:
+            srv.ROOT, srv.WIKI = old_root, old_wiki
+    print("ok test_new_investigation_uses_operator_name")
+
+
+def test_new_investigation_emits_canonical_skeleton():
+    """AC5/AC6: the new-investigation skeleton conforms to the R2 standard, sets
+    stale_since + the exact awaiting-synthesis status, and never auto-populates
+    investigation_topic."""
+    import build_site as site
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        wiki = root / "wiki"
+        wiki.mkdir(parents=True)
+        old_root, old_wiki = srv.ROOT, srv.WIKI
+        try:
+            srv.ROOT, srv.WIKI = root, wiki
+            rel = _seed_source(root)
+            slug, created = srv.create_article_from_source(rel, name="Acme Systems")
+            assert created is True and slug == "acme-systems"
+            fm, body, _ = srv.split_fm((wiki / "acme-systems.md").read_text())
+            deficiencies = site.investigation_conformance(fm, body)
+            assert deficiencies == set(), "skeleton must be R2-conformant: %s" % deficiencies
+            assert srv.fm_val(fm, "stale_since"), "skeleton sets stale_since"
+            assert srv.fm_val(fm, "status") == "browser-ingested source; awaiting synthesis"
+            assert "investigation_topic" not in fm, "no auto investigation_topic (CFADA-r21 #44)"
+        finally:
+            srv.ROOT, srv.WIKI = old_root, old_wiki
+    print("ok test_new_investigation_emits_canonical_skeleton")
+
+
+def test_new_investigation_name_is_quarantined():
+    """AC5/CFADA-r6 #16: the operator name JOINS the pre-write quarantine set
+    before any derivation/write/echo, and the mechanism refuses a secret name."""
+    import inspect
+    src = inspect.getsource(srv.IngestHandler.handle_ingest)
+    assert '"name": raw_name' in src, "operator name must be in the quarantine fields"
+    assert src.index('"name": raw_name') < src.index("quarantine_fields("), \
+        "name must be in the fields BEFORE quarantine_fields runs"
+    assert src.index('"name": raw_name') < src.index("wiki_write_lock()"), \
+        "name is quarantined before the lock / any derivation / write"
+    aws_shaped = "AK" + "IA" + "ABCDEFGHIJKLMNOP"  # composed so no literal secret is committed
+    try:
+        srv.ingest_ops.quarantine_fields({"name": aws_shaped})
+        assert False, "quarantine must refuse a secret-shaped name"
+    except srv.ingest_ops.OpRefused:
+        pass
+    print("ok test_new_investigation_name_is_quarantined")
+
+
+def test_ingest_still_requires_authoring():
+    """AC5/CFADA-r6 #15: ADD keeps the existing require_authoring transport gate —
+    do_POST authorizes BEFORE dispatching /api/ingest; the lane never relaxes it."""
+    import inspect
+    post_src = inspect.getsource(srv.IngestHandler.do_POST)
+    assert "require_authoring()" in post_src, "the POST path must require authoring"
+    assert post_src.index("require_authoring()") < post_src.index('"/api/ingest"'), \
+        "the authoring gate precedes the /api/ingest dispatch"
+    print("ok test_ingest_still_requires_authoring")
+
+
+def test_prospective_slug_matches_creator():
+    """AC5/CFADA-r2 #4: prospective_unassigned_slug(name) equals the slug
+    create_article_from_source actually mints — the pre-save guard predicts the
+    exact file a create would touch."""
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        wiki = root / "wiki"
+        wiki.mkdir(parents=True)
+        old_root, old_wiki = srv.ROOT, srv.WIKI
+        try:
+            srv.ROOT, srv.WIKI = root, wiki
+            rel = _seed_source(root)
+            for name in ("Chosen Subject", "Foo (Bar) Baz", "Weird--Name  Spaces", "MixedCASE Thing"):
+                predicted = srv.prospective_unassigned_slug(name=name)
+                slug, created = srv.create_article_from_source(rel, name=name)
+                assert created is True and predicted == slug, (name, predicted, slug)
+                (wiki / ("%s.md" % slug)).unlink()
+        finally:
+            srv.ROOT, srv.WIKI = old_root, old_wiki
+    print("ok test_prospective_slug_matches_creator")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

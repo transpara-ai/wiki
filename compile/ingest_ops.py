@@ -892,6 +892,22 @@ def _replace_preflight(root, slug, source_ref):
     return article_path, fm_lines, tail
 
 
+def set_article_stale(root, slug, now):
+    """R5/R7: stamp `stale_since` on an investigation article so the builder's
+    reason-neutral "summary re-derivation pending" banner renders until a governed
+    authoring pass clears it (via _drop_scalar, exactly as Replace does on
+    engine-ok). A thin wrapper over _set_scalar reused by the ADD lane and
+    Replace — no new op and no authorization contract (Q4), only the scalar stamp,
+    run INSIDE the caller's wiki write lock."""
+    root = pathlib.Path(root)
+    article_path = root / "wiki" / ("%s.md" % slug)
+    if not article_path.exists():
+        raise OpRefused("unknown article slug")
+    fm_lines, tail = _parse_article(article_path.read_text())
+    fm_lines = _set_scalar(fm_lines, "stale_since", _now_str(now))
+    _atomic_write_text(article_path, _assemble_article(fm_lines, tail))
+
+
 def replace_source(root, *, slug, source_ref, data, filename, note, now,
                    rebuild_runner=None):
     root = pathlib.Path(root)

@@ -1977,14 +1977,21 @@ def test_cfar14_data_href_not_queued_on_remove():
 
 def test_cfar14_add_retired_check_inside_lock():
     """CFAR-14 P2: the effective-target retired check must run INSIDE the write
-    lock and BEFORE save_uploads (write-free AND race-free)."""
+    lock and BEFORE save_uploads (write-free AND race-free). The check now lives
+    in the fail-closed resolve_ingest_route router (Investigation Topic Standard
+    R1/§2.4), which handle_ingest calls inside the lock before any save."""
     src = (pathlib.Path(__file__).resolve().parent / "ingest_server.py").read_text()
     seg = src.split("def handle_ingest", 1)[1].split("\n    def ", 1)[0]
     lock_at = seg.index("wiki_write_lock()")
-    check_at = seg.index("article_is_retired(effective_slug)")
+    route_at = seg.index("resolve_ingest_route(")
     save_at = seg.index("save_uploads(")
-    assert lock_at < check_at < save_at, \
-        "retired check must be inside the lock, before save_uploads"
+    assert lock_at < route_at < save_at, \
+        "the route decision (incl. the retired check) must be inside the lock, " \
+        "before save_uploads"
+    # and the retired check genuinely lives in that router (fail-closed)
+    resolve_seg = src.split("def resolve_ingest_route", 1)[1].split("\ndef ", 1)[0]
+    assert "article_is_retired(target_slug)" in resolve_seg, \
+        "resolve_ingest_route must perform the retired-tombstone check"
     print("ok test_cfar14_add_retired_check_inside_lock")
 
 
@@ -2754,6 +2761,27 @@ def test_register_attests_committed_clearances():
     assert "committed" in msg, msg
     print("ok test_register_attests_committed_clearances")
 
+
+# ---- Investigation Topic Standard (R5/R7) — set_article_stale ----
+
+def test_set_article_stale_stamps_and_refuses_unknown():
+    """R5/R7: set_article_stale stamps stale_since (the wrapper the ADD lane and
+    Replace share); re-stamping updates it; an unknown slug refuses (fail-closed)."""
+    root = fresh_root()
+    article(root, "topic-x")
+    ops.set_article_stale(root, "topic-x", NOW)
+    fm, _, _ = srv.split_fm((root / "wiki" / "topic-x.md").read_text())
+    assert srv.fm_val(fm, "stale_since") == NOW, "stamps stale_since"
+    later = "2026-07-05T09:30:00+00:00"
+    ops.set_article_stale(root, "topic-x", later)
+    fm, _, _ = srv.split_fm((root / "wiki" / "topic-x.md").read_text())
+    assert srv.fm_val(fm, "stale_since") == later, "re-stamp updates stale_since"
+    try:
+        ops.set_article_stale(root, "no-such-topic", NOW)
+        assert False, "unknown slug must refuse"
+    except ops.OpRefused:
+        pass
+    print("ok test_set_article_stale_stamps_and_refuses_unknown")
 
 
 if __name__ == "__main__":
