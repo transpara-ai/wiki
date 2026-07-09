@@ -51,18 +51,42 @@ def _parse_ts(value: str | None) -> datetime.datetime | None:
     return parsed
 
 
+def _belongs_to_pr(target_url: str | None, pr_url: str | None) -> bool:
+    """True only when target_url links to pr_url's PR.
+
+    Commit statuses are shared by SHA + context, so two PRs on the same head SHA
+    share one status. The status target_url (set to the PR URL or a PR comment
+    link by the gate/seed) is the per-PR discriminator: only a status that
+    provably belongs to THIS PR may be preserved, so a fresh success posted for a
+    different PR on the same SHA cannot satisfy this PR's gate. Fail closed when
+    target_url is absent or points at a different PR. The separator check keeps
+    /pull/72 from matching /pull/720.
+    """
+    if not isinstance(target_url, str) or not isinstance(pr_url, str):
+        return False
+    if not target_url or not pr_url:
+        return False
+    if target_url == pr_url:
+        return True
+    return any(target_url.startswith(pr_url + sep) for sep in ("#", "/", "?"))
+
+
 def decide(current_state: str | None, current_updated_at: str | None,
-           event_time: str | None) -> str:
+           event_time: str | None, current_target_url: str | None,
+           pr_url: str | None) -> str:
     """Return "preserve" (leave the status alone) or "pending" (POST pending).
 
     PRESERVE is the single, explicitly-proven permissive branch: it fires only
-    when the current status is a terminal state AND both timestamps parse AND the
-    current status is strictly newer than the triggering event. Every other input
-    — no status, pending, stale/equal timestamps, missing or malformed
+    when the current status is a terminal state AND belongs to this PR (its
+    target_url) AND both timestamps parse AND the status is strictly newer than
+    the triggering event. Every other input — no status, pending, a status for a
+    different PR sharing the SHA, stale/equal timestamps, missing or malformed
     timestamps, or any unknown/future state value — falls through to "pending",
     which re-seeds a pending status and blocks merge (fail-closed).
     """
     if current_state not in TERMINAL_STATES:
+        return "pending"
+    if not _belongs_to_pr(current_target_url, pr_url):
         return "pending"
     current_dt = _parse_ts(current_updated_at)
     event_dt = _parse_ts(event_time)
@@ -79,16 +103,18 @@ def _run(command: list[str]) -> str:
     ).stdout
 
 
-def current_context_status(github_repo: str, sha: str) -> tuple[str, str | None]:
-    """Return (state, updated_at) of the effective status for our context.
+def current_context_status(
+    github_repo: str, sha: str
+) -> tuple[str, str | None, str | None]:
+    """Return (state, updated_at, target_url) of the effective status for context.
 
-    ("none", None) when no status for the context exists on the SHA. The combined
-    /commits/{sha}/status endpoint already reduces to the latest status per
-    context, so no history walk or pagination is needed.
+    ("none", None, None) when no status for the context exists on the SHA. The
+    combined /commits/{sha}/status endpoint already reduces to the latest status
+    per context, so no history walk or pagination is needed.
 
-    On any read error return the ("unreadable", None) sentinel: decide() maps it
-    to "pending", so an unreadable state fails closed (re-pend / block) rather
-    than leaving a possibly-stale success in place.
+    On any read error return the ("unreadable", None, None) sentinel: decide()
+    maps it to "pending", so an unreadable state fails closed (re-pend / block)
+    rather than leaving a possibly-stale success in place.
     """
     try:
         raw = _run(["gh", "api", f"repos/{github_repo}/commits/{sha}/status"])
@@ -96,11 +122,12 @@ def current_context_status(github_repo: str, sha: str) -> tuple[str, str | None]
     except (subprocess.SubprocessError, json.JSONDecodeError, OSError) as exc:
         print(f"warning: could not read current status ({exc}); failing closed "
               "to pending.", file=sys.stderr)
-        return "unreadable", None
+        return "unreadable", None, None
     for entry in statuses:
         if entry.get("context") == CONTEXT:
-            return str(entry.get("state") or "none"), entry.get("updated_at")
-    return "none", None
+            return (str(entry.get("state") or "none"),
+                    entry.get("updated_at"), entry.get("target_url"))
+    return "none", None, None
 
 
 def post_pending(github_repo: str, sha: str, pr_url: str, description: str) -> None:
@@ -128,18 +155,19 @@ def main() -> int:
     if event_action == "ready_for_review":
         description = "Ready-state exact-head cross-family review required"
 
-    state, updated_at = current_context_status(github_repo, sha)
-    action = decide(state, updated_at, event_time)
+    state, updated_at, target_url = current_context_status(github_repo, sha)
+    action = decide(state, updated_at, event_time, target_url, pr_url)
     if action == "preserve":
         print(
-            f"preserve: {CONTEXT}={state} updated_at={updated_at} is newer than "
-            f"event {event_time!r}; leaving it intact."
+            f"preserve: {CONTEXT}={state} (target_url={target_url}) updated_at="
+            f"{updated_at} is newer than event {event_time!r} and belongs to this "
+            f"PR; leaving it intact."
         )
         return 0
     post_pending(github_repo, sha, pr_url, description)
     print(
-        f"pending: seeded {CONTEXT}=pending on {sha} "
-        f"(prior state={state!r}, updated_at={updated_at!r}, event={event_time!r})."
+        f"pending: seeded {CONTEXT}=pending on {sha} (prior state={state!r}, "
+        f"updated_at={updated_at!r}, target_url={target_url!r}, event={event_time!r})."
     )
     return 0
 
