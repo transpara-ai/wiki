@@ -2784,6 +2784,41 @@ def test_set_article_stale_stamps_and_refuses_unknown():
     print("ok test_set_article_stale_stamps_and_refuses_unknown")
 
 
+def test_new_investigation_ingest_ignores_supersedes():
+    """CFAR (Codex): a new-investigation ingest carrying a stray `supersedes`
+    (a stale browser selection or an API field) records NO misleading cross-topic
+    supersedes provenance — the created page and the manifest carry none."""
+    with tempfile.TemporaryDirectory() as d:
+        root = _server_root(d)  # wiki/example.md + compile/
+        old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+               srv.subprocess.Popen)
+        old_token = os.environ.pop(srv.AUTHORING_TOKEN_ENV, None)
+        try:
+            srv.ROOT = root
+            srv.WIKI = root / "wiki"
+            srv.RAW_INBOX = root / "raw" / "inbox"
+            srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = lambda *a, **k: _FakeProc()
+            ctype, body = _multipart(
+                {"new_investigation": "true", "name": "Fresh Subject",
+                 "supersedes": "raw/inbox/2026-01-01/other/OTHER-Evaluation.md"},
+                "seed.md", b"# seed\n\nbody\n", field_name="documents")
+            h = make_handler("/api/ingest", body=body, content_type=ctype)
+            srv.IngestHandler.do_POST(h)
+            assert h.status == 200, (h.status, h.wfile.getvalue()[:300])
+            page = root / "wiki" / "fresh-subject.md"
+            assert page.exists(), "the new investigation was created"
+            assert "supersedes:" not in page.read_text(), \
+                "a create records no supersedes provenance"
+        finally:
+            (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+             srv.subprocess.Popen) = old
+            if old_token is not None:
+                os.environ[srv.AUTHORING_TOKEN_ENV] = old_token
+    print("ok test_new_investigation_ingest_ignores_supersedes")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]

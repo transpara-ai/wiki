@@ -715,7 +715,7 @@ def append_raw_documents_to_article(slug, sources):
     return append_frontmatter_list_items(slug, "raw_documents", local_sources, raw_document_line)
 
 
-def create_article_from_source(source, note="", supersedes="", name=""):
+def create_article_from_source(source, note="", name=""):
     if not source.startswith("raw/"):
         return "", False
     # R6/§2.4: the OPERATOR NAME (not the doc title) drives the page — slug and
@@ -782,7 +782,7 @@ def create_article_from_source(source, note="", supersedes="", name=""):
         json.dumps(today),
         json.dumps(today),
         json.dumps(source),
-        source_line(source, note, supersedes),
+        source_line(source, note, ""),  # a create seeds a topic; supersedes nothing (CFAR: Codex)
         body_title,
         body_title,
     )
@@ -997,25 +997,30 @@ class IngestHandler(SimpleHTTPRequestHandler):
                 new_investigation=new_investigation, target_slug=target_slug,
                 name=raw_name, has_document=any_document)
             created_article = {"slug": "", "created": False}
+            # a brand-new investigation supersedes nothing, so the create lane
+            # ignores any `supersedes` the form/API carried (a stale browser
+            # selection or an API field) — no misleading cross-topic provenance on
+            # the seed source, extra sources, or the manifest (CFAR: Codex).
+            add_supersedes = supersedes if route == "append" else ""
             if route == "create":
                 # the operator NAME drives the slug (lockstep with the creator);
                 # target_slug is ignored in this lane.
                 target_slug = prospective_unassigned_slug(form, raw_name)
-                saved = save_uploads(form, target_slug, note, supersedes)
+                saved = save_uploads(form, target_slug, note, add_supersedes)
                 source_refs = [s["path"] for s in saved] + external_urls
                 created = False
                 if saved:
                     _created_slug, created = create_article_from_source(
-                        saved[0]["path"], note, supersedes, name=raw_name)
+                        saved[0]["path"], note, name=raw_name)
                 created_article = {"slug": target_slug, "created": created}
             elif route == "append":
-                saved = save_uploads(form, target_slug, note, supersedes)
+                saved = save_uploads(form, target_slug, note, add_supersedes)
                 source_refs = [s["path"] for s in saved] + external_urls
             else:
                 # unreachable — resolve_ingest_route returns create/append or
                 # raises. A fall-through never creates or appends (fail-closed).
                 raise ingest_ops.OpRefused("unresolved ingest route")
-            added = append_sources_to_article(target_slug, source_refs, note, supersedes) if target_slug else []
+            added = append_sources_to_article(target_slug, source_refs, note, add_supersedes) if target_slug else []
             raw_added = append_raw_documents_to_article(target_slug, source_refs) if target_slug else []
             # R5/R7: an investigation ADD (or the new skeleton) stamps stale_since
             # so the reason-neutral "summary re-derivation pending" banner renders

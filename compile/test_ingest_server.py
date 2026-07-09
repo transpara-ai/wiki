@@ -890,6 +890,9 @@ def test_new_investigation_emits_canonical_skeleton():
             assert srv.fm_val(fm, "stale_since"), "skeleton sets stale_since"
             assert srv.fm_val(fm, "status") == "browser-ingested source; awaiting synthesis"
             assert "investigation_topic" not in fm, "no auto investigation_topic (CFADA-r21 #44)"
+            # CFAR (Codex): a create seeds a topic and supersedes nothing — the
+            # skeleton's seed source carries no `supersedes:` provenance.
+            assert "supersedes:" not in fm, "new-investigation skeleton records no supersedes"
         finally:
             srv.ROOT, srv.WIKI = old_root, old_wiki
     print("ok test_new_investigation_emits_canonical_skeleton")
