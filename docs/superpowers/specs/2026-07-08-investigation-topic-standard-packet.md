@@ -2,8 +2,8 @@
 doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
-version: 0.9.3
-status: draft (IADA-passed; CFADA r1-r11 repaired; re-audit pending)
+version: 0.9.4
+status: draft (IADA-passed; CFADA r1-r12 repaired; re-audit pending)
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -28,7 +28,7 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 > operator-supplied name); every other path appends or refuses — never creates.
 > The builder stays no-LLM, no-network. Two-phase delivery (one FO, §6): Phase
 > 1 machinery (code PR), Phase 2 retrofit (data-only PR[s]). Repaired through
-> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2), 11 (v0.9.3).
+> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2), 11 (v0.9.3), 12 (v0.9.4).
 
 ## 1. Survey — measured, not assumed (file:line evidence)
 
@@ -121,9 +121,11 @@ compact form collapses every separator variant, including no-space vs space
 (CFADA-r9 #22), which a hyphen-folding key would miss. Unlike `ingest_server.slugify`,
 which drops parenthesized text before folding (CFADA-r8 #21), `collision_key`
 never drops text. A new name **collides** when `collision_key(name)` equals
-`collision_key(x)` for x ∈ {an active investigation page's `entity` ∪ its
-`aliases` ∪ its `investigation_topic` cluster label ∪ its slug} ∪ {any existing
-page's slug, active OR tombstone}. So "MemPalace"/"Mem Palace"/"Mem-Palace" all key to `mempalace`, and
+`collision_key(x)` for x ∈ {ANY investigation page's — active OR retired/tombstone — `entity` ∪
+`aliases` ∪ `investigation_topic` cluster label ∪ slug} ∪ {any existing page's
+slug, active OR tombstone}. Including RETIRED frontmatter blocks reanimating a
+retired subject via its old entity/alias — e.g. the owainlewis tombstone's
+`TAI-RES-2026-006` alias (CFADA-r12 #28; the no-reanimation constraint). So "MemPalace"/"Mem Palace"/"Mem-Palace" all key to `mempalace`, and
 "Sakana AI"/"Sakana-AI"/"Sakana (AI)" all key to `sakanaai` — no separator
 variant slips through (CFADA-r3 #9, r5 #13, r8 #21, r9 #22). Over-collision (two
 genuinely distinct subjects sharing a compact form) is a deliberate fail-closed
@@ -232,9 +234,9 @@ page conforms (IADA-I6). The hard corpus gate turns on only when satisfiable.
 | AC1 | 1 | Topic Details row lists every `raw_documents` AND `superseded_raw_documents` entry (superseded included, marked), falling back to local `sources` when both are empty; no "Raw docs" label survives in `dist/` (low) | py: `test_topic_details_lists_all_versions_incl_superseded`, `test_topic_details_falls_back_to_local_sources` |
 | AC2 | 1 | Investigation-tier page renders no `.toc`; a ≥3-heading non-investigation page still renders one (med) | py: `test_investigation_pages_have_no_toc`; playwright |
 | AC3 | 1 | Default ADD with a resolvable investigation `target_slug` appends + sets `stale_since`, `wiki/*.md` count unchanged, rebuilds; a non-investigation target appends WITHOUT a stale stamp (preserved) (high) | server: `test_add_default_appends_and_flags_stale`, `test_add_to_non_investigation_preserves_behavior` |
-| AC4 | 1 | Fail-closed guard, full domain — default ADD with (a) no target, (b) retired/nonexistent target → REFUSE; (c) non-investigation target → APPENDS (no refuse/stale); new-investigation with (d) empty name OR a name whose compact/slug-driving form is empty (e.g. "!!!", "()"), (e) `slugify(name)` collides with an existing slug (active/tombstone), INCLUDING when the compact key differs (e.g. "Foo (Bar)" → slug `foo` vs existing `foo.md`), (f) name/entity/alias/cluster collision via the compact `collision_key` incl. case/whitespace/no-space/punctuation/parenthesis variants (e.g. "Sakana-AI", "Sakana (AI)" vs "Sakana AI"; "Mem Palace" vs "MemPalace"), (g) name = an existing `investigation_topic` cluster label (e.g. "Sakana AI") → REFUSE; (h) doc title ≠ operator name → NAME drives slug/entity+guard (no bypass); (i) distinct entities sharing a cluster (Sakana) → allowed; (j) absent subject → created (high) | server: `test_ingest_guard_domain` (cases a–j) |
+| AC4 | 1 | Fail-closed guard, full domain — default ADD with (a) no target, (b) retired/nonexistent target → REFUSE; (c) non-investigation target → APPENDS (no refuse/stale); new-investigation with (d) empty name OR a name whose compact/slug-driving form is empty (e.g. "!!!", "()"), (e) `slugify(name)` collides with an existing slug (active/tombstone), INCLUDING when the compact key differs (e.g. "Foo (Bar)" → slug `foo` vs existing `foo.md`), (f) name/entity/alias/cluster collision via the compact `collision_key` incl. case/whitespace/no-space/punctuation/parenthesis variants (e.g. "Sakana-AI", "Sakana (AI)" vs "Sakana AI"; "Mem Palace" vs "MemPalace"), against ACTIVE and RETIRED pages (a name matching the owainlewis tombstone's `TAI-RES-2026-006` alias → REFUSE, no reanimation — CFADA-r12 #28), (g) name = an existing `investigation_topic` cluster label (e.g. "Sakana AI") → REFUSE; (h) doc title ≠ operator name → NAME drives slug/entity+guard (no bypass); (i) distinct entities sharing a cluster (Sakana) → allowed; (j) absent subject → created (high) | server: `test_ingest_guard_domain` (cases a–j) |
 | AC5 | 1 | New-investigation builds FROM the operator name (not the doc title), emits the R2 skeleton (bold-lead placeholder + `stale_since` + `status: awaiting synthesis`, no auto `investigation_topic`); toggle defaults OFF, only creation path; `prospective_unassigned_slug` matches the creator (high) | server: `test_new_investigation_uses_operator_name`, `test_new_investigation_emits_canonical_skeleton`, `test_new_investigation_name_is_quarantined`, `test_ingest_still_requires_authoring`, `test_prospective_slug_matches_creator` |
-| AC6 | 1 → 2 | **P1:** predicate → ∅ for a conformant fixture; exact deficiency for missing-key / missing-heading / non-bold-lead / out-of-order / Integration-Packet-misordered fixtures; skeleton conforms. **P2:** every live-enumerated active investigation page (i) conforms (R2), (ii) carries NO `investigation_topic` UNLESS ≥2 active pages share that exact value — the check is conditional (single-page investigations omit the field; it is never forced onto a lone topic — CFADA-r11 #25), AND (iii) has Topic Details covering ALL raw versions — `raw_documents` ∪ `superseded_raw_documents` includes every RAW INGESTED file for the topic — the browser-ingest `raw/inbox/...` uploads and the topic's TAI-RES evaluation versions — so no ingested version is lost. Supporting doctrine citations (`raw/transpara/...`, `raw/open-brain/...`, absolute `/Transpara/...`) stay in `sources` and render via the source panel/links, NOT forced into Topic Details (R3 is scoped to raw ingested files, not every citation — CFADA-r10 #24); a page with no ingested research file legitimately keeps empty `raw_documents` + the fallback (R3/R8 completeness; CFADA-r6 #17, r8 #20) (med) | py: `test_investigation_conformance_predicate` (P1); `test_all_active_investigations_conform`, `test_investigation_topic_clusters_have_multiple_members`, `test_all_active_investigations_topic_details_complete` (P2) |
+| AC6 | 1 → 2 | **P1:** predicate → ∅ for a conformant fixture; exact deficiency for missing-key / missing-heading / non-bold-lead / out-of-order / Integration-Packet-misordered fixtures; skeleton conforms. **P2:** every live-enumerated active investigation page (i) conforms (R2), (ii) carries NO `investigation_topic` UNLESS ≥2 active pages share that exact value — the check is conditional (single-page investigations omit the field; it is never forced onto a lone topic — CFADA-r11 #25), AND (iii) has Topic Details covering ALL raw versions — `raw_documents` ∪ `superseded_raw_documents` includes every RAW INGESTED file for the topic — the browser-ingest `raw/inbox/...` uploads and the topic's TAI-RES evaluation versions — so no ingested version is lost. Supporting doctrine citations (`raw/transpara/...`, `raw/open-brain/...`, absolute `/Transpara/...`) stay in `sources` and render via the source panel/links, NOT forced into Topic Details (R3 is scoped to raw ingested files, not every citation — CFADA-r10 #24); a page with no ingested research file has EMPTY Topic Details in the end state (its doctrine citations render via the source panel, not the fallback). The local-`sources` fallback is a Phase-1 transitional bridge only; AC6(P2) checks that no active investigation page presents `sources`-only doctrine refs as Topic Details (the fallback is gated to raw-ingested sources or removed once the corpus is retrofitted — CFADA-r12 #29) (R3/R8 completeness; CFADA-r6 #17, r8 #20) (med) | py: `test_investigation_conformance_predicate` (P1); `test_all_active_investigations_conform`, `test_investigation_topic_clusters_have_multiple_members`, `test_all_active_investigations_topic_details_complete` (P2) |
 | AC7 | 1 | Builder imports no network/model client; a `stale_since` page renders the banner until cleared, with reason-neutral text (no Replace-specific "sources were replaced"/"authorization" wording) (med) | py: `test_builder_has_no_network_client`, `test_stale_banner_is_reason_neutral` |
 | AC8 | 1 | MemPalace's rendered HTML changes in exactly two ways — the infobox label and the removed `.toc` — no other: all 8 headings + contribution box still present (med) | py: `test_mempalace_render_diff_is_label_and_toc_only` |
 | AC9 | 1 & 2 | Every new/edited Python test above is wired into `package.json` `test:py` (or lands in an already-wired module); full chain green, zero regression (low) | `npm run verify` exit 0 at each PR's reviewed head; `test_py_targets_are_wired` asserts the module list runs the new tests |
@@ -384,5 +386,11 @@ NEXT commit and is re-audited by the following round.
 | C26 | An explicit new-investigation name with no slug/collision characters ("!!!", "()") passed the non-empty check but `slugify` falls back to a generic page and `collision_key` is empty | FIXED — refuse when the compact `collision_key` is empty or `slugify` falls back to a default (§2.4, AC4d). |
 | C27 | FO R3 verified only `raw_documents`, so an FO-keyed implementation could drop Replace-`superseded_raw_documents` from Topic Details | FIXED — FO v0.2.3 R3 covers `raw_documents` ∪ `superseded_raw_documents`; packet rebound to blob `20d4f35f…`. |
 
-Re-audit (CFADA round 12) pending at v0.9.3. No code before Human Design Review
-(stage 6) approves.
+**Round 12 → FAIL** — audited at packet blob `7406d90ddd7fc2c83a45a82447fdebcc79f44b22` (commit `0ab7ccb`, the v0.9.3 state; no P1 — zero blockers, 3rd consecutive round); repaired to v0.9.4:
+| # | Finding | Disposition |
+|---|---|---|
+| C28 | The collision set compared active entities/aliases but only tombstone SLUGS — a new investigation under a retired page's alias (owainlewis tombstone's `TAI-RES-2026-006`) could reanimate a retired subject | FIXED — the set now includes RETIRED pages' entity/aliases/cluster; AC4(f) covers it (§2.4, AC4). |
+| C29 | A support-only page (no ingested file) on the `sources` fallback could surface doctrine citations in Topic Details while AC6 passed | FIXED — the fallback is Phase-1 transitional only; end-state Topic Details for support-only pages is empty (citations in the source panel); AC6(P2) checks it (§3). |
+
+Re-audit (CFADA round 13, confirming) pending at v0.9.4. No code before Human
+Design Review (stage 6) approves.
