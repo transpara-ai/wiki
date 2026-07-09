@@ -2,8 +2,8 @@
 doc_id: FO-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — the Investigation Topic Standard (Factory Order)
 doc_type: factory-order
-version: 0.3.0
-status: confirmed (channel-A intake confirm, Michael, 2026-07-09 — answers archived in §5; R1–R8 confirmed as read; one FO / two phases; ADD unauthenticated + fail-closed duplicate guard). v0.2.1 corrects the MemPalace conformance claim per CFADA-r1 #2 — MemPalace is the content exemplar, not literally conformant; intent R1–R8 unchanged. v0.2.2 clarifies ADD retains the require_authoring transport gate (CFADA-r6 #15), intent unchanged. v0.2.3 makes R3 cover `superseded_raw_documents` too (CFADA-r11 #27), intent unchanged. v0.3.0 (2026-07-09, channel-A) ADDS R9 — a single nav entry per investigation, including the multi-page cluster case — and revises R8's Sakana nav from an expandable grouping to a single `investigation_primary` row; this is an INTENT change (Michael's 2026-07-09 nav-semantics decision, Option A), so the design packet re-runs IADA → CFADA
+version: 0.3.1
+status: confirmed (channel-A intake confirm, Michael, 2026-07-09 — answers archived in §5; R1–R8 confirmed as read; one FO / two phases; ADD unauthenticated + fail-closed duplicate guard). v0.2.1 corrects the MemPalace conformance claim per CFADA-r1 #2 — MemPalace is the content exemplar, not literally conformant; intent R1–R8 unchanged. v0.2.2 clarifies ADD retains the require_authoring transport gate (CFADA-r6 #15), intent unchanged. v0.2.3 makes R3 cover `superseded_raw_documents` too (CFADA-r11 #27), intent unchanged. v0.3.0 (2026-07-09, channel-A) ADDS R9 — a single nav entry per investigation, including the multi-page cluster case — and revises R8's Sakana nav from an expandable grouping to a single `investigation_primary` row; this is an INTENT change (Michael's 2026-07-09 nav-semantics decision, Option A), so the design packet re-runs IADA → CFADA. v0.3.1 (2026-07-09) narrows the "hex-free raw filenames" constraint to BARE-hex session-authored/renamed names per CFADA-r22 #46 — the browser descriptive-stem+sha12 scheme is pre-existing and unchanged; clarification, intent unchanged
 canonical: false
 created: 2026-07-08
 updated: 2026-07-09
@@ -174,7 +174,10 @@ custom-property palette; fail-closed (duplicate/ambiguous subject refused;
 unknown state renders degraded, never healthy); tests per the house pattern
 (unit + dom-smoke + py builder guards + Playwright); **worktrees only** (the
 serving clone `repos/wiki` is a live ingest-service state dir); **hex-free** raw
-filenames (content-addressed sha12 names trip the non-clearable pathname rule);
+filenames for session-authored/renamed files — a BARE-hex name (a filename that
+is *only* a hex string) trips the non-clearable path-scan rule; the browser
+Add/Replace descriptive-stem+sha12 scheme is the pre-existing accepted naming,
+unchanged by this FO (CFADA-r22 #46);
 CI secret-scan reads the allowlist from the **base** ref (F9 two-step — any
 pins land in main first); `transpara-ai/wiki` only; lifecycle issue→ready-PR;
 merge remains Michael's (stage 12).
