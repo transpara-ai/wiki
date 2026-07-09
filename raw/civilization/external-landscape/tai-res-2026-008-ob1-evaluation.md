@@ -11,7 +11,7 @@ owner: Research & Strategic Intelligence
 org: Transpara AI
 repo: transpara-ai/wiki
 classification: PUBLIC — external-landscape research (this repo is public; no secrets; only public upstream/fork code and already-published Civilization doctrine are quoted at the same depth as the prior TAI-RES evaluations; the upstream `NateBJones-Projects/OB1` is cited as context and is never re-published, never a push/PR target)
-companion_to: TAI-RES-2026-001 (Sakana AI), TAI-RES-2026-002 (Hermes Agent & Self-Evolution), TAI-RES-2026-003 (Google Open Knowledge Format), TAI-RES-2026-004 (MemPalace), TAI-RES-2026-005 (Solo Orchestrator), TAI-RES-2026-006 (Owain Lewis Work System), TAI-RES-2026-007 (PageIndex — concurrent, in-flight)
+companion_to: TAI-RES-2026-001 (Sakana AI), TAI-RES-2026-002 (Hermes Agent & Self-Evolution), TAI-RES-2026-003 (Google Open Knowledge Format), TAI-RES-2026-004 (MemPalace), TAI-RES-2026-005 (Solo Orchestrator), TAI-RES-2026-006 (Owain Lewis Work System), TAI-RES-2026-007 (PageIndex)
 supersedes_for_presentation: wiki/ob1.md  # the 2026-06-14 doc/decision-anchored compile; retained in git history, superseded for the "what it is" facts by the code-anchored read below
 evaluated_artifact: https://github.com/NateBJones-Projects/OB1  # upstream; read via the Transpara fork transpara-ai/OB1 @ HEAD 1c4c9069fba06f82411005c77dafac8711805bdc (2026-06-17, PR #6), a mirror of upstream + Transpara deployment/server-safety commits (PRs #1–#6), no feature divergence
 ---
@@ -228,5 +228,5 @@ OB1 is a credible, running, memory-of-intent substrate, and the pattern it embod
 [18] v4.0 docs `06`/`07` — autonomy gates / current state; CFAR-CFADA dev-arc gate standard (accepted).
 [19] `grep -rniE 'openbrain|ob1|cognitive planning' v4.0/0[1-7]-*.md` → zero matches (2026-07-07): OB1 is not restated in accepted v4.0 core doctrine.
 [20] **Open Brain** (the running store, Supabase project `njofekbuaauffxqsfikl`, reached via `mcp__open-brain__*`): the 2026-04-09 hive reboot-survival decision ("the event chain is a ledger of what happened; Open Brain captures what the agent was thinking and why… agents read their last Open Brain thought to recover intent"); the 2026-06-13 upstream-merge (`0c442a2`, merge-preserve, 5 Transpara-only commits) + `open-brain-mcp` Edge Function redeploy + MCP smoke test; the "grounded fork chronology" (GitHub `createdAt`: 4/08 OB1 ← NateBJones-Projects).
-[21] Companion series — TAI-RES-2026-004 (MemPalace: the `MemoryReference` boundary, local-first recall) and TAI-RES-2026-007 (PageIndex: the memory-cluster neighbor and external-LLM air-gap lesson; a **concurrent in-flight** eval, wiki PR #62 — not yet on `origin/main` at this writing), plus -001/-002/-003/-005/-006.
+[21] Companion series — TAI-RES-2026-004 (MemPalace: the `MemoryReference` boundary, local-first recall) and TAI-RES-2026-007 (PageIndex: the memory-cluster neighbor and external-LLM air-gap lesson), plus -001/-002/-003/-005/-006.
 [22] Ratified external-framework boundary: v3.9 Decision 15 lineage ("external frameworks stay outside control roles"), carried into v4.0 docs `03`/`04` generically.
