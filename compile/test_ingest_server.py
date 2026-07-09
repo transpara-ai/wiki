@@ -774,6 +774,12 @@ def test_ingest_guard_domain():
             assert _refuses(lambda: srv.resolve_ingest_route(
                 new_investigation=True, target_slug="", name="Brand New Subject",
                 has_document=False)), "(k) new investigation without a document refuses"
+            # (l) a name with a control/newline char refuses — it would break the
+            #     skeleton's H1 + bold Summary lead (fail-closed).
+            assert srv.new_investigation_name_ok("Foo\nBar") is False, "(l) multiline name rejected"
+            assert srv.new_investigation_name_ok("Tab\tName") is False, "(l) control char rejected"
+            assert _refuses(lambda: route(new_investigation=True, name="Foo\nBar")), \
+                "(l) multiline name refuses via the router"
         finally:
             srv.ROOT, srv.WIKI = old_root, old_wiki
     print("ok test_ingest_guard_domain")

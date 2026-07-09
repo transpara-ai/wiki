@@ -194,6 +194,33 @@ def test_navbox_investigation_row_collapses_by_primary():
     print("ok test_navbox_investigation_row_collapses_by_primary")
 
 
+def test_collapsed_cluster_row_is_current_for_any_member():
+    # CFAR (Codex): the collapsed cluster row (one primary) represents the WHOLE
+    # cluster, so it is marked `current` when viewing ANY member — including a
+    # non-primary companion — not only the primary.
+    topics = {"eval": "Sakana AI", "adjacent": "Sakana AI", "solo": "Solo"}
+
+    def _row(nav, href):
+        for seg in nav.split("<li")[1:]:
+            body = seg.split("</li>", 1)[0]
+            if href in body:
+                return body
+        return ""
+
+    # viewing the NON-primary companion → the single primary row is current
+    nav = _with_r9(topics, {"eval"}, lambda: site.build_investigation_nav(_r9_articles(), "adjacent"))
+    assert 'class="current"' in _row(nav, 'href="eval.html"'), \
+        "collapsed row is current when viewing a non-primary member"
+    # viewing the primary itself is still current (unchanged)
+    nav2 = _with_r9(topics, {"eval"}, lambda: site.build_investigation_nav(_r9_articles(), "eval"))
+    assert 'class="current"' in _row(nav2, 'href="eval.html"')
+    # a different cluster's current state does not bleed onto this row
+    nav3 = _with_r9(topics, {"eval"}, lambda: site.build_investigation_nav(_r9_articles(), "solo"))
+    assert 'class="current"' not in _row(nav3, 'href="eval.html"'), \
+        "the cluster row is not current when an unrelated article is current"
+    print("ok test_collapsed_cluster_row_is_current_for_any_member")
+
+
 def test_investigation_primary_strict_boolean():
     cases = {
         "t1": "investigation_primary: true\n",

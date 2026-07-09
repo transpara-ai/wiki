@@ -1619,7 +1619,11 @@ def build_investigation_nav(arts, current):
         # without a unique active primary).
         single = articles[0] if len(articles) == 1 else cluster_representative(articles)
         if single is not None:
-            cls = ' class="current"' if single["slug"] == current else ""
+            # the collapsed row represents the WHOLE cluster, so it is current when
+            # ANY member is the current article — not only the primary — else
+            # viewing a non-primary member leaves the sidebar with no highlight
+            # (CFAR: Codex). For a single-page topic this is just that page.
+            cls = ' class="current"' if any(a["slug"] == current for a in articles) else ""
             # Preserve the count the collapsible topic group showed before collapsing.
             count = raw_doc_count_for_articles(articles)
             count_html = '<em>%d</em>' % count if count else ""

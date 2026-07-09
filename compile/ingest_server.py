@@ -350,6 +350,11 @@ def new_investigation_name_ok(name):
     name = (name or "").strip()
     if not name:
         return False
+    # a name is a single-line subject label — reject C0 control/newline chars,
+    # which would break the skeleton's H1 and bold Summary lead (the created page
+    # would then fail its own investigation_conformance) (CFAR: Codex).
+    if any(ord(ch) < 0x20 for ch in name):
+        return False
     if not collision_key(name):
         return False
     if slugify(name) == "ingested-document":
