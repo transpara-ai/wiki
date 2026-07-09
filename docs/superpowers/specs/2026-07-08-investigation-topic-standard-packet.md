@@ -2,8 +2,8 @@
 doc_id: TAI-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — Investigation Topic Standard (TLC Design Packet)
 doc_type: design
-version: 0.9.8
-status: CFADA PASS — 0 design blockers at the round-16-audited v0.9.7 blob 4bd40ec07c17360328df9da5c8fead0bab890d83; v0.9.8 is post-pass bookkeeping; READY for Human Design Review (stage 6). No code before Michael approves.
+version: 0.10.0
+status: AMENDED (v0.10.0, 2026-07-09) — folds in R9 (a single nav entry per investigation via `investigation_primary`) and revises R8's Sakana nav, per Michael's 2026-07-09 channel-A nav-semantics decision (Option A). Per the TLC truth-object rule this MUTATION STRANDS the v0.9.7 CFADA PASS (blob 4bd40ec07c17360328df9da5c8fead0bab890d83) on the old bytes; v0.10.0 is NOT a passed gate and must re-run IADA → CFADA before returning to Human Design Review (stage 6). No code before Michael approves the re-audited packet.
 canonical: false
 created: 2026-07-09
 updated: 2026-07-09
@@ -11,7 +11,7 @@ owner: Michael Saucier
 steward: Claude (Opus 4.8)
 authority: planning
 tlc_stage: design
-factory_order: FO-WIKI-INVESTIGATION-STANDARD v0.2.3 (blob 20d4f35f89299e0da0f0d96cc8b65fb09fe5628e, confirmed channel-A 2026-07-09; v0.2.3 aligns R3 with superseded_raw_documents)
+factory_order: FO-WIKI-INVESTIGATION-STANDARD v0.3.0 (blob pinned at the amendment commit; supersedes v0.2.3 blob 20d4f35f89299e0da0f0d96cc8b65fb09fe5628e; v0.3.0 adds R9 + revises R8 per Michael's 2026-07-09 nav decision)
 source_of_intent:
   - the Factory Order above (its §4 archives Michael's request verbatim; §5 archives the intake answers)
   - wiki/mempalace.md (blob a9a9bc6bc83b01a9ba27776bb179e6d8b16de96c) — the content exemplar
@@ -21,14 +21,14 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 
 # Investigation Topic Standard — TLC Design Packet
 
-> Answers FO-WIKI-INVESTIGATION-STANDARD v0.2.3 (R1–R8) against measured live
+> Answers FO-WIKI-INVESTIGATION-STANDARD v0.3.0 (R1–R9) against measured live
 > code (wiki main @ `2c9e672`, survey 2026-07-08/09). House rule inherited:
 > the branch that CREATES a page renders only from a proven allowlist
 > (explicit new-investigation intent AND subject proven absent, keyed on the
 > operator-supplied name); every other path appends or refuses — never creates.
 > The builder stays no-LLM, no-network. Two-phase delivery (one FO, §6): Phase
 > 1 machinery (code PR), Phase 2 retrofit (data-only PR[s]). Repaired through
-> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2), 11 (v0.9.3), 12 (v0.9.4), 13 (v0.9.5), 14 (v0.9.6), 15 (v0.9.7), 16 (PASS at v0.9.7).
+> IADA (v0.2.0) and CFADA rounds 1 (v0.3.0), 2 (v0.4.0), 3 (v0.5.0), 4 (v0.6.0), 5 (v0.7.0), 6 (v0.8.0), 7 (v0.8.1, audit-trail), 8 (v0.9.0), 9 (v0.9.1), 10 (v0.9.2), 11 (v0.9.3), 12 (v0.9.4), 13 (v0.9.5), 14 (v0.9.6), 15 (v0.9.7), 16 (PASS at v0.9.7). **v0.10.0 (2026-07-09) is a post-PASS AMENDMENT** — it adds R9 (single nav entry via `investigation_primary`) and revises R8 per Michael's nav-semantics decision; this mutation strands the v0.9.7 CFADA credit and re-opens IADA → CFADA (see the Amendment log).
 
 ## 1. Survey — measured, not assumed (file:line evidence)
 
@@ -79,13 +79,13 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 
 | Phase | Action | File | Change |
 |---|---|---|---|
-| 1 | EDIT | `compile/build_site.py` | **R3:** relabel `"Raw docs"` → `"Topic Details"` (`:1530`) AND source the list from `raw_documents` ∪ `superseded_raw_documents` (deduped, superseded marked, newest primary — CFADA-r3 #8), with the empty-both fallback scoped to raw-INGESTED sources (`raw/inbox/...`) only, never doctrine citations (CFADA-r13 #30). **R4:** tier-gate the TOC at `:2181`. **R7 banner:** reason-neutral `stale_since` text (`:2200`). **R2 predicate:** `investigation_conformance(slug)`. |
+| 1 | EDIT | `compile/build_site.py` | **R3:** relabel `"Raw docs"` → `"Topic Details"` (`:1530`) AND source the list from `raw_documents` ∪ `superseded_raw_documents` (deduped, superseded marked, newest primary — CFADA-r3 #8), with the empty-both fallback scoped to raw-INGESTED sources (`raw/inbox/...`) only, never doctrine citations (CFADA-r13 #30). **R4:** tier-gate the TOC at `:2181`. **R7 banner:** reason-neutral `stale_since` text (`:2200`). **R2 predicate:** `investigation_conformance(slug)`. **R9:** `build_investigation_nav` (`:1406`) collapses a multi-page `investigation_topic` cluster to a single nav row when exactly one active member carries `investigation_primary: true` (link the primary, omit the rest); zero active primaries → today's expandable group (fail-safe, non-lossy); ≥2 → group render + conformance failure (amendment 2026-07-09). |
 | 1 | EDIT | `compile/ingest_server.py` | **R5/R6/R1 (§2.4):** intent model + fail-closed guard; `create_article_from_source(name=…)` keyed on the operator name (CFADA-r2 #4); `prospective_unassigned_slug` in lockstep; collision set includes `investigation_topic` cluster labels (CFADA-r3 #9), matched on the compact `collision_key` (CFADA-r5 #13, r8 #21, r9 #22); the operator name is quarantined pre-write (CFADA-r6 #16); ADD keeps `require_authoring` (CFADA-r6 #15). Default lane appends (any tier), stamps `stale_since` only for investigation targets. |
 | 1 | EDIT | `compile/ingest_ops.py` | `set_article_stale(root, slug, now)` wrapping `_set_scalar` — reused by ADD + Replace; no new op, no auth contract (Q4). |
 | 1 | EDIT | `ingest_page()` region in `compile/build_site.py` | "New investigation" toggle (default OFF) reveals a **required name** field, the ONLY creation path; checking it ignores `target_slug`. Both themes. |
-| 1 | ADD/EDIT | tests — land in already-wired modules (`test_build_site_nav.py`, `test_ingest_server.py`, `test_ingest_ops.py`, `test_ingest_ux.py`) OR add any new file to `package.json` `test:py` (CFADA-r3 #10); `tests/*.spec.js` for Playwright | AC1–AC5, AC6(P1), AC7–AC9. |
-| 2 | EDIT | `wiki/<each active investigation>.md` (19, incl. MemPalace) | Retrofit to R2 (generalize MemPalace's "What Changed" heading; bold lead); `raw_documents` complete; `stale_since` where the summary needs re-derivation; Sakana pair conformed, `investigation_topic: Sakana AI` on both; remove stray/self `investigation_topic` from single-page investigations (CFADA-r4 #12). Data-only. |
-| 2 | EDIT | wired `compile/test_build_site*.py` | Flip AC6 to assert every live-enumerated active investigation page conforms. |
+| 1 | ADD/EDIT | tests — land in already-wired modules (`test_build_site_nav.py`, `test_ingest_server.py`, `test_ingest_ops.py`, `test_ingest_ux.py`) OR add any new file to `package.json` `test:py` (CFADA-r3 #10); `tests/*.spec.js` for Playwright | AC1–AC5, AC6(P1), AC7–AC9, AC10(P1) (AC10 nav single-entry lands in the wired `test_build_site_nav.py`). |
+| 2 | EDIT | `wiki/<each active investigation>.md` (19, incl. MemPalace) | Retrofit to R2 (generalize MemPalace's "What Changed" heading; bold lead); `raw_documents` complete; `stale_since` where the summary needs re-derivation; Sakana pair conformed, `investigation_topic: Sakana AI` on both, **`investigation_primary: true` on `sakana-ai-evaluation.md`** plus an editorial cross-link from it to the companion `sakana-ai-adjacent-landscape.md` (R9 — companion reachable though off the top-level nav); remove stray/self `investigation_topic` from single-page investigations (CFADA-r4 #12). Data-only. |
+| 2 | EDIT | wired `compile/test_build_site*.py` | Flip AC6 to assert every live-enumerated active investigation page conforms; AC10(P2) asserts Sakana renders as a single primary nav row with the companion cross-linked. |
 | — | UNTOUCHED | authorization artifact semantics, `secret_scan`, Replace/Remove/register op logic, non-investigation source-add behavior, arc view, board, engine, refresh timer, the retired tombstone | Forbidden §5. |
 
 ### 2.2 R3 — Topic Details (infobox rename + superseded union)
@@ -225,7 +225,13 @@ every `investigation_topic` value to be shared by ≥2 active investigation page
 a lone/self-topic value (main today carries several, e.g. hermes-agent,
 google-open-knowledge-format) is a deficiency, so Phase 2 removes stray topics.
 This is corpus-level (it needs cross-page counts), distinct from the per-page
-`investigation_conformance`.
+`investigation_conformance`. **Primary invariant (R9, amendment 2026-07-09).**
+Every multi-page cluster additionally carries **exactly one active**
+`investigation_primary: true` page (§2.6); zero (in the retrofitted end state) or
+≥2 active primaries in a multi-page cluster is a deficiency. Single-page
+investigations omit `investigation_primary` (inert there); like the topic-sharing
+rule, the primary check is conditional on the cluster having ≥2 active members,
+so a lone topic is never forced to declare a primary.
 
 **Corpus timing (no red merge).** Phase 1 asserts the predicate is correct
 (a conformant fixture → ∅; missing-key, missing-heading, non-bold-lead,
@@ -233,6 +239,50 @@ out-of-order, and Integration-Packet-misordered fixtures → the right
 deficiency) and that the new-investigation skeleton conforms. Phase 2 retrofits
 all pages and flips AC6 to assert every **live-enumerated** active investigation
 page conforms (IADA-I6). The hard corpus gate turns on only when satisfiable.
+
+### 2.6 R9 — Single nav entry per investigation (investigation_primary)
+
+`build_investigation_nav` (`build_site.py:1406`) today groups by
+`investigation_topic_for(slug)`: a one-member topic renders a flat row; a
+≥2-member topic (only Sakana today) renders an expandable `<details>` group with
+a child link per page. R9 adds primary-selection ON TOP of that grouping — it
+refines the multi-member branch, it does not replace grouping:
+
+- **Single active primary (the collapse):** a multi-member cluster in which
+  **exactly one active** member carries `investigation_primary: true` renders as
+  a **single flat row** (the existing one-member code path), linking the primary
+  page and labeled with the `investigation_topic`; the non-primary active
+  members are OMITTED from the investigation nav. This is the guarded, lossy act
+  (a page leaves the nav) and fires only on an explicit, unique, active primary.
+- **Zero active primaries (fail-safe fallback):** unchanged — the expandable
+  group with every active member. No page is hidden without a designated
+  primary. This is the render for un-retrofitted clusters and the safe default.
+- **Two or more active primaries (fail-closed):** ambiguous authoring. The
+  RENDER defensively falls back to the expandable group (show all — never pick
+  one arbitrarily), and the corpus conformance gate FAILS (AC10/P2 + the cluster
+  primary invariant, §2.5). The builder never bricks; the deficiency is caught
+  by a test, matching the R8 corpus-gate pattern.
+- **Retired / non-investigation edges:** retired pages already drop from nav, so
+  a cluster whose only primary is retired has zero *active* primaries → safe
+  fallback (and conformance flags "active cluster, no active primary"). An
+  `investigation_primary` on a single-page topic or a non-investigation page is
+  inert (grouping never triggers there).
+
+**Companion discoverability (Option A).** The omitted non-primary page stays a
+full conformant page reachable by (i) site search, (ii) direct link, and (iii) a
+required editorial cross-link from the primary page's body/Sources — a Phase-2
+data-only retrofit detail, no new Phase-1 machinery. AC10(P2) asserts the
+cross-link exists so the collapse never orphans the companion.
+
+**Ingest untouched (R5/R6).** `investigation_primary` is an author-set
+frontmatter key edited in the page (Phase-2 retrofit); it is never
+operator-supplied at ingest and the new-investigation skeleton never emits it,
+so the ingest fail-closed guard and its pre-write quarantine set are unchanged.
+
+**Fail-safe statement (R9).** The ONLY branch that removes a page from the
+investigation nav is a multi-member cluster with exactly one active
+`investigation_primary`. Zero or ≥2 → show all. No `else`/fall-through hides a
+page. AC10 proves the domain.
 
 ## 3. Acceptance criteria & named tests
 
@@ -247,16 +297,18 @@ page conforms (IADA-I6). The hard corpus gate turns on only when satisfiable.
 | AC7 | 1 | Builder imports no network/model client; a `stale_since` page renders the banner until cleared, with reason-neutral text (no Replace-specific "sources were replaced"/"authorization" wording) (med) | py: `test_builder_has_no_network_client`, `test_stale_banner_is_reason_neutral` |
 | AC8 | 1 | MemPalace's rendered HTML changes in exactly two ways — the infobox label and the removed `.toc` — no other: all 8 headings + contribution box still present (med) | py: `test_mempalace_render_diff_is_label_and_toc_only` |
 | AC9 | 1 & 2 | Every new/edited Python test above is wired into `package.json` `test:py` (or lands in an already-wired module); full chain green, zero regression (low) | `npm run verify` exit 0 at each PR's reviewed head; `test_py_targets_are_wired` asserts the module list runs the new tests |
+| AC10 | 1 → 2 | **R9 nav single-entry (P1, in the wired `test_build_site_nav.py`):** a multi-member `investigation_topic` fixture with exactly one active `investigation_primary` renders ONE flat nav row (primary link, no child rows); a zero-primary multi-member fixture renders the expandable group with every active child (fail-safe); a two-primary fixture renders the group AND is flagged by the cluster primary invariant; a stray `investigation_primary` on a single-page topic is inert. **P2 (live corpus):** Sakana renders as a single primary nav row (`sakana-ai-evaluation` primary; `sakana-ai-adjacent-landscape` omitted from top-level nav yet reachable), the primary carries the editorial cross-link, and exactly one active primary exists in the cluster (med) | py: `test_multipage_cluster_with_primary_renders_single_row`, `test_cluster_without_primary_falls_back_to_group`, `test_multiple_primaries_flagged_and_group_rendered`, `test_stray_primary_on_single_page_is_inert` (P1); `test_sakana_renders_single_primary_row`, `test_sakana_companion_reachable_and_cross_linked` (P2) |
 
 **Gate satisfied-only-when (allowlist, phase-total):** every AC carries an
-explicit, mandatory obligation per phase (AC6 splits into P1/P2 halves; AC9 runs
-in both PRs) — no AC is optional and no PR may drop its assigned obligation
-(CFADA-r5 #14). The Phase-1 PR is satisfied only when
-AC1–AC5, AC6(P1), AC7, AC8, AC9 are green at its reviewed head AND
-`npm run verify` exits 0. The FINAL Phase-2 PR is satisfied only when AC6(P2) (all-corpus) and AC9 are
-green; an intermediate split-cluster PR asserts only that ITS OWN pages conform
-+ AC9 (CFADA-r15 #33). The FO is satisfied only when BOTH phases are. Any unproven assigned
-criterion ⇒ not satisfied (IADA-I4).
+explicit, mandatory obligation per phase (AC6 and AC10 split into P1/P2 halves;
+AC9 runs in both PRs) — no AC is optional and no PR may drop its assigned
+obligation (CFADA-r5 #14). The Phase-1 PR is satisfied only when
+AC1–AC5, AC6(P1), AC7, AC8, AC9, AC10(P1) are green at its reviewed head AND
+`npm run verify` exits 0. The FINAL Phase-2 PR is satisfied only when AC6(P2)
+and AC10(P2) (all-corpus) and AC9 are green; an intermediate split-cluster PR
+asserts only that ITS OWN pages conform + AC9 (CFADA-r15 #33). The FO is
+satisfied only when BOTH phases are. Any unproven assigned criterion ⇒ not
+satisfied (IADA-I4).
 
 ## 4. Fail-safe analysis (the §8 house rule, applied)
 
@@ -273,6 +325,11 @@ criterion ⇒ not satisfied (IADA-I4).
   no silent version loss.
 - **No-LLM invariant preserved** (AC7). **Conformance gate cannot brick the
   build** — a test, corpus assertion turned on only when satisfiable.
+- **Nav collapse is a guarded act (R9).** Allowlist: drop a cluster member from
+  the nav ⟺ its cluster has exactly one active `investigation_primary`. Zero →
+  show the full group (nothing hidden); ≥2 → show the full group + conformance
+  failure. No page leaves the nav without a unique, explicit, active primary
+  (§2.6). AC10 proves the domain; R9 is nav-only — no page is merged or retired.
 
 ## 5. Authorization packet
 
@@ -284,7 +341,8 @@ criterion ⇒ not satisfied (IADA-I4).
   `secret_scan`; Replace/Remove/register semantics; non-investigation
   source-add behavior; ADD entering the authorization contract (Q4);
   LLM/network in the builder; reanimating the retired tombstone; force-merging
-  Sakana; any Phase-2 content edit before Phase-1 merges; autonomous issue/PR
+  Sakana (R9 collapses its NAV entry only — both pages persist as conformant
+  pages); any Phase-2 content edit before Phase-1 merges; autonomous issue/PR
   creation; merge.
 - **Residual risks:** (a) a subject already present under one name, re-ingested
   as a *declared* new investigation under a *genuinely different* name (no
@@ -295,7 +353,12 @@ criterion ⇒ not satisfied (IADA-I4).
   by the visible banner + R8. (c) Phase-2 retrofit is judgment-heavy; the
   predicate guards structure/order/bold-lead, not prose quality. (d) The
   bold-lead check keys on rendered `<strong>`/`**`; a non-`strong` visual
-  emphasis is flagged — acceptable (the standard specifies bold).
+  emphasis is flagged — acceptable (the standard specifies bold). (e) The R9
+  primary page's companion has reduced NAV discoverability (off the top-level
+  list); mitigated by search + direct link + the required editorial cross-link
+  from the primary (AC10/P2), and fully reversible (drop `investigation_primary`
+  to restore the expandable group). Fail-closed direction: absent a primary the
+  group shows all (amendment 2026-07-09).
 
 ## 6. Two-phase delivery (one FO)
 
@@ -421,7 +484,38 @@ NEXT commit and is re-audited by the following round.
 |---|---|---|
 | C34 | The §2.2 raw-ingested classifier is stated as `raw/inbox/`; a TAI-RES evaluation doc relocated outside inbox (e.g. `raw/civilization/external-landscape/`) would be wrongly excluded from Topic Details | CARRIED (residual a) — conceptually the classifier is "raw ingested RESEARCH docs wherever placed (browser-ingest uploads + TAI-RES-* versions), excluding doctrine citations"; pinned by the named Topic-Details tests against the real corpus at implementation/IAR. Non-blocking, risk-reducing to fix. |
 
+## Appendix — Amendment log (post-CFADA-PASS)
+
+**v0.10.0 — 2026-07-09 — AMENDMENT (not a CFADA round).** After the v0.9.7 CFADA
+PASS, Michael directed (channel-A, this session) that "a single entry per
+investigation" be honored at the NAV layer for the sole multi-page cluster
+(Sakana) via `investigation_primary` — the nav-semantics decision was **Option A**
+(one primary row; companion reachable but off the top-level nav). This amendment:
+
+- adds **R9** to the FO (v0.3.0) and this packet (§2.6, §2.1, §2.5) — the
+  single nav-entry mechanism with fail-closed primary invariants;
+- revises **R8** (FO + §2.1 Phase-2) — Sakana renders one primary nav row, both
+  pages still conformant/reachable;
+- adds **AC10** (P1 nav-logic on fixtures; P2 live Sakana), the cluster primary
+  invariant (§2.5), and the §4 fail-safe bullet;
+- supersedes the `investigation_primary` point-fix that was in flight as
+  transpara-ai/wiki#71 (closed redundant 2026-07-09) — the standard now owns it.
+
+**Truth-object consequence.** Per the TLC birth-and-mutation rule this edit
+changes the packet blob, so the v0.9.7 CFADA PASS (blob
+`4bd40ec07c17360328df9da5c8fead0bab890d83`) is STRANDED on the old bytes and does
+NOT extend to v0.10.0. **v0.10.0 must re-run IADA → CFADA** (Claude author →
+Codex reviewer, materially independent) to zero design blockers before returning
+to Human Design Review (stage 6). No code before that re-audited packet is
+human-approved.
+
 ## Appendix — CFADA VERDICT
+
+> ⚠️ **SUPERSEDED BY AMENDMENT v0.10.0 (2026-07-09).** The PASS recorded below
+> binds to the **v0.9.7** bytes (blob `4bd40ec07c17360328df9da5c8fead0bab890d83`)
+> and does **not** cover v0.10.0's R9/R8 amendment. It is retained as the
+> historical gate record for v0.9.7; the amended packet re-runs IADA → CFADA
+> (see the Amendment log above). Gate state at v0.10.0: **re-audit pending.**
 
 **gate: CFADA — PASS, 0 design blockers.** Author family: **Claude (Opus 4.8)**. Reviewer family: **Codex** (`codex-cli 0.142.5`, gpt-5.5, xhigh) — materially independent of the author lineage (independence floor satisfied; provider openai). Command: `codex exec review --base origin/main`, bare, from the worktree; **16 rounds**.
 
@@ -437,4 +531,4 @@ NEXT commit and is re-audited by the following round.
 
 **Non-authorizations:** this CFADA PASS authorizes no code, grants no authority, does not mark any PR ready, does not close any issue/risk, and does not substitute for Human Design Review. Code begins only after Human Design Review (stage 6, Michael) approves.
 
-**Ready for Human Design Review (stage 6): YES** — 0 design blockers at the audited bytes.
+**Ready for Human Design Review (stage 6): YES** — 0 design blockers at the audited v0.9.7 bytes. *(Superseded: v0.10.0 adds R9 / revises R8 — re-audit pending, see the Amendment log.)*

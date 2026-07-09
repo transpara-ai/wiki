@@ -2,8 +2,8 @@
 doc_id: FO-WIKI-INVESTIGATION-STANDARD
 title: One canonical page per investigation — the Investigation Topic Standard (Factory Order)
 doc_type: factory-order
-version: 0.2.3
-status: confirmed (channel-A intake confirm, Michael, 2026-07-09 — answers archived in §5; R1–R8 confirmed as read; one FO / two phases; ADD unauthenticated + fail-closed duplicate guard). v0.2.1 corrects the MemPalace conformance claim per CFADA-r1 #2 — MemPalace is the content exemplar, not literally conformant; intent R1–R8 unchanged. v0.2.2 clarifies ADD retains the require_authoring transport gate (CFADA-r6 #15), intent unchanged. v0.2.3 makes R3 cover `superseded_raw_documents` too (CFADA-r11 #27), intent unchanged
+version: 0.3.0
+status: confirmed (channel-A intake confirm, Michael, 2026-07-09 — answers archived in §5; R1–R8 confirmed as read; one FO / two phases; ADD unauthenticated + fail-closed duplicate guard). v0.2.1 corrects the MemPalace conformance claim per CFADA-r1 #2 — MemPalace is the content exemplar, not literally conformant; intent R1–R8 unchanged. v0.2.2 clarifies ADD retains the require_authoring transport gate (CFADA-r6 #15), intent unchanged. v0.2.3 makes R3 cover `superseded_raw_documents` too (CFADA-r11 #27), intent unchanged. v0.3.0 (2026-07-09, channel-A) ADDS R9 — a single nav entry per investigation, including the multi-page cluster case — and revises R8's Sakana nav from an expandable grouping to a single `investigation_primary` row; this is an INTENT change (Michael's 2026-07-09 nav-semantics decision, Option A), so the design packet re-runs IADA → CFADA
 canonical: false
 created: 2026-07-08
 updated: 2026-07-09
@@ -13,6 +13,7 @@ authority: planning
 tlc_stage: factory-order
 source_of_intent:
   - Michael, in-session 2026-07-08 (archived verbatim in §4) — "establish a new standard for all Topics located under the INVESTIGATIONS heading … always a single entry per investigation … model … MemPalace … default is to ADD … regenerate the top-level summary … ALL raw ingested files … under a Topic Details section"
+  - Michael, 2026-07-09 (this session) — nav-semantics decision resolving "a single entry per investigation" for the sole multi-page cluster (Sakana): render ONE nav row via an `investigation_primary` page, the companion reachable but off the top-level nav (Option A); the basis for R9 and the R8 revision
   - Plan-mode approved pre-design /home/transpara/.claude/plans/agile-coalescing-flask.md — content sha256 9d1638e1687cdc3eacd736f57cfc7a45ec52b70185b5865f3f9574e1a645a150 (channel-A ingested doc; approved 2026-07-08; the locked decisions archived in §5)
   - wiki/mempalace.md (blob a9a9bc6bc83b01a9ba27776bb179e6d8b16de96c, canonical on main @ 2c9e672) — the content exemplar the standard models
   - docs/superpowers/specs/2026-07-03-per-ingestion-ops-packet.md (blob 48e330a27d8449c5c8ac0e412dcf6f7d98c23dfc) — governs ingest_ops Add/Replace/Remove/register; R5/R6 extend its ADD lane
@@ -117,12 +118,33 @@ intake_channel: A (owner-directed session 2026-07-08; confirmed 2026-07-09)
 - **R8 — All active investigation pages conform.** Every active investigation
   page (currently 19, MemPalace included) satisfies R2 + R3 and lists all its
   raw docs under Topic Details. Sakana AI stays **two** distinct conformant
-  pages under the single sanctioned `investigation_topic: Sakana AI` grouping;
-  the retired owainlewis tombstone is left untouched. *Verifiable:* the
-  conformance check (R2) passes for every active investigation page.
+  pages sharing `investigation_topic: Sakana AI`, rendered as a **single**
+  investigations-nav row via R9 (`investigation_primary` on the evaluation
+  page), both pages remaining conformant and reachable; the retired owainlewis
+  tombstone is left untouched. *Verifiable:* the conformance check (R2) passes
+  for every active investigation page.
   *Today:* structures vary; none is literally conformant — MemPalace is the
   content exemplar, but its dated heading is generalized in Phase 2 like the
   rest.
+
+- **R9 — A single nav entry per investigation (including multi-page clusters).**
+  The INVESTIGATIONS nav list shows exactly one entry per investigation. A
+  single-page investigation is one row (today's behavior). A genuine multi-page
+  cluster — an `investigation_topic` shared by ≥2 active pages, only Sakana AI
+  today — designates exactly one **active** page `investigation_primary: true`,
+  which renders as the cluster's single nav row (linking that page); the
+  non-primary page(s) stay full conformant pages reachable by search, direct
+  link, and an editorial cross-link from the primary, but do NOT get their own
+  top-level nav row. R9 is nav-only — it merges or retires nothing (the Sakana
+  pair both persist). *Fail-closed:* a multi-page cluster with **zero** active
+  primaries falls back to today's expandable group (no page hidden without an
+  explicit primary); **two or more** active primaries is a corpus deficiency
+  (refused by the conformance gate, not silently resolved). *Verifiable:* Sakana
+  renders as one investigations-nav row (the primary) with the companion absent
+  from the top-level nav yet reachable; a zero-primary multi-page fixture renders
+  the expandable group; a two-primary fixture fails conformance. *Today:*
+  `build_investigation_nav` (`build_site.py:1406`) renders a ≥2-page cluster as
+  an expandable group with one child per page — there is no primary-selection.
 
 ## 2. Non-goals and constraints
 
@@ -130,7 +152,8 @@ Non-goals: no LLM or network in the builder, ever; no public-internet exposure
 of any wiki/Civilization surface; no change to the deny-by-default
 ingest-authorization artifact model or the secret scanner; no removal or
 reanimation of the retired owainlewis tombstone; no forced merge of the Sakana
-pair; no change to Replace/Remove/register semantics beyond adding the ADD
+pair (R9 collapses their shared NAV entry to one row — it does not merge the two
+pages); no change to Replace/Remove/register semantics beyond adding the ADD
 lane; **no change to how sources are added to existing non-investigation pages**
 (architecture/concept/foundational adds keep today's behavior — CFADA-r1 #1);
 no arc/front-page/board changes; no batch/LLM re-synthesis of prose
@@ -213,7 +236,8 @@ pre-locked in the plan-mode session (the reading basis):
 - **Summary regeneration:** author pass gated by the existing `stale_since`
   banner; no LLM in the builder (→ R5/R7).
 - **Topic Details:** the renamed infobox field (→ R3). Sakana AI stays two
-  investigations (→ R8); Summary + Civilization Contribution map to MemPalace's
+  investigations, shown as one nav row (→ R8/R9); Summary + Civilization
+  Contribution map to MemPalace's
   existing bold-lead + callout rendering, not literal `##` headings (→ R2).
 
 Confirm answers (2026-07-09):
@@ -221,8 +245,9 @@ Confirm answers (2026-07-09):
 - **Q1 — Is R1–R8 the order?** *Confirmed as read.* → FO confirmed.
 - **Q2 — Decomposition?** *One Factory Order, two phases* — a machinery code
   PR (R2 template + R3 rename + R4 TOC suppression + R5/R6 ingest ADD-default +
-  tests), then data-only retrofit PR(s) for the 19 pages (R8). One design
-  packet answers this FO.
+  R9 nav single-entry + tests), then data-only retrofit PR(s) for the 19 pages
+  (R8, + Sakana's `investigation_primary` per R9). One design packet answers
+  this FO.
 - **Q3 — Standard home?** Defaulted (uncontested): this FO + design packet are
   the normative standard; a wiki meta-page is an optional later nicety.
 - **Q4 — ADD-lane authorization?** *Unauthenticated + fail-closed guard* — ADD
