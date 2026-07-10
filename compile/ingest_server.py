@@ -808,7 +808,7 @@ def append_raw_documents_to_article(slug, sources):
     return append_frontmatter_list_items(slug, "raw_documents", local_sources, raw_document_line)
 
 
-def create_article_from_source(source, note="", name=""):
+def create_article_from_source(source, note="", name="", org="", section=""):
     if not source.startswith("raw/"):
         return "", False
     # R6/§2.4: the OPERATOR NAME (not the doc title) drives the page — slug and
@@ -875,7 +875,11 @@ def create_article_from_source(source, note="", name=""):
         json.dumps(today),
         json.dumps(today),
         json.dumps(source),
-        source_line(source, note, ""),  # a create seeds a topic; supersedes nothing (CFAR: Codex)
+        # a create seeds a topic; supersedes nothing (CFAR: Codex). The seed
+        # registration carries org/section like every other add (CFAR r1 P2:
+        # the later append skips this source as already-present, so the pair
+        # must ride the seed line itself).
+        source_line(source, note, "", org, section),
         body_title,
         body_title,
     )
@@ -1115,7 +1119,8 @@ class IngestHandler(SimpleHTTPRequestHandler):
                 created = False
                 if saved:
                     _created_slug, created = create_article_from_source(
-                        saved[0]["path"], note, name=raw_name)
+                        saved[0]["path"], note, name=raw_name,
+                        org=org, section=section)
                 created_article = {"slug": target_slug, "created": created}
             elif route == "append":
                 # destination coherence must be read INSIDE the lock so it is

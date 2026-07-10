@@ -1640,8 +1640,11 @@ def build_repo_nav(current_repo="", org=DEFAULT_ORG):
     total = sum(len(grouped.get(g, [])) for g in org_groups)
     if not total:
         return ""
-    current_here = any(r["slug"] == current_repo
-                       for g in org_groups for r in grouped.get(g, []))
+    # "index" (repos.html) is current for the band hosting the overview link,
+    # preserving the pre-split `if current_repo:` open behavior (CFAR r1 P3)
+    current_here = (current_repo == "index" and org == DEFAULT_ORG) or any(
+        r["slug"] == current_repo
+        for g in org_groups for r in grouped.get(g, []))
     # data-tier keys the sidebar collapse persistence: transpara-ai keeps the
     # historical "repos" key so stored preferences survive; transpara gets its
     # own key so the two bands never share open/closed state.
@@ -1740,8 +1743,11 @@ def build_sidebar(current, current_repo=""):
         band.append(build_repo_nav(current_repo, org=org))
         for tier in ORG_SECTIONS[org]:
             # retired articles drop from nav but stay reachable by direct link
+            # .get with DEFAULT_ORG mirrors D3's absent-org rule exactly; an
+            # UNKNOWN org can never reach here (article_meta fails the build),
+            # so this is the grandfather default, not an acceptance path.
             arts = sorted([m for m in META.values()
-                           if m["org"] == org and m["tier"] == tier
+                           if m.get("org", DEFAULT_ORG) == org and m["tier"] == tier
                            and not m.get("retired_on")],
                           key=lambda m: m["title"].lower())
             if not arts:

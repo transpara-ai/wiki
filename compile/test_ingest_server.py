@@ -476,6 +476,8 @@ def test_ingest_endpoint_path_runs_refresh_and_returns_refresh_payload():
         )
         body = (
             "target_slug=example&"
+            "org=transpara-ai&"
+            "section=investigation&"
             "external_urls=https%3A%2F%2Fexample.com%2Fpaper&"
             "note=citation%20update"
         ).encode("utf-8")

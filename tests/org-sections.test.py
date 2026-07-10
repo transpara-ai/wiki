@@ -153,6 +153,12 @@ class TestOrgSections(unittest.TestCase):
         counts = [int(m) for m in re.findall(r"<em>(\d+)</em>", nav_t + nav_ai)]
         self.assertEqual(sum(counts), len(build_site.REPOS),
                          "every repo appears under exactly one org band")
+        # repos.html ("index") keeps the pre-split open behavior: current on
+        # the band hosting the overview link, and only there (CFAR r1 P3)
+        self.assertIn('data-current-group="true"',
+                      build_site.build_repo_nav("index", org="transpara-ai"))
+        self.assertNotIn('data-current-group="true"',
+                         build_site.build_repo_nav("index", org="transpara"))
 
     # ---- TC6 (AC5): the full fail-closed input matrix ----
     def test_ingest_org_section_fail_closed(self):
@@ -253,6 +259,18 @@ class TestOrgSections(unittest.TestCase):
             text = (pathlib.Path(tmp) / "existing.md").read_text()
         self.assertEqual(added, ["raw/inbox/new.md"])
         self.assertIn("org: transpara-ai; section: concept", text)
+        # the CREATE route's seed source line carries the pair too — the later
+        # append skips the seed as already-present, so it must ride the
+        # skeleton itself (CFAR r1 P2)
+        with tempfile.TemporaryDirectory() as tmp:
+            with wiki_root(ingest_server, tmp):
+                slug, created = ingest_server.create_article_from_source(
+                    "raw/inbox/2026-07-10/x/doc.md", "seed note",
+                    name="Seed Topic", org="transpara-ai",
+                    section="investigation")
+                seed_text = (pathlib.Path(tmp) / ("%s.md" % slug)).read_text()
+        self.assertTrue(created)
+        self.assertIn("org: transpara-ai; section: investigation", seed_text)
 
 
 if __name__ == "__main__":
