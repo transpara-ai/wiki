@@ -1977,14 +1977,21 @@ def test_cfar14_data_href_not_queued_on_remove():
 
 def test_cfar14_add_retired_check_inside_lock():
     """CFAR-14 P2: the effective-target retired check must run INSIDE the write
-    lock and BEFORE save_uploads (write-free AND race-free)."""
+    lock and BEFORE save_uploads (write-free AND race-free). The check now lives
+    in the fail-closed resolve_ingest_route router (Investigation Topic Standard
+    R1/§2.4), which handle_ingest calls inside the lock before any save."""
     src = (pathlib.Path(__file__).resolve().parent / "ingest_server.py").read_text()
     seg = src.split("def handle_ingest", 1)[1].split("\n    def ", 1)[0]
     lock_at = seg.index("wiki_write_lock()")
-    check_at = seg.index("article_is_retired(effective_slug)")
+    route_at = seg.index("resolve_ingest_route(")
     save_at = seg.index("save_uploads(")
-    assert lock_at < check_at < save_at, \
-        "retired check must be inside the lock, before save_uploads"
+    assert lock_at < route_at < save_at, \
+        "the route decision (incl. the retired check) must be inside the lock, " \
+        "before save_uploads"
+    # and the retired check genuinely lives in that router (fail-closed)
+    resolve_seg = src.split("def resolve_ingest_route", 1)[1].split("\ndef ", 1)[0]
+    assert "article_is_retired(target_slug)" in resolve_seg, \
+        "resolve_ingest_route must perform the retired-tombstone check"
     print("ok test_cfar14_add_retired_check_inside_lock")
 
 
@@ -2754,6 +2761,78 @@ def test_register_attests_committed_clearances():
     assert "committed" in msg, msg
     print("ok test_register_attests_committed_clearances")
 
+
+# ---- Investigation Topic Standard (R5/R7) — set_article_stale ----
+
+def test_set_article_stale_stamps_and_refuses_unknown():
+    """R5/R7: set_article_stale stamps stale_since (the wrapper the ADD lane and
+    Replace share); re-stamping updates it; an unknown slug refuses (fail-closed)."""
+    root = fresh_root()
+    article(root, "topic-x")
+    ops.set_article_stale(root, "topic-x", NOW)
+    fm, _, _ = srv.split_fm((root / "wiki" / "topic-x.md").read_text())
+    assert srv.fm_val(fm, "stale_since") == NOW, "stamps stale_since"
+    later = "2026-07-05T09:30:00+00:00"
+    ops.set_article_stale(root, "topic-x", later)
+    fm, _, _ = srv.split_fm((root / "wiki" / "topic-x.md").read_text())
+    assert srv.fm_val(fm, "stale_since") == later, "re-stamp updates stale_since"
+    try:
+        ops.set_article_stale(root, "no-such-topic", NOW)
+        assert False, "unknown slug must refuse"
+    except ops.OpRefused:
+        pass
+    print("ok test_set_article_stale_stamps_and_refuses_unknown")
+
+
+def test_fm_list_values_strips_inline_comment():
+    # CFAR (Codex): the ops inline-list parser strips a trailing comment too, so
+    # replace/remove agree with the UI/renderer on a commented inline list.
+    lines = ["raw_documents: [raw/inbox/a.md, raw/inbox/b.md]  # note"]
+    assert ops.fm_list_values(lines, "raw_documents") == ["raw/inbox/a.md", "raw/inbox/b.md"]
+    block = ops._normalize_list_to_block(lines, "raw_documents")
+    assert ops.fm_list_values(block, "raw_documents") == ["raw/inbox/a.md", "raw/inbox/b.md"]
+    print("ok test_fm_list_values_strips_inline_comment")
+
+
+def test_new_investigation_ingest_ignores_supersedes():
+    """CFAR (Codex): a new-investigation ingest carrying a stray `supersedes`
+    (a stale browser selection or an API field) records NO misleading cross-topic
+    supersedes provenance — the created page and the manifest carry none."""
+    with tempfile.TemporaryDirectory() as d:
+        root = _server_root(d)  # wiki/example.md + compile/
+        old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+               srv.subprocess.Popen)
+        old_token = os.environ.pop(srv.AUTHORING_TOKEN_ENV, None)
+        try:
+            srv.ROOT = root
+            srv.WIKI = root / "wiki"
+            srv.RAW_INBOX = root / "raw" / "inbox"
+            srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
+            srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
+            srv.subprocess.Popen = lambda *a, **k: _FakeProc()
+            ctype, body = _multipart(
+                {"new_investigation": "true", "name": "Fresh Subject",
+                 "supersedes": "raw/inbox/2026-01-01/other/OTHER-Evaluation.md",
+                 "external_urls": "https://example.com/fresh"},
+                "seed.md", b"# seed\n\nbody\n", field_name="documents")
+            h = make_handler("/api/ingest", body=body, content_type=ctype)
+            srv.IngestHandler.do_POST(h)
+            assert h.status == 200, (h.status, h.wfile.getvalue()[:300])
+            page = root / "wiki" / "fresh-subject.md"
+            assert page.exists(), "the new investigation was created"
+            assert "supersedes:" not in page.read_text(), \
+                "a create records no supersedes provenance"
+            # the stray supersedes ref must not persist ANYWHERE for a create —
+            # not the article, not the URL manifest shard, not the ledger.
+            leaked = [str(p.relative_to(root)) for p in root.rglob("*")
+                      if p.is_file() and "OTHER-Evaluation.md" in p.read_text(errors="ignore")]
+            assert not leaked, "stray supersedes leaked into: %s" % leaked
+        finally:
+            (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
+             srv.subprocess.Popen) = old
+            if old_token is not None:
+                os.environ[srv.AUTHORING_TOKEN_ENV] = old_token
+    print("ok test_new_investigation_ingest_ignores_supersedes")
 
 
 if __name__ == "__main__":

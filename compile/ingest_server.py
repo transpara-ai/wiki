@@ -87,12 +87,24 @@ def fm_val(fm, key):
     return m.group(1).strip().strip('"') if m else ""
 
 
+def fm_scalar(fm, key):
+    """A frontmatter scalar with any inline comment stripped BEFORE quote removal,
+    so `entity: Foo # canonical` reads as `Foo` (not `Foo # canonical`). Use this
+    where a scalar's VALUE feeds the fail-closed collision guard, so a normal
+    inline comment cannot pollute the compact key and let a duplicate through
+    (CFAR: Codex)."""
+    m = re.search(r"^%s:[ \t]*(.+)$" % re.escape(key), fm, re.M)
+    if not m:
+        return ""
+    return strip_inline_comment(m.group(1)).strip().strip('"').strip("'")
+
+
 def fm_list(fm, key):
     m = re.search(r"^%s:[ \t]*(.*)$" % re.escape(key), fm, re.M)
     if not m:
         return []
-    inline = m.group(1).strip()
-    if inline.startswith("[") and inline.endswith("]"):
+    inline = strip_inline_comment(m.group(1)).strip()  # a trailing `# comment` on an
+    if inline.startswith("[") and inline.endswith("]"):  # inline list must not hide it
         return [x.strip().strip('"').strip("'") for x in inline[1:-1].split(",") if x.strip()]
     items = []
     for line in fm[m.end():].splitlines():
@@ -113,13 +125,16 @@ def article_is_retired(slug):
     return bool(fm_val(fm, "retired_on"))
 
 
-def prospective_unassigned_slug(form):
-    """The slug an UNASSIGNED upload would resolve to, derived from the first
-    document's in-memory content (mirrors create_article_from_source's
-    title logic) so the retired-tombstone guard can refuse WRITE-FREE before
-    save_uploads persists anything (CFAR r13). The no-title fallback differs
-    from the saved sha-suffixed stem, but that form cannot collide with a
-    human-named retired slug."""
+def prospective_unassigned_slug(form=None, name=""):
+    """The slug a create would resolve to, in lockstep with
+    create_article_from_source (AC5, CFADA-r2 #4). For an explicit
+    new-investigation the operator NAME drives the slug: slugify(name) — the same
+    derivation the creator uses, so the pre-save collision/retired guard predicts
+    the exact file a create would touch. With no name it falls back to the legacy
+    first-document title derivation (no longer a create path in handle_ingest;
+    retained for callers that predict the slug of an unnamed unassigned upload)."""
+    if name:
+        return slugify(name)
     for item in field_values(form, "documents"):
         if not getattr(item, "filename", ""):
             continue
@@ -300,6 +315,129 @@ def slugify(text):
     text = SLUG_CHARS_RE.sub("-", text).strip("-")
     text = re.sub(r"-+", "-", text)
     return text[:80].strip("-") or "ingested-document"
+
+
+def collision_key(s):
+    """§2.4 compact collision key: casefold, then keep only alphanumerics —
+    dropping whitespace, hyphens, punctuation, and parentheses. Collapses every
+    separator variant, including no-space vs space ("MemPalace"/"Mem Palace"/
+    "Mem-Palace" -> "mempalace"; "Sakana AI"/"Sakana-AI"/"Sakana (AI)" ->
+    "sakanaai"); unlike slugify it NEVER drops text (CFADA-r8 #21, r9 #22)."""
+    return "".join(ch for ch in (s or "").casefold() if ch.isalnum())
+
+
+def article_tier(slug):
+    path = WIKI / ("%s.md" % slug)
+    if not path.exists():
+        return ""
+    fm, _, _ = split_fm(path.read_text())
+    # fm_scalar: a commented `tier: investigation # x` must still gate the ADD
+    # stale stamp, else no re-derivation banner is produced (CFAR: Codex).
+    return fm_scalar(fm, "tier")
+
+
+def _investigation_collision_corpus():
+    """The collision surfaces a new investigation name must avoid (§2.4). Returns
+    (keys, slugs): `keys` = collision_key of every page slug PLUS, for every
+    investigation page (active OR retired tombstone), its entity ∪ aliases ∪
+    investigation_topic cluster label; `slugs` = every page slug (active OR
+    tombstone). Retired frontmatter is included so a new investigation cannot
+    reanimate a retired subject via its old entity/alias/cluster (CFADA-r12 #28)."""
+    keys, slugs = set(), set()
+    for p in sorted(WIKI.glob("*.md")):
+        fm, _, _ = split_fm(p.read_text())
+        slugs.add(p.stem)
+        keys.add(collision_key(p.stem))
+        # fm_scalar (not fm_val): a normal inline comment on entity/topic/tier must
+        # not pollute the compact collision key, else a commented `entity: Foo #x`
+        # would key as `foox` and a duplicate `Foo` could slip the guard (CFAR: Codex).
+        if fm_scalar(fm, "tier") == "investigation" or fm_val(fm, "retired_on"):
+            for value in ([fm_scalar(fm, "entity"), fm_scalar(fm, "investigation_topic")]
+                          + fm_list(fm, "aliases")):
+                if value:
+                    keys.add(collision_key(value))
+    return keys, slugs
+
+
+def new_investigation_name_ok(name):
+    """R6/§2.4: an explicit new-investigation name must be non-empty, yield a
+    non-empty compact collision_key, AND yield a slugify() that is NOT the generic
+    'ingested-document' fallback — else a create could mint a generic page
+    unrelated to the subject (names like "!!!" or "()"; CFADA-r11 #26)."""
+    name = (name or "").strip()
+    if not name:
+        return False
+    # a name is a single-line subject label — reject C0 control/newline chars,
+    # which would break the skeleton's H1 and bold Summary lead (the created page
+    # would then fail its own investigation_conformance) (CFAR: Codex).
+    if any(ord(ch) < 0x20 for ch in name):
+        return False
+    if not collision_key(name):
+        return False
+    if slugify(name) == "ingested-document":
+        return False
+    return True
+
+
+def subject_absent(name):
+    """Fail-closed page-creation guard (R1/§2.4). True ONLY if the subject is
+    proven absent: NEITHER the compact collision_key(name) collides with any
+    existing entity / alias / cluster / slug (active or retired), NOR the generated
+    slugify(name) equals any existing page slug. Both are checked because slugify
+    DROPS parenthesized text ("Foo (Bar)" -> "foo") while collision_key never
+    does — so the compact key can differ from the file slugify would actually
+    touch; slugify(name) is the fail-closed ground truth (CFADA-r10 #23). Any
+    match refuses; the unknown/ambiguous case never creates."""
+    keys, slugs = _investigation_collision_corpus()
+    if collision_key(name) in keys:
+        return False
+    if slugify(name) in slugs:
+        return False
+    return True
+
+
+def form_flag(form, name):
+    """A boolean form field, default OFF. True only for an explicit affirmative
+    token — the fail-safe allowlist direction, so an absent/malformed value never
+    enables the create lane (and the collision guard is the real gate regardless)."""
+    return first_value(form, name).strip().lower() in {"true", "on", "1", "yes"}
+
+
+def resolve_ingest_route(*, new_investigation, target_slug, name, has_document=True):
+    """Fail-closed ingest router (R1/R5/R6/§2.4). Returns "create" for an explicit
+    new investigation whose name is valid, that carries a document to seed the
+    page, AND whose subject is proven absent, or "append" to add to an existing
+    ACTIVE page (any tier); otherwise raises OpRefused. The ONLY create branch is
+    new_investigation AND a valid name AND a seeding document AND the subject
+    proven absent — every other path appends or refuses, and there is no
+    else/fall-through that creates. For "append" the caller uses target_slug (here
+    proven to exist and be active); for "create" the caller derives the slug from
+    the name via prospective_unassigned_slug (lockstep with the creator)."""
+    if new_investigation:
+        if not new_investigation_name_ok(name):
+            raise ingest_ops.OpRefused(
+                "a new investigation requires a name that yields a slug and a "
+                "non-empty collision key")
+        if not has_document:
+            raise ingest_ops.OpRefused(
+                "a new investigation requires at least one uploaded document to "
+                "seed the page")
+        if not subject_absent(name):
+            raise ingest_ops.OpRefused(
+                "an investigation for this subject already exists "
+                "(name / slug / alias / cluster collision) — refused")
+        return "create"
+    if not target_slug:
+        raise ingest_ops.OpRefused(
+            "add requires an existing target_slug; check 'new investigation' to "
+            "create a page")
+    if article_is_retired(target_slug):
+        raise ingest_ops.OpRefused(
+            "target article is retired — Add refused; a retired topic is a "
+            "tombstone reachable by direct link only")
+    if not (WIKI / ("%s.md" % target_slug)).exists():
+        raise ingest_ops.OpRefused("target article does not exist — Add refused")
+    return "append"
 
 
 def child_path_under(child, root):
@@ -566,7 +704,22 @@ def append_frontmatter_list_items(slug, key, values, line_builder):
 
     fm_start = 3
     fm_text = raw[fm_start:fm_end]
-    m = re.search(r"^%s:[ \t]*.*$" % re.escape(key), fm_text, re.M)
+    m = re.search(r"^%s:[ \t]*(.*)$" % re.escape(key), fm_text, re.M)
+    inline_val = strip_inline_comment(m.group(1)).strip() if m else ""
+    if inline_val.startswith("[") and inline_val.endswith("]"):
+        # NORMALIZE an inline list to block form before appending — otherwise the
+        # new rows would be a mixed inline+block shape the parser ignores, so a
+        # browser Add would silently vanish from sources / Topic Details even
+        # though the request succeeded (CFAR: Codex).
+        existing_items = [x.strip().strip('"').strip("'")
+                          for x in inline_val[1:-1].split(",") if x.strip()]
+        key_line_start = fm_start + m.start()
+        key_line_end = fm_start + m.end()  # end of the inline line, before its \n
+        block = ("%s:\n" % key
+                 + "".join("  - %s\n" % json.dumps(v) for v in existing_items)
+                 + "".join(lines))
+        ingest_ops.atomic_write_text(path, raw[:key_line_start] + block + raw[key_line_end + 1:])
+        return added
     if not m:
         insert_at = fm_end
         block = "\n%s:\n" % key + "".join(lines)
@@ -599,11 +752,17 @@ def append_raw_documents_to_article(slug, sources):
     return append_frontmatter_list_items(slug, "raw_documents", local_sources, raw_document_line)
 
 
-def create_article_from_source(source, note="", supersedes=""):
+def create_article_from_source(source, note="", name=""):
     if not source.startswith("raw/"):
         return "", False
-    title = source_title_from_path(source)
-    slug = slugify(title)
+    # R6/§2.4: the OPERATOR NAME (not the doc title) drives the page — slug and
+    # entity — so a new investigation is keyed on the declared subject, not on
+    # whatever title the uploaded document happens to carry (CFADA-r2 #4). The
+    # name has already cleared the fail-closed collision guard in
+    # resolve_ingest_route; with no name (legacy/direct callers) it falls back to
+    # the document title.
+    entity = name or source_title_from_path(source)
+    slug = slugify(entity)
     path = WIKI / ("%s.md" % slug)
     doc_id = source_doc_id_from_path(source)
     alias_lines = []
@@ -613,7 +772,13 @@ def create_article_from_source(source, note="", supersedes=""):
     if path.exists():
         return slug, False
     today = dt.datetime.now().strftime("%Y-%m-%d")
-    body_title = markdown_inline_text(title)
+    body_title = markdown_inline_text(entity)
+    # R6: the canonical R2 skeleton — required frontmatter (render-driving fields
+    # non-empty), stale_since set (so the re-derivation banner shows until an
+    # authoring pass clears it), the exact awaiting-synthesis status string, NO
+    # auto investigation_topic (CFADA-r21 #44), a bold Summary lead, and the five
+    # required `## ` headings in canonical order. investigation_conformance() must
+    # return ∅ for this skeleton (AC5/AC6).
     body = (
         "---\n"
         "entity: %s\n"
@@ -621,10 +786,11 @@ def create_article_from_source(source, note="", supersedes=""):
         "tier: investigation\n"
         "status: browser-ingested source; awaiting synthesis\n"
         "last_compiled: %s\n"
-        "investigation_topic: %s\n"
-        "civilization_contribution: \"Not directly included, but used as reference.\"\n"
+        "stale_since: %s\n"
+        "civilization_contribution: \"Not yet assessed — awaiting curated synthesis of the ingested source.\"\n"
         "raw_documents:\n"
         "  - %s\n"
+        "current_research_version: \"0.0.0\"\n"
         "sources:\n%s"
         "confidence:\n"
         "  sources: browser-ingested source document\n"
@@ -632,23 +798,28 @@ def create_article_from_source(source, note="", supersedes=""):
         "  authority: advisory; not accepted doctrine, release evidence, or Platform competitive positioning\n"
         "---\n\n"
         "# %s\n\n"
-        "**%s** is a browser-ingested external investigation source. This page "
-        "exists so the document is visible in the wiki navigation while curated "
-        "article synthesis remains explicit.\n\n"
-        "## Placement\n\n"
-        "The source is held as Civilization external-landscape research until a "
-        "curated article states a narrower placement. It is not accepted doctrine, "
-        "not production behavior, and not customer/demo access policy.\n\n"
-        "## Source Access\n\n"
-        "Use the raw document link in the right rail or the article source list to "
-        "open the formatted source document.\n"
+        "**%s is a browser-ingested external investigation source awaiting curated "
+        "synthesis.** This page exists so the raw document is visible in the wiki "
+        "navigation while article synthesis remains an explicit, governed step.\n\n"
+        "## What Changed with the Research\n\n"
+        "Awaiting synthesis — the raw source is listed under Topic Details.\n\n"
+        "## The Boundary\n\n"
+        "Awaiting synthesis. Until a curated pass runs, treat this as raw "
+        "external-landscape research: not accepted doctrine, not production "
+        "behavior, and not customer/demo access policy.\n\n"
+        "## Capability Read\n\n"
+        "Awaiting synthesis.\n\n"
+        "## Benchmark Reality\n\n"
+        "Awaiting synthesis.\n\n"
+        "## Sources & Provenance\n\n"
+        "See Topic Details and the source list for the raw ingested document(s).\n"
     ) % (
-        json.dumps(title),
+        json.dumps(entity),
         "".join(alias_lines),
         json.dumps(today),
-        json.dumps(title),
+        json.dumps(today),
         json.dumps(source),
-        source_line(source, note, supersedes),
+        source_line(source, note, ""),  # a create seeds a topic; supersedes nothing (CFAR: Codex)
         body_title,
         body_title,
     )
@@ -805,13 +976,20 @@ class IngestHandler(SimpleHTTPRequestHandler):
         note = first_value(form, "note").strip()
         supersedes = first_value(form, "supersedes").strip()
         raw_external_urls = first_value(form, "external_urls")
-        # quarantine BEFORE any validation or write (packet §2.4/§2.8): the
-        # slug/URL validators below echo the submitted value in their errors,
-        # so nothing reaches them until it is proven secret-free; a refusal
-        # here saves nothing and never echoes the finding bytes. Quarantine is
-        # request-content only, so it may run before the lock.
+        # R5/R6: the intent model. `new_investigation` (default OFF) is the ONLY
+        # page-creation lane; its `name` — not the doc title — drives the page.
+        new_investigation = form_flag(form, "new_investigation")
+        raw_name = first_value(form, "name").strip()
+        # quarantine BEFORE any validation, derivation, write, OR echo (packet
+        # §2.4/§2.8, CFADA-r6 #16): the slug/URL validators and the refusal echoes
+        # below surface the submitted value, so nothing reaches them until it is
+        # proven secret-free. The operator `name` is a NEW persisted+echoed field,
+        # so it JOINS the existing quarantine set (extended, never narrowed —
+        # CFADA-r8 #19). Quarantine is request-content only, so it may run before
+        # the lock; a refusal here saves nothing and never echoes finding bytes.
         fields = {"target_slug": raw_target_slug, "note": note,
-                  "supersedes": supersedes, "external_urls": raw_external_urls}
+                  "supersedes": supersedes, "external_urls": raw_external_urls,
+                  "name": raw_name}
         any_document = False
         for i, item in enumerate(field_values(form, "documents")):
             if not getattr(item, "filename", ""):
@@ -847,26 +1025,46 @@ class IngestHandler(SimpleHTTPRequestHandler):
             # would derive) and refuse INSIDE the lock, BEFORE any write — so
             # the check is both write-free AND race-free against a concurrent
             # Remove that retires the target (CFAR r11/r12/r13/r14).
-            effective_slug = target_slug or prospective_unassigned_slug(form)
-            if effective_slug and article_is_retired(effective_slug):
-                raise ingest_ops.OpRefused(
-                    "target article is retired — Add refused; a retired topic "
-                    "is a tombstone reachable by direct link only")
-            # a PROVIDED target_slug must name an existing article (only the
-            # unassigned path creates new articles) — refuse a nonexistent
-            # target before any write, else save_uploads persists raw +
-            # manifest and the append below fails with no ledger row (CFAR r19)
-            if target_slug and not (WIKI / ("%s.md" % target_slug)).exists():
-                raise ingest_ops.OpRefused(
-                    "target article does not exist — Add refused")
-            saved = save_uploads(form, target_slug, note, supersedes)
-            source_refs = [s["path"] for s in saved] + external_urls
+            # R1/R5/R6 fail-closed router (§2.4): "create" ONLY for an explicit
+            # new investigation whose name is valid AND whose subject is proven
+            # absent; "append" to an existing ACTIVE page; otherwise it raises —
+            # write-free and INSIDE the lock, so retired/collision checks are
+            # race-free against a concurrent Remove (CFAR r11–r14).
+            route = resolve_ingest_route(
+                new_investigation=new_investigation, target_slug=target_slug,
+                name=raw_name, has_document=any_document)
             created_article = {"slug": "", "created": False}
-            if not target_slug and saved:
-                target_slug, created = create_article_from_source(saved[0]["path"], note, supersedes)
+            # a brand-new investigation supersedes nothing, so the create lane
+            # ignores any `supersedes` the form/API carried (a stale browser
+            # selection or an API field) — no misleading cross-topic provenance on
+            # the seed source, extra sources, or the manifest (CFAR: Codex).
+            add_supersedes = supersedes if route == "append" else ""
+            if route == "create":
+                # the operator NAME drives the slug (lockstep with the creator);
+                # target_slug is ignored in this lane.
+                target_slug = prospective_unassigned_slug(form, raw_name)
+                saved = save_uploads(form, target_slug, note, add_supersedes)
+                source_refs = [s["path"] for s in saved] + external_urls
+                created = False
+                if saved:
+                    _created_slug, created = create_article_from_source(
+                        saved[0]["path"], note, name=raw_name)
                 created_article = {"slug": target_slug, "created": created}
-            added = append_sources_to_article(target_slug, source_refs, note, supersedes) if target_slug else []
+            elif route == "append":
+                saved = save_uploads(form, target_slug, note, add_supersedes)
+                source_refs = [s["path"] for s in saved] + external_urls
+            else:
+                # unreachable — resolve_ingest_route returns create/append or
+                # raises. A fall-through never creates or appends (fail-closed).
+                raise ingest_ops.OpRefused("unresolved ingest route")
+            added = append_sources_to_article(target_slug, source_refs, note, add_supersedes) if target_slug else []
             raw_added = append_raw_documents_to_article(target_slug, source_refs) if target_slug else []
+            # R5/R7: an investigation ADD (or the new skeleton) stamps stale_since
+            # so the reason-neutral "summary re-derivation pending" banner renders
+            # until an authoring pass clears it. Non-investigation targets keep
+            # today's behavior — no stale stamp (CFADA-r1 #1).
+            if target_slug and article_tier(target_slug) == "investigation":
+                ingest_ops.set_article_stale(ROOT, target_slug, dt.datetime.now(dt.timezone.utc))
             for url in external_urls:
                 append_manifest({
                     "ingested_at": dt.datetime.now(dt.timezone.utc).isoformat(),
@@ -874,7 +1072,7 @@ class IngestHandler(SimpleHTTPRequestHandler):
                     "target_slug": target_slug,
                     "source_url": url,
                     "note": note,
-                    "supersedes": supersedes,
+                    "supersedes": add_supersedes,  # "" for a create (CFAR: Codex)
                 })
             refresh = run_refresh_unlocked()
             ingest_ops.append_ledger(ROOT / "compile" / "ingest-ledger.jsonl", {

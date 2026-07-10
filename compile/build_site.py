@@ -275,6 +275,18 @@ def fm_val(fm, key):
     return m.group(1).strip().strip('"') if m else ""
 
 
+def fm_scalar(fm, key):
+    """A frontmatter scalar with any inline comment stripped BEFORE quote removal,
+    so `entity: Foo # note` reads as `Foo` and a comment-only `entity: # TODO`
+    reads as empty. Use this wherever a scalar's VALUE is load-bearing — grouping,
+    conformance emptiness, the primary flag — so a normal inline comment can't
+    pollute the value (CFAR: Codex)."""
+    m = re.search(r"^%s:[ \t]*(.+)$" % re.escape(key), fm, re.M)
+    if not m:
+        return ""
+    return strip_inline_comment(m.group(1)).strip().strip('"').strip("'")
+
+
 def strip_inline_comment(s):
     return split_inline_comment(s)[0]
 
@@ -305,8 +317,8 @@ def fm_list(fm, key):
     m = re.search(r"^%s:[ \t]*(.*)$" % re.escape(key), fm, re.M)
     if not m:
         return []
-    inline = m.group(1).strip()
-    if inline.startswith("[") and inline.endswith("]"):
+    inline = strip_inline_comment(m.group(1)).strip()  # a trailing `# comment` on an
+    if inline.startswith("[") and inline.endswith("]"):  # inline list must not hide it
         return [x.strip().strip('"') for x in inline[1:-1].split(",") if x.strip()]
     items, start = [], m.end()
     for line in fm[start:].splitlines():
@@ -322,7 +334,7 @@ def fm_list_with_comments(fm, key):
     if not m:
         return []
     out = []
-    inline = m.group(1).strip()
+    inline = strip_inline_comment(m.group(1)).strip()
     if inline.startswith("[") and inline.endswith("]"):
         for x in inline[1:-1].split(","):
             item = x.strip().strip('"').strip("'")
@@ -347,8 +359,12 @@ def article_meta():
         fm, _ = split_fm(p.read_text())
         meta[p.stem] = {
             "slug": p.stem,
-            "title": fm_val(fm, "entity") or p.stem.replace("-", " "),
-            "tier": fm_val(fm, "tier") or "concept",
+            # fm_scalar for the value-load-bearing title/tier (a commented
+            # `tier: investigation # x` must still gate the TOC, nav group, and
+            # contribution box); retired_on stays fm_val so an ambiguous/comment-
+            # only value still drops the page from nav (fail-safe) (CFAR: Codex).
+            "title": fm_scalar(fm, "entity") or p.stem.replace("-", " "),
+            "tier": fm_scalar(fm, "tier") or "concept",
             "retired_on": fm_val(fm, "retired_on"),
         }
     return meta
@@ -834,6 +850,32 @@ def build_toc(tokens):
     return '<div class="toc"><div class="toctitle">Contents</div>%s</div>' % render(tokens)
 
 
+def article_toc(meta, toc_tokens, is_home=False):
+    # R4 (Investigation Topic Standard): tier: investigation pages render no
+    # in-topic Table of Contents; every other tier keeps its Contents box.
+    if is_home or (meta or {}).get("tier") == "investigation":
+        return ""
+    return build_toc(toc_tokens)
+
+
+def state_banner_html(fm):
+    # Retired takes precedence over stale. R7: the stale-since wording is
+    # reason-neutral ("raw sources changed; summary re-derivation pending"), so it
+    # is correct for an unauthenticated ADD as well as a Replace — the old text
+    # ("raw sources were replaced ... pending authorization") was false for an ADD.
+    retired_on = fm_val(fm, "retired_on")
+    if retired_on:
+        return ('<div class="article-state-banner">Retired on %s — %s</div>'
+                % (html.escape(retired_on),
+                   html.escape(fm_val(fm, "retired_reason") or "no reason recorded")))
+    stale_since = fm_val(fm, "stale_since")
+    if stale_since:
+        return ('<div class="article-state-banner">Synthesis stale since %s'
+                ' — raw sources changed; summary re-derivation pending.</div>'
+                % html.escape(stale_since))
+    return ""
+
+
 def mark_generated(path):
     GENERATED_DIST_PATHS.add(path.resolve())
 
@@ -968,6 +1010,168 @@ def raw_doc_refs(fm):
     return out
 
 
+def is_raw_ingested_research(ref):
+    """R3/§2.2: a Topic-Details-eligible ref is a raw INGESTED RESEARCH file — a
+    browser-ingest upload under raw/inbox/, or a TAI-RES evaluation (tai-res-*.md)
+    wherever placed (e.g. pageindex's external-landscape path). Doctrine/
+    provenance citations (raw/transpara/, raw/open-brain/, index/PROVENANCE),
+    absolute /Transpara/ paths, and external URLs are NOT Topic Details — they
+    render in the source panel. Allowlist direction: only the two proven-eligible
+    forms qualify; everything unknown is excluded (fail-closed)."""
+    ref = source_ref_clean(ref)
+    if not ref:
+        return False
+    low = ref.lower()
+    if low.startswith(("http://", "https://")):
+        return False
+    if low.startswith("raw/inbox/"):
+        return True
+    # a TAI-RES evaluation qualifies only as a RELATIVE raw/ path (wherever under
+    # raw/ it sits, e.g. raw/civilization/external-landscape/tai-res-*.md).
+    # Absolute /Transpara/ paths and every other non-raw/ ref are doctrine/
+    # provenance citations that stay in the source panel, so reject them BEFORE
+    # the basename allowlist admits a bare tai-res-*.md filename (CFAR: Codex).
+    if not low.startswith("raw/"):
+        return False
+    base = low.rsplit("/", 1)[-1]
+    return base.startswith("tai-res-") and base.endswith(".md")
+
+
+def topic_details_refs(fm):
+    """R3: the ordered, deduped ref list for the Topic Details infobox row —
+    raw_documents UNION superseded_raw_documents UNION superseded_sources, filtered
+    to raw-ingested-research refs. Replace moves a superseded ref into
+    superseded_raw_documents, OR — for a legacy page whose ingested doc lived only
+    under `sources` — into superseded_sources; both superseded keys are unioned so
+    R3's "every raw ingested version" holds for that path too (CFAR: Codex, an
+    extension of §2.2's two-key mechanism to be formalized in the Phase-2 packet).
+    When all are empty, fall back to the raw-ingested-research refs among `sources`
+    (so an un-retrofitted page keeps its ingested-file links); a support-only page
+    whose sources are all doctrine gets an EMPTY row (§2.2)."""
+    union = (fm_list(fm, "raw_documents")
+             + fm_list(fm, "superseded_raw_documents")
+             + fm_list(fm, "superseded_sources"))
+    refs = [source_ref_clean(r) for r in union if source_ref_clean(r)]
+    refs = [r for r in refs if is_raw_ingested_research(r)]
+    if not refs:
+        refs = [
+            source_ref_clean(r)
+            for r in fm_list(fm, "sources")
+            if is_raw_ingested_research(source_ref_clean(r))
+        ]
+    out, seen = [], set()
+    for ref in refs:
+        if ref not in seen:
+            seen.add(ref)
+            out.append(ref)
+    return out
+
+
+def topic_details_superseded(fm):
+    """Refs a newer version supersedes: the `superseded_raw_documents` AND
+    `superseded_sources` keys (Replace moves a superseded ref into one or the
+    other) UNION the `supersedes:` targets annotated on `sources` (an
+    ADD-with-supersedes topic keeps all versions in raw_documents and marks
+    supersession only in the comments — CFADA-r21 #43). The non-superseded
+    ref(s) render as the current primary."""
+    superseded = {
+        source_ref_clean(r)
+        for key in ("superseded_raw_documents", "superseded_sources")
+        for r in fm_list(fm, key)
+        if source_ref_clean(r)
+    }
+    for _ref, comment in fm_list_with_comments(fm, "sources"):
+        old = _supersedes_target(comment)
+        if old:
+            superseded.add(old)
+    return superseded
+
+
+# R2 — Investigation Topic Standard schema (the "standard"). Required frontmatter
+# keys; the render-driving subset that must additionally be non-empty; the required
+# `## ` headings; and the canonical order (Integration Packet optional, immediately
+# before Sources & Provenance).
+INVESTIGATION_REQUIRED_FM = (
+    "entity", "aliases", "tier", "status", "last_compiled",
+    "civilization_contribution", "raw_documents", "current_research_version", "sources",
+)
+# Present AND non-empty (presence != non-empty; CFADA-r19 #40). raw_documents and
+# aliases are EXEMPT — legitimately empty on a conformant page (a support-only page
+# has no ingested research file; CFADA-r20 #41), so requiring them non-empty would
+# make AC6/P2 unsatisfiable.
+INVESTIGATION_NONEMPTY_FM = ("civilization_contribution", "entity", "status", "last_compiled")
+INVESTIGATION_REQUIRED_HEADINGS = (
+    "What Changed with the Research", "The Boundary", "Capability Read",
+    "Benchmark Reality", "Sources & Provenance",
+)
+INVESTIGATION_OPTIONAL_HEADING = "Integration Packet"
+INVESTIGATION_CANONICAL_ORDER = (
+    "What Changed with the Research", "The Boundary", "Capability Read",
+    "Benchmark Reality", "Integration Packet", "Sources & Provenance",
+)
+
+
+def _fm_has_key(fm, key):
+    return re.search(r"^%s:" % re.escape(key), fm, re.M) is not None
+
+
+def _body_level2_headings(body):
+    """Ordered level-2 (`## `) heading texts in a page body (level-1/3+ ignored)."""
+    return [m.group(1).strip() for m in re.finditer(r"^##[ \t]+(.+?)[ \t]*$", body, re.M)]
+
+
+def _lead_is_bold(body):
+    """R2 Summary: the first paragraph before the first `## ` heading must be
+    non-empty and carry bold emphasis (a `**…**` pair or `<strong>`). Fail-closed:
+    a lone `**` or a plain paragraph is NOT bold (CFADA-r2 #7)."""
+    pre = re.split(r"^##[ \t]+.+$", body, maxsplit=1, flags=re.M)[0]
+    lines = [ln for ln in pre.splitlines() if not re.match(r"^#[ \t]+", ln)]
+    text = "\n".join(lines).strip()
+    para = re.split(r"\n[ \t]*\n", text, maxsplit=1)[0].strip() if text else ""
+    if not para:
+        return False
+    return para.count("**") >= 2 or "<strong>" in para.lower()
+
+
+def investigation_conformance(fm, body):
+    """R2 conformance predicate for the Investigation Topic Standard. Returns the
+    SET of deficiency tags for a page's frontmatter + body; conformant ⟺ the set
+    is empty. Checks: the required frontmatter keys are present, the render-driving
+    subset is non-empty, the required `## ` headings are present, the Summary lead
+    is bold, and the standard headings (incl. a present Integration Packet) are in
+    canonical order. Free extra headings (## Placement, ## Decision Record) are
+    ignored by the order check. Fail-closed: any missing / empty / misordered
+    element is a deficiency. Phase 2 wraps this per active investigation slug
+    (AC6/P2)."""
+    deficiencies = set()
+    for key in INVESTIGATION_REQUIRED_FM:
+        if not _fm_has_key(fm, key):
+            deficiencies.add("missing-fm:%s" % key)
+    for key in INVESTIGATION_NONEMPTY_FM:
+        # fm_scalar (not fm_val): a comment-only required field (`entity: # TODO`)
+        # reads as empty, so it still produces an empty-fm deficiency (CFAR: Codex).
+        if _fm_has_key(fm, key) and not fm_scalar(fm, key):
+            deficiencies.add("empty-fm:%s" % key)
+    # the standard is `tier: investigation` specifically — presence alone is not
+    # enough, so a mistiered page (architecture / blank / any other value) cannot
+    # pass the structural gate or render in the wrong nav group (CFAR: Codex).
+    if fm_scalar(fm, "tier") != "investigation":
+        deficiencies.add("wrong-tier")
+    headings = _body_level2_headings(body)
+    hset = set(headings)
+    for heading in INVESTIGATION_REQUIRED_HEADINGS:
+        if heading not in hset:
+            deficiencies.add("missing-heading:%s" % heading)
+    if not _lead_is_bold(body):
+        deficiencies.add("non-bold-lead")
+    standard = set(INVESTIGATION_REQUIRED_HEADINGS) | {INVESTIGATION_OPTIONAL_HEADING}
+    seq = [h for h in headings if h in standard]
+    canon = [h for h in INVESTIGATION_CANONICAL_ORDER if h in seq]
+    if seq != canon:
+        deficiencies.add("out-of-order")
+    return deficiencies
+
+
 def article_frontmatter(slug):
     p = WIKI / ("%s.md" % slug)
     if not p.exists():
@@ -977,8 +1181,51 @@ def article_frontmatter(slug):
 
 
 def investigation_topic_for(slug, meta):
-    fm = article_frontmatter(slug)
-    return fm_val(fm, "investigation_topic")
+    # fm_scalar: a commented `investigation_topic: Sakana AI # cluster` must group
+    # by "Sakana AI", not "Sakana AI # cluster" (CFAR: Codex).
+    return fm_scalar(article_frontmatter(slug), "investigation_topic")
+
+
+def investigation_primary_flag(slug):
+    # R9: strict boolean — ONLY the exact `true` scalar (bare or quoted, comment
+    # stripped) marks the primary page of a multi-page investigation cluster. The
+    # match is case-SENSITIVE: `TRUE`/`True`, `false`, `"false"`, `yes`, `1`, an
+    # empty value, or an absent key are all NOT primary (CFADA-r19 #39; CFAR:
+    # Codex — a malformed flag must never trigger the lossy collapse), so it can
+    # only ever fail to collapse (show all) — it can never hide a page.
+    return fm_scalar(article_frontmatter(slug), "investigation_primary") == "true"
+
+
+def cluster_representative(articles):
+    # R9: for a multi-page investigation_topic cluster (>=2 active members),
+    # return the single active investigation_primary member (the one nav entry)
+    # iff EXACTLY ONE exists; else None -> show every member (fail-safe: 0 or >=2
+    # active primaries never hides a page). Single-page topics (<2) -> None.
+    if len(articles) < 2:
+        return None
+    primaries = [a for a in articles if investigation_primary_flag(a["slug"])]
+    return primaries[0] if len(primaries) == 1 else None
+
+
+def cluster_primary_deficiency(articles):
+    """R9/§2.5 corpus cluster primary invariant: a multi-page cluster (>=2 active
+    members) must carry EXACTLY ONE active investigation_primary. Returns a
+    deficiency tag — 'no-active-primary' (zero) or 'multiple-active-primaries'
+    (>=2) — for a misconfigured multi-page cluster, or '' when valid (exactly one)
+    or not a multi-page cluster. This is corpus-level (needs cross-page counts),
+    distinct from the per-page investigation_conformance and complementary to
+    cluster_representative (which returns None for BOTH the 0 and >=2 render
+    fallbacks). The Phase-2 corpus gate enumerates live clusters and asserts this
+    is '' for every one (AC10; CFAR: Codex — the >=2 case must be reported, not
+    silently treated as a normal fallback)."""
+    if len(articles) < 2:
+        return ""
+    primaries = [a for a in articles if investigation_primary_flag(a["slug"])]
+    if not primaries:
+        return "no-active-primary"
+    if len(primaries) >= 2:
+        return "multiple-active-primaries"
+    return ""
 
 
 def raw_doc_count_for_articles(articles):
@@ -1415,15 +1662,24 @@ def build_investigation_nav(arts, current):
     out = []
     for topic in sorted(grouped, key=str.lower):
         articles = sorted(grouped[topic], key=lambda a: a["title"].lower())
-        if len(articles) == 1:
-            article = articles[0]
-            cls = ' class="current"' if article["slug"] == current else ""
+        # R9: a single-page topic, OR a multi-page cluster with exactly one active
+        # investigation_primary, renders as ONE flat row (linking the primary,
+        # labeled by the topic); a multi-page cluster with 0 or >=2 active primaries
+        # falls through to the expandable group below (fail-safe — no page is hidden
+        # without a unique active primary).
+        single = articles[0] if len(articles) == 1 else cluster_representative(articles)
+        if single is not None:
+            # the collapsed row represents the WHOLE cluster, so it is current when
+            # ANY member is the current article — not only the primary — else
+            # viewing a non-primary member leaves the sidebar with no highlight
+            # (CFAR: Codex). For a single-page topic this is just that page.
+            cls = ' class="current"' if any(a["slug"] == current for a in articles) else ""
             # Preserve the count the collapsible topic group showed before collapsing.
             count = raw_doc_count_for_articles(articles)
             count_html = '<em>%d</em>' % count if count else ""
             marker = nav_contribution_marker(articles)
             out.append('<li class="nav-article-row"><a%s href="%s.html" title="%s">%s</a>%s%s</li>' %
-                       (cls, article["slug"], html.escape(article["title"]), html.escape(topic), marker, count_html))
+                       (cls, single["slug"], html.escape(single["title"]), html.escape(topic), marker, count_html))
             continue
         open_attr = " open" if any(a["slug"] == current for a in articles) else ""
         marker = nav_contribution_marker(articles)
@@ -1486,6 +1742,25 @@ def build_sidebar(current, current_repo=""):
     return "".join(out)
 
 
+def navbox_investigation_reps(arts):
+    # R9: collapse each multi-page investigation_topic cluster to its single active
+    # primary in the bottom navbox index, mirroring the sidebar nav via the shared
+    # cluster_representative selection so the two surfaces cannot diverge. Single-page
+    # topics, no-topic articles, and clusters without a single primary keep every
+    # member (fail-safe).
+    grouped = {}
+    for a in arts:
+        topic = investigation_topic_for(a["slug"], a)
+        if topic:
+            grouped.setdefault(topic, []).append(a)
+    hidden = set()
+    for members in grouped.values():
+        rep = cluster_representative(members)
+        if rep is not None:
+            hidden.update(a["slug"] for a in members if a["slug"] != rep["slug"])
+    return [a for a in arts if a["slug"] not in hidden]
+
+
 def build_navbox():
     out = ['<nav class="navbox"><div class="navbox-title">%s — index</div><div class="navbox-body">' % html.escape(SITE_NAME)]
     for tier in TIER_ORDER:
@@ -1494,6 +1769,8 @@ def build_navbox():
                       key=lambda m: m["title"].lower())
         if not arts:
             continue
+        if tier == "investigation":
+            arts = navbox_investigation_reps(arts)
         links = " · ".join('<a href="%s.html">%s</a>' % (a["slug"], html.escape(a["title"])) for a in arts)
         out.append('<div class="navbox-row"><span class="navbox-grp">%s</span><span class="navbox-list">%s</span></div>'
                    % (html.escape(TIER_LABEL.get(tier, tier)), links))
@@ -1516,18 +1793,24 @@ def build_infobox(meta, fm):
     nsrc = len(fm_list(fm, "sources"))
     if nsrc:
         row("Sources", "%d" % nsrc)
-    docs = raw_doc_refs(fm)
+    docs = topic_details_refs(fm)
     if docs:
+        superseded = topic_details_superseded(fm)
         items = []
         for ref in docs:
             path = safe_source_path(ref)
             href = source_href(ref)
             label = source_title(ref, path)
             if href:
-                items.append('<li><a href="%s">%s</a></li>' % (html.escape(href), html.escape(label)))
+                link = '<a href="%s">%s</a>' % (html.escape(href), html.escape(label))
             else:
-                items.append('<li><span class="source-unserved">%s</span></li>' % html.escape(label))
-        row("Raw docs", '<ul class="raw-doc-links">%s</ul>' % "".join(items))
+                link = '<span class="source-unserved">%s</span>' % html.escape(label)
+            if ref in superseded:
+                items.append('<li class="source-superseded">%s '
+                             '<span class="source-superseded-badge">superseded</span></li>' % link)
+            else:
+                items.append('<li>%s</li>' % link)
+        row("Topic Details", '<ul class="raw-doc-links">%s</ul>' % "".join(items))
     if not rows:
         return ""
     return ('<aside class="infobox"><div class="infobox-title">%s</div><table>%s</table>'
@@ -1878,6 +2161,12 @@ def ingest_page(status):
         '<h2>Batch ingest</h2>'
         '<form id="ingest-form">'
         '<label>Target article<select name="target_slug" id="target-slug">%s</select></label>'
+        # R6/§2.1: the "New investigation" toggle (default OFF) is the ONLY
+        # browser page-creation path. Checking it reveals a required name field
+        # (the name — not the doc title — drives the new page) and ignores the
+        # target above; the server-side fail-closed guard is the real gate.
+        '<label class="confirm-line"><input type="checkbox" name="new_investigation" id="new-investigation" value="true"> New investigation — create a new topic page (ignores the target above)</label>'
+        '<label id="new-investigation-name-row" hidden>Investigation name<input name="name" id="new-investigation-name" type="text" placeholder="subject name — drives the new page slug and entity"></label>'
         '<label>Documents<input name="documents" id="documents" type="file" multiple></label>'
         '<label>External URLs<textarea name="external_urls" id="external-urls" rows="4" placeholder="https://..."></textarea></label>'
         '<label>Supersedes<select name="supersedes" id="supersedes"><option value="">No existing source selected</option></select></label>'
@@ -1931,6 +2220,14 @@ def ingest_page(status):
         'loadArticles();if(token)token.addEventListener("change",loadArticles);'
         'target.addEventListener("change",function(){sup.innerHTML="<option value=\\"\\">No existing source selected</option>";'
         'var a=articles[target.value];if(!a)return;(a.sources||[]).forEach(function(s){var o=document.createElement("option");o.value=s;o.textContent=s;sup.appendChild(o);});});'
+        # R6/2.1: toggling "New investigation" reveals the required name field and
+        # disables the target select (a create ignores + never sends target_slug),
+        # while a default Add REQUIRES a target so the client blocks the
+        # server-refused empty-target path (CFAR: Codex); default OFF, so create is
+        # never the accidental path.
+        'var newInv=document.getElementById("new-investigation"),nameRow=document.getElementById("new-investigation-name-row"),nameField=document.getElementById("new-investigation-name");'
+        'function syncNewInvestigation(){var on=!!(newInv&&newInv.checked);if(nameRow)nameRow.hidden=!on;if(nameField)nameField.required=on;if(target){target.disabled=on;target.required=!on;}}'
+        'if(newInv){newInv.addEventListener("change",syncNewInvestigation);syncNewInvestigation();}'
         'form.addEventListener("submit",function(e){e.preventDefault();say("Ingesting...");fetch("/api/ingest",{method:"POST",headers:headers(),body:new FormData(form)})'
         '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(reloadWithResult).catch(function(e){say(e);});});'
         'rebuild.addEventListener("click",function(){say("Refreshing status and rebuilding...");fetch("/api/rebuild",{method:"POST",headers:headers()})'
@@ -2178,7 +2475,7 @@ def build_board(fm):
 def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home=False, extra_head="", main_class="content"):
     sidebar = build_sidebar(slug if not is_home else "")
     infobox = "" if is_home else build_infobox(meta, fm)
-    toc = "" if is_home else build_toc(toc_tokens)
+    toc = article_toc(meta, toc_tokens, is_home=is_home)
     seealso = "" if is_home else build_seealso(links, slug)
     source_updates = "" if is_home else build_source_update_panel(fm)
     source_panel = "" if is_home else build_source_panel(fm)
@@ -2188,20 +2485,7 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
         "an article in the %s" % SITE_NAME)
     h1 = SITE_NAME if is_home else html.escape(title)
     page_title = SITE_NAME if is_home or title == SITE_NAME else ("%s — %s" % (title, SITE_NAME))
-    state_banner = ""
-    if not is_home:
-        retired_on = fm_val(fm, "retired_on")
-        stale_since = fm_val(fm, "stale_since")
-        if retired_on:
-            state_banner = ('<div class="article-state-banner">Retired on %s'
-                            ' — %s</div>'
-                            % (html.escape(retired_on),
-                               html.escape(fm_val(fm, "retired_reason") or "no reason recorded")))
-        elif stale_since:
-            state_banner = ('<div class="article-state-banner">Synthesis stale'
-                            ' since %s — raw sources were replaced; prose'
-                            ' re-derivation is pending authorization.</div>'
-                            % html.escape(stale_since))
+    state_banner = "" if is_home else state_banner_html(fm)
     if is_home:
         article_html = '<article class="body">%s</article>' % body_html
     else:

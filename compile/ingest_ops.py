@@ -657,8 +657,10 @@ def _list_item_indexes(fm_lines, key):
 
 def _inline_list(line):
     """Parse `key: [a, b]` (the inline form the live fm_list accepts), or None
-    if the value is not an inline list."""
-    value = line.split(":", 1)[1].strip() if ":" in line else ""
+    if the value is not an inline list. A trailing `# comment` is stripped first
+    so the ops parser stays aligned with the read/renderer fm_list — else Replace
+    would refuse a UI-offered ref as "not referenced" (CFAR: Codex)."""
+    value = _strip_inline_comment(line.split(":", 1)[1]).strip() if ":" in line else ""
     if value.startswith("[") and value.endswith("]"):
         return [x.strip().strip('"').strip("'")
                 for x in value[1:-1].split(",") if x.strip()]
@@ -890,6 +892,22 @@ def _replace_preflight(root, slug, source_ref):
             raise OpRefused("source_ref is shared by another article — "
                             "shared-source replace is refused in v1")
     return article_path, fm_lines, tail
+
+
+def set_article_stale(root, slug, now):
+    """R5/R7: stamp `stale_since` on an investigation article so the builder's
+    reason-neutral "summary re-derivation pending" banner renders until a governed
+    authoring pass clears it (via _drop_scalar, exactly as Replace does on
+    engine-ok). A thin wrapper over _set_scalar reused by the ADD lane and
+    Replace — no new op and no authorization contract (Q4), only the scalar stamp,
+    run INSIDE the caller's wiki write lock."""
+    root = pathlib.Path(root)
+    article_path = root / "wiki" / ("%s.md" % slug)
+    if not article_path.exists():
+        raise OpRefused("unknown article slug")
+    fm_lines, tail = _parse_article(article_path.read_text())
+    fm_lines = _set_scalar(fm_lines, "stale_since", _now_str(now))
+    _atomic_write_text(article_path, _assemble_article(fm_lines, tail))
 
 
 def replace_source(root, *, slug, source_ref, data, filename, note, now,
