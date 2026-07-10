@@ -54,7 +54,7 @@ TAI-RES-2026-004 v1.1.0 makes the decision status explicit:
 
 The adoption verdict is therefore: **adopt as a recall adapter behind the boundary; supply-chain gate first.** This is not a runtime activation and does not assign an implementation owner.
 
-## What Changed With TAI-RES-2026-004
+## What Changed with the Research
 
 The earlier page treated upstream claims as unverified context. The current v1.1.0 evaluation read the repository and found several concrete updates:
 
