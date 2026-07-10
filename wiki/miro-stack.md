@@ -12,6 +12,9 @@ aliases:
 tier: investigation
 status: compiled
 last_compiled: 2026-06-13
+civilization_contribution: "Deferred reference only, decided member-by-member — no stack-level decision exists: MiroFlow = deferred pattern/reference, MiroThinker = deferred research/eval reference (benchmark and trace-discipline reference points, gated behind future epics and the RuntimeBroker / Base Slice 0 / network-policy controls); MiroEval, MiroRL, and MiroMind-M1 were forked but never evaluated (Decision 15 catch-all only). Contributed no native contract or update to v3.9 — the thinnest borrowed surface of any surveyed candidate."
+raw_documents: []
+current_research_version:
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk — rows for "Miro Flow" (L87) and "Miro Thinker" (L88) + per-item notes (L215-258); NO row for MiroEval / MiroRL / MiroMind-M1 (status: review, canonical: false)
   - raw/transpara/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 15: external frameworks stay outside control roles
@@ -53,7 +56,19 @@ The compile instruction was to find "this project's decision row" in the v3.9.1 
 
 > ⚠ **Fail-legible note (crosswalk status vs. acceptance).** The crosswalk carries `status: review`, `canonical: false`. The accepted-canonical rule that binds *all* the Miro repos is the one-line v3.9 **Decision 15** routing rule, not the crosswalk's row detail. The adversarial-review checkpoint says exactly this: "MiroThinker / MiroFlow … not directly named in v3.9 main docs; covered by 01 Decision 15 catch-all" (`...11-v3.9-adversarial-review.md`, L179). Open Brain (2026-05) corroborates: the Miro rows were added to the crosswalk by commit `7447b2b3` ("resolve Miro and Org Memories decisions"), and "neither Miro nor Brewer appears in v3.9 core specs as runtime/controller/adapter — only in research checkpoints and now the crosswalk's deferred/subsumed entries."
 
-## What the five repos are (live metadata + README, for the two surveyed)
+## What Changed with the Research
+
+No released TAI-RES evaluation targets any Miro repo — this is a support-only investigation page, so Topic Details is empty by design. The research record is the 2026-05-13 landscape investigation (Batch B deep-dives for the two surveyed members, the Phase 5 matrix, the closeout, and the two crosswalk rows). What the 2026-06-13 compile itself changed was provenance hygiene: the live fork-metadata fetch corrected the Open Brain fork-ledger capture (which had omitted MiroThinker from the 2026-05-12 fan-out) and closed the investigation's license open item — all five repos are Apache-2.0 at the repo level (the model-weight/dataset licensing caveat stays open). The member-level deferrals themselves are unchanged, frozen at the v3.9 reference point.
+
+## The Boundary
+
+- **Not a runtime, controller, or kernel.** The deferral is precisely about keeping these network-touching, sub-agent-spawning research agents out of execution until a governed envelope exists. Decision 15's catch-all covers all five members regardless of whether they have a row.
+- **Not a planner or truth/authority surface.** Miro Thinker "must not become planner of record" and must not replace PlanningProposal/Requirement/AcceptanceCriterion/Task evidence; neither agent may become [[event-graph|EventGraph]] truth.
+- **Not a benchmark gate by itself.** Benchmark numbers from the Miro READMEs (BrowseComp, GAIA, HLE, FutureX, etc.) are reference performance claims; using any of them as a promotion gate requires the full eval-governance evidence chain.
+- **Not (for three of five) decided at all.** MiroEval, MiroRL, and MiroMind-M1 have no investigation finding. They are forks on disk, nothing more, in the decision record.
+- **Not re-published here.** Per org rule, the `MiroMindAI/*` upstreams are public/upstream code; this wiki cites them as origin only and mirrors none of their documentation.
+
+## Capability Read
 
 The stack is one upstream project. MiroFlow's README, as the investigation recorded it, calls itself "the official implementation of the MiroMind Research Agent Project, with components including MiroFlow framework, MiroThinker agent, and MiroVerse training data" (`...04-phase-4-batch-b...`, L951). The five forked members, with their live GitHub descriptions (fetched 2026-06-13, context-only):
 
@@ -78,6 +93,10 @@ What the investigation said it **is not**: "not a memory system, not a wiki, not
 Batch B (§11, L931-1049) describes MiroFlow as "an open-source research agent framework for multi-step internet research and future event prediction … high concurrency and reliability, hierarchical sub-agent orchestration, benchmark performance on FutureX, GAIA, HLE, BrowseComp, xBench-DeepSearch … OpenRouter start path." Supported tools include "audio transcription, Python, file reading, reasoning, Google Search, VQA, E2B."
 
 What it **is not**: "not EventGraph truth, not Work DAG, not v3.8 governance, not a memory substrate, and not safe as a factory controller." Its marginal contribution: "a reference for research-agent benchmark discipline and tool orchestration under realistic web/research tasks."
+
+## Benchmark Reality
+
+The Miro stack is the survey's most benchmark-saturated candidate, and none of its numbers were verified: "Top-1 on 5+ benchmarks" (MiroFlow) and "74.0 / 75.3 on BrowseComp / BrowseComp-Zh" (MiroThinker-1.7) are the upstreams' own README/description claims, read but never reproduced — the investigation's recorded risks say exactly why they cannot carry weight as-is ("Benchmark claims may not map to Dark Factory workloads"; "Benchmark success does not prove audit/certification suitability"). The sharper irony: **MiroEval, the actual benchmark suite in the stack, was never evaluated at all.** The crosswalk's rule stands for any future use: no Miro number may become a promotion or benchmark gate without the full eval-governance evidence chain — `EvalDataset`, `BenchmarkResult`, `HumanReview`, and rollback evidence.
 
 ## The decision: deferred (for the two surveyed)
 
@@ -114,14 +133,6 @@ Unlike the operator-UX cluster — where [[symphony|Symphony]], [[paperclip|Pape
 
 In other words: if Dark Factory ever wants to measure a research agent, the Miro benchmark suites (and the *idea* of trace collection and reproducible eval) are a reference point — but only after the eval-governance machinery (`EvalDataset`, `BenchmarkResult`, `HumanReview`, rollback targets) exists to make a benchmark result evidence rather than a marketing number. As of this compile, no epic has reopened any Miro member; under the crosswalk freeze policy, the decisions stand frozen at the v3.9 reference point.
 
-## What it is not
-
-- **Not a runtime, controller, or kernel.** The deferral is precisely about keeping these network-touching, sub-agent-spawning research agents out of execution until a governed envelope exists. Decision 15's catch-all covers all five members regardless of whether they have a row.
-- **Not a planner or truth/authority surface.** Miro Thinker "must not become planner of record" and must not replace PlanningProposal/Requirement/AcceptanceCriterion/Task evidence; neither agent may become [[event-graph|EventGraph]] truth.
-- **Not a benchmark gate by itself.** Benchmark numbers from the Miro READMEs (BrowseComp, GAIA, HLE, FutureX, etc.) are reference performance claims; using any of them as a promotion gate requires the full eval-governance evidence chain.
-- **Not (for three of five) decided at all.** MiroEval, MiroRL, and MiroMind-M1 have no investigation finding. They are forks on disk, nothing more, in the decision record.
-- **Not re-published here.** Per org rule, the `MiroMindAI/*` upstreams are public/upstream code; this wiki cites them as origin only and mirrors none of their documentation.
-
 ## Fail-legible notes
 
 - **Coverage is the headline.** The prompt frames "The Miro Stack" as one forked project across five upstreams; the *decision record* only addresses two members. Any reader treating this as "Dark Factory evaluated the Miro stack" should read it as "Dark Factory evaluated MiroThinker and MiroFlow, and forked but did not evaluate MiroEval, MiroRL, and MiroMind-M1."
@@ -135,7 +146,7 @@ In other words: if Dark Factory ever wants to measure a research agent, the Miro
 
 The Miro repos sit in the **memory/knowledge/research cluster** (Batch B) of the [[civilization-landscape-investigation]], alongside [[mempalace|MemPalace]], [[ob1|OB1]], `org-memories`, `PageIndex`, the Karpathy LLM Wiki, and `autoresearch`. Within the survey they are the clearest case of *defer-because-premature-execution*: where MemPalace and the Karpathy wiki were folded in as advisory patterns and PageIndex became an optional document-evidence adapter, the Miro agents were the one Batch B entry whose core nature — autonomous, web-touching, sub-agent-spawning research execution — directly collided with the not-yet-built [[runtime-broker|RuntimeBroker]] and network policy. They are also the survey's sharpest illustration of the coverage limit itself: a five-repo fork of which the investigation deliberately scoped only the two members (the agent and its framework) that mapped onto a Dark Factory question, and left the RL trainer, the benchmark, and the math model unexamined. That choice is the same hinge as the rest of the investigation — [[dark-factory]] looked outward, took the narrow reference it could use, and imported none of it as authority — applied here with an unusually visible boundary on *what was even looked at*.
 
-## Sources & provenance
+## Sources & Provenance
 
 First-party Dark Factory investigation records and v3.9 docs (all read this run):
 

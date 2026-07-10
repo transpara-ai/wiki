@@ -47,7 +47,7 @@ raw_documents:
 > - **Two corrections to the prior page.** The HIGH-severity **H3 schema gap is RESOLVED** (`PolicyEngineAdapterDecision` now fully schema'd, `02-kernel-schema-and-state-v3.9.md:345`); and the "thin — README only" confidence on AGT's internals is now **code-verified**.
 > - **Verdict UNCHANGED, now code-anchored:** an optional deterministic **`PolicyEngineAdapter` reference/pattern**, advisory until recorded as an EventGraph `AuthorityDecision` + `ExecutionReceipt`; never authority. Uniquely among the recent evaluations, the pattern it inspired is **live in accepted v4.0 doctrine** with an **open production gate** (R-003).
 
-## What changed with TAI-RES-2026-009
+## What Changed with the Research
 
 The earlier page treated every internal claim as unverified upstream marketing ("Primary evidence inspected: README.md"). The code-anchored read replaces that with first-party findings:
 
@@ -67,7 +67,7 @@ The earlier page treated every internal claim as unverified upstream marketing (
 
 The result is not "adopt AGT." It is: AGT is a credible deterministic policy *evaluator* if — and only if — its decisions are wrapped in the Civilization's own default-deny, single-source-of-truth `AuthorityDecision` boundary.
 
-## The boundary (adopted / ratified)
+## The Boundary
 
 The governing boundary already exists in doctrine and — unlike [[pageindex|PageIndex]]'s pattern — **survived into accepted v4.0**. Authority is an EventGraph record: `AuthorityRequest → AuthorityDecision → ExecutionReceipt` (`03-civilization-governance-and-authority-v4.0.md:113`). An external evaluator's output is captured by the `PolicyEngineAdapterDecision` kernel node — now fully schema'd (`02-kernel-schema-and-state-v3.9.md:345`) with the fourteen adapter fields and the two link fields (`authority_decision_ref`, `execution_receipt_ref`) that bind an adapter decision to canonical authority — and it is "adapter evidence only" (`02:522`).
 
@@ -80,11 +80,15 @@ AGT supplies the deterministic evaluator; the Civilization boundary supplies the
 - AGT's own trust scores and Merkle audit chain are **not** adopted as authority — the EventGraph remains the single source of truth;
 - **production** adapter use is gated behind the open **implementation-residual R-003** — *"closed only for local-emulation policy-adapter and policy-bundle evidence; open for production"* (`epic-21-...-design-v4.0.md:69`) — and behind **[[base-slice-0|Base Slice 0]]**'s file/command/network/secret boundary proof.
 
-## What AGT actually is — now code-anchored
+## Capability Read
 
 AGT's clean README story ("an external policy layer") describes a minority slice of the code. It is a **15+ package platform suite** (its own `AGENTS.md:5`: "multi-package OSS monorepo"). The actual governance core is two packages: **`agent-os`** (~170K LOC — the policy engine, capability model, MCP gateway, content-screening) and **`agent-mesh`** (~43K LOC — a distributed identity/trust/policy control-plane: SPIFFE, Ed25519 signed "mesh cards," a gRPC identity service, a trust/reward economy, Helm/CRDs). The rest — `agent-sre`, `agent-marketplace`, `agent-discovery`, `agent-hypervisor`, `agent-sandbox`, `agent-lightning` — are adjacent platform subsystems. Two scoping claims resolve: "governs actions, not model content" is **contradicted** on the front page (the suite ships prompt-injection and memory-poisoning screening) but honestly re-admitted in `LIMITATIONS.md`; "application-level, not OS-kernel isolation" is **true and consistently documented** (`ARCHITECTURE.md:63`: the enforcement boundary "is the Python interpreter").
 
 The distinction that matters for a governance architect: **absorb AGT's evaluator *contract*, never its *authority*.** Its trust/reward economy, its audit ledger, and its signed-identity plane are competing sources of truth — adopting AGT wholesale would import a second authority model, exactly what Decision 15 forbids.
+
+## Benchmark Reality
+
+TAI-RES-2026-009 ran no head-to-head benchmark; the evaluation is code-anchored, and the two quantitative upstream claims resolve in opposite directions. **"10/10 OWASP Agentic Top 10" is coverage-mapping, not enforcement:** each category maps to a real class plus tests, but the enforcement layer is deterministic regex blocklists self-labeled *"SAMPLE … you MUST review, customise, and extend … before production"* (`prompt_injection.py:50`) — roughly 8/10 code-backed, with ASI04 a self-admitted gap, and the mapping cites the in-process AST/import-hook linter while genuine container/VM isolation (`agent-sandbox`: Docker + gVisor/Kata/Hyperlight) sits uncited one package over. **"13,000+ tests" holds as a Python-only magnitude:** 12,617 `def test_` across 563 files, ~1.6% skipped, with real assertions. Both figures are the upstream's own, carried here as context; neither drove the Decision 13 disposition.
 
 ## Why an adapter reference, not policy authority
 
@@ -112,7 +116,7 @@ The adoption verdict: **carry AGT forward as the reference implementation of the
 - **The central risk is asserted-then-code-corroborated, not observed harm.** AGT was never integrated, so there is no record of it bypassing an authority boundary in our systems — but the code now *shows* the mechanisms (fail-open baseline; its own trust/audit/identity planes) that make the "competing authority" risk concrete rather than hypothetical. It is fenced behind Decision 13's fail-closed, non-canonical contract.
 - **"R-003" is overloaded in v4.0.** The `05` risk register's R-003 ("repo creation/deletion without authority") is a *different* item from the *implementation-residual* R-003 (production policy-adapter reliance) that gates AGT; `epic-21` states they are two registers. This page means the implementation-residual one.
 
-## Sources & provenance
+## Sources & Provenance
 
 Primary source is the code-anchored evaluation; doctrine and prior research are first-party Transpara documents.
 

@@ -4,6 +4,9 @@ aliases: [paperclip, transpara-ai/paperclip, the company OS]
 tier: investigation
 status: compiled
 last_compiled: 2026-06-13
+civilization_contribution: "UX-only pattern (v3.9.1 crosswalk row): the strongest external reference for organization/company-level agent orchestration — org charts, budgets, approvals, heartbeats, routines, audit surfaces — feeding Gap G6 / the U9 EventGraph-linked proof-of-work packet (with Symphony, Multica, and gStack), bound to Epic 4 if ever used; must never become a control plane without an ADR and EventGraph authority records."
+raw_documents: []
+current_research_version:
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; Paperclip decision row (L84) + per-item note (L197-201)
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md  # Phase 4 Batch D — repo-grounded candidate analysis of transpara-ai/paperclip (L455-592)
@@ -45,13 +48,21 @@ The per-item note is the binding constraint:
 
 In the canonical decision-category vocabulary this lands as **UX-only pattern** (distinct from the broader "pattern-only" bucket that holds [[event-graph|EventGraph]]-adjacent design patterns). The crosswalk's own freeze policy applies: pattern-only adoptions are **frozen at the v3.9 reference point** and do not track upstream behaviour unless an epic explicitly reopens them — and reopening Paperclip would require recording the upstream commit reviewed, which pattern changed, and whether Dark Factory adopts, rejects, or defers it.
 
+## What Changed with the Research
+
+No released TAI-RES evaluation targets Paperclip — this is a support-only investigation page, so Topic Details is empty by design. The research record is the 2026-05-13 landscape investigation: the Phase 4 Batch D analysis, Gap G6's use of Paperclip as candidate evidence, the closeout's dual pattern/defer placement, and the crosswalk row above. Nothing has moved since the 2026-06-13 compile; the UX-only decision stands frozen at the v3.9 reference point.
+
+## The Boundary
+
+The binding constraint is the crosswalk's per-item note: *"Paperclip-like organization, budgeting, or approval UX must not become a control plane without an ADR and EventGraph authority records."* Its "strong product governance concepts" — board approval, budgets, strategy overrides, pause/terminate, config rollback, audit logs — are not v3.9 AuthorityRequest / AuthorityDecision / ExecutionReceipt unless mapped, its audit log is not [[event-graph|EventGraph]] unless integrated, and its heartbeat execution and plugins must never become a hidden executor outside the [[runtime-broker|RuntimeBroker]]. The org/budget/approval surfaces may inform [[site|Site]] operator UX; the authority is never ceded.
+
 ## How it entered the arc
 
 Paperclip was candidate 16 of the [[civilization-landscape-investigation]] source list — a sweep that evaluated each external tool against the then-canonical Dark Factory v3.8 design for marginal contribution, with a hard rule from the operator: *no aspirational claims accepted without code or canonical-document evidence; if access to a repo is missing, stop — do not substitute upstreams or marketing pages.* The fork into `transpara-ai` existed so the project could be read as source under that rule rather than from its website.
 
 It was analysed in **Phase 4, Batch D** ("governance, self-evolution, and platform-tooling"), alongside `hermes-agent-self-evolution`, `agent-governance-toolkit`, and `gstack`. The investigation closeout placed Paperclip in two lists at once: **pattern/reference only** *and* **defer until prerequisite controls exist** — i.e. useful as a design reference now, not integrable until the kernel-level boundaries it could violate are enforced.
 
-## What the investigation found it to be
+## Capability Read
 
 From the Batch D candidate analysis (evidence inspected: **README only**):
 
@@ -65,6 +76,10 @@ Two architectural notes the investigation recorded:
 - **It coordinates agents; it is not an agent framework.** Paperclip drives external coding agents (Claude Code, Codex, Cursor, OpenClaw, HTTP/web bots) through adapters — the organizational layer above existing agents, not a replacement for them.
 
 What it explicitly **is not**, per the analysis: it is not [[event-graph|EventGraph]]; it is not v3.9 [[work|Work]] (despite heavy task-orchestration overlap); and it is not the [[dark-factory]] kernel, [[authority-layer|authority layer]], or release-certification model. Its "strong product governance concepts" — board approval, budgets, strategy overrides, pause/terminate, config rollback, audit logs — "are **not** v3.9 AuthorityRequest / AuthorityDecision / ExecutionReceipt unless mapped." Its audit log "is not EventGraph unless integrated."
+
+## Benchmark Reality
+
+Nothing was measured: the investigation inspected only the README ("actual implementation not inspected beyond README"), and the decision turned on architecture and boundary risk, not numbers. The figures that exist in the record are traction marketing — one research writeup cites ~38k stars in under four weeks, the live upstream showed ~70k on 2026-06-13 — carried as context only, with the discrepancy itself illustrating why star counts are not evidence. The genuinely interesting architectural claim (the heartbeat execution model — discrete, budgetable, schedulable, auditable bursts) is medium-confidence: consistent across our notes but tracing to upstream README/marketing, which the investigation's own rule treats as aspirational until code-verified.
 
 ## Why pattern-only, and not adopted
 
@@ -90,7 +105,7 @@ The one place the investigation pointed Paperclip's surfaces is **Gap G6 — Sit
 - **Upstream is cited, never re-published.** Per org rule, `paperclipai/paperclip` is public OSS. Its README headline ("the app people use to manage AI agents for work") and MIT license are corroborated live as context for *why we forked it to read it*, not as content to mirror. The wiki subject is our investigation and our decision.
 - **Asserted, not proven.** The framing that Paperclip's org/budget/approval model "implies control-plane authority" is the investigation's risk assessment, not a demonstrated failure — it is the reason the decision is fenced to UX-only, not a record of harm observed.
 
-## Sources & provenance
+## Sources & Provenance
 
 - v3.9.1 **External Technology Decision Crosswalk** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (decision row L84; per-item note "Decision: UX pattern only" L197-201; freeze/reopen policy L41-68). This is the authoritative decision record.
 - **Phase 4 Batch D** candidate analysis — `…/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md` (Paperclip section L455-592, inclusion matrix L587-592). Primary evidence for what the investigation found; explicitly README-only.

@@ -8,6 +8,9 @@ aliases:
 tier: investigation
 status: compiled
 last_compiled: 2026-06-13
+civilization_contribution: "None recorded — un-triaged: forked 2026-04-01 into the harness cluster (with gStack and OpenClaw) but absent from the 22-item candidate list, every research checkpoint, and the v3.9.1 crosswalk; by the crosswalk's own gate and Decision 15 the default is deny — no integration, adaptation, or pattern-expansion until a decision row exists. The fork is an access mechanism, not an adoption."
+raw_documents: []
+current_research_version:
 sources:
   - "GitHub API: repos/transpara-ai/claw-code (fork metadata, live 2026-06-13) — isFork=true, parent=ultraworkers/claw-code, createdAt 2026-04-01T18:14:03Z, licenseInfo=null, description \"The fastest repo in history to surpass 100K stars ⭐. Better Harness Tools that make real things done. Built in Rust using oh-my-codex.\" — https://github.com/transpara-ai/claw-code"
   - /Transpara/transpara-ai/repos/wiki/raw/open-brain/2026-06.md  # fork-chronology ledger (L4043-4044): "4/01 claw-code <- ultraworkers"; harness bucket "(gstack, claw-code, openclaw)"; the Apr–May fan-out retroactively named the "Civilization Landscape Investigation"
@@ -31,7 +34,17 @@ confidence:
 
 This article is about **our handling of it**, not a mirror of the upstream's documentation. The upstream is public OSS; it is cited here only as context, never re-published. And the central, non-negotiable finding of this compile is a **fail-legible gap**: unlike its harness-cluster siblings, claw-code was **never given a decision row** in the v3.9.1 technology-decision crosswalk, and it does **not appear in any of the formal investigation's Phase 4–7 checkpoints**. What is solidly known is the fork; almost everything else is thin or absent, and is marked as such.
 
-## What is actually known (high confidence)
+## What Changed with the Research
+
+No released TAI-RES evaluation targets claw-code — this is a support-only investigation page, so Topic Details is empty by design. There is, in fact, no research to summarize at all: the 2026-06-13 compile's finding *is* the gap — a grep across the entire research-checkpoint tree for claw-code / ultraworkers / oh-my-codex returns zero hits, and the only records are the fork metadata and one line in the Open Brain fork-chronology ledger. Nothing has moved since.
+
+## The Boundary
+
+A missing row is a missing decision, not a silent green light — and the arc has a default rule for exactly this. The accepted-canonical constraint that governs every external fork from the spring sweep is [[v3-9]] **Decision 15, "External Frameworks Stay Outside Control Roles"**: external frameworks "remain references, optional adapters, or patterns unless a later accepted ADR changes their status. They must not become kernel, truth source, Work replacement, policy owner, release authority, certification authority, capability promoter, factory controller, or Site replacement." The crosswalk's own gate reinforces it from the other side: *"No future epic may integrate, fork, or pattern-expand any listed technology until the decision row is complete and reviewed."* claw-code's row is not complete — it does not exist — so by the crosswalk's own rule it is **not cleared for any integration, adaptation, or pattern-expansion**. A fork is an access mechanism (read the source as ground truth, never push upstream), not an adoption.
+
+In the canonical decision vocabulary, claw-code is best described as **un-triaged / proposal-only** with respect to Dark Factory: pulled into the org for a look, never carried through the survey to a recorded outcome. It is closest in spirit to the "proposal-only / candidate" category the [[civilization-landscape-investigation]] article lists, but even that is an inference about *status from absence*, not a label any source applied to it.
+
+## Capability Read
 
 Two independent sources agree on the fork facts, and only the fork facts:
 
@@ -64,11 +77,9 @@ The prompt frames claw-code as "a forked public project the Civilization Landsca
 
 > ⚠ **Fail-legible note (the "investigation evaluated it" claim is contested by the evidence).** The only source that ties claw-code to the "Civilization Landscape Investigation" is the **retrospective Open Brain bucket-naming** (2026-06-13), which uses "Civilization Landscape Investigation" as a label for the *whole Apr–May fork fan-out*. The **formal investigation of 2026-05-13** — the one that produced the checkpoints, the inclusion matrix, and the crosswalk — did **not** evaluate claw-code: it is absent from every artifact that survey generated. These two senses of "the investigation" are not the same scope, and the wiki does not silently merge them. What is sourced: claw-code was forked, and was *grouped* with the investigation's harness candidates after the fact. What is **not** sourced: any per-item analysis, marginal-contribution verdict, or decision for claw-code. (Compare [[gstack|gStack]], whose Batch-D analysis, inclusion-matrix row, and pattern-only crosswalk row are all on the record — claw-code has none of these.)
 
-## What the absence does *not* mean
+## Benchmark Reality
 
-A missing row is a missing decision, not a silent green light — and the arc has a default rule for exactly this. The accepted-canonical constraint that governs every external fork from the spring sweep is [[v3-9]] **Decision 15, "External Frameworks Stay Outside Control Roles"**: external frameworks "remain references, optional adapters, or patterns unless a later accepted ADR changes their status. They must not become kernel, truth source, Work replacement, policy owner, release authority, certification authority, capability promoter, factory controller, or Site replacement." The crosswalk's own gate reinforces it from the other side: *"No future epic may integrate, fork, or pattern-expand any listed technology until the decision row is complete and reviewed."* claw-code's row is not complete — it does not exist — so by the crosswalk's own rule it is **not cleared for any integration, adaptation, or pattern-expansion**. A fork is an access mechanism (read the source as ground truth, never push upstream), not an adoption.
-
-In the canonical decision vocabulary, claw-code is best described as **un-triaged / proposal-only** with respect to Dark Factory: pulled into the org for a look, never carried through the survey to a recorded outcome. It is closest in spirit to the "proposal-only / candidate" category the [[civilization-landscape-investigation]] article lists, but even that is an inference about *status from absence*, not a label any source applied to it.
+There is nothing to measure and nothing measured: no local clone exists, no README or source was read, and the only performance-shaped claim in the record is the upstream description's own marketing — "The fastest repo in history to surpass 100K stars ⭐" — carried verbatim as context for what the project advertises, not verified, and load-bearing for nothing. Even the license is null-as-detected on the fork. Any future claim about claw-code's capabilities would have to start from zero, with the crosswalk's required license and supply-chain review as the first gate.
 
 ## Fail-legible notes
 
@@ -80,7 +91,7 @@ In the canonical decision vocabulary, claw-code is best described as **un-triage
 - **The "100K stars" claim is upstream marketing.** The repo description's "fastest repo in history to surpass 100K stars" is the upstream's self-promotion, carried only as verbatim context for *what the project advertises*; it is not load-bearing and was not verified.
 - **Upstream is cited, never re-published.** Per org rule, `ultraworkers/claw-code` is public OSS. Its description and authorship are reproduced here solely as context for why a fork exists, not as content to mirror. The wiki subject is **our** handling and the gap in it.
 
-## Sources & provenance
+## Sources & Provenance
 
 - **Fork metadata** — GitHub API `repos/transpara-ai/claw-code`, fetched 2026-06-13: `isFork=true`, `parent=ultraworkers/claw-code`, `createdAt=2026-04-01T18:14:03Z`, `licenseInfo=null`, `description="The fastest repo in history to surpass 100K stars ⭐. Better Harness Tools that make real things done. Built in Rust using oh-my-codex."` This is the primary high-confidence source for the fork identity, date, and theme. Durable upstream URL (context only): https://github.com/ultraworkers/claw-code; fork: https://github.com/transpara-ai/claw-code.
 - **Open Brain fork-chronology ledger** — `/Transpara/transpara-ai/repos/wiki/raw/open-brain/2026-06.md`, L4043–4044: the dated fork list ("4/01 claw-code <- ultraworkers") and the function-bucketed fan-out that files claw-code under "harness (gstack, claw-code, openclaw)" and labels the Apr–May wave the "Civilization Landscape Investigation." Sole source for claw-code's recorded place in the arc.

@@ -9,6 +9,9 @@ aliases:
 tier: investigation
 status: compiled
 last_compiled: 2026-06-13
+civilization_contribution: "None recorded — no crosswalk row, no ADR, not one of the investigation's 22 candidates: an original transpara-ai pattern catalog (not a fork) whose only governed content is inherited, by explicitly-labelled inference, from gStack's pattern-only decision (all four entries distil gStack patterns); posture: mine the pattern, attribute the source, import no authority — never a governed factory control."
+raw_documents: []
+current_research_version:
 sources:
   - /Transpara/transpara-ai/repos/bitsandpieces/README.md  # catalog of 4 building blocks, all from gstack; "Atomic / Attributed / Adapted" philosophy
   - /Transpara/transpara-ai/repos/bitsandpieces/safety-hooks/README.md  # one entry, README-grounded: gstack (MIT) careful/freeze/guard PreToolUse hooks, fail-closed deny on freeze boundary
@@ -37,7 +40,15 @@ This article is about **our catalog and how it sits in the investigation**, not 
 
 > ⚠ **Fail-legible note (this is the thinnest investigation article in the set).** Unlike its Epic-1 siblings [[paperclip|Paperclip]] and [[hermes-agent|Hermes]], **bitsandpieces has no row in the v3.9.1 technology-decision crosswalk** — no `selected` / `pattern-only` / `research-only` / `deferred` / `excluded` verdict was ever recorded for it. It was not one of the investigation's 22 surveyed candidates. So most of what a reader wants ("what did the investigation decide about it?") is genuinely **not established** — and is marked thin throughout rather than confabulated. What *is* known is below.
 
-## What it actually is
+## What Changed with the Research
+
+No released TAI-RES evaluation targets bitsandpieces — this is a support-only investigation page, so Topic Details is empty by design. The record is the repo's own README, live GitHub metadata, one Open Brain era-map note (the sole source of the "Atoms" alias), and the negative results established at the 2026-06-13 compile: no crosswalk row, no candidate-list membership, one incidental research-corpus mention ("no go.mod"). Nothing has moved since.
+
+## The Boundary
+
+There is no recorded decision to enforce, so the arc's fail-closed default governs: **unrecorded status defaults to deny, not to permission.** Under v3.9 Decision 15, any gStack-derived pattern in the catalog remains a reference — never kernel, truth source, Work replacement, policy owner, release authority, certification authority, capability promoter, or factory controller — and the nearest governed verdict over the catalog's contents is inherited from [[gstack|gStack]]'s pattern-only row (an explicitly-labelled inference, not a recorded decision; detailed below). The catalog's own posture states the same discipline in miniature: mine the pattern, attribute the source, import no authority.
+
+## Capability Read
 
 From its own `README.md`, bitsandpieces is a catalog with one governing idea:
 
@@ -120,11 +131,15 @@ That "Atoms" is a **product platform**; *this* "Atoms" (bitsandpieces) is a **fo
 
 > ⚠ **Fail-legible note (do not conflate).** Any future reader searching "Atoms" in the dark-factory corpus will hit ADR-0005 and the v2 platform analysis first. Those are **not** about `transpara-ai/bitsandpieces`. The only source that calls bitsandpieces "Atoms" is the single Open Brain era-map note; the ADR-0005 "Atoms" predates and out-documents it but refers to a different thing. Stated explicitly so the collision is not silently merged.
 
+## Benchmark Reality
+
+Nothing here is measured or claimed to be: the catalog makes no performance claims, and this compile's evidence is README-grounded — the reference implementations were not exercised ("repo_internals: thin"). The one behavioral fact read in full is the `safety-hooks` entry's fail posture: the **freeze** hook denies any `Edit`/`Write` outside its boundary with no override, while **careful** returns an overridable `ask` on destructive Bash — a deny-by-default shape that rhymes with the arc's own gate discipline, observed in the entry's README, not tested. The upstream's only self-description quirk ("stolen from the best open-source AI tooling") is the repo's own self-deprecating word for attributed pattern-distillation, not a license claim to audit.
+
 ## How this relates to the rest of the arc
 
 bitsandpieces is a minor, early data point in the same outward-looking phase that produced the [[civilization-landscape-investigation]]: the period when the [[dark-factory]] effort was reading external agent tooling to decide what to keep. Its posture is the arc's posture in miniature — **mine the pattern, attribute the source, import no authority** — the same containment logic the investigation applied at scale and Decision 15 later ratified. But where the investigation produced a defended register of decisions, bitsandpieces produced a handful of reusable snippets and never made it onto that register. It is best read as **a personal toolbox of OSS patterns from the Investigations era**, loosely tagged "Atoms" in hindsight, whose only formally-governed content is inherited from the [[gstack|gStack]] pattern-only decision.
 
-## Sources & provenance
+## Sources & Provenance
 
 - **Repo README** — `/Transpara/transpara-ai/repos/bitsandpieces/README.md`: the "Atomic / Attributed / Adapted" philosophy, the four-entry catalog (all sourced from gstack), and the contributing rule. Primary evidence for what the catalog *is*.
 - **One entry, read in full** — `/Transpara/transpara-ai/repos/bitsandpieces/safety-hooks/README.md`: gStack (MIT) PreToolUse hooks; `freeze` = hard `deny` outside a boundary (no override), `careful` = overridable `ask` on destructive Bash. README-grounded; reference implementation not exercised this run.

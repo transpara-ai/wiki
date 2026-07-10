@@ -49,7 +49,7 @@ raw_documents:
 
 This article is about **Transpara's investigation and decision**, not a re-publication of OB1's own documentation. OB1 is upstream public code; it is cited here as context only, and its large community catalog (curated extensions, recipes, skills, dashboards, integrations) is characterized, never reproduced.
 
-## What changed with TAI-RES-2026-008
+## What Changed with the Research
 
 The earlier page carried upstream and doc claims as context because it was compiled without a dedicated code read. The current evaluation read the fork repository at `1c4c906` and replaces that with code-anchored findings:
 
@@ -64,9 +64,17 @@ The earlier page carried upstream and doc claims as context because it was compi
 
 The result is not "adopt OB1." The result is: OB1 is a credible memory-of-intent substrate whose *pattern* the Civilization already runs internally — advisory-only, wrapped in its own trust and truth boundary.
 
-## What OB1 is — now code-anchored
+## The Boundary
+
+The governing boundary is the accepted memory/knowledge law: *"EventGraph remains the source of truth… Memory and knowledge are advisory only"* (v4.0 `03:36`), and the factory must **stop** when *"memory/knowledge contradicts EventGraph in high-risk planning"* (v4.0 `05:523`). OB1 itself does none of this: it is deliberately fail-open recall — store verbatim content, search it, return the nearest thoughts, with a `metadata jsonb` blob that carries no trust, freshness, or contradiction state. That is correct at the recall layer and wrong at the authority layer. The Civilization boundary supplies the missing governance — recalled content enters as advisory, becomes usable in gated work only as a `MemoryReference`, and can never quietly influence high-risk planning. OB1's *own* in-house framing already draws this line: the EventGraph is *"a ledger of what happened,"* while Open Brain *"captures what the agent was thinking and why"* (2026-04-09 hive reboot-survival decision).
+
+## Capability Read
 
 `CLAUDE.md:7`: *"Open Brain is a persistent AI memory system — one database (Supabase + pgvector), one MCP protocol, any AI client."* The runtime is a **Deno/TypeScript Supabase Edge Function** built **per request** (`buildServer()` at `server/index.ts:114`, invoked inside `app.all("*")` at `:640`), remote-over-HTTP by hard guard rail (*"MCP servers must be remote… Never use `StdioServerTransport`"*, `CLAUDE.md:75`). It registers **six tools**, one of them (`capture_thought`, `:452`) the sole writer, annotated `readOnlyHint:false`. Storage is a `thoughts` table with `pgvector` HNSW cosine search and a unique `content_fingerprint` index for dedup; embeddings are **API-based** (`openai/text-embedding-3-small` via OpenRouter, 1536 dims), the inverse of MemPalace's local-ONNX posture and a collision with the air-gap default. It is, unambiguously, a memory/recall substrate — the repository never self-describes as a planner.
+
+## Benchmark Reality
+
+There is no benchmark to audit here, on either side: TAI-RES-2026-008 is a structural code read, not a measured evaluation, and the upstream markets no headline benchmark number (contrast [[pageindex|PageIndex]]'s self-reported 98.7% FinanceBench figure). What the evaluation verified is structural — the six-tool MCP registry, the `pgvector` HNSW cosine index at 1536 dimensions, the SHA-256 `content_fingerprint` dedup, the FSL-1.1-MIT license terms with their two-year MIT conversion clock. Recall quality, embedding cost, and drift remain unmeasured, and the API-based embedding path (OpenRouter) is the noted collision with the air-gap default. Any adapter-grade use beyond today's advisory internal store would need its own measured evaluation, judged by the Civilization's stricter standard — the accepted kill criterion that the factory stops when memory contradicts EventGraph in high-risk planning (v4.0 `05:523`) — not by retrieval scores.
 
 ## The decision: pattern-only
 
@@ -81,10 +89,6 @@ The per-item **v3.9.1 crosswalk** row says the same and adds the boundary (`02-t
 ## The "cognitive planning" label vs the memory-substrate artifact (stated, not resolved)
 
 > ⚠ **Fail-legible note (label vs. substance).** Decision 12 files OB1 as an *"optional cognitive planning pattern,"* a label inherited from the 2026-05 ADR-0004/0013 era. But the code, `README.md`, `CLAUDE.md`, the first-party PageIndex note (*"OpenBrain = persistent agent-readable memory substrate"*), and even v4.0's own usage all describe a **memory/recall substrate**, not a planner — and a repo-wide `grep "cognitive planning"` returns **zero**. In the *same* Decision 12 list, the *"recall substrate only"* slot is explicitly reserved for **MemPalace** (`01:145`). So OB1 is filed under a category that mismatches its function and collides with a sibling's reserved slot. Why is **not explained in any source**; it is an asserted classification, not a justified one. Either way the *boundary* is identical and load-bearing — advisory only, never `PlanningProposal`/`Requirement`/`AcceptanceCriterion`/EventGraph evidence, never a controller. TAI-RES-2026-008 §5.5 recommends a docs-hygiene reconciliation of the label; the boundary needs none.
-
-## The boundary
-
-The governing boundary is the accepted memory/knowledge law: *"EventGraph remains the source of truth… Memory and knowledge are advisory only"* (v4.0 `03:36`), and the factory must **stop** when *"memory/knowledge contradicts EventGraph in high-risk planning"* (v4.0 `05:523`). OB1 itself does none of this: it is deliberately fail-open recall — store verbatim content, search it, return the nearest thoughts, with a `metadata jsonb` blob that carries no trust, freshness, or contradiction state. That is correct at the recall layer and wrong at the authority layer. The Civilization boundary supplies the missing governance — recalled content enters as advisory, becomes usable in gated work only as a `MemoryReference`, and can never quietly influence high-risk planning. OB1's *own* in-house framing already draws this line: the EventGraph is *"a ledger of what happened,"* while Open Brain *"captures what the agent was thinking and why"* (2026-04-09 hive reboot-survival decision).
 
 ## Adopted vs. reference — two objects, one boundary
 
@@ -133,7 +137,7 @@ The fork is a real, maintained mirror, not an import:
 - [[dark-factory]] — the architecture whose boundary the decision defends.
 - [[v3-9]] — the canonical revision that folded the investigation's decisions in; [[v4-0]] carries the principle forward generically.
 
-## Sources & provenance
+## Sources & Provenance
 
 Primary source is the code-anchored evaluation; doctrine is first-party Transpara documents; upstream is cited as context only.
 

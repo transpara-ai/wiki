@@ -4,6 +4,7 @@ aliases: [solo-orchestrator, transpara-ai/solo-orchestrator, Solo Orchestrator F
 tier: investigation
 status: compiled
 last_compiled: 2026-06-13
+civilization_contribution: "Pattern-only (the grouped ratified decision; no per-item crosswalk row — the recorded gap): contributes phase-gate process discipline — phase gates, test gates, security scans, approval logs — allowed to land only in the implementation-workflow checklist, with any borrowed gate translated into EventGraph records rather than Markdown/JSON side-state; the most methodology-pure of the operator/workflow-UX cluster (mildest risk profile: redundancy, not capture); never a runtime, control plane, Work/Site/controller replacement, or truth/authority layer."
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk — NO per-item row for solo-orchestrator (the fail-legible gap); freeze/reopen policy L41-68
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/09-legacy-coverage-matrix-v3.9.md  # v3.9 ratified mapping — solo-orchestrator grouped with gstack/symphony/multica/paperclip (L257)
@@ -27,6 +28,7 @@ raw_documents:
   - "raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.0.0-Solo-Orchestrator-Evaluation-69a6250ee846.md"
   - "raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.1.0-Solo-Orchestrator-Evaluation-959878a544d6.md"
   - "raw/inbox/2026-07-07/solo-orchestrator/TAI-RES-2026-005-v1.1.1-Solo-Orchestrator-Evaluation-d5c0989f3d71.md"
+current_research_version: "1.1.1"
 
 ---
 
@@ -61,13 +63,21 @@ Because the crosswalk has no row, the authoritative trail is the investigation's
 
 In the canonical decision-category vocabulary this lands as **pattern-only** — and the crosswalk's freeze policy applies by analogy to every pattern-only adoption: such decisions are **frozen at the v3.9 reference point** and do not track upstream behaviour unless an epic explicitly reopens them, at which point the responsible epic must record the upstream commit reviewed, which pattern changed, and whether Dark Factory adopts, rejects, or defers it.
 
+## What Changed with the Research
+
+Three revisions of the released internal evaluation are recorded under Topic Details: **TAI-RES-2026-005** v1.0.0 and v1.1.0 (browser-ingested 2026-06-24) and v1.1.1 (2026-07-07 — a classification correction for the record). The evaluation series' session-hook-vs-sovereign-record analysis became the methodological precedent its successor evaluation, TAI-RES-2026-006 on the [[owainlewis-blueprint-factory|Owain Lewis work system]], explicitly extends. The decision the research examines did not move: pattern-only, frozen at the v3.9 reference point — the ratified trail below predates the evaluation series and still governs.
+
+## The Boundary
+
+The ratified boundary is the grouped legacy-matrix line: *"Mine UX, gates, proof-of-work, and workflow patterns; no Work/Site/controller replacement."* Its Markdown/JSON process state is **not** EventGraph truth — the single most load-bearing objection — so any borrowed phase gate must become evidence the kernel can verify, not a checkbox in a side file. A methodology is not a runtime: there were no kernel-level surfaces to fence off, and under the freeze policy the pattern-only decision stands at the v3.9 reference point unless an epic explicitly reopens it.
+
 ## How it entered the arc
 
 Solo Orchestrator was **candidate 21** of the [[civilization-landscape-investigation]] source list — the one-time 2026-05-13 sweep that evaluated each external tool against the then-canonical Dark Factory v3.8 design for marginal contribution, under a hard operator rule: *no aspirational claims accepted without code or canonical-document evidence; if access to a repo is missing, stop — do not substitute upstreams or marketing pages.* The fork into `transpara-ai` (dated 2026-05-01, twelve days before the survey) existed so the project could be read as source under that rule.
 
 It was analysed in **Phase 4, Batch C** ("agent execution and orchestration"), alongside `OB1`, `openclaw`, `MetaGPT`, `OpenManus`, the [[hermes-agent|Hermes]] family, and [[multica]]. The investigation closeout placed it cleanly in a single bucket — **pattern / reference only** — and, unlike Paperclip or Symphony, did **not** also list it under "defer until prerequisite controls exist." A methodology is not a runtime, so there were no kernel-level boundaries to fence off before its *ideas* could be borrowed.
 
-## What the investigation found it to be
+## Capability Read
 
 From the Batch C candidate analysis (evidence inspected: **README only**), Solo Orchestrator is:
 
@@ -80,6 +90,10 @@ The core primitives the investigation recorded:
 > "five phases: Discovery, Architecture, Construction, Validation, Release · phase gates · Project Intake · Product Manifesto · Project Bible · ADRs · test gates · security scans · approval logs · platform modules · language/platform CI templates · Claude Code guardrails."
 
 What it explicitly **is not**, per the same analysis: *"not a runtime execution engine, not EventGraph, not Work DAG, not a memory substrate, not release authority."* Its governance model is "strong process governance, approvals, enterprise governance documents, POC modes, and audit trail" — but, critically, *"Not v3.8 EventGraph authority records."* Its memory model (Qdrant MCP, optional) is "not primary."
+
+## Benchmark Reality
+
+There is nothing measured to audit: the investigation's evidence was the README alone (*"Primary evidence inspected: README.md"*) — no code, scripts, or templates were run or read — and the framework makes methodology claims, not performance claims. The only quantitative-looking signal in the record is the upstream's own conflicting version labels ("Framework v4.1" vs. "v1.0 release"), carried as context and load-bearing for nothing. Whether Solo Orchestrator's gates actually strengthen implementation discipline would be measured, if ever, by the Civilization's own implementation-workflow-checklist outcomes — not by any claim in the source repo.
 
 ## Why pattern-only, and not adopted
 
@@ -111,7 +125,7 @@ As of this compile, no epic has explicitly reopened it; under the freeze policy 
 
 Solo Orchestrator is one of the **operator/workflow-UX cluster** the investigation treated as a single family: grouped with [[gstack|gStack]], [[symphony|Symphony]], [[multica]], and [[paperclip|Paperclip]] in the ratified legacy matrix, all five marked "workflow/operator UX/proof-of-work references only" with the same boundary — *no Work/Site/controller replacement.* Among them it is the **most methodology-pure**: gStack ships skills, Symphony packages trials, Multica and Paperclip are UX/control-plane products, but Solo Orchestrator is process doctrine first and tooling second. That is exactly why its risk profile is the mildest of the cluster (redundancy, not capture) and why it alone skipped the "defer until controls exist" bucket. It sits at the same hinge as the rest of the [[civilization-landscape-investigation]]: the moment [[dark-factory]] looked outward and chose to learn patterns from the agent-tooling landscape while importing none of it as authority.
 
-## Sources & provenance
+## Sources & Provenance
 
 - **v3.9.1 External Technology Decision Crosswalk** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md`. Cited for what it **lacks**: no Solo Orchestrator row exists in the decision table (literal search returns nothing); freeze/reopen policy at L41-68 applied by analogy. This is the document the compile was told to ground in; the gap is the finding.
 - **v3.9 Legacy Coverage Matrix** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/09-legacy-coverage-matrix-v3.9.md` (Civilization Landscape Pattern Mapping, L257). The **ratified canonical decision** that does cover Solo Orchestrator: grouped "workflow/operator UX/proof-of-work references only," boundary "no Work/Site/controller replacement."

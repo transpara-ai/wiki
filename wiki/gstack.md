@@ -8,6 +8,9 @@ aliases:
 tier: investigation
 status: compiled
 last_compiled: 2026-06-13
+civilization_contribution: "Pattern-only (v3.9.1 crosswalk row; frozen at the v3.9 reference point): the named co-inspiration of U7 CapabilityArtifact governance for skills/plugins/workflow packs (with the Hermes example plugins) and a joint source of the U9 operator-UX / proof-of-work update set; its software-factory skill ideas may inform native design but must not influence work without usage logging and capability evidence; never a controller, release process, or EventGraph truth."
+raw_documents: []
+current_research_version:
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; gStack decision row (L83) + per-item note "Decision: pattern-only" (L191-195) + freeze/reopen policy (L41-68)
   - raw/transpara/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 15: external frameworks stay outside control roles
@@ -54,13 +57,21 @@ The per-item note is the binding constraint:
 
 In the canonical decision-category vocabulary this lands in the **pattern-only** bucket — learn the design idea, import no code, grant no control role. The crosswalk's own freeze policy applies: pattern-only adoptions are **frozen at the v3.9 reference point** and do not track upstream behaviour unless an epic explicitly reopens them. Reopening gStack would require recording the upstream version or commit reviewed, which pattern changed, and whether Dark Factory adopts, rejects, or defers it. The single accepted-canonical rule above all this row detail is [[v3-9]] Decision 15 — external frameworks from the investigation "must not become kernel, truth source, Work replacement, policy owner, release authority, certification authority, capability promoter, factory controller, or Site replacement." The crosswalk row is reviewed planning (`status: review`); Decision 15 is the law.
 
+## What Changed with the Research
+
+No released TAI-RES evaluation targets gStack — this is a support-only investigation page, so Topic Details is empty by design. The research record is the 2026-05-13 landscape investigation itself: the Phase 4 Batch D candidate analysis, the closeout's pattern/reference-only placement, and the v3.9.1 crosswalk row above. Nothing has moved since the 2026-06-13 compile; under the freeze policy the decision stands at the v3.9 reference point unless an epic explicitly reopens it.
+
+## The Boundary
+
+The binding constraint is the crosswalk's per-item note: *"Workflow or skill ideas are CapabilityArtifact candidates if they affect factory behavior. They must not influence work without usage logging and capability evidence."* Pattern-only means learn the design idea, import no code, grant no control role — and under Decision 15, gStack can never become kernel, truth source, Work replacement, policy owner, release authority, certification authority, capability promoter, factory controller, or Site replacement. Its safety features, project-learnings memory, and WIP checkpoints stay advisory: they "are not v3.8 EventGraph authority records," and its local state is not tamper-evident causal record unless wired into [[event-graph|EventGraph]].
+
 ## How it entered the arc
 
 gStack was one of the [[civilization-landscape-investigation]] candidates — a sweep that evaluated each external tool against the then-canonical Dark Factory v3.8 design for marginal contribution, under a hard rule from the operator: *no aspirational claims accepted without code or canonical-document evidence; if access to a repo is missing, stop — do not substitute upstreams or marketing pages.* The fork into `transpara-ai` (2026-05-09) existed so the project could be read as source under that rule rather than from its website.
 
 It was analysed in **Phase 4, Batch D** — "governance, self-evolution, and platform tooling" — alongside `hermes-agent-self-evolution`, `agent-governance-toolkit`, and [[paperclip|paperclip]] (gStack was candidate 7 of that batch). The investigation closeout placed gStack in a single list: **include as pattern/reference only.** Unlike Paperclip (which the closeout also put in the "defer until prerequisite controls exist" list), gStack was not flagged as needing deferral — it was treated straightforwardly as a workflow/skill reference to mine, not a control plane to gate.
 
-## What the investigation found it to be
+## Capability Read
 
 From the Batch D candidate analysis (evidence inspected: **README only**):
 
@@ -69,6 +80,10 @@ From the Batch D candidate analysis (evidence inspected: **README only**):
 The investigation recorded its self-framing as an "open source software factory" with roles such as "CEO, engineering manager, designer, reviewer, QA lead, security officer, and release engineer" — the same virtual-team framing the upstream README leads with. The core primitives it listed: slash-command skills, a software-sprint workflow, review/QA/security/release roles, browser automation, prompt-injection defense, pair-agent shared browser, a Codex second-opinion path, safety guardrails (`careful` / `freeze` / `guard`), and `learn` / taste / checkpoint memory.
 
 What it explicitly **is not**, per the analysis: it is not [[event-graph|EventGraph]]; it is not v3.9 [[work|Work]]; it is not the [[runtime-broker|RuntimeBroker]], the [[authority-layer|authority model]], or release certification. "It is a workflow/skill layer and tooling suite." Its safety features (careful/freeze/guard, reviews, a security-officer audit, prompt-injection defense) are real but "are not v3.8 EventGraph authority records"; its project-learnings and taste memory are advisory and "must become MemoryReference/KnowledgeReference if influencing factory work"; its WIP commits/checkpoints "are not EventGraph truth."
+
+## Benchmark Reality
+
+Nothing about gStack was measured, and the numbers that exist do not even agree with each other. The upstream's headline count — "23 specialists / 23 opinionated tools" — is contradicted by its own install snippet (~37 slash commands) and by the local clone (47 `SKILL.md` files); "23" is carried as the upstream's chosen framing, the larger counts as what the repo actually ships, and none of it was load-bearing (the decision turned on governance boundaries, not tool quantity). The productivity claims — "~810× my 2013 pace," ETHOS's "10,000+ usable lines of code per day" — are upstream self-reported marketing, carried only as context for what gStack is selling; the investigation's own rule treats such claims as aspirational until code-verified, and the evidence base for the decision was the README alone.
 
 ## Why pattern-only, and not adopted
 
@@ -99,7 +114,7 @@ The crosswalk binds gStack's owning epic to a "future capability or operator pac
 - **Asserted, not proven.** The framing that gStack's skills could "bypass CapabilityArtifact evidence" or "bypass the Work DAG and TraceCompletenessGate" is the investigation's *risk assessment*, not a demonstrated failure — it is the reason the decision is fenced to pattern-only, not a record of harm observed.
 - **Upstream is cited, never re-published.** Per org rule, `garrytan/gstack` is public OSS. Its README framing ("open source software factory"), authorship (Garry Tan, YC), and MIT license are corroborated as context for *why we forked it to read it*, not as content to mirror. The local fork's `upstream` remote is even configured with pushes disabled (`DISABLE_PUSH_TO_UPSTREAM`), consistent with the org's "read the source, never push upstream" posture. The wiki subject is our investigation and our decision.
 
-## Sources & provenance
+## Sources & Provenance
 
 - v3.9.1 **External Technology Decision Crosswalk** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (decision row L83; per-item note "Decision: pattern-only" L191-195; freeze/reopen policy L41-68). This is the authoritative decision record. (`status: review` / `canonical: false`; the ratified routing rule is v3.9 Decision 15.)
 - **Phase 4 Batch D** candidate analysis — `…/research/checkpoints/2026-05-13-06-phase-4-batch-d-governance-self-evolution-platform-tooling.md` (gStack section, candidate 7, L343-451; inclusion-matrix row L591; cross-candidate synthesis L653-784). Primary evidence for what the investigation found; explicitly README-only.
