@@ -31,9 +31,19 @@ ingest_server = load("ingest_server")
 # copy would make OpRefused a different class and break assertRaises)
 ingest_ops = ingest_server.ingest_ops
 
-# REPOS is populated by main() at build time, not at import — fill it so the
-# sidebar/repo-nav tests exercise the populated path like a real build does.
-build_site.REPOS = build_site.repo_records()
+# REPOS is populated by main() at build time, not at import. Seed
+# deterministic fixture records (one per group) so the sidebar/repo-nav tests
+# exercise the populated path WITHOUT depending on host-local sibling
+# checkouts — a clean CI runner has no /Transpara/transpara-ai/repos tree
+# (CFAR r3).
+build_site.REPOS = [
+    {"name": "acme-tool", "slug": "acme-tool",
+     "href": "repo-acme-tool.html", "group": "platform"},
+    {"name": "acme-hive", "slug": "acme-hive",
+     "href": "repo-acme-hive.html", "group": "civilization"},
+    {"name": "acme-misc", "slug": "acme-misc",
+     "href": "repo-acme-misc.html", "group": "other"},
+]
 
 
 def page(tmp, slug, fm_lines):
