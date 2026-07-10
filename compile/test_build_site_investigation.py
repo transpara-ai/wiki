@@ -344,10 +344,13 @@ def test_mempalace_render_diff_is_label_toc_and_supersession():
         "newest version is the unmarked primary"
 
     # no other change: all 8 MemPalace body headings still present (asserted on
-    # stable heading ids, robust to inline auto-linking in heading text) ...
+    # stable heading ids, robust to inline auto-linking in heading text). The
+    # dated heading became the canonical "What Changed with the Research" in the
+    # Phase-2 batch-1 retrofit — the sanctioned data-only generalization the
+    # note above anticipated — so the pinned id follows the canonical name.
     for hid in (
         "placement", "decision-record-and-adr-disposition",
-        "what-changed-with-tai-res-2026-004", "the-boundary", "capability-read",
+        "what-changed-with-the-research", "the-boundary", "capability-read",
         "benchmark-reality", "integration-packet", "sources-provenance",
     ):
         assert ('id="%s"' % hid) in body_html, "body heading preserved: %s" % hid
@@ -355,6 +358,167 @@ def test_mempalace_render_diff_is_label_toc_and_supersession():
     contribution = site.build_contribution_box(fm)
     assert "contribution-box" in contribution, "Civilization Contribution box preserved"
     print("ok test_mempalace_render_diff_is_label_toc_and_supersession")
+
+
+# ---- AC6(P2) / AC10(P2) — the Phase-2 all-corpus gates (live-enumerated) ----
+
+def _live_active_investigations():
+    """The live active investigation set, ordered exactly as build_sidebar
+    assembles the tier's `arts` (title-sorted; retired pages dropped)."""
+    return sorted((m for m in site.META.values()
+                   if m["tier"] == "investigation" and not m.get("retired_on")),
+                  key=lambda m: m["title"].lower())
+
+
+def test_all_active_investigations_conform():
+    # AC6(P2)(i): EVERY live-enumerated active investigation page satisfies the
+    # R2 predicate. Fail-closed: one deficiency anywhere fails the corpus gate,
+    # and an empty enumeration fails rather than vacuously passing.
+    arts = _live_active_investigations()
+    assert arts, "corpus gate found no active investigation pages"
+    bad = {}
+    for m in arts:
+        fm, body = site.split_fm((site.WIKI / ("%s.md" % m["slug"])).read_text())
+        deficiencies = site.investigation_conformance(fm, body)
+        if deficiencies:
+            bad[m["slug"]] = sorted(deficiencies)
+    assert not bad, "non-conformant active investigation pages: %r" % bad
+    print("ok test_all_active_investigations_conform (%d pages)" % len(arts))
+
+
+def test_investigation_topic_clusters_have_multiple_members():
+    # AC6(P2)(ii): `investigation_topic` appears ONLY when >=2 active pages share
+    # the exact value — a single-page investigation omits the key entirely; the
+    # check is conditional, never forcing a topic onto a lone page (CFADA-r11 #25).
+    members = {}
+    for m in _live_active_investigations():
+        topic = site.investigation_topic_for(m["slug"], m)
+        if topic:
+            members.setdefault(topic, []).append(m["slug"])
+    strays = {t: s for t, s in members.items() if len(s) < 2}
+    assert not strays, "single-page investigation_topic values must be removed: %r" % strays
+    print("ok test_investigation_topic_clusters_have_multiple_members")
+
+
+def test_all_active_investigations_topic_details_complete():
+    # AC6(P2)(iii)/R3: no raw ingested version is lost. Two directions, both
+    # fail-closed over the corpus's raw-ingested placements:
+    #  (a) ownership — every browser-ingest upload under raw/inbox/<date>/<slug>/
+    #      appears in THAT page's Topic Details refs;
+    #  (b) no orphans — every raw-ingested research file whose owner is not
+    #      derivable from its path (the unassigned inbox dirs, and the TAI-RES
+    #      evaluations placed under raw/civilization/external-landscape/ —
+    #      CFADA-r17 #35) is claimed by at least one active investigation page.
+    # Doctrine citations (raw/transpara/..., raw/open-brain/..., absolute paths)
+    # are out of scope by design (CFADA-r10 #24). A byte-identical duplicate of
+    # an already-claimed file is NOT a lost version — the live corpus carries one
+    # (a double browser-upload of the owainlewis v1.0.0 eval, same sha256, both
+    # recorded in the ingest ledger) — so orphan candidates resolve by content
+    # hash before failing; a file with UNIQUE unclaimed content still fails.
+    import hashlib
+    refs_by_slug, all_refs = {}, set()
+    for m in _live_active_investigations():
+        fm, _body = site.split_fm((site.WIKI / ("%s.md" % m["slug"])).read_text())
+        refs = set(site.topic_details_refs(fm))
+        refs_by_slug[m["slug"]] = refs
+        all_refs |= refs
+    claimed_hashes = set()
+    for ref in all_refs:
+        p = site.ROOT / ref
+        if p.is_file():
+            claimed_hashes.add(hashlib.sha256(p.read_bytes()).hexdigest())
+
+    def _is_lost(f, rel):
+        return (rel not in all_refs and
+                hashlib.sha256(f.read_bytes()).hexdigest() not in claimed_hashes)
+
+    missing, orphans = {}, []
+    inbox = site.ROOT / "raw" / "inbox"
+    for date_dir in sorted(p for p in inbox.iterdir() if p.is_dir()):
+        if date_dir.name == "manifest.d":
+            continue  # ingest ledger machinery, not ingested research
+        for slug_dir in sorted(p for p in date_dir.iterdir() if p.is_dir()):
+            for f in sorted(slug_dir.glob("*.md")):
+                rel = f.relative_to(site.ROOT).as_posix()
+                if slug_dir.name in refs_by_slug:
+                    if rel not in refs_by_slug[slug_dir.name]:
+                        missing.setdefault(slug_dir.name, []).append(rel)
+                elif _is_lost(f, rel):
+                    orphans.append(rel)
+    external = site.ROOT / "raw" / "civilization" / "external-landscape"
+    if external.is_dir():
+        for f in sorted(external.glob("tai-res-*.md")):
+            rel = f.relative_to(site.ROOT).as_posix()
+            if _is_lost(f, rel):
+                orphans.append(rel)
+    assert not missing, \
+        "inbox uploads missing from their own page's Topic Details: %r" % missing
+    assert not orphans, \
+        "raw ingested research claimed by no active investigation page: %r" % orphans
+    print("ok test_all_active_investigations_topic_details_complete")
+
+
+def test_all_multipage_clusters_have_exactly_one_primary():
+    # AC10(P2)/§2.5: every live multi-page cluster carries EXACTLY ONE active
+    # investigation_primary (zero and >=2 are corpus deficiencies). The live
+    # corpus must contain at least the Sakana cluster, so an accidental empty
+    # enumeration cannot pass vacuously.
+    clusters = {}
+    for m in _live_active_investigations():
+        topic = site.investigation_topic_for(m["slug"], m)
+        if topic:
+            clusters.setdefault(topic, []).append(m)
+    multi = {t: arts for t, arts in clusters.items() if len(arts) >= 2}
+    assert multi, "expected at least one live multi-page cluster (Sakana)"
+    bad = {t: site.cluster_primary_deficiency(arts)
+           for t, arts in multi.items() if site.cluster_primary_deficiency(arts)}
+    assert not bad, "cluster primary invariant violated: %r" % bad
+    print("ok test_all_multipage_clusters_have_exactly_one_primary")
+
+
+def test_sakana_renders_single_primary_row():
+    # AC10(P2): the live Sakana cluster collapses to ONE flat sidebar row —
+    # the primary, labeled by the topic — with the companion omitted.
+    nav = site.build_investigation_nav(_live_active_investigations(),
+                                       "sakana-ai-evaluation")
+    assert 'href="sakana-ai-evaluation.html"' in nav, "primary row present"
+    assert ">Sakana AI</a>" in nav, "collapsed row labeled by the topic"
+    assert 'href="sakana-ai-adjacent-landscape.html"' not in nav, \
+        "companion collapsed out of the sidebar nav"
+    print("ok test_sakana_renders_single_primary_row")
+
+
+def test_sakana_single_entry_in_sidebar_and_navbox():
+    # AC10(P2)/CFADA-r18 #38: the single-entry collapse holds on BOTH nav
+    # surfaces — the sidebar and the bottom navbox investigation row.
+    reps = site.navbox_investigation_reps(_live_active_investigations())
+    slugs = [a["slug"] for a in reps]
+    assert "sakana-ai-evaluation" in slugs, "primary present in the navbox row"
+    assert "sakana-ai-adjacent-landscape" not in slugs, \
+        "companion collapsed out of the navbox"
+    sidebar = site.build_sidebar("sakana-ai-evaluation")
+    assert 'href="sakana-ai-evaluation.html"' in sidebar
+    assert 'href="sakana-ai-adjacent-landscape.html"' not in sidebar, \
+        "companion absent from the entire sidebar"
+    print("ok test_sakana_single_entry_in_sidebar_and_navbox")
+
+
+def test_sakana_companion_reachable_and_cross_linked():
+    # AC10(P2): the companion stays a full ACTIVE page (reachable by direct
+    # link; R9 is nav-only — nothing is merged or retired) and the primary
+    # carries the editorial cross-link to it (and it links back).
+    meta = site.META["sakana-ai-adjacent-landscape"]
+    assert meta["tier"] == "investigation" and not meta.get("retired_on"), \
+        "companion stays an active, buildable investigation page"
+    _fm, primary_body = site.split_fm(
+        (site.WIKI / "sakana-ai-evaluation.md").read_text())
+    assert "sakana-ai-adjacent-landscape" in primary_body, \
+        "primary cross-links the companion"
+    _fm2, companion_body = site.split_fm(
+        (site.WIKI / "sakana-ai-adjacent-landscape.md").read_text())
+    assert "sakana-ai-evaluation" in companion_body, \
+        "companion cross-links back to the primary"
+    print("ok test_sakana_companion_reachable_and_cross_linked")
 
 
 if __name__ == "__main__":
