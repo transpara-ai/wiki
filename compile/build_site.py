@@ -1798,17 +1798,22 @@ def navbox_investigation_reps(arts):
 
 def build_navbox():
     out = ['<nav class="navbox"><div class="navbox-title">%s — index</div><div class="navbox-body">' % html.escape(SITE_NAME)]
-    for tier in TIER_ORDER:
-        arts = sorted([m for m in META.values()
-                       if m["tier"] == tier and not m.get("retired_on")],
-                      key=lambda m: m["title"].lower())
-        if not arts:
-            continue
-        if tier == "investigation":
-            arts = navbox_investigation_reps(arts)
-        links = " · ".join('<a href="%s.html">%s</a>' % (a["slug"], html.escape(a["title"])) for a in arts)
-        out.append('<div class="navbox-row"><span class="navbox-grp">%s</span><span class="navbox-list">%s</span></div>'
-                   % (html.escape(TIER_LABEL.get(tier, tier)), links))
+    # iterate the full org/section structure so newly-valid Transpara pages
+    # appear here like every other nav surface (CFAR r2); org order matches
+    # the sidebar bands, and the org filter uses the same D3 absent-org rule.
+    for org in ORG_ORDER:
+        for tier in ORG_SECTIONS[org]:
+            arts = sorted([m for m in META.values()
+                           if m.get("org", DEFAULT_ORG) == org and m["tier"] == tier
+                           and not m.get("retired_on")],
+                          key=lambda m: m["title"].lower())
+            if not arts:
+                continue
+            if tier == "investigation":
+                arts = navbox_investigation_reps(arts)
+            links = " · ".join('<a href="%s.html">%s</a>' % (a["slug"], html.escape(a["title"])) for a in arts)
+            out.append('<div class="navbox-row"><span class="navbox-grp">%s</span><span class="navbox-list">%s</span></div>'
+                       % (html.escape(SECTION_LABEL.get(tier, tier)), links))
     out.append('</div></nav>')
     return "".join(out)
 

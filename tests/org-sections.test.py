@@ -135,6 +135,20 @@ class TestOrgSections(unittest.TestCase):
         self.assertNotIn('data-tier="product"', html_out)
         # the transpara-ai band keeps its tier groups
         self.assertIn('data-tier="foundational"', html_out)
+        # every nav surface includes Transpara sections when populated: the
+        # bottom navbox must list a transpara page, not only TIER_ORDER rows
+        # (CFAR r2)
+        old_meta = build_site.META
+        try:
+            build_site.META = dict(build_site.META, **{
+                "acme-org": {"slug": "acme-org", "title": "Acme Org",
+                             "tier": "organization", "org": "transpara",
+                             "retired_on": ""}})
+            navbox = build_site.build_navbox()
+        finally:
+            build_site.META = old_meta
+        self.assertIn('href="acme-org.html"', navbox)
+        self.assertIn('<span class="navbox-grp">Organization</span>', navbox)
 
     # ---- TC5 (AC4): repos split by org, nothing dropped or duplicated ----
     def test_repo_nav_split_by_org(self):
