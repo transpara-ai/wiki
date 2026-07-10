@@ -4,6 +4,9 @@ aliases: [symphony, transpara-ai/symphony, candidate 22]
 tier: investigation
 status: compiled
 last_compiled: 2026-06-13
+civilization_contribution: "Pattern-only (v3.9.1 crosswalk row): contributed the isolated-implementation-runs + proof-of-work-packet idea to the U9 update set (with Paperclip, Multica, and gStack) — rewritten as the native, EventGraph-linked proof-of-work packet; trial packaging carries weight only when backed by EventGraph evidence, never as presentation theater; never a controller, runtime, kernel, or Work replacement."
+raw_documents: []
+current_research_version:
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk, Symphony decision row + per-item note (status: review, canonical: false)
   - /Transpara/transpara-ai/repos/docs/dark-factory/research/checkpoints/2026-05-13-07-phase-5-inclusion-marginal-contribution-matrix.md  # Phase 5 inclusion matrix, symphony row (class C)
@@ -27,6 +30,18 @@ confidence:
 
 > ⚠ **Fail-legible note (scope of this article).** No README for Symphony — upstream or fork — was available locally this run, and no clone exists on this machine. Every claim below traces to the Dark Factory investigation checkpoints and the v3.9.1 crosswalk, which describe *what the investigation concluded about Symphony*, not a full account of what Symphony is. Where the sources are silent, the article says so rather than filling the gap from the upstream.
 
+## What Changed with the Research
+
+No released TAI-RES evaluation targets Symphony — this is a support-only investigation page, so Topic Details is empty by design. The research record is the 2026-05-13 landscape investigation alone: the Phase 5 matrix row, the Phase 6 gap analysis, the closeout buckets, and the crosswalk row. Nothing has moved since the 2026-06-13 compile, and the page's standing open items are provenance, not decision: the `openai/symphony` upstream identity and the 2026-05-05 fork date come from the task seed and were never confirmed against any source read.
+
+## The Boundary
+
+Three boundaries the sources draw explicitly:
+
+- **Not a controller, runtime, or kernel.** The closeout rejects every external framework from controller/kernel/authority roles; the crosswalk's "pattern" classification reinforces it.
+- **Not a Work replacement.** Phase 7 of the investigation lists "Replacing Work with Paperclip, Multica, Symphony, MetaGPT, or OpenClaw" among the things *not* to do (`...phase-7-proposed-canonical-updates.md`, L815). Symphony's "isolated implementation runs" overlap the native Work → runtime → evidence path (Phase 5 "main overlap"), but Work remains the owner.
+- **Not re-published here.** Per the org rule, the upstream `openai/symphony` is public/upstream code; this wiki cites it as context only and does not mirror its documentation. The subject is Transpara's investigation and decision.
+
 ## When and why it entered the arc
 
 Symphony appears at exactly one moment: the Civilization Landscape Investigation, a one-time survey run on **2026-05-13** to test whether any external project should displace or augment the native Dark Factory kernel. (For the survey itself — its 22 candidates, eight phases, and "no candidate beats the native kernel" verdict — see [[civilization-landscape-investigation]].)
@@ -38,7 +53,7 @@ The provenance trail, in order:
 
 > ⚠ **Fail-legible note (fork date).** The **2026-05-05** fork date comes from the task seed and was **not independently confirmed** in any source read this run. What the sources do establish is that by 2026-05-13 the fork existed and was readable by the investigation.
 
-## What the investigation took Symphony to be
+## Capability Read
 
 The sources describe Symphony in one consistent line and very little more. The Phase 6 gap analysis states it near-verbatim:
 
@@ -60,6 +75,10 @@ The Phase 5 inclusion matrix gives the only structured row (`...2026-05-13-07-..
 That is the extent of the first-party description. The two ideas the investigation extracted are (1) **isolated implementation runs** — running a unit of work in its own sandboxed pass — and (2) a **proof-of-work** artifact bundled with the result.
 
 > ⚠ **Fail-legible note (thin: "preview maturity, agent spawning").** The matrix names these as the "main risk" with no elaboration anywhere in the sources read this run. Treat them as the investigator's flagged concerns, not characterized facts about Symphony's codebase. Likewise, nothing read this run describes Symphony's architecture, language, license, or supply-chain posture — those are simply absent.
+
+## Benchmark Reality
+
+Nothing about Symphony was measured, and almost nothing about it was even characterized: the matrix's "preview maturity, agent spawning" risk cell has no supporting detail anywhere in the sources, and its architecture, language, license, and supply-chain posture are simply absent from the record. The benchmark-shaped lesson Symphony contributes is the crosswalk's own anti-theater rule — *"trial packaging can become theater without evidence"* — which is precisely a statement about the difference between an impressive-looking result artifact and a verifiable one: a proof-of-work packet carries weight only when every piece of it is backed by [[event-graph]] evidence, never because it looks complete.
 
 ## The decision: pattern-only
 
@@ -92,14 +111,6 @@ Per the Open Brain compiler note for the sibling investigation article, this is 
 
 So the chain is: Symphony (and its UX-cluster siblings) demonstrated trial packaging → the investigation judged it useful → it was rewritten as a governed native packet whose authority comes from the [[event-graph]], not from the external tool. Symphony itself is referenced for *inspiration*, and that is the whole of its role.
 
-## What it is not
-
-Three boundaries the sources draw explicitly:
-
-- **Not a controller, runtime, or kernel.** The closeout rejects every external framework from controller/kernel/authority roles; the crosswalk's "pattern" classification reinforces it.
-- **Not a Work replacement.** Phase 7 of the investigation lists "Replacing Work with Paperclip, Multica, Symphony, MetaGPT, or OpenClaw" among the things *not* to do (`...phase-7-proposed-canonical-updates.md`, L815). Symphony's "isolated implementation runs" overlap the native Work → runtime → evidence path (Phase 5 "main overlap"), but Work remains the owner.
-- **Not re-published here.** Per the org rule, the upstream `openai/symphony` is public/upstream code; this wiki cites it as context only and does not mirror its documentation. The subject is Transpara's investigation and decision.
-
 ## Related
 
 - [[civilization-landscape-investigation]] — the survey Symphony was candidate 22 of; the source of every claim here.
@@ -107,7 +118,7 @@ Three boundaries the sources draw explicitly:
 - [[event-graph]] — the substrate that turns a "proof-of-work packet" from theater into evidence; the condition the crosswalk attaches to any Symphony-like trial packaging.
 - [[paperclip]] — a sibling candidate in the same operator-UX cluster, decided UX-only; shares the U9 gap lineage with Symphony.
 
-## Sources & provenance
+## Sources & Provenance
 
 First-party, all read this run:
 

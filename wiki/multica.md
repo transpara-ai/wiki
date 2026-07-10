@@ -4,6 +4,9 @@ aliases: [multica, transpara-ai/multica, the managed-agent teammate platform]
 tier: investigation
 status: compiled
 last_compiled: 2026-06-13
+civilization_contribution: "UX-only pattern (v3.9.1 crosswalk row; frozen at the v3.9 reference point): contributed its operator/team-board surfaces — runtime inventory, teammate boards, progress streaming — to the U9 operator-workflow/proof-of-work update set (with Paperclip, Symphony, and gStack), bound to Epic 4 if ever used; must preserve the Agent boundary (teammate boards must never imply the Agent owns authority or runtime execution); never Work, Site, RuntimeBroker, policy authority, or release certification."
+raw_documents: []
+current_research_version:
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; Multica decision row (L86) + per-item note (L209-213); freeze/reopen policy (L41-68)
   - raw/transpara/dark-factory/v3.9/01-unified-architecture-decisions-v3.9.md  # Decision 15: external frameworks stay outside control roles
@@ -52,6 +55,14 @@ In the canonical decision-category vocabulary this lands as a **UX-only pattern*
 
 > ⚠ **Fail-legible note (which is the law).** The per-item crosswalk row is **reviewed planning**, not accepted-canonical doctrine — the crosswalk document is `status: review`, `canonical: false`. Per the investigation compile record (Open Brain), the one *accepted* law behind every row of this kind is v3.9 Decision 15: external frameworks stay outside control roles — never kernel, truth, Work, policy, release, certification, capability-promoter, controller, or Site. The Multica row is the application of that law to one candidate, not an independent authority.
 
+## What Changed with the Research
+
+No released TAI-RES evaluation targets Multica — this is a support-only investigation page, so Topic Details is empty by design. The research record is the 2026-05-13 landscape investigation: the Phase 4 Batch C profile (section 11), the Phase 5 matrix row, the gap analysis, and the crosswalk row above. Nothing has moved since the 2026-06-13 compile, and the page's standing open items are provenance, not decision: the 2026-04-11 fork date and the `multica-ai/multica` upstream identity are task-supplied and remain unverified against any source or live fork metadata.
+
+## The Boundary
+
+The binding constraint is the crosswalk's per-item note: *"Multica-like teammate boards must not imply that Agent owns authority or runtime execution"* — the [[agent|Agent]] boundary must be preserved. Boards may *display* work, but assignment, execution, and approval remain in [[work|Work]], the [[runtime-broker|RuntimeBroker]], and the [[authority-layer|authority layer]], recorded in [[event-graph|EventGraph]]. Under Decision 15, Multica stays outside every control role; the UX-only decision is frozen at the v3.9 reference point unless Epic 4 explicitly reopens it.
+
 ## How it entered the arc
 
 Multica was **candidate 20** of the [[civilization-landscape-investigation]] source list — a sweep that evaluated each external tool against the then-canonical Dark Factory v3.8 design for marginal contribution. The investigation ran under a hard operator rule: *no aspirational claims accepted without code or canonical-document evidence; if access to a repo is missing, stop — do not substitute upstreams or marketing pages.* The fork into `transpara-ai/multica` existed so the project could be read as source under that rule rather than from its website; the access-verification pass on 2026-05-13 confirmed `transpara-ai/multica` was accessible.
@@ -60,7 +71,7 @@ It was analysed in **Phase 4, Batch C** ("agent execution and orchestration"), a
 
 The investigation's downstream synthesis folded Multica's contribution into proposed canonical update **U9** (operator-workflow / proof-of-work UX), alongside Paperclip, Symphony, and gStack — i.e. its operator/team surfaces informed a *governed native pattern*, never a dependency or controller. *(Cross-source note: the U9 lineage is recorded in the investigation compile note in Open Brain; the per-candidate matrix and gap analysis are the primary sources for the UX-pattern contribution itself.)*
 
-## What the investigation found it to be
+## Capability Read
 
 From the Batch C candidate analysis (section 11; evidence inspected: **README only**):
 
@@ -77,6 +88,10 @@ Architecture and runtime model, as the analysis recorded them (README-grounded):
 - **Memory model:** "skills compound; pgvector included," but explicitly **not** the v3.8 memory model.
 
 What it explicitly **is not**, per the analysis: it is **not** [[event-graph|EventGraph]], **not** the v3.8 [[work|Work]] DAG, **not** the [[runtime-broker|RuntimeBroker]], **not** policy authority, and **not** release certification. Its governance is "workspace roles/permissions implied, but not v3.8 authority records or certification gates."
+
+## Benchmark Reality
+
+Nothing was measured: the investigation's evidence base was the README alone ("primary evidence inspected: README.md"), the Batch C analysis states plainly that the license was not inspected, and no benchmark or performance claim appears anywhere in Multica's record. The verdict that mattered — "high concept overlap with agent operations management, but only partial safe fit" — is an architectural judgment about boundary collision (Work/Site/RuntimeBroker), not a measured comparison, and the central risk ("managed-agent UX can imply Agent authority") is the investigation's forward-looking assessment, not an observed failure.
 
 ## Why pattern-only, and not adopted
 
@@ -102,7 +117,7 @@ The crosswalk binds Multica's surfaces to **Epic 4 operator workflow** as the on
 - **Asserted, not proven (the central risk).** The framing that a "managed-agent teammate" UX "implies Agent authority" is the investigation's **risk assessment**, not a demonstrated failure — there is no record of Multica having bypassed an authority boundary in our systems (it was never integrated). It is the reason the decision is fenced to UX-only, not a record of harm observed.
 - **Two-list placement is intentional, not a conflict.** The closeout lists Multica under both "include as pattern/reference only" and "defer until prerequisite controls exist." These are complementary, not contradictory: useful as a reference now; not integrable until the boundaries it could cross are enforced.
 
-## Sources & provenance
+## Sources & Provenance
 
 - v3.9.1 **External Technology Decision Crosswalk** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (Multica decision row L86; per-item note "Decision: managed-agent UX pattern only" L209-213; freeze/reopen policy L41-68). This is the authoritative decision record. Document status is `review` / `canonical: false`.
 - **Phase 4 Batch C** candidate analysis — `…/research/checkpoints/2026-05-13-05-phase-4-batch-c-agent-execution-orchestration.md` (Multica = section 11, L762-864, explicitly README-only; cross-cutting orchestration/skill/board findings L1107-1301). Primary evidence for what the investigation found.

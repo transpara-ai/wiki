@@ -4,6 +4,9 @@ aliases: [openclaw, transpara-ai/openclaw, the personal AI assistant, the lobste
 tier: investigation
 status: compiled
 last_compiled: 2026-06-13
+civilization_contribution: "Deferred adapter-or-UX-pattern candidate (stricter than pattern-only): a possible future RuntimeBroker adapter or operator-UX reference — gateway/session ergonomics, onboarding, channel patterns — gated until the local deterministic RuntimeBroker passes Base Slice 0 and adapter conformance; its gateway/session behavior must never own execution policy, Work flow, release authority, certification, or factory control."
+raw_documents: []
+current_research_version:
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # v3.9.1 crosswalk; OpenClaw decision row (L81) + per-item note (L169-173); freeze/reopen policy (L41-68)
   - /Transpara/transpara-ai/repos/docs/dark-factory/v3.9/09-legacy-coverage-matrix-v3.9.md  # ratified grouped line — OpenManus/OpenClaw/Hermes "bounded runtime references/adapters only … Deferred" (L254)
@@ -56,6 +59,14 @@ The grouped, ratified statement that backs the row lives in the v3.9 **Legacy Co
 
 And the v3.9 production-workflow-and-runtime doc states the law it is an instance of (L213): "External runtimes such as Hermes, OpenManus, OpenClaw-like workers, Codex, CI, or future backends are references or adapters only. They do not own execution policy, Work flow, release authority, certification, or factory control."
 
+## What Changed with the Research
+
+No released TAI-RES evaluation targets OpenClaw — this is a support-only investigation page, so Topic Details is empty by design. The research record is two-layered and the layers must not be conflated: the v3.9 *decision* rests on the README-only Phase 4 Batch C inspection (2026-05-13), while the richer *Skeptical Architectural Analysis* (2026-05-11, reviewing v2026.5.7) is a separate, context-only artifact that self-flags much of its detail as secondary/unverified. Nothing has moved since the 2026-06-13 compile; the deferral stands at the v3.9 reference point, gated as described below.
+
+## The Boundary
+
+The binding constraint is the crosswalk's per-item note: *"OpenClaw-like gateway/session behavior must not own execution policy, Work flow, release authority, certification, or factory control."* The ratified backing is the Legacy Coverage Matrix line — bounded runtime references/adapters only, **"deferred until local deterministic RuntimeBroker passes Base Slice 0 and adapter conformance"** — and the v3.9 runtime law that external runtimes are references or adapters only. The single load-bearing collision is trust-model: OpenClaw's documented default is host execution for the main session, the exact inverse of the bounded, policy-enforced [[runtime-broker|RuntimeBroker]] envelope the factory requires; its session/workspace state can become parallel truth outside [[event-graph|EventGraph]], and hot-loaded skills bypass [[capability-evolution|CapabilityArtifact]] governance. Until the adapter conformance checklist exists and is passed, no runtime path opens.
+
 ## How it entered the arc
 
 OpenClaw was **candidate 7** of the [[civilization-landscape-investigation]] source list — the one-time 2026-05-13 sweep that evaluated each external tool against the then-canonical Dark Factory v3.8 design for marginal contribution, under a hard operator rule: *no aspirational claims accepted without code or canonical-document evidence; if access to a repo is missing, stop — do not substitute upstreams or marketing pages.* The fork into `transpara-ai` existed so the project could be read as source under that rule. (The kickoff notes that `transpara-ai/openclaw` "initially returned 404 but later recheck succeeded; treat accessible now" — the fork and the survey were effectively simultaneous.)
@@ -66,7 +77,7 @@ It was analysed in **Phase 4, Batch C** ("agent execution and orchestration"), a
 
 The cleanest way the investigation framed OpenClaw is by its contrast with [[paperclip|Paperclip]], the sibling fork evaluated in the same survey. Paperclip's own self-description, quoted in the Batch D analysis, draws the line: **"If OpenClaw is an employee, Paperclip is the company."** OpenClaw is the *individual* agent shell — one person's local-first assistant with channels, sessions, skills, and host tools — whereas Paperclip is the org-chart control plane above many such agents. Both were declined for the same reason from opposite ends: neither may become the factory's control plane or truth source. OpenClaw's risk is the worker that quietly starts driving; Paperclip's is the org chart that quietly becomes the controller.
 
-## What the investigation found it to be
+## Capability Read
 
 From the Batch C candidate analysis (evidence inspected: **README only**), OpenClaw is:
 
@@ -77,6 +88,10 @@ The core primitives the investigation recorded:
 > "local-first gateway · multi-channel inbox · agent sessions · workspace root · AGENTS.md / SOUL.md / TOOLS.md · skills · session tools · DM pairing · sandbox modes · companion apps · voice/canvas/nodes."
 
 What it explicitly **is not**, per the same analysis: *"not a production Work DAG. It is not EventGraph truth. It is not v3.8 release authority. It is not a fail-closed runtime envelope system by default. It is not a factory controller."* Its governance surfaces — "DM pairing, allowlists, sandbox options, and doctor warnings" — "are not v3.8 protected-action authority records," and its data model is "Workspace/session/config state, not EventGraph kernel state." The investigation rated it "large and operationally rich. But its default trust model is personal/single-user, not industrial fail-closed factory execution."
+
+## Benchmark Reality
+
+No benchmark or performance number played any part in the decision — the evidence base was the README alone, and the decision turned on architecture posture (host execution, session-as-truth, untrusted channels, ungoverned skills). The quantitative claims that exist in the record are the *security* record from the separate architectural analysis, and they are secondary-sourced context only: CVE-2026-25253 ("ClawBleed," CVSS 8.8, a one-click RCE via cross-site WebSocket hijacking), "~40,000 OpenClaw instances publicly exposed and 63% vulnerable" at disclosure, and a reported 12–20% malicious-skill rate on the ClawHub marketplace — advisory/blog-sourced figures, never load-bearing, though consistent with the risks the investigation flagged independently. The one claim closed as fact by live metadata is the MIT license.
 
 ## Why deferred, and not adopted
 
@@ -117,7 +132,7 @@ There is a much deeper local artifact on OpenClaw — *"OpenClaw — A Skeptical
 
 OpenClaw is the **personal-assistant / local-runtime** member of the survey's agent-execution cluster. It pairs naturally with two neighbours: as a *runtime* it sits beside [[openmanus]] and the [[hermes-agent|Hermes]] runtime side — all three "deferred until the RuntimeBroker passes Base Slice 0 and adapter conformance" in the same legacy-matrix line; as an *operator surface* it is the employee to [[paperclip|Paperclip]]'s company, and a UX cousin of [[multica]] and [[solo-orchestrator|Solo Orchestrator]]. Across all of them the ratified v3.9 acceptance "promoted no external framework to kernel, truth source, Work replacement, policy owner, release authority, certification authority, capability promoter, factory controller, or Site replacement" — OpenClaw included. It sits at the same hinge as the rest of the [[civilization-landscape-investigation]]: the moment [[dark-factory]] looked outward at the personal-agent landscape and chose to learn its ergonomics while importing none of it as authority, and to keep even the tempting runtime path behind a conformance gate.
 
-## Sources & provenance
+## Sources & Provenance
 
 - **v3.9.1 External Technology Decision Crosswalk** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` (OpenClaw decision row L81; per-item note "Decision: deferred adapter or UX pattern candidate" L169–173; freeze/reopen policy L41–68). This is the authoritative decision record the compile was grounded in; the row is complete (status `review`, `canonical:false`).
 - **v3.9 Legacy Coverage Matrix** — `/Transpara/transpara-ai/repos/docs/dark-factory/v3.9/09-legacy-coverage-matrix-v3.9.md` (L254): the ratified grouped statement — `OpenManus/OpenClaw/Hermes` "bounded runtime references/adapters only … Deferred until local deterministic RuntimeBroker passes Base Slice 0 and adapter conformance."
