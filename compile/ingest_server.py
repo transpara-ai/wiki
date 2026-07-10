@@ -35,6 +35,7 @@ from urllib.parse import parse_qsl, urlsplit
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ingest_ops  # noqa: E402
+import org_structure  # noqa: E402  # side-effect-free org/section allowlists
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
@@ -334,6 +335,53 @@ def article_tier(slug):
     # fm_scalar: a commented `tier: investigation # x` must still gate the ADD
     # stale stamp, else no re-derivation banner is produced (CFAR: Codex).
     return fm_scalar(fm, "tier")
+
+
+def article_org(slug):
+    path = WIKI / ("%s.md" % slug)
+    if not path.exists():
+        return ""
+    fm, _, _ = split_fm(path.read_text())
+    # an absent org key defaults like the builder does; a present key is taken
+    # verbatim so a bad value can never silently pass a coherence check
+    if re.search(r"(?m)^org\s*:", fm):
+        return fm_scalar(fm, "org")
+    return org_structure.DEFAULT_ORG
+
+
+def validate_org_section(org, section, new_investigation):
+    """Fail-closed org/section gate (DP-20260710 D4; 422 at the route).
+
+    Allowlist, never denylist: org must be exactly one of ORG_ORDER and
+    section exactly one of ORG_SECTIONS[org] — missing, empty, unknown, or
+    foreign values all refuse. A new investigation is only coherent as
+    (transpara-ai, investigation).
+    """
+    if org not in org_structure.ORG_ORDER:
+        raise ingest_ops.OpRefused(
+            "org is required and must be one of %s"
+            % sorted(org_structure.ORG_ORDER))
+    if section not in org_structure.ORG_SECTIONS[org]:
+        raise ingest_ops.OpRefused(
+            "section is required and must be one of %s for org %r"
+            % (sorted(org_structure.ORG_SECTIONS[org]), org))
+    if new_investigation and (org, section) != ("transpara-ai", "investigation"):
+        raise ingest_ops.OpRefused(
+            "a new investigation requires org 'transpara-ai' and "
+            "section 'investigation'")
+
+
+def check_target_org_section(slug, org, section):
+    """Append-route coherence (DP-20260710 D4): the destination truth lives on
+    the target page; the form cannot redirect an add to a different org or
+    section than the page actually carries."""
+    if not (WIKI / ("%s.md" % slug)).exists():
+        return
+    page_org, page_tier = article_org(slug), article_tier(slug)
+    if (org, section) != (page_org, page_tier):
+        raise ingest_ops.OpRefused(
+            "org/section (%r, %r) do not match target %r which is (%r, %r)"
+            % (org, section, slug, page_org, page_tier))
 
 
 def _investigation_collision_corpus():
@@ -655,10 +703,18 @@ def comment_value(value, limit=320):
     return re.sub(r"\s+", " ", value or "").strip()[:limit]
 
 
-def source_line(source, note, supersedes):
+def source_line(source, note, supersedes, org="", section=""):
     parts = ["added via wiki browser ingest %s" % dt.datetime.now().strftime("%Y-%m-%d")]
     note = comment_value(note, 180)
     supersedes = comment_value(supersedes)
+    # the raw-doc registration carries its destination (DP-20260710 D4/TC9) so
+    # the compile step never needs the machine-only ledger to know it
+    org = comment_value(org, 40)
+    section = comment_value(section, 40)
+    if org:
+        parts.append("org: %s" % org)
+    if section:
+        parts.append("section: %s" % section)
     if note:
         parts.append("note: %s" % note)
     if supersedes:
@@ -735,12 +791,12 @@ def append_frontmatter_list_items(slug, key, values, line_builder):
     return added
 
 
-def append_sources_to_article(slug, sources, note="", supersedes=""):
+def append_sources_to_article(slug, sources, note="", supersedes="", org="", section=""):
     return append_frontmatter_list_items(
         slug,
         "sources",
         sources,
-        lambda source: source_line(source, note, supersedes),
+        lambda source: source_line(source, note, supersedes, org, section),
     )
 
 
@@ -980,6 +1036,10 @@ class IngestHandler(SimpleHTTPRequestHandler):
         # page-creation lane; its `name` — not the doc title — drives the page.
         new_investigation = form_flag(form, "new_investigation")
         raw_name = first_value(form, "name").strip()
+        # DP-20260710 D4 (intake decision 3): every article add names its
+        # destination org + section; both are validated fail-closed below.
+        org = first_value(form, "org").strip()
+        section = first_value(form, "section").strip()
         # quarantine BEFORE any validation, derivation, write, OR echo (packet
         # §2.4/§2.8, CFADA-r6 #16): the slug/URL validators and the refusal echoes
         # below surface the submitted value, so nothing reaches them until it is
@@ -989,7 +1049,11 @@ class IngestHandler(SimpleHTTPRequestHandler):
         # the lock; a refusal here saves nothing and never echoes finding bytes.
         fields = {"target_slug": raw_target_slug, "note": note,
                   "supersedes": supersedes, "external_urls": raw_external_urls,
-                  "name": raw_name}
+                  "name": raw_name,
+                  # org/section are persisted (ledger, source lines) and echoed
+                  # in refusals, so they join the quarantine set (extended,
+                  # never narrowed)
+                  "org": org, "section": section}
         any_document = False
         for i, item in enumerate(field_values(form, "documents")):
             if not getattr(item, "filename", ""):
@@ -1001,6 +1065,9 @@ class IngestHandler(SimpleHTTPRequestHandler):
             if data:
                 any_document = True
         ingest_ops.quarantine_fields(fields)
+        # pure request-content validation (no shared state) — refuse before the
+        # lock, before any write (DP-20260710 D4)
+        validate_org_section(org, section, new_investigation)
         target_slug = normalize_target_slug(raw_target_slug)
         external_urls = valid_external_urls(raw_external_urls)
         # a source-less ingest (no non-empty document, no external URL) is a
@@ -1051,13 +1118,18 @@ class IngestHandler(SimpleHTTPRequestHandler):
                         saved[0]["path"], note, name=raw_name)
                 created_article = {"slug": target_slug, "created": created}
             elif route == "append":
+                # destination coherence must be read INSIDE the lock so it is
+                # race-free against a concurrent op mutating the target page
+                check_target_org_section(target_slug, org, section)
                 saved = save_uploads(form, target_slug, note, add_supersedes)
                 source_refs = [s["path"] for s in saved] + external_urls
             else:
                 # unreachable — resolve_ingest_route returns create/append or
                 # raises. A fall-through never creates or appends (fail-closed).
                 raise ingest_ops.OpRefused("unresolved ingest route")
-            added = append_sources_to_article(target_slug, source_refs, note, add_supersedes) if target_slug else []
+            added = append_sources_to_article(
+                target_slug, source_refs, note, add_supersedes,
+                org=org, section=section) if target_slug else []
             raw_added = append_raw_documents_to_article(target_slug, source_refs) if target_slug else []
             # R5/R7: an investigation ADD (or the new skeleton) stamps stale_since
             # so the reason-neutral "summary re-derivation pending" banner renders
@@ -1081,6 +1153,8 @@ class IngestHandler(SimpleHTTPRequestHandler):
                 "slug": target_slug or "unassigned",
                 "sources": source_refs,
                 "created": created_article["created"],
+                "org": org,
+                "section": section,
                 "rebuild": "ok" if refresh["ok"] else "failed",
             })
         json_response(self, 200 if refresh["ok"] else 500, {
