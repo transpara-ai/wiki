@@ -24,6 +24,9 @@ import tempfile
 import urllib.parse
 from html.parser import HTMLParser
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import org_structure  # noqa: E402  # side-effect-free org/section allowlists
+
 import markdown
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -385,6 +388,15 @@ def _validate_ledger_row(row, where="ledger row"):
         raise OpRefused("%s: optional keys %s must appear together or not at all"
                         % (where, sorted(optional)))
     _require_row_str(row, tuple(sorted(present_optional)), where)
+    # the pair, when present, must satisfy the same org/section vocabulary the
+    # route and builder enforce — the strict preflight must not bless a row
+    # every other surface refuses (CFAR r5)
+    if {"org", "section"} <= set(row):
+        sections = org_structure.ORG_SECTIONS.get(row["org"])
+        if sections is None or row["section"] not in sections:
+            raise OpRefused(
+                "%s: org/section (%r, %r) not in the allowed vocabulary"
+                % (where, row["org"], row["section"]))
     if operation == "add":
         if not isinstance(row["sources"], list) or any(
                 not isinstance(s, str) or not s for s in row["sources"]):

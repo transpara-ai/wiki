@@ -243,7 +243,11 @@ class TestOrgSections(unittest.TestCase):
         for bad in (dict(base, org="", section="product"),    # empty value
                     dict(base, org="transpara"),              # org w/o section
                     dict(base, section="product"),            # section w/o org
-                    dict(base, orgg="x")):                    # foreign key
+                    dict(base, orgg="x"),                     # foreign key
+                    dict(base, org="bogus", section="concept"),        # bad org
+                    dict(base, org="transpara-ai", section="organization")):
+            # last two: out-of-vocabulary values/pairs the route and builder
+            # refuse must not pass the preflight either (CFAR r5)
             with self.assertRaises(ingest_ops.OpRefused, msg=bad):
                 ingest_ops._validate_ledger_row(bad)
         with tempfile.TemporaryDirectory() as tmp:
