@@ -14,6 +14,7 @@ raw_documents:
   - "raw/inbox/2026-06-24/sakana-ai-evaluation/TAI-RES-2026-001-v1.1.0-Sakana-AI-Evaluation-06d812cc043c.md"
   - raw/inbox/2026-06-24/sakana-ai-adjacent-landscape/TAI-RES-2026-002-v1.0.0-Sakana-AI-Adjacent-Landscape-7e4c149494c7.md
   - "raw/inbox/2026-07-07/sakana-ai-evaluation/TAI-RES-2026-001-v1.1.1-Sakana-AI-Evaluation-863686b0413d.md"
+  - "raw/inbox/2026-07-07/sakana-ai-adjacent-landscape/TAI-RES-2026-002-v1.0.1-Sakana-AI-Adjacent-Landscape-1a9415e42999.md"
 current_research_version: "1.1.1"
 sources:
   - /Transpara/transpara-ai/repos/docs/civilization/v4.1/implementation/epics/epic-15-institutional-substrate-doctrine/corpus/copied/civilization/knowledge/external-landscape/sakana-ai/TAI-RES-2026-001-v1.0.0-Sakana-AI-Evaluation.md
@@ -21,6 +22,7 @@ sources:
   - raw/civilization/stage-0-institutional-substrate/02-stage-0-provenance-manifest-v0.1.0.md
   - "raw/inbox/2026-06-24/sakana-ai-evaluation/TAI-RES-2026-001-v1.1.0-Sakana-AI-Evaluation-06d812cc043c.md"  # added via wiki browser ingest 2026-06-24; note: Citation update; supersedes: /Transpara/transpara-ai/repos/docs/civilization/v4.1/implementation/epics/epic-15-institutional-substrate-doctrine/corpus/copied/civilization/knowledge/external-landscape/sakana-ai/TAI-RES-2026-001-v1.0.0-Sakana-AI-Evaluation.md
   - "raw/inbox/2026-07-07/sakana-ai-evaluation/TAI-RES-2026-001-v1.1.1-Sakana-AI-Evaluation-863686b0413d.md"  # added via wiki browser ingest 2026-07-07; note: classification corrected for the record; supersedes: raw/inbox/2026-06-24/sakana-ai-evaluation/TAI-RES-2026-001-v1.1.0-Sakana-AI-Evaluation-06d812cc043c.md
+  - "raw/inbox/2026-07-07/sakana-ai-adjacent-landscape/TAI-RES-2026-002-v1.0.1-Sakana-AI-Adjacent-Landscape-1a9415e42999.md"  # companion's current revision, carried on the cluster primary so the collapsed nav entry never presents the adjacent research at a stale version (CFAR r4); note: classification corrected for the record; supersedes: raw/inbox/2026-06-24/sakana-ai-adjacent-landscape/TAI-RES-2026-002-v1.0.0-Sakana-AI-Adjacent-Landscape-7e4c149494c7.md
 confidence:
   sources: primary copied internal research
   claims: summary of copied report and placement index
