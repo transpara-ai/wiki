@@ -9,6 +9,9 @@ aliases:
 tier: investigation
 status: compiled
 last_compiled: 2026-06-13
+civilization_contribution: "None recorded — UNRECORDED, not excluded: forked 2026-04-11 into the RAG/knowledge cluster (with PageIndex) but absent from the 22-item candidate list and the v3.9.1 crosswalk; the only positive operational evidence is that the forked tool runs and emits its documented output contract (observed pytest artifacts). Default-deny governs under Decision 15: no truth-source or controller role is possible without a new decision row (license, supply-chain, conformance gate) first."
+raw_documents: []
+current_research_version:
 sources:
   - raw/open-brain/2026-06.md  # the only first-party record: fork-provenance line "4/11 graphify <- safishamsi" and the Apr–May "Civilization Landscape Investigation" roster placing graphify in "RAG/knowledge (graphify, PageIndex)"
   - raw/transpara/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md  # DF-V3.9-EPIC-TECH-CROSSWALK v3.9.1 (status: review): searched in full — has NO row for graphify/safishamsi. This is the no-row / fail-legible case.
@@ -31,6 +34,10 @@ confidence:
 
 > ⚠ **Fail-legible headline — this is a no-row case.** Unlike its memory-cluster sibling [[mempalace|MemPalace]], graphify has **no row in the v3.9.1 technology-decision crosswalk** (`DF-V3.9-EPIC-TECH-CROSSWALK`). The full crosswalk decision table was searched this run; its sixteen rows cover MetaGPT, OpenManus, OpenBrain, MemPalace, the Karpathy LLM Wiki, Karpathy Autoresearch, Hermes, OpenClaw, the Agent Governance Toolkit, gStack, Paperclip, Symphony, Multica, Miro Flow, Miro Thinker, and the Brett Brewer Org Memories analysis — and **none of them is graphify**. So the prompt's requested decision field (selected / pattern-only / research-only / deferred / excluded) has **no recorded answer** for this project. The honest status is **UNRECORDED**, which is *not* the same as "excluded." The rest of this article states what *is* known and marks the gaps thin.
 
+## What Changed with the Research
+
+No released TAI-RES evaluation targets graphify — this is a support-only investigation page, so Topic Details is empty by design. What the 2026-06-13 compile itself established is narrow but real: it confirmed the no-row status by searching the full crosswalk, and it added the one piece of *observed* operational evidence in the record — pytest working-directory artifacts showing the forked tool runs and emits its documented output contract (`graph.json`, `graph.html`, `GRAPH_REPORT.md`, the AST cache, the Neo4j export). Nothing about the decision status has moved since: it remains UNRECORDED.
+
 ## What is actually recorded (and what is not)
 
 Three first-party facts about graphify exist in the corpus read this run, and they are narrow:
@@ -51,13 +58,13 @@ This is the most likely explanation for the missing crosswalk row, stated as inf
 
 > ⚠ **Fail-legible (inference, not record).** "Forked but never formally analysed" is the simplest reading that fits both facts (the fork line *and* the absent row), but the corpus read this run does **not** contain a statement to that effect. It is possible graphify was analysed in a checkpoint not staged in this wiki's `raw/` (the `raw/transpara/dark-factory/research/checkpoints/` directory is empty here; the investigation article sources those files from the upstream `docs` repo). This article does not assert graphify was deliberately rejected, deliberately deferred, or deliberately anything — only that **no decision is recorded in the sources available to this compile.**
 
-## The governing rule still applies even with no row
+## The Boundary
 
 The absence of a row does **not** mean graphify would be ungoverned if anyone tried to use it. The investigation's ratified output is not the per-row detail (the crosswalk is `status: review` / `canonical: false`) but the one-line **v3.9 Decision 15 — "External Frameworks Stay Outside Control Roles"** — under which *every* external framework from the investigation "remain[s] references, optional adapters, or patterns unless a later accepted ADR changes their status," and must not become "kernel, truth source, Work replacement, policy owner, release authority, certification authority, capability promoter, factory controller, or Site replacement" (see [[civilization-landscape-investigation]]). A forked knowledge-graph tool with no decision row would, by that rule, default to **no authority** — it could not become a truth source or a controller without a new accepted ADR. The fail-closed posture the whole arc runs on means *unrecorded status defaults to deny*, not to permission.
 
 There is also a relevant precedent in the one RAG/knowledge sibling that *was* analysed. [[pageindex|PageIndex]]'s grounded finding was **"augmentation, not replacement"**: it could slot in *under* the Karpathy LLM Wiki and OpenBrain as an optional `DocumentEvidenceRetriever`, but "not memory/wiki/truth" (`civilization-landscape-investigation.md`). If graphify were ever formally evaluated, that is the shape of slot it would compete for — a retrieval/structuring aid beneath the knowledge layer, never the knowledge layer itself. **This is analogy, not a decision: no such evaluation of graphify exists in the corpus read this run.**
 
-## The upstream project (context only — not a Transpara finding)
+## Capability Read
 
 > ⚠ **Provenance / org-boundary note.** Everything in this section comes from the **forked README and LICENSE in the `transpara-ai` mirror** (`github.com/transpara-ai/graphify`, branch `v4`, read 2026-06-13), which are upstream-authored. Per the org rule the prompt restates — treat forked public code with the org's standard don't-republish caution for public upstreams — these are the upstream project's *own claims about itself*, reproduced as context. Transpara has not verified, benchmarked, endorsed, or (per the corpus read this run) even formally decided on any of them.
 
@@ -67,6 +74,10 @@ The README's self-described mechanics: a three-pass pipeline — (1) a determini
 
 > ⚠ **Fail-legible — these are upstream assertions, unverified here.** The "71.5x" benchmark, the 20-language and multimodal coverage, the "audio never leaves your machine" privacy posture, and the package-name/scam-adjacent warning are the *upstream project's* statements. This run did **not** run the benchmark, audit the code paths, or verify the language list. The one thing this run *did* independently observe is that the forked tool's **output files match its documented contract** (the `graphify-out/` tree, the AST cache, the `.graphifyignore`, the Cypher export — all present in observed pytest artifacts). That corroborates *that it runs and emits what it claims to emit*; it does not corroborate the performance numbers or that Transpara uses it.
 
+## Benchmark Reality
+
+The headline number — **"71.5x fewer tokens per query vs reading raw files"** — is the upstream's own benchmark on its own mixed corpus, unverified here, as are the 20-language coverage, the multimodal claims, and the "audio never leaves your machine" privacy posture. This run did not execute the benchmark, audit the code paths, or verify the language list. The one thing independently observed is narrower and different in kind: the forked tool's **output files match its documented contract** (the `graphify-out/` tree, AST cache, `.graphifyignore`, Cypher export in observed pytest artifacts) — corroborating *that it runs and emits what it claims to emit*, not how well, how fast, or how token-efficiently. If graphify were ever formally evaluated, the performance claims would need their own measured reproduction under a governed eval, not a README citation.
+
 ## Implementation status
 
 > ⚠ **Thin by design — unrecorded decision, no owner, not wired.** The best-sourced facts about graphify's *place in the platform* are negative: there is **no crosswalk row**, **no implementation owner**, **no Phase-4/Phase-5 analysis in the corpus read this run**, and **no Open Brain operational thought** about graphify (semantic searches this run returned only the fork-roster line). The only positive operational evidence is that the forked code was *exercised* locally (the observed pytest artifacts) — which proves the tool runs, not that Transpara adopted it. As of 2026-06-13, the surveyed sources show **a fork, a conceptual grouping, and a working tool — and no recorded decision about whether, where, or how the platform would use it.** Anyone expecting a live integration or a documented verdict should stop here.
@@ -75,7 +86,7 @@ The README's self-described mechanics: a three-pass pipeline — (1) a determini
 
 graphify is best understood as a **loose leaf** of the [[civilization-landscape-investigation|Civilization Landscape Investigation]] fan-out — present in the org, grouped (retrospectively) with [[pageindex|PageIndex]] in the RAG/knowledge slot, but never carried into the investigation's formal candidate register, decision matrix, or [[dark-factory|dark-factory]] crosswalk the way its cluster-mates were. Its theme (folder/repo → queryable knowledge graph) is a close cousin of two things the investigation *did* engage: the [[pageindex|PageIndex]] `DocumentEvidenceRetriever` finding and the [[memory-knowledge-advisory|Karpathy LLM Wiki / U5]] knowledge-layout convention — the very pattern this wiki is compiled under. If a future knowledge-integration packet ever reaches for a code/corpus-graphing aid, graphify is a candidate the org already holds; but reaching for it would require opening a *new* decision under the crosswalk's `## Review Rule` and v3.9 Decision 15 (current decision, ADR reference, integration mode, owning epic, **license and supply-chain status**, conformance gate, upstream-refresh strategy) — because, today, that decision does not exist.
 
-## Sources & provenance
+## Sources & Provenance
 
 - `raw/open-brain/2026-06.md` — the **only first-party record of graphify** found this run. Supplies the fork-provenance line ("4/11 graphify <- safishamsi") and the retrospective fan-out roster that places graphify in the "RAG/knowledge (graphify, PageIndex)" cluster of the April–May "Civilization Landscape Investigation." Single-capture source for both the 2026-04-11 fork date and the upstream `safishamsi` origin.
 - `raw/transpara/dark-factory/v3.9/implementation/epics/02-technology-decision-crosswalk-v3.9.md` — **`DF-V3.9-EPIC-TECH-CROSSWALK`**, *Dark Factory v3.9.1 External Technology Decision Crosswalk* (status: review; canonical: false; v3.9.1). **Searched in full this run; it has no row for graphify/safishamsi.** Cited here precisely to establish the no-row / fail-legible status, and for v3.9 Decision 15 (the ratified "external frameworks stay outside control roles" rule that would still govern graphify despite the missing row).
