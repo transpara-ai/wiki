@@ -67,7 +67,9 @@ LEDGER_SHAPES = {
 # additive, org+section-aware add rows (DP-20260710 D4): LEDGER_SHAPES stays
 # the REQUIRED key sets; these keys MAY additionally appear on new rows, so
 # historical rows (written before the schema existed) still parse unchanged.
-# When present, each must be a non-empty string.
+# The optional set is a PACKAGE — all present or all absent (the route always
+# writes both; an org-only/section-only row is an impossible state and must
+# fail the strict preflight, CFAR r4) — and each must be a non-empty string.
 LEDGER_OPTIONAL_KEYS = {
     "add": {"org", "section"},
 }
@@ -375,8 +377,14 @@ def _validate_ledger_row(row, where="ledger row"):
     _require_row_str(row, ("slug",), where)
     if row["rebuild"] not in ("ok", "failed"):
         raise OpRefused("%s: rebuild must be ok|failed" % where)
-    # optional keys, when present, must be non-empty strings (additive schema)
-    _require_row_str(row, tuple(k for k in sorted(optional) if k in row), where)
+    # optional keys are all-or-nothing (the writer emits the whole package;
+    # a partial row is an impossible state — CFAR r4) and, when present,
+    # must be non-empty strings (additive schema)
+    present_optional = optional & set(row)
+    if present_optional and present_optional != optional:
+        raise OpRefused("%s: optional keys %s must appear together or not at all"
+                        % (where, sorted(optional)))
+    _require_row_str(row, tuple(sorted(present_optional)), where)
     if operation == "add":
         if not isinstance(row["sources"], list) or any(
                 not isinstance(s, str) or not s for s in row["sources"]):

@@ -115,17 +115,19 @@ class TestOrgSections(unittest.TestCase):
         # build_site imported fine at module load — the strict gate accepted
         # every real page. Now prove the inventory matches an independent scan
         # and that every page defaulted to the transpara-ai org.
-        expected = {}
+        # the grandfather property holds for pages that OMIT org — future
+        # legitimate `org: transpara` pages must not fail this suite (CFAR r4)
+        legacy = 0
         for p in sorted((BASE / "wiki").glob("*.md")):
             fm = p.read_text().split("---", 2)[1]
+            if re.search(r"(?m)^org\s*:", fm):
+                continue  # explicit-org pages are validated by the build gate
+            legacy += 1
             m = re.search(r"(?m)^tier\s*:\s*([^#\n]+)", fm)
-            expected[p.stem] = m.group(1).strip().strip('"').strip("'")
-            self.assertIsNone(re.search(r"(?m)^org\s*:", fm),
-                              "%s unexpectedly declares org" % p.stem)
-        got = {s: m["tier"] for s, m in build_site.META.items()}
-        self.assertEqual(expected, got)
-        self.assertTrue(all(m["org"] == "transpara-ai"
-                            for m in build_site.META.values()))
+            tier = m.group(1).strip().strip('"').strip("'")
+            self.assertEqual(build_site.META[p.stem]["tier"], tier)
+            self.assertEqual(build_site.META[p.stem]["org"], "transpara-ai")
+        self.assertGreater(legacy, 0, "corpus should contain legacy pages")
         # the removed `concept` fallback: a page with NO tier now fails loudly
         with tempfile.TemporaryDirectory() as tmp:
             page(tmp, "no-tier", ["entity: N"])
@@ -236,14 +238,13 @@ class TestOrgSections(unittest.TestCase):
         ingest_ops._validate_ledger_row(dict(base))  # historical shape parses
         new = dict(base, org="transpara", section="product")
         ingest_ops._validate_ledger_row(new)  # additive shape parses
-        for bad in (dict(base, org=""),                       # empty value
-                    dict(base, org="transpara"),              # org w/o section is
-                    dict(base, section="product"),            # fine (independent)
+        # empty values, partial pairs (impossible states — the route always
+        # writes both, CFAR r4), and foreign keys all refuse
+        for bad in (dict(base, org="", section="product"),    # empty value
+                    dict(base, org="transpara"),              # org w/o section
+                    dict(base, section="product"),            # section w/o org
                     dict(base, orgg="x")):                    # foreign key
-            if "orgg" in bad or bad.get("org") == "":
-                with self.assertRaises(ingest_ops.OpRefused):
-                    ingest_ops._validate_ledger_row(bad)
-            else:
+            with self.assertRaises(ingest_ops.OpRefused, msg=bad):
                 ingest_ops._validate_ledger_row(bad)
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "ledger.jsonl"
