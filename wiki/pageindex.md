@@ -43,7 +43,7 @@ raw_documents:
 
 **PageIndex (upstream `VectifyAI/PageIndex`) is a vectorless, reasoning-based RAG framework that the [[civilization-landscape-investigation]] carried forward as the reference implementation of the Civilization's optional `DocumentEvidenceRetriever` pattern — a future document-evidence adapter usable *behind a boundary*, never as truth, certification evidence, or a memory/knowledge authority.** TAI-RES-2026-007 upgrades this page from an indexed-only investigation stub to a **code-anchored** assessment: it reads the actual repository (`VectifyAI/PageIndex` @ `f413c66`, 2026-07-03, ~3,000 lines) and finds that for a **PDF** — PageIndex's default input and the one behind every benchmark and marketing claim — the tree index is a *probabilistic LLM artifact*: every node, title, page-mapping and summary is an LLM output, self-graded by an LLM accuracy check, built by calling an external LLM API. (PageIndex's secondary Markdown path parses the tree deterministically from `#` headers.) That LLM-built PDF structure is the code-level proof of the investigation's #1 recorded risk, *"retrieval mistaken for truth."* The subject of *this* article is Transpara's evaluation and decision about PageIndex — not the upstream project's marketing, which is cited only as context. Per organization rules the upstream is never re-published, never pushed to, and never a PR target.
 
-## What changed with TAI-RES-2026-007
+## What Changed with the Research
 
 The earlier page carried the upstream's "what it is" claims as unverified context, because the 2026-05-13 study relied on search-indexed and partial access. The current evaluation read the repository at `f413c66` and replaces that partial access with code-anchored findings:
 
@@ -77,7 +77,18 @@ The adoption verdict is therefore: **carry PageIndex forward as an optional docu
 
 Two doctrine-hygiene items the evaluation surfaces: (1) the **v4.0 carry-forward gap** — `DocumentEvidenceRetriever`/`DocumentEvidenceRetrieval`/`KnowledgePage` are defined only in preserved v3.9 and were not restated in v4.0's standalone docs, so a v4.0-level home for a PageIndex adapter does not yet exist by name; (2) the **missing crosswalk row** above.
 
-## What PageIndex actually is — now code-anchored
+## The Boundary
+
+The governing boundary already exists in doctrine. A PageIndex retrieval is exactly a `DocumentEvidenceRetrieval` EventGraph node (`02-kernel-schema-and-state-v3.9.md:331`): `retriever_id, retriever_version, source_document_id, source_document_hash, query_or_need, page_refs, section_refs, retrieved_text_refs, confidence_or_quality_notes, limitations, …, linked_KnowledgeReference`. That schema **demands the governance PageIndex does not supply** — a `source_document_hash` (PageIndex hashes nothing), explicit `limitations` and `confidence_notes`, and a link to a `KnowledgeReference` carrying trust, freshness, redaction, and contradiction state (`02:317`). Retrieved evidence *"becomes usable only when represented as KnowledgeReference/source_refs and linked to EventGraph evidence"* (accepted v3.9, `06:158`), and *"memory and knowledge are advisory only"* (accepted v4.0, doc `03:36`). Only the Release cell may certify (accepted v4.0, `04:110`), and the factory must **stop** when *"memory/knowledge contradicts EventGraph in high-risk planning"* (accepted v4.0, `05:523`).
+
+PageIndex itself does none of this; it is deliberately a locate-and-recall engine. That is correct at the retrieval layer and wrong at the authority layer — the Civilization boundary supplies the missing governance:
+
+- a retrieved span enters as advisory evidence, never truth;
+- it is usable only once wrapped as a `DocumentEvidenceRetrieval` → `KnowledgeReference` with a source hash and limitations;
+- it can never be certification evidence, and only Release (a human role in the MVP) certifies;
+- any external adapter is gated behind **Base Slice 0**, which requires proving file, command, **network, and secret** boundaries plus replayable EventGraph receipts (`04:165`) — exactly the gate an OpenAI-calling indexer would need to pass.
+
+## Capability Read
 
 The following is verified against the repository at `f413c66`, not carried as upstream claim.
 
@@ -89,18 +100,7 @@ The "reasoning-based retrieval" the upstream markets is **not in the library**. 
 
 "Vectorless" is code-true (no embedding/vector/OCR code in the package; deps are `litellm`, `pymupdf`, `PyPDF2`, `python-dotenv`, `pyyaml`), but building a **PDF** index **requires an external LLM API** — `litellm` reading `OPENAI_API_KEY`, defaulting to `gpt-4o-2024-11-20` (`utils.py:22`, `config.yaml:1`) — and the sync wrapper fails *open*, returning an empty string on final failure (`utils.py:59`). Air-gapped use is possible only by pointing litellm at a self-hosted endpoint; it is not the default and is not vendored.
 
-## The boundary
-
-The governing boundary already exists in doctrine. A PageIndex retrieval is exactly a `DocumentEvidenceRetrieval` EventGraph node (`02-kernel-schema-and-state-v3.9.md:331`): `retriever_id, retriever_version, source_document_id, source_document_hash, query_or_need, page_refs, section_refs, retrieved_text_refs, confidence_or_quality_notes, limitations, …, linked_KnowledgeReference`. That schema **demands the governance PageIndex does not supply** — a `source_document_hash` (PageIndex hashes nothing), explicit `limitations` and `confidence_notes`, and a link to a `KnowledgeReference` carrying trust, freshness, redaction, and contradiction state (`02:317`). Retrieved evidence *"becomes usable only when represented as KnowledgeReference/source_refs and linked to EventGraph evidence"* (accepted v3.9, `06:158`), and *"memory and knowledge are advisory only"* (accepted v4.0, doc `03:36`). Only the Release cell may certify (accepted v4.0, `04:110`), and the factory must **stop** when *"memory/knowledge contradicts EventGraph in high-risk planning"* (accepted v4.0, `05:523`).
-
-PageIndex itself does none of this; it is deliberately a locate-and-recall engine. That is correct at the retrieval layer and wrong at the authority layer — the Civilization boundary supplies the missing governance:
-
-- a retrieved span enters as advisory evidence, never truth;
-- it is usable only once wrapped as a `DocumentEvidenceRetrieval` → `KnowledgeReference` with a source hash and limitations;
-- it can never be certification evidence, and only Release (a human role in the MVP) certifies;
-- any external adapter is gated behind **Base Slice 0**, which requires proving file, command, **network, and secret** boundaries plus replayable EventGraph receipts (`04:165`) — exactly the gate an OpenAI-calling indexer would need to pass.
-
-## Benchmark reality
+## Benchmark Reality
 
 The upstream's headline "state-of-the-art **98.7% accuracy on FinanceBench**" needs three qualifications, the same shape as the MemPalace "best-benchmarked" caveat. It is **not the library's score** — it belongs to *"Mafin 2.5,"* an end-to-end system "powered by PageIndex," of which PageIndex is one component. It is **self-reported** — run by VectifyAI on VectifyAI's own benchmark repo, with their own human annotators resolving ambiguous ground-truth, and the comparison is not apples-to-apples (98.7% at 100% coverage vs. a competitor's 98% at 66.7%). And it is **not independently reproduced** — no leaderboard placement; independent readers flagged exactly the cherry-pick (*"a suspicious lack of any performance metrics on standard RAG/QA benchmarks … except their highly fine-tuned MAFIN2.5 system"*). The useful Civilization lesson is the benchmark *discipline*, not the number; the Civilization's metric must be stricter — *did the retrieved `KnowledgeReference` improve the gated decision it influenced?*
 
@@ -129,7 +129,7 @@ The investigation deliberately separated PageIndex from the memory and knowledge
 
 The classification rests on layered sources of differing authority. **Ratified:** Decision 15 (external frameworks stay outside control roles) and the accepted v3.9 memory/knowledge doctrine that names PageIndex as an optional `DocumentEvidenceRetriever` reference with a defined node schema (`06`, `09`, `02`). **Reviewed planning:** the U4 "DocumentEvidenceRetriever optional pattern" proposal and the priority-#4 ranking come from investigation checkpoints marked *"proposed only … not applied to canonical v3.8."* **Documented gaps:** no PageIndex row in the review-status v3.9.1 crosswalk, and no restatement of the `DocumentEvidenceRetriever` pattern in accepted v4.0. Treat the adapter classification and the U4 proposal as reviewed planning, not shipped fact; treat the boundary (advisory only, never truth/cert) as ratified law.
 
-## Sources & provenance
+## Sources & Provenance
 
 Primary source is the code-anchored evaluation; doctrine and prior research are first-party Transpara documents.
 

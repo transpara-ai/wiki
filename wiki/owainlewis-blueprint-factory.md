@@ -46,7 +46,9 @@ raw_documents:
 
 **Owain Lewis is building, solo and in public, a minimalist system aimed at the Dark Factory's own goal — "The objective is not to automate coding. The objective is to automate software engineering" — and TAI-RES-2026-006 finds him independently converged on the dev-arc's control points while standing on the opposite side of its load-bearing seam.** His stack: **Blueprint** (211★; 17 markdown skills — spec/plan/implement/review/task-to-pr — plus an unattended GitHub-label loop layer), **Factory** (early Go runner executing repo-owned `.factory/` process: standards, workflows, *objectives* — literally "repo-owned work orders" — and a journal), **Neo** (a minimalist agent harness whose orchestrator enforces depth/fanout/count/time budgets in code), plus a cross-agent skills installer, all under the published creed: *"Blueprint fixes the process and trusts the intelligence… Bet on the model."*
 
-## The finding in one line
+## What Changed with the Research
+
+This page was born from TAI-RES-2026-006 — the first mention of owainlewis, Blueprint, Factory, or Neo anywhere in docs or wiki (v1.0.0, code-anchored at `blueprint@3815669` / `factory@8b346d7` / `neo@022d001`; v1.1.0 annotates the eval's §8 next-steps with the planning issues actually filed). The finding in one line:
 
 **Lewis writes the factory's discipline as prompts an agent is trusted to follow; the Civilization writes the same discipline as records a kernel cannot certify around.**
 
@@ -57,7 +59,7 @@ raw_documents:
 - **Deterministic orchestration / agent reasoning split**, stated on both sides in near-identical words ("Factory performs deterministic orchestration. Agents perform reasoning" / Neo: "agents decide, code constrains, code never interprets").
 - **Work orders, evidence culture, risk-graded autonomy, WIP/attention limits** — Factory objectives ≈ small Factory Orders; "Agents should not only say a repo is healthy. They should show evidence"; unattended loops claim `risk:low` only; the work loop throttles on human review capacity.
 
-## The seam
+## The Boundary
 
 Everything in his system that is not a human click or a narrow code cage is **advisory**: safety rules are prompt text around `claude -p --permission-mode auto`; "success" in a run record is an exit code; review evidence binds to no SHA; the adversarial reviewer shares the author's model family (fresh **context**, not independent **family**); intake readiness is agent-judged where the hive requires a human-set label; and where he does gate in code (Neo's dangerous-bash check) it is a **denylist** — the construction the fail-safe doctrine forbids. He knows and prices this ("risk:high waits for an attended session"; "the model is partly grading its own work"). Fail-open at the trust boundary is not an oversight of his system — it *is* his system, rational at solo blast radius and disqualifying at industrial blast radius.
 
@@ -86,10 +88,18 @@ The determination above is not shelf-ware: on 2026-07-07, after the eval merged 
 
 Every issue is intake-only: it authorizes nothing, work enters through the normal Factory Order → TLC gate arc, and readiness labeling stays human-set. The eval's own gate arc also surfaced two wiki repo defects: [wiki#50](https://github.com/transpara-ai/wiki/issues/50) — **closed COMPLETED** 2026-07-06 (the sanctioned register path shipped as FO-WIKI-FRONTEND-UX R6, and this eval became its first registered consumer on 2026-07-07, per the #50 closure record — the service-side ledger artifacts sync to this repo via the ingest service's own arc) — and [wiki#52](https://github.com/transpara-ai/wiki/issues/52) — **closed COMPLETED** 2026-07-07 (resolved via the Option-1 supersession pass across all six inherited eval lineages).
 
-## What his system cannot take from prompts alone (the inverse)
+## Capability Read
 
-Proof that review happened to *this* code (exact-head binding); independence that survives correlated model failure (cross-family floor); fail-closed protected actions (allowlist policy, `PolicyMissing` → `Forbidden` for high-risk and critical actions); typed authority with scope/expiry/quorum; an append-only record that outlives the session; an institution that outlives its single human.
+What the stack is: **Blueprint** is 17 markdown skills (spec/plan/implement/review/task-to-pr) plus an unattended GitHub-label loop layer; **Factory** is an early Go runner (~1,895 lines, all read) executing repo-owned `.factory/` process — standards, workflows, objectives, a journal; **Neo** is a minimalist agent harness whose orchestrator enforces depth/fanout/count/time budgets in code. The inverse read — what his system cannot take from prompts alone — is the capability line: proof that review happened to *this* code (exact-head binding); independence that survives correlated model failure (cross-family floor); fail-closed protected actions (allowlist policy, `PolicyMissing` → `Forbidden` for high-risk and critical actions); typed authority with scope/expiry/quorum; an append-only record that outlives the session; an institution that outlives its single human.
+
+## Benchmark Reality
+
+No benchmark exists on either side of this comparison: TAI-RES-2026-006 is a text- and code-anchored read (all 17 Blueprint skills, the Factory PRD/standard/spec and dogfood files, Neo's cage constants read directly), not a measured evaluation. The deep-research sweep adversarially confirmed the negative on reception — no substantive third-party critiques, reviews, or adoption case studies of Blueprint/Factory surfaced; the traction evidence is stars/forks (Blueprint 211★) and Lewis's own channels. The one externally verified datum is the author's background (Oracle OCI Director-of-Engineering role, confirmed 3–0 by the sweep). What would count as benchmark reality here is operational, and it is now in motion on the Civilization's side: whether the six mined patterns survive their own Factory Order → TLC arcs (the `spawned_planning` issues), measured by the Civilization's gates rather than by the upstream's self-report.
 
 ## Placement
 
 Civilization external-landscape research (same placement class as Sakana/Hermes/OKF/MemPalace/Solo Orchestrator): the subject concerns agent workflow, governance, verification, and autonomous-development capability — not Platform competitive intelligence. It activates nothing: no Lewis component gains work, gate, release, or truth roles.
+
+## Sources & Provenance
+
+Primary source is **TAI-RES-2026-006 v1.1.0** (`raw/civilization/external-landscape/tai-res-2026-006-v1.1.0-owainlewis-evaluation.md`), which supersedes v1.0.0 — both revisions are retained under Topic Details, the superseded one byte-identical at its original path per the tier's immutability rule. Ground truth was read in full from local clones of the three evaluated commits — `owainlewis/blueprint@3815669`, `owainlewis/factory@8b346d7`, `owainlewis/neo@022d001` — cited as upstream context only, never re-published, pushed to, or PR'd (org rule). The methodological precedent is TAI-RES-2026-005 (Solo Orchestrator), whose session-hook-vs-sovereign-record analysis this evaluation extends. Planning provenance is machine-readable in this page's frontmatter: eight intake-only `spawned_planning` issues (each authorizes nothing; TLC applies; readiness labels are human-set) and two `gate_arc_defects` (wiki#50, wiki#52 — both closed completed).
