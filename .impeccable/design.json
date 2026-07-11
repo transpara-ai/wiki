@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-10T00:00:00Z",
+  "title": "Design System: Transpara-AI Civilization Wiki",
+  "extensions": {
+    "colorMeta": {
+      "green-bright": { "role": "primary", "displayName": "Transpara Bright Green", "canonical": "#99cc00", "tonalRamp": ["#1a2400", "#2e4000", "#476b00", "#578200", "#669900", "#7fb300", "#99cc00", "#c2e666"] },
+      "green-corp": { "role": "primary", "displayName": "Transpara Corp Green", "canonical": "#669900", "tonalRamp": ["#1a2400", "#2e4000", "#476b00", "#578200", "#669900", "#7fb300", "#99cc00", "#c2e666"] },
+      "visited-steel": { "role": "secondary", "displayName": "Visited Steel", "canonical": "#6699cc", "tonalRamp": ["#14202e", "#24374d", "#3a628f", "#4a77a8", "#6699cc", "#85ade0", "#a8c6ec", "#d3e3f7"] },
+      "signal-orange": { "role": "tertiary", "displayName": "Signal Orange", "canonical": "#ff6600", "tonalRamp": ["#331400", "#662900", "#993d00", "#cc5200", "#ff6600", "#ff8533", "#ffa366", "#ffd1b3"] },
+      "night-bg": { "role": "neutral", "displayName": "Night (default theme ramp)", "canonical": "#161815", "tonalRamp": ["#0c0d0b", "#161815", "#1d201c", "#272b26", "#3b4038", "#4b5147", "#7f887e", "#a9b1a8"] },
+      "day-bg": { "role": "neutral", "displayName": "Day (light theme ramp)", "canonical": "#fcfcfc", "tonalRamp": ["#1c1c1c", "#545a52", "#6f776d", "#a3aa9f", "#c8ccc5", "#eaece7", "#f5f6f4", "#fcfcfc"] },
+      "tier-foundational": { "role": "tertiary", "displayName": "Tier: Foundational", "canonical": "#c4b0f0", "tonalRamp": ["#241b3d", "#41306b", "#5b3ba1", "#7c5fc4", "#9d87dd", "#c4b0f0", "#d9ccf7", "#ece5fb"] },
+      "tier-architecture": { "role": "tertiary", "displayName": "Tier: Architecture", "canonical": "#8fc6f5", "tonalRamp": ["#0f2a40", "#1c4a70", "#1f5fa6", "#3d7fc0", "#66a3d9", "#8fc6f5", "#b3d9f9", "#d9edfc"] },
+      "tier-arc": { "role": "tertiary", "displayName": "Tier: Arc", "canonical": "#e6c07a", "tonalRamp": ["#33260d", "#664d1a", "#8a5a14", "#b3822e", "#cca14f", "#e6c07a", "#f0d6a3", "#f8ebd1"] },
+      "tier-investigation": { "role": "tertiary", "displayName": "Tier: Investigation", "canonical": "#80d4ba", "tonalRamp": ["#12332a", "#1c6b56", "#2a8a70", "#47ab8c", "#63c0a3", "#80d4ba", "#a8e3d0", "#d0f1e7"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles only; 30px ceiling, bottom-ruled. Encyclopedia pages, not hero banners." },
+      "headline": { "displayName": "Headline", "purpose": "Article h2, bottom-ruled with faint border." },
+      "title": { "displayName": "Title", "purpose": "Article h3; infobox/navbox titles at 15px." },
+      "body": { "displayName": "Body", "purpose": "Article prose at 15px/1.6, ~65-75ch measure." },
+      "label": { "displayName": "Label (operational mono)", "purpose": "Sidebar group headers, tier badges, freshness chip, meta. The wiki's operational voice." },
+      "quote": { "displayName": "Quote (source serif)", "purpose": "Quoted source material only — the voice of the corpus." }
+    },
+    "shadows": [
+      { "name": "overlay-dark", "value": "0 10px 28px rgba(0,0,0,0.38)", "purpose": "Transient overlays in dark theme: freshness popover, search dropdown, menus. Nothing else casts a shadow." },
+      { "name": "overlay-light", "value": "0 10px 28px rgba(0,0,0,0.18)", "purpose": "Same overlays in light theme." }
+    ],
+    "motion": [
+      { "name": "ease-out-standard", "value": "cubic-bezier(0.25, 1, 0.5, 1)", "purpose": "Default easing for state transitions (ease-out-quart)." },
+      { "name": "duration-state", "value": "180ms", "purpose": "Hover/focus/state changes; 150-250ms band, state-conveying only, honors prefers-reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "content-collapse", "value": "720px", "purpose": "Sidebar stacks above content; topbar reflows to grid rows." },
+      { "name": "columns-collapse", "value": "640px", "purpose": "See-also and navbox columns collapse to one." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The corp pill, reserved for the page's main action (Ingest, Rebuild). Dark-theme values shown; light uses #578200 fill with white text.",
+      "html": "<button class=\"ds-btn-primary\">Rebuild site</button>",
+      "css": ".ds-btn-primary { background: #99cc00; color: #1a1c10; border: none; border-radius: 999px; padding: 7px 18px; font: 600 13px/1.4 'Open Sans', system-ui, sans-serif; cursor: pointer; transition: background 180ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-btn-primary:hover { background: #a9da21; } .ds-btn-primary:focus-visible { outline: 2px solid #99cc00; outline-offset: 2px; } .ds-btn-primary:active { background: #8ab800; } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Chrome Chip Button",
+      "kind": "button",
+      "refersTo": "button-chrome",
+      "description": "Small utility chrome (theme toggle, sidebar tools, top links). Deliberately un-pill: chrome is not a call to action.",
+      "html": "<button class=\"ds-btn-chrome\">light ▲</button>",
+      "css": ".ds-btn-chrome { background: #161815; color: #a9b1a8; border: 1px solid #4b5147; border-radius: 2px; padding: 3px 9px; font: 700 12px/1.3 ui-monospace, Menlo, Consolas, monospace; cursor: pointer; transition: border-color 180ms, color 180ms; } .ds-btn-chrome:hover { border-color: #99cc00; color: #e7e9e5; } .ds-btn-chrome:focus-visible { outline: 2px solid rgba(153, 204, 0, 0.36); outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Inputs read as holes in the panel: page-bg fill, 1px strong border, green focus ring without glow.",
+      "html": "<input class=\"ds-input-search\" type=\"search\" placeholder=\"Search the wiki…\">",
+      "css": ".ds-input-search { width: 260px; min-height: 32px; padding: 6px 10px; border: 1px solid #4b5147; border-radius: 2px; background: #161815; color: #e7e9e5; font: 14px/1.3 'Open Sans', system-ui, sans-serif; } .ds-input-search::placeholder { color: #a9b1a8; } .ds-input-search:focus { outline: 2px solid rgba(153, 204, 0, 0.36); border-color: #99cc00; }"
+    },
+    {
+      "name": "Tier Badge",
+      "kind": "chip",
+      "refersTo": "chip-tier",
+      "description": "Functional data vocabulary: tier color as text on a neutral chip, never a colored fill at 11px.",
+      "html": "<span class=\"ds-chip-tier\">foundational</span>",
+      "css": ".ds-chip-tier { display: inline-block; font: 700 11px/1.25 ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.02em; padding: 1px 7px; border-radius: 2px; border: 1px solid #4b5147; background: #272b26; color: #c4b0f0; }"
+    },
+    {
+      "name": "Freshness Chip",
+      "kind": "chip",
+      "refersTo": "chip-tier",
+      "description": "The topbar health statement — where Green-Means-Current lives. OK = brand green family; WARN = amber family.",
+      "html": "<span class=\"ds-chip-fresh ds-chip-fresh-ok\">fresh · built 12m ago</span> <span class=\"ds-chip-fresh ds-chip-fresh-warn\">stale · 2 sources behind</span>",
+      "css": ".ds-chip-fresh { display: inline-block; font: 700 12px/1.3 ui-monospace, Menlo, Consolas, monospace; padding: 3px 9px; border-radius: 2px; margin-right: 6px; } .ds-chip-fresh-ok { border: 1px solid #3f5220; background: #1c2412; color: #99cc00; } .ds-chip-fresh-warn { border: 1px solid #5c4a1a; background: #2a230f; color: #e3b341; }"
+    },
+    {
+      "name": "Wikilink States",
+      "kind": "custom",
+      "refersTo": "chip-tier",
+      "description": "The four link states: working green (new), visited steel (the blue Wikipedia era is the visited past), TBD red (article missing), pending dashed muted.",
+      "html": "<p class=\"ds-wikilinks\"><a href=\"#\" class=\"ds-wl\">event graph</a> · <a href=\"#\" class=\"ds-wl ds-wl-visited\">hive governance</a> · <a href=\"#\" class=\"ds-wl ds-wl-tbd\">gate m</a> · <a href=\"#\" class=\"ds-wl ds-wl-pending\">crash recovery</a></p>",
+      "css": ".ds-wikilinks { font: 15px/1.6 'Open Sans', system-ui, sans-serif; color: #e7e9e5; margin: 0; } .ds-wl { color: #99cc00; text-decoration: none; } .ds-wl:hover { text-decoration: underline; } .ds-wl:focus-visible { outline: 2px solid rgba(153, 204, 0, 0.36); outline-offset: 1px; } .ds-wl-visited { color: #6699cc; } .ds-wl-tbd { color: #ff7b72; cursor: help; } .ds-wl-pending { color: #a9b1a8; border-bottom: 1px dashed #a9b1a8; }"
+    },
+    {
+      "name": "Source Quote",
+      "kind": "card",
+      "refersTo": "chip-tier",
+      "description": "Sources speak in serif on parchment — the one place Georgia appears. Full 1px border, no left-stripe.",
+      "html": "<blockquote class=\"ds-quote\">\"Agents that build real systems must live inside the graph of cause, evidence, authority, review, and consequence.\" — lovyou.ai</blockquote>",
+      "css": ".ds-quote { margin: 0; padding: 9px 14px; border: 1px solid #a07f3a; border-radius: 2px; background: #231d10; color: #e6d3a6; font: italic 400 15px/1.55 Georgia, 'Times New Roman', serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Factory Reading Room",
+    "overview": "A reading room attached to a working factory: shelves of compiled, cross-linked knowledge in front, the hum of the ingest-compile-publish machinery audible through the wall. The wiki keeps its encyclopedia grammar — dense resizable sidebar, floating infoboxes, citation footers, tier badges — because that grammar is what makes a records surface trustworthy and navigable. The skin changes: the bootstrap Wikipedia look retires in favor of Transpara's corporate language — near-neutral blacks and whites, the lime-olive green as the single working color, Raleway headings over Open Sans body. The two themes are equals: CSS authored dark-first, shipped default light, dark one toggle away and persisted. Both hold WCAG 2.1 AA on the reader surface.",
+    "keyCharacteristics": [
+      "Encyclopedia density and navigation grammar, Transpara corporate skin",
+      "One working color (the corp green) carrying links, primary actions, and current/healthy signals",
+      "Dark-first dual themes, AA in both",
+      "Flat at rest; elevation only for transient overlays",
+      "Operational chrome speaks monospace; sources speak serif; the wiki speaks Open Sans",
+      "Fully self-contained assets — air-gap friendly, zero external requests"
+    ],
+    "rules": [
+      { "name": "The Green-Means-Current Rule", "body": "In chrome, green is a statement of health — fresh, synced, passing, live. Never use the brand green decoratively on a stale, failing, or unknown state; a green ornament on a broken thing is a lie the whole design is built to avoid.", "section": "colors" },
+      { "name": "The AA-Both-Themes Rule", "body": "Every text/background pair passes 4.5:1 in both themes at body size. Brand-exact #669900 and #ff6600 are large-text/non-text-only in light theme. No exceptions for brand accuracy — the ramp tokens exist precisely so brand and AA never conflict.", "section": "colors" },
+      { "name": "The One-Orange Rule", "body": "Signal Orange appears at most once per view. Two orange things means neither is the most important thing.", "section": "colors" },
+      { "name": "The Sources-Speak-In-Serif Rule", "body": "Georgia appears only inside quoted source material. Everything the wiki itself says is sans or mono. A reader should be able to tell at a glance whether the corpus or the compiler is talking.", "section": "typography" },
+      { "name": "The No-Shouting Rule", "body": "Nothing on a reader page exceeds 30px. Emphasis comes from weight, rule lines, and space — never from scale jumps, gradient text, or letterspaced all-caps headlines.", "section": "typography" },
+      { "name": "The Flat-At-Rest Rule", "body": "If it doesn't float over the page, it doesn't cast a shadow. Panels, infoboxes, cards, and banners are flat surfaces with borders — a shadowed card on a records page is decoration pretending to be information.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep dark as the default theme and hold every body-text pair to 4.5:1 in both themes.",
+      "Do use #99cc00 (dark) / #476b00 (light) for links and #578200 for light primary buttons — the corp ramp is the palette, not just the flagship hex.",
+      "Do keep the encyclopedia grammar: dense sidebar, floating infobox, TOC panel, citation footers, 15px/1.6 body at ~65-75ch.",
+      "Do vendor Raleway and Open Sans as woff2 in-repo; the site must render identically with zero network access.",
+      "Do honor prefers-reduced-motion on every transition; keep transitions 150-250ms, state-conveying only.",
+      "Do keep the freshness/provenance layer visible on every reader page — it is the trust surface."
+    ],
+    "donts": [
+      "Don't drift into the AI-mystique aesthetic: no neon glow on the green, no pure-black backgrounds, no scanlines, no cyber gradients, no sci-fi terminal cosplay.",
+      "Don't let it rot into the corporate intranet: no gray-on-gray text, no undesigned states, no dense-but-joyless neglect.",
+      "Don't import transpara.com's marketing grammar: no heroes, no card-grid feature sections, no airy section spacing, no circles background wallpaper.",
+      "Don't use border-left/border-right thicker than 1px as a colored accent — callouts use full borders + tinted backgrounds.",
+      "Don't use gradient text, glassmorphism, hero metrics, or any radius between 6px and pill.",
+      "Don't put #669900 or #ff6600 on body-size text in light theme — large text and accents only.",
+      "Don't load anything — fonts, scripts, styles, images — from an external host. If it isn't in the repo, it isn't in the design.",
+      "Don't use green on a component that isn't healthy/current, and don't show two orange elements in one view."
+    ]
+  }
+}

@@ -132,7 +132,7 @@ ingest. **Run-9** adds the Transpara-AI repository catalog. **Run-10** hardens
 the service boundary, source rendering, upload containment, and freshness timer
 for first-class local operation. **The in-scope corpus is still not swept** —
 the Civilization corpus allowlisted in
-`DESIGN.md` has not been exhausted. Treat any concept not in the article index
+`SUBSTRATE.md` has not been exhausted. Treat any concept not in the article index
 below as **not-yet-compiled**, not as absent from the project.
 
 **Fail-legible by construction.** Where this index would otherwise emit a link to
@@ -157,7 +157,7 @@ silently resolved):
 - **The Feb genesis is reconstructed, not derived from commits.** Day one is not
   in the digital record (org forks start 3/30; Open Brain starts 3/3). It is
   reconstructed from `raw/searles/` and the Substack post dates. See
-  `[[the-20-primitives]]`, `[[the-lovyou-ai-fork]]`, and `DESIGN.md` §"The Feb
+  `[[the-20-primitives]]`, `[[the-lovyou-ai-fork]]`, and `SUBSTRATE.md` §"The Feb
   genesis."
 - **"Civilization" the survey vs the operative concept.** The 2026-05-13
   **Civilization Landscape Investigation** was the *name of a one-time survey*;
@@ -528,10 +528,10 @@ product horizon concepts and the node's-eye readings of the framework.
 
 ## Deferred to later runs (not-yet-compiled)
 
-Stated so the gaps are legible, per `DESIGN.md` and `PROVENANCE.md`. None of
+Stated so the gaps are legible, per `SUBSTRATE.md` and `PROVENANCE.md`. None of
 these has an article yet; do not read their absence as absence from the project.
 
-- **The full corpus sweep.** The in-scope corpus (`DESIGN.md` §Corpus scope) — the
+- **The full corpus sweep.** The in-scope corpus (`SUBSTRATE.md` §Corpus scope) — the
   dark-factory doc set (~322 md), the runtime repos' own docs (~696 md), the
   `df-impl-v11..16` iterations, and the ~1,175-thought Open Brain export — has not
   been exhausted. Run-3 compiled the arc spine, Searles philosophy, architecture

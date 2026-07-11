@@ -40,6 +40,15 @@ ARC_VIEW_VER = ""
 ONTO_VER = ""
 PROGRESS_VER = ""
 SITE_NAME = "Transpara-AI Civilization Wiki"
+# The three corp logo dots — the system's only decorative mark (DESIGN.md
+# §Navigation). Fill comes from --brand-green so both themes resolve it.
+BRAND_DOTS = (
+    '<svg class="brand-dots" width="20" height="14" viewBox="0 0 20 14"'
+    ' aria-hidden="true" focusable="false">'
+    '<circle cx="3.2" cy="10.8" r="2.2"/>'
+    '<circle cx="9.6" cy="7" r="2.7"/>'
+    '<circle cx="16.4" cy="3.2" r="3.2"/></svg>'
+)
 SOURCE_LINKS = {}
 SOURCE_INDEX = []
 GENERATED_DIST_PATHS = set()
@@ -883,6 +892,12 @@ def mark_generated(path):
 def write_dist_text(path, text):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text)
+    mark_generated(path)
+
+
+def write_dist_bytes(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
     mark_generated(path)
 
 
@@ -1895,7 +1910,7 @@ def repo_page(repo, status):
         'if(t==="dark")document.documentElement.removeAttribute("data-theme");'
         'else document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body>'
-        '<header class="topbar"><a class="brand" href="index.html">%s</a>%s%s'
+        '<header class="topbar"><a class="brand" href="index.html">' + BRAND_DOTS + '%s</a>%s%s'
         '<div class="top-meta">%s'
         '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
         '</div></header>' % (html.escape(SITE_NAME), search_box(), top_links(), freshness(status)) +
@@ -2076,7 +2091,7 @@ def simple_page(title, inner_html, status, *, main_class="content source-content
         'if(t==="dark")document.documentElement.removeAttribute("data-theme");'
         'else document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body>'
-        '<header class="topbar"><a class="brand" href="../index.html">%s</a>%s'
+        '<header class="topbar"><a class="brand" href="../index.html">' + BRAND_DOTS + '%s</a>%s'
         '<nav class="top-links" aria-label="Wiki tools"><a href="../repos.html">Repos</a><a href="../sources.html">Sources</a><a href="../ingest.html">Ingest</a></nav>'
         '<div class="top-meta">%s'
         '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
@@ -2099,7 +2114,7 @@ def tool_page(title, inner_html, status):
         'if(t==="dark")document.documentElement.removeAttribute("data-theme");'
         'else document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body>'
-        '<header class="topbar"><a class="brand" href="index.html">%s</a>%s%s'
+        '<header class="topbar"><a class="brand" href="index.html">' + BRAND_DOTS + '%s</a>%s%s'
         '<div class="top-meta">%s'
         '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
         '</div></header>' % (html.escape(SITE_NAME), search_box(), top_links(), freshness(status)) +
@@ -2171,7 +2186,7 @@ def ingest_page(status):
         '<label>External URLs<textarea name="external_urls" id="external-urls" rows="4" placeholder="https://..."></textarea></label>'
         '<label>Supersedes<select name="supersedes" id="supersedes"><option value="">No existing source selected</option></select></label>'
         '<label>Note<input name="note" id="source-note" type="text" placeholder="citation update, replacement, or placement note"></label>'
-        '<div class="form-actions"><button type="submit">Ingest and rebuild</button>'
+        '<div class="form-actions"><button type="submit" class="btn-primary">Ingest and rebuild</button>'
         '<button type="button" id="rebuild-now">Refresh status and rebuild</button></div>'
         '</form></section>'
         '<section class="ingest-card ingest-destructive" data-mode-panel="replace" hidden>'
@@ -2503,7 +2518,7 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
         'if(t==="dark")document.documentElement.removeAttribute("data-theme");'
         'else document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body>' +
-        '<header class="topbar"><a class="brand" href="index.html">%s</a>%s%s'
+        '<header class="topbar"><a class="brand" href="index.html">' + BRAND_DOTS + '%s</a>%s%s'
         '<div class="top-meta">%s'
         '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
         '</div></header>' % (html.escape(SITE_NAME), search_box(), top_links(), freshness(status)) +
@@ -2583,6 +2598,14 @@ def build():
         write_dist_text(DIST / name, asset)
         return hashlib.md5(asset.encode()).hexdigest()[:8]
 
+    def copy_fonts():
+        # Vendored woff2 + OFL notice (binary-safe; marked generated so
+        # prune_dist keeps them). Air-gap rule: fonts ship in dist/.
+        for f in sorted((ASSETS / "fonts").glob("*")):
+            if f.suffix not in (".woff2", ".txt"):
+                continue
+            write_dist_bytes(DIST / "fonts" / f.name, f.read_bytes())
+
     def build_search_index():
         docs = []
         fm, body = split_fm(INDEX.read_text())
@@ -2626,6 +2649,7 @@ def build():
         return hashlib.md5(asset.encode()).hexdigest()[:8]
 
     CSS_VER = copy_asset("style.css")
+    copy_fonts()
     # First pass populates SOURCE_INDEX for search; second pass refreshes source
     # pages after SEARCH_VER is known so the normal page chrome uses cache-busted JS.
     build_source_pages(status)

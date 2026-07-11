@@ -10,7 +10,7 @@ A [Karpathy-style LLM wiki](https://gist.github.com/karpathy/442a6bf555914893e98
 - `wiki/` — interlinked entity articles (foundational philosophy · architecture · dark-factory arc · investigations)
 - `raw/` — source material: `searles/` (the posts), `open-brain/` (exported thoughts), `civilization/` (Stage 0 institutional-substrate proposal snapshot), and `inbox/` (browser-ingested source drops). Generated first-party Dark Factory mirrors are recorded in `PROVENANCE.md`.
 - `civilization-arc.html` — the single normalized wiki page for the progress chart; not the home page and not authority.
-- `DESIGN.md` — substrate design, compile pipeline, keep-current plan
+- `SUBSTRATE.md` — substrate design, compile pipeline, keep-current plan
 - `PROVENANCE.md` — source manifest
 
 ## Principles

@@ -2,16 +2,16 @@
 title: Civilization Wiki — provenance manifest
 last_updated: 2026-06-24
 status: partial — searles, open_brain, Stage 0 source snapshot, and browser inbox scaffold mirrored; open_brain mirror stale after 2026-06-13; generated first_party/upstream_context still incomplete
-authority: reference (the source manifest named in DESIGN.md)
+authority: reference (the source manifest named in SUBSTRATE.md)
 tiers: [searles, first_party, open_brain, civilization_stage0, browser_inbox, upstream_context]
 ---
 
 # Civilization Wiki — provenance manifest
 
-The per-source manifest named in `DESIGN.md` ("`PROVENANCE.md` — source manifest:
+The per-source manifest named in `SUBSTRATE.md` ("`PROVENANCE.md` — source manifest:
 each raw item → origin, date, tier"). It records, for every source the wiki is
 compiled from, its **origin**, its **date or range**, its **provenance tier**, and
-**how the wiki uses it**. Tier vocabulary is anchored in `DESIGN.md`
+**how the wiki uses it**. Tier vocabulary is anchored in `SUBSTRATE.md`
 §Ingestion: `searles`, `first_party` (Transpara-authored), `open_brain`, and
 `upstream_context` (a forked project's own docs — context, never the subject).
 This manifest also records newer wiki-maintenance tiers that emerged after the
@@ -35,7 +35,7 @@ table records what is actually on disk this run.
 | `civilization_stage0` | `raw/civilization/stage-0-institutional-substrate/` | **Yes** | Stage 0 authored scaffold snapshot, excluding copied historical corpus |
 | `browser_inbox` | `raw/inbox/` | **Yes when used** | browser-ingested source drops and `manifest.jsonl`; current snapshot includes Sakana, Hermes, and OKF source files |
 | `external_landscape_authored` | `raw/civilization/external-landscape/` | **Yes** | session-authored external-landscape research documents (TAI-RES series entries authored directly in gated PRs, not browser-ingested); first entry TAI-RES-2026-006 (PR #49) |
-| `upstream_context` | `raw/investigations/` | **No** | empty but for `.gitkeep` — Phase 2 (per `DESIGN.md`) |
+| `upstream_context` | `raw/investigations/` | **No** | empty but for `.gitkeep` — Phase 2 (per `SUBSTRATE.md`) |
 
 **What this means for trust:** the `searles` tier and the stale `open_brain`
 mirror are reproducible from this repo alone today. The `first_party` corpus was
@@ -66,14 +66,14 @@ revision lands as a NEW versioned file carrying `supersedes:` frontmatter, and
 may optionally be promoted to the ledgered ref via the authorized replace
 operation — so registered ledger rows stay verifiable forever. Do not read an empty
 `raw/` subdirectory as "no such source" — read it as "not yet mirrored." The
-nightly keep-current job in `DESIGN.md` is what will populate them.
+nightly keep-current job in `SUBSTRATE.md` is what will populate them.
 
 ---
 
 ## Tier: searles — the day-one provocation
 
 The foundational philosophy: Matt Searles' lovyou.ai / LovYou Substack posts. In
-`DESIGN.md` this is the `searles` tier — "the foundational philosophy," ingested
+`SUBSTRATE.md` this is the `searles` tier — "the foundational philosophy," ingested
 as **motive, vocabulary, and accountability premise only**, never as proven
 metaphysics or implementation authority (see `wiki/primitive-basis.md`).
 
@@ -84,10 +84,10 @@ metaphysics or implementation authority (see `wiki/primitive-basis.md`).
 | **Date / range** | **2026-02-28 → 2026-03-24**. The arc's day one is the 2026-02-28 post *"20 Primitives and a Late Night."* |
 | **Volume** | **43 posts** in one concatenated markdown file (~9,800 lines). Each post carries its title, date, and source URL inline. |
 | **Tier** | `searles` |
-| **How the wiki uses it** | The grounded source for the 8 Foundational articles (`wiki/the-20-primitives.md`, `the-primitives.md`, `strange-loop.md`, `three-irreducibles.md`, `event-graph.md`, `intelligence-is-an-operation-type.md`, `authority-layer.md`, `accountable-ai-architecture.md`) and for `wiki/primitive-basis.md`. It is also the **only** evidence for the reconstructed "Feb genesis" (`DESIGN.md` §"The Feb genesis"): day one predates the first fork and the runtime, so the origin article is reconstructed from these posts + their dates, **not** derived from commit history — and says so. |
+| **How the wiki uses it** | The grounded source for the 8 Foundational articles (`wiki/the-20-primitives.md`, `the-primitives.md`, `strange-loop.md`, `three-irreducibles.md`, `event-graph.md`, `intelligence-is-an-operation-type.md`, `authority-layer.md`, `accountable-ai-architecture.md`) and for `wiki/primitive-basis.md`. It is also the **only** evidence for the reconstructed "Feb genesis" (`SUBSTRATE.md` §"The Feb genesis"): day one predates the first fork and the runtime, so the origin article is reconstructed from these posts + their dates, **not** derived from commit history — and says so. |
 
 **Fail-legible notes (searles):**
-- **Count discrepancy.** `DESIGN.md` estimates "the ~45–50 lovyou.ai posts" (and
+- **Count discrepancy.** `SUBSTRATE.md` estimates "the ~45–50 lovyou.ai posts" (and
   "~45–50" in its layout note); the file on disk contains **43** dated posts. The
   manifest records the verified on-disk count (43); the ~50 figure is an estimate,
   not a contradiction to resolve by editing the source.
@@ -107,7 +107,7 @@ metaphysics or implementation authority (see `wiki/primitive-basis.md`).
 ## Tier: first_party — the dark-factory docs (read in place)
 
 The Transpara-authored design record: the **dark-factory** documentation set. In
-`DESIGN.md` this is the `first_party` tier ("Transpara-authored — docs,
+`SUBSTRATE.md` this is the `first_party` tier ("Transpara-authored — docs,
 df-impl-v*, dark-factory, Open Brain"). For Run-1 it was read **in place** from a
 sibling checkout — **not** copied into `raw/transpara/` (which holds only
 `.gitkeep`). This is the load-bearing implementation/doctrine authority for every
@@ -120,7 +120,7 @@ Architecture and Arc article.
 | **Date / range** | Active corpus. Repo first commit 2022-07-07; the dark-factory record set spans roughly **2026-04 → 2026-06-13** (latest dark-factory commit on disk: 2026-06-13). Dated arc stations run from the 2026-05-13 v3.9 acceptance-candidate checkpoint through the 2026-06-12 v4.0 doctrine-acceptance checkpoint. |
 | **Volume** | **~322 markdown files** under `docs/dark-factory/` (excluding `.git`). Run-1 read the arc-spine subset, not all 322. |
 | **Tier** | `first_party` |
-| **How the wiki uses it** | The grounded authority for the 12 Architecture articles and the 5 Arc articles in `index.md`, and the corrective to assumption-driven narrative (the article set EMERGES from these docs, per `DESIGN.md`). Where it conflicts with the `searles` tier, the wiki states the disagreement and cites both rather than picking a winner (fail-legible doctrine). |
+| **How the wiki uses it** | The grounded authority for the 12 Architecture articles and the 5 Arc articles in `index.md`, and the corrective to assumption-driven narrative (the article set EMERGES from these docs, per `SUBSTRATE.md`). Where it conflicts with the `searles` tier, the wiki states the disagreement and cites both rather than picking a winner (fail-legible doctrine). |
 
 **Key documents within this tier (and how each is used):**
 
@@ -137,7 +137,7 @@ Architecture and Arc article.
 **Fail-legible notes (first_party):**
 - **Not mirrored into `raw/`.** The biggest provenance caveat in this tier: Run-1
   read `docs/dark-factory` **in place**, so the wiki repo cannot today reproduce
-  the first-party tier from its own `raw/transpara/`. `DESIGN.md`'s keep-current
+  the first-party tier from its own `raw/transpara/`. `SUBSTRATE.md`'s keep-current
   job ("re-sync first-party repos into `raw/`") is what closes this gap; until it
   runs, treat `docs/dark-factory` as an external dependency of the compile.
 - **`civic-roles.md` is superseded.** It is named as a key doc and is grounded,
@@ -157,7 +157,7 @@ Architecture and Arc article.
 ## Tier: open_brain — the captured-thought export
 
 The Open Brain corpus: Michael's captured thoughts, to be exported as dated
-markdown. In `DESIGN.md` this is folded into `first_party` authorship but tracked
+markdown. In `SUBSTRATE.md` this is folded into `first_party` authorship but tracked
 as its own ingestion stream (`open_brain`), with its own `raw/` subdirectory and
 its own nightly re-export.
 
@@ -165,19 +165,19 @@ its own nightly re-export.
 |---|---|
 | **Target location** | `raw/open-brain/` — **filled but stale**: `2026-{03,04,05,06}.md`, one dump per month (1,175 thoughts). |
 | **Origin** | First-party — the Open Brain thought store (captured via `mcp__open-brain__capture_thought`), to be dumped as dated markdown, one record per thought. |
-| **Date / range** | The committed mirror covers **2026-03-03 → 2026-06-13**. `DESIGN.md` still says "Open Brain starts 3/4"; that is treated here as the design/store-open claim, while 2026-03-03 is the actual first date present in the committed mirror. Live OpenBrain access on 2026-06-21 confirms recent captures on **2026-06-21**. |
+| **Date / range** | The committed mirror covers **2026-03-03 → 2026-06-13**. `SUBSTRATE.md` still says "Open Brain starts 3/4"; that is treated here as the design/store-open claim, while 2026-03-03 is the actual first date present in the committed mirror. Live OpenBrain access on 2026-06-21 confirms recent captures on **2026-06-21**. |
 | **Volume** | **1,175 thoughts on disk** in the committed mirror. Live `thought_stats` checked 2026-06-21 reports **2,338 total thoughts**. |
 | **Tier** | `open_brain` |
-| **How the wiki uses it** | Phase-1 source alongside `searles` + `first_party` (`DESIGN.md`: "Phase 1 = searles + first_party + open_brain — the arc itself"). Run-1 reached Open Brain via targeted queries to ground specific arc facts (e.g. the earliest spawn-lifecycle thoughts naming `lovyou-ai-hive`, cited in `wiki/agent.md` / `wiki/hive-governance.md`), and the **bulk dated export is now written to `raw/open-brain/`** (4 monthly dumps, 1,175 thoughts, 2026-03-03 through 2026-06-13). |
+| **How the wiki uses it** | Phase-1 source alongside `searles` + `first_party` (`SUBSTRATE.md`: "Phase 1 = searles + first_party + open_brain — the arc itself"). Run-1 reached Open Brain via targeted queries to ground specific arc facts (e.g. the earliest spawn-lifecycle thoughts naming `lovyou-ai-hive`, cited in `wiki/agent.md` / `wiki/hive-governance.md`), and the **bulk dated export is now written to `raw/open-brain/`** (4 monthly dumps, 1,175 thoughts, 2026-03-03 through 2026-06-13). |
 
 **Fail-legible notes (open_brain):**
 - **Exported 2026-06-13.** `raw/open-brain/` holds 4 monthly dumps (`2026-03..06.md`,
-  1,175 thoughts), committed and on `main`. The dated export named in `DESIGN.md` is a
+  1,175 thoughts), committed and on `main`. The dated export named in `SUBSTRATE.md` is a
   **completed** ingestion, not a planned one. Articles may still cite individual thoughts
   pulled at compile time, but a committed mirror now exists.
 - **Behind live store (as of 2026-06-21).** The committed dump covers through
   2026-06-13. Live `thought_stats` through the standardized OpenBrain helper reports
-  **2,338 total thoughts** and recent rows through **2026-06-21**. `DESIGN.md`'s
+  **2,338 total thoughts** and recent rows through **2026-06-21**. `SUBSTRATE.md`'s
   "nightly re-export" is **not yet automated**, so this repo must not imply that the
   mirror is current.
 - **Standard access path.** Codex/OpenBrain work for this repo uses
@@ -197,7 +197,7 @@ its own nightly re-export.
 - **Catch-up condition.** Updating `raw/open-brain/` after 2026-06-13 requires a
   paginated/export-capable OpenBrain read path plus the normal secret-scrub gate. This
   PR corrects provenance; it does not add new raw thought dumps.
-- **Secret-scrub gate applies.** Per `DESIGN.md`, nothing enters `raw/` with live
+- **Secret-scrub gate applies.** Per `SUBSTRATE.md`, nothing enters `raw/` with live
   secrets; the Open Brain export must pass the secret scanner before any commit
   (the platform has a known hardcoded-credentials finding, F-01). This is a
   precondition on filling this directory.
@@ -268,7 +268,7 @@ the static site without running an LLM or changing live production routes.
 ## Tier: upstream_context — forked-project docs (cited, not re-published)
 
 The forked/investigated upstream projects' **own** documentation — context for the
-investigation articles, **not** the subject of the wiki. In `DESIGN.md` this is the
+investigation articles, **not** the subject of the wiki. In `SUBSTRATE.md` this is the
 `upstream_context` tier: "a forked project's own docs (context for its
 investigation article, **not** the subject of the wiki)," and it is explicitly
 **Phase 2**.
@@ -293,9 +293,9 @@ investigation article, **not** the subject of the wiki)," and it is explicitly
 
 ---
 
-## Tier vocabulary (`DESIGN.md` plus post-design additions)
+## Tier vocabulary (`SUBSTRATE.md` plus post-design additions)
 
-| Tier | Definition (from `DESIGN.md` §Ingestion) |
+| Tier | Definition (from `SUBSTRATE.md` §Ingestion) |
 |---|---|
 | `first_party` | Transpara-authored (docs, df-impl-v*, dark-factory, Open Brain). |
 | `searles` | The foundational philosophy. |
@@ -304,7 +304,7 @@ investigation article, **not** the subject of the wiki)," and it is explicitly
 | `browser_inbox` | A post-design source-registration tier for human-submitted files and URLs awaiting synthesis. |
 
 Tier is recorded both here and in each `raw/` file's frontmatter, so the compiler
-knows what is load-bearing **without anything being excluded** (`DESIGN.md`:
+knows what is load-bearing **without anything being excluded** (`SUBSTRATE.md`:
 "ingest all, sort at compile").
 
 ---
@@ -319,7 +319,7 @@ knows what is load-bearing **without anything being excluded** (`DESIGN.md`:
 - When OpenBrain access changes, verify both paths separately: the standardized MCP
   helper for capture/bounded reads, and any deployed paginated export gateway for bulk
   mirror refresh. Do not treat one as proof of the other.
-- Keep counts **verified on disk**, not copied from `DESIGN.md` estimates; where
+- Keep counts **verified on disk**, not copied from `SUBSTRATE.md` estimates; where
   they differ (e.g. 43 vs ~50 searles posts), record both and label the estimate.
 - A source that is read **in place** rather than mirrored is a provenance caveat,
   not a silent fact — say so, as the `first_party` tier does above.

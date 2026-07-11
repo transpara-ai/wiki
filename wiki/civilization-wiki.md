@@ -5,7 +5,7 @@ tier: meta
 status: compiled
 last_compiled: "2026-06-24"
 sources:
-  - DESIGN.md  # substrate design, purpose, pattern, layout, compilation engine
+  - SUBSTRATE.md  # substrate design, purpose, pattern, layout, compilation engine
   - PROVENANCE.md  # source manifest: tiers, mirroring status, in-place reads
   - index.md  # front-page narrative frame + arc spine + article index (Run-10 state, 101 articles)
   - raw/open-brain/2026-06.md  # lines 4050–4134: genesis, design decisions, compile runs
@@ -40,7 +40,7 @@ wiki/    LLM compiles raw into entity articles: synthesize, resolve conflicts, c
 index.md front-page narrative + arc spine + article index + freshness header
 ```
 
-The article set **emerges from the sources** — it is not pre-authored by the maintainer. A first-pass compile derives the entity list from `raw/`; later passes refine. Curation is a compile-time concern, not a gate at the ingestion door ("ingest all, sort at compile," per `DESIGN.md`).
+The article set **emerges from the sources** — it is not pre-authored by the maintainer. A first-pass compile derives the entity list from `raw/`; later passes refine. Curation is a compile-time concern, not a gate at the ingestion door ("ingest all, sort at compile," per `SUBSTRATE.md`).
 
 ## The corpus it compiles from
 
@@ -54,9 +54,9 @@ Four source tiers, each with its own `raw/` subdirectory and its own provenance 
 | `upstream_context` | `raw/investigations/` | No — Phase 2, empty by design | Upstream forked-project docs (cited as context, never re-published) |
 | `browser_inbox` | `raw/inbox/` | Yes when used | Local browser-ingested source drops and URL manifest rows awaiting article synthesis |
 
-`DESIGN.md` names the full target corpus as **~8,783 markdown files across ~73 repos + ~1,175 Open Brain thoughts + the Matt Searles posts**. As of Run-3 (2026-06-14) only the `searles` tier is fully reproducible from the repo alone; the `first_party` tier was read in place from a sibling checkout and the `open_brain` tier was queried live or exported as individual month files rather than bulk-dumped. See `PROVENANCE.md` for the per-tier mirroring status.
+`SUBSTRATE.md` names the full target corpus as **~8,783 markdown files across ~73 repos + ~1,175 Open Brain thoughts + the Matt Searles posts**. As of Run-3 (2026-06-14) only the `searles` tier is fully reproducible from the repo alone; the `first_party` tier was read in place from a sibling checkout and the `open_brain` tier was queried live or exported as individual month files rather than bulk-dumped. See `PROVENANCE.md` for the per-tier mirroring status.
 
-> ⚠ **Corpus completeness is declared, not verified.** The 8,783-file / 73-repo / 1,175-thought figures come from `DESIGN.md` (2026-06-13 draft). They are the design-time estimate, not an on-disk count. Do not read any empty `raw/` subdirectory as "no such source" — read it as "not yet mirrored."
+> ⚠ **Corpus completeness is declared, not verified.** The 8,783-file / 73-repo / 1,175-thought figures come from `SUBSTRATE.md` (2026-06-13 draft). They are the design-time estimate, not an on-disk count. Do not read any empty `raw/` subdirectory as "no such source" — read it as "not yet mirrored."
 
 ## The compile runs
 
@@ -215,7 +215,7 @@ Run-3 addresses a portion of the deferred long-tail. The remaining deferred enti
 
 Compiled from:
 
-- `/Transpara/transpara-ai/repos/wiki/DESIGN.md` — purpose, pattern, layout, corpus scope, compilation engine, keep-current design, Feb genesis section. Full file (~77 lines).
+- `/Transpara/transpara-ai/repos/wiki/SUBSTRATE.md` — purpose, pattern, layout, corpus scope, compilation engine, keep-current design, Feb genesis section. Full file (~77 lines).
 - `/Transpara/transpara-ai/repos/wiki/PROVENANCE.md` — per-tier manifest: origin, date/range, volume, mirroring status, fail-legible tier caveats. Full file (~213 lines).
 - `/Transpara/transpara-ai/repos/wiki/index.md` — front-page narrative frame, arc spine, article index, freshness header, and deferred/source-tension notes. Current Run-10 state: 101 articles.
 - `/Transpara/transpara-ai/repos/wiki/raw/open-brain/2026-06.md` — lines ~4050–4134: genesis of the Karpathy-wiki direction, design decisions, compile progress captures (lines 4050, 4052, 4066, 4072).
@@ -229,4 +229,4 @@ Compiled from:
 - Run-1/Run-2 token and agent counts (2.17M/28 and 3.6M/42) come from task-framing metadata, not independently captured thoughts — labeled as such.
 - Run-3 article count (78 total) is an as-written historical figure; the authoritative current count is the generated stats block in `index.md`.
 - PR #1 and PR #2 cited for the renderer are from task framing; not independently verified against GitHub history.
-- Corpus size estimate (~8,783 files / ~73 repos / ~1,175 thoughts) is the `DESIGN.md` design-time figure, not an on-disk count.
+- Corpus size estimate (~8,783 files / ~73 repos / ~1,175 thoughts) is the `SUBSTRATE.md` design-time figure, not an on-disk count.
