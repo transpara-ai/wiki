@@ -907,7 +907,7 @@ def test_ac8_endpoint_authoring_parity():
             srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
             srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
             srv.subprocess.Popen = lambda *a, **k: _FakeProc()
-            ingest_body = (b"target_slug=example&note=clean"
+            ingest_body = (b"target_slug=example&note=clean&org=transpara-ai&section=investigation"
                            b"&external_urls=https%3A%2F%2Fexample.com%2Fp")
             op_body = b"slug=alpha-topic&reason=r&source_ref=x"
 
@@ -970,7 +970,7 @@ def test_ac8_add_gains_quarantine_and_ledger():
             srv.subprocess.Popen = lambda *a, **k: _FakeProc()
 
             # a secret-bearing note refuses BEFORE any write
-            body = ("target_slug=example&note=key%%3D%s" % AWS_KEY).encode("utf-8")
+            body = ("target_slug=example&note=key%%3D%s&org=transpara-ai&section=investigation" % AWS_KEY).encode("utf-8")
             h = make_handler("/api/ingest", body=body)
             srv.IngestHandler.do_POST(h)
             assert h.status == 422, h.status
@@ -982,8 +982,8 @@ def test_ac8_add_gains_quarantine_and_ledger():
             # quarantine fires BEFORE the echoing validators (rebuild-r4 B2):
             # a secret in an INVALID slug or INVALID external URL must come
             # back 422-redacted, never 400 with the value echoed
-            for body in (("target_slug=%s&note=x" % AWS_KEY).encode("utf-8"),
-                         ("target_slug=example&external_urls=%s" % AWS_KEY).encode("utf-8")):
+            for body in (("target_slug=%s&note=x&org=transpara-ai&section=investigation" % AWS_KEY).encode("utf-8"),
+                         ("target_slug=example&external_urls=%s&org=transpara-ai&section=investigation" % AWS_KEY).encode("utf-8")):
                 h = make_handler("/api/ingest", body=body)
                 srv.IngestHandler.do_POST(h)
                 reply = h.wfile.getvalue().decode("utf-8")
@@ -993,7 +993,7 @@ def test_ac8_add_gains_quarantine_and_ledger():
             # a clean add WITH a source (external URL) appends one add row
             h = make_handler(
                 "/api/ingest",
-                body=b"target_slug=example&note=clean&external_urls=https%3A%2F%2Fexample.com%2Fp")
+                body=b"target_slug=example&note=clean&external_urls=https%3A%2F%2Fexample.com%2Fp&org=transpara-ai&section=investigation")
             srv.IngestHandler.do_POST(h)
             assert h.status == 200, h.wfile.getvalue()[:400]
             rows = ops.ledger_preflight(root / "compile" / "ingest-ledger.jsonl")
@@ -1560,7 +1560,7 @@ def test_cfarready_sourceless_add_refused():
             srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
             srv.subprocess.Popen = lambda *a, **k: (rebuilt.append(1), _FakeProc())[1]
             # target given, but NO documents and NO external URLs
-            h = make_handler("/api/ingest", body=b"target_slug=example&note=x")
+            h = make_handler("/api/ingest", body=b"target_slug=example&note=x&org=transpara-ai&section=investigation")
             srv.IngestHandler.do_POST(h)
             assert h.status == 422, h.status
             assert not (root / "compile" / "ingest-ledger.jsonl").exists(), \
@@ -1654,7 +1654,7 @@ def test_cfar24_add_state_preflights_inside_lock():
             srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
             srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
             srv.subprocess.Popen = lambda *a, **k: _FakeProc()
-            h = make_handler("/api/ingest", body=b"target_slug=example&note=x")
+            h = make_handler("/api/ingest", body=b"target_slug=example&note=x&org=transpara-ai&section=investigation")
             srv.IngestHandler.do_POST(h)
             assert h.status == 422, h.status
             assert not (root / "raw").exists()
@@ -1777,7 +1777,8 @@ def test_cfar19_unknown_target_refused_write_free():
             srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
             srv.subprocess.Popen = lambda *a, **k: _FakeProc()
             ctype, body = _multipart(
-                {"target_slug": "does-not-exist"}, "doc.md", b"# doc\n",
+                {"target_slug": "does-not-exist", "org": "transpara-ai",
+                 "section": "investigation"}, "doc.md", b"# doc\n",
                 field_name="documents")
             h = make_handler("/api/ingest", body=body, content_type=ctype)
             srv.IngestHandler.do_POST(h)
@@ -2017,7 +2018,7 @@ def test_cfar13_add_preflights_edge_states():
             srv.MANIFEST = srv.RAW_INBOX / "manifest.jsonl"
             srv.LOCK_PATH = root / "compile" / ".wiki-write.lock"
             srv.subprocess.Popen = lambda *a, **k: _FakeProc()
-            h = make_handler("/api/ingest", body=b"target_slug=example&note=x")
+            h = make_handler("/api/ingest", body=b"target_slug=example&note=x&org=transpara-ai&section=investigation")
             srv.IngestHandler.do_POST(h)
             assert h.status == 422, h.status
             assert not (root / "raw").exists(), "corrupt edge state → write-free refusal"
@@ -2069,7 +2070,8 @@ def test_cfar12_unassigned_add_resolving_to_retired_refused():
             '# Gone Topic\n\nRetired.\n')
         tombstone_before = (wiki / "gone-topic.md").read_text()
         ctype, body = _multipart(  # unassigned: no target_slug field
-            {"note": "resurrection attempt"}, "gone-topic.md",
+            {"note": "resurrection attempt", "org": "transpara-ai",
+             "section": "investigation"}, "gone-topic.md",
             b"# Gone Topic\n\nfresh source body\n", field_name="documents")
         old = (srv.ROOT, srv.WIKI, srv.RAW_INBOX, srv.MANIFEST, srv.LOCK_PATH,
                srv.subprocess.Popen)
@@ -2124,7 +2126,7 @@ def test_cfar11_add_refuses_retired_target():
             assert srv.article_is_retired("gone-topic") is True
 
             # POST /api/ingest targeting the retired slug -> refused, no write
-            h = make_handler("/api/ingest", body=b"target_slug=gone-topic&note=x")
+            h = make_handler("/api/ingest", body=b"target_slug=gone-topic&note=x&org=transpara-ai&section=investigation")
             srv.IngestHandler.do_POST(h)
             assert h.status == 422, h.status
             before = (wiki / "gone-topic.md").read_text()
@@ -2812,6 +2814,7 @@ def test_new_investigation_ingest_ignores_supersedes():
             srv.subprocess.Popen = lambda *a, **k: _FakeProc()
             ctype, body = _multipart(
                 {"new_investigation": "true", "name": "Fresh Subject",
+                 "org": "transpara-ai", "section": "investigation",
                  "supersedes": "raw/inbox/2026-01-01/other/OTHER-Evaluation.md",
                  "external_urls": "https://example.com/fresh"},
                 "seed.md", b"# seed\n\nbody\n", field_name="documents")

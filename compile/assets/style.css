@@ -147,6 +147,8 @@ summary.fresh::after{content:"▾";margin-left:6px;font-size:9px;opacity:.75}
 .side-home{margin:2px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--bd-faint)}
 .side-home a{font-weight:600;font-size:14px}
 .side-home span{display:block;color:var(--faint);font-size:11px}
+.side-org{margin:16px 0 6px;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--txt)}
+.side-org:first-of-type{margin-top:6px}
 .side-group{margin:0;border-top:1px solid var(--bd-faint)}
 .side-group:first-of-type{border-top:0}
 .side-group > summary{display:flex;align-items:center;gap:6px;min-height:30px;list-style:none;cursor:pointer;

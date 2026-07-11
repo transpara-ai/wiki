@@ -155,16 +155,12 @@ SEARCH_JS = (
     '})();</script>'
 )
 
-TIER_ORDER = ["foundational", "institutional", "architecture", "arc", "investigation", "concept", "meta"]
-TIER_LABEL = {
-    "foundational": "Foundational — source philosophy",
-    "institutional": "Institutional substrate",
-    "architecture": "Architecture",
-    "arc": "The dark-factory arc",
-    "investigation": "Investigations",
-    "concept": "Concepts",
-    "meta": "Meta",
-}
+# org/section structure lives in the side-effect-free org_structure module —
+# the single source shared with ingest_server (DP-20260710 D1); TIER_ORDER /
+# TIER_LABEL keep their names here so existing consumers are unchanged.
+from org_structure import (  # noqa: E402
+    TIER_ORDER, TIER_LABEL, ORG_ORDER, ORG_LABEL, ORG_SECTIONS,
+    SECTION_LABEL, DEFAULT_ORG, ORG_REPO_GROUPS, resolve_org_tier)
 
 REPO_GROUP_LABEL = {
     "civilization": "Civilization",
@@ -357,6 +353,17 @@ def article_meta():
     meta = {}
     for p in sorted(WIKI.glob("*.md")):
         fm, _ = split_fm(p.read_text())
+        # fail-closed org/tier resolution (DP-20260710 D3): a present-but-
+        # empty/unknown org, a missing tier, or a tier foreign to the resolved
+        # org kills the build loudly — there is no silent `concept` fallback.
+        # Absent org defaults to DEFAULT_ORG so the existing corpus needs no
+        # frontmatter edits (corpus-evidenced: all pages carry explicit tiers).
+        org_present = bool(re.search(r"(?m)^org\s*:", fm))
+        try:
+            org, tier = resolve_org_tier(
+                p.stem, org_present, fm_scalar(fm, "org"), fm_scalar(fm, "tier"))
+        except ValueError as exc:
+            raise SystemExit("article_meta: %s" % exc)
         meta[p.stem] = {
             "slug": p.stem,
             # fm_scalar for the value-load-bearing title/tier (a commented
@@ -364,7 +371,8 @@ def article_meta():
             # contribution box); retired_on stays fm_val so an ambiguous/comment-
             # only value still drops the page from nav (fail-safe) (CFAR: Codex).
             "title": fm_scalar(fm, "entity") or p.stem.replace("-", " "),
-            "tier": fm_scalar(fm, "tier") or "concept",
+            "tier": tier,
+            "org": org,
             "retired_on": fm_val(fm, "retired_on"),
         }
     return meta
@@ -1624,19 +1632,34 @@ def repos_by_group():
     return grouped
 
 
-def build_repo_nav(current_repo=""):
-    if not REPOS:
-        return ""
-    total = len(REPOS)
-    attrs = ['class="side-group repo-side-group"', 'data-tier="repos"']
-    if current_repo:
-        attrs.append('data-current-group="true"')
+def build_repo_nav(current_repo="", org=DEFAULT_ORG):
+    # each org band lists only its own repo groups (DP-20260710 D2, intake
+    # decision 2): platform -> Transpara, civilization+other -> Transpara-AI.
+    org_groups = [g for g in REPO_GROUP_ORDER if g in ORG_REPO_GROUPS.get(org, [])]
     grouped = repos_by_group()
-    out = ['<details %s><summary><span>Transpara-AI Repos</span><em>%d</em></summary>'
-           '<div class="repo-nav-overview"><a%s href="repos.html">Repository index</a></div>'
-           '<div class="repo-nav-sections">' %
-           (" ".join(attrs), total, ' class="current"' if current_repo == "index" else "")]
-    for key in REPO_GROUP_ORDER:
+    total = sum(len(grouped.get(g, [])) for g in org_groups)
+    if not total:
+        return ""
+    # "index" (repos.html) is current for the band hosting the overview link,
+    # preserving the pre-split `if current_repo:` open behavior (CFAR r1 P3)
+    current_here = (current_repo == "index" and org == DEFAULT_ORG) or any(
+        r["slug"] == current_repo
+        for g in org_groups for r in grouped.get(g, []))
+    # data-tier keys the sidebar collapse persistence: transpara-ai keeps the
+    # historical "repos" key so stored preferences survive; transpara gets its
+    # own key so the two bands never share open/closed state.
+    tier_key = "repos" if org == DEFAULT_ORG else "repos-%s" % org
+    attrs = ['class="side-group repo-side-group"', 'data-tier="%s"' % html.escape(tier_key)]
+    if current_here:
+        attrs.append('data-current-group="true"')
+    # the full repository index (repos.html) spans all orgs; its overview link
+    # stays on the transpara-ai block only, where it always lived.
+    overview = ('<div class="repo-nav-overview"><a%s href="repos.html">Repository index</a></div>'
+                % (' class="current"' if current_repo == "index" else "")) if org == DEFAULT_ORG else ""
+    out = ['<details %s><summary><span>%s Repos</span><em>%d</em></summary>'
+           '%s<div class="repo-nav-sections">' %
+           (" ".join(attrs), html.escape(ORG_LABEL.get(org, org)), total, overview)]
+    for key in org_groups:
         repos = grouped.get(key, [])
         if not repos:
             continue
@@ -1713,28 +1736,40 @@ def build_sidebar(current, current_repo=""):
         '</div>',
         '<div class="side-home"><a href="index.html">Main page</a><span>home</span></div>',
     ]
-    out.append(build_repo_nav(current_repo))
-    for tier in TIER_ORDER:
-        # retired articles drop from nav but stay reachable by direct link
-        arts = sorted([m for m in META.values()
-                       if m["tier"] == tier and not m.get("retired_on")],
-                      key=lambda m: m["title"].lower())
-        if not arts:
-            continue
-        attrs = ['class="side-group"', 'data-tier="%s"' % html.escape(tier)]
-        if tier == current_tier:
-            attrs.append('data-current-group="true"')
-        elif not current and tier in {"institutional", "meta"}:
-            attrs.append('data-default-open="true"')
-        out.append('<details %s><summary><span>%s</span><em>%d</em></summary><ul>'
-                   % (" ".join(attrs), html.escape(TIER_LABEL.get(tier, tier)), len(arts)))
-        if tier == "investigation":
-            out.append(build_investigation_nav(arts, current))
-        else:
-            for a in arts:
-                cls = ' class="current"' if a["slug"] == current else ""
-                out.append('<li><a%s href="%s.html">%s</a></li>' % (cls, a["slug"], html.escape(a["title"])))
-        out.append("</ul></details>")
+    # two org bands, TRANSPARA above TRANSPARA-AI (DP-20260710 D2, operator
+    # mock): each band renders its own repos block, then its own sections.
+    for org in ORG_ORDER:
+        band = []
+        band.append(build_repo_nav(current_repo, org=org))
+        for tier in ORG_SECTIONS[org]:
+            # retired articles drop from nav but stay reachable by direct link
+            # .get with DEFAULT_ORG mirrors D3's absent-org rule exactly; an
+            # UNKNOWN org can never reach here (article_meta fails the build),
+            # so this is the grandfather default, not an acceptance path.
+            arts = sorted([m for m in META.values()
+                           if m.get("org", DEFAULT_ORG) == org and m["tier"] == tier
+                           and not m.get("retired_on")],
+                          key=lambda m: m["title"].lower())
+            if not arts:
+                continue
+            attrs = ['class="side-group"', 'data-tier="%s"' % html.escape(tier)]
+            if tier == current_tier:
+                attrs.append('data-current-group="true"')
+            elif not current and tier in {"institutional", "meta"}:
+                attrs.append('data-default-open="true"')
+            band.append('<details %s><summary><span>%s</span><em>%d</em></summary><ul>'
+                        % (" ".join(attrs), html.escape(SECTION_LABEL.get(tier, tier)), len(arts)))
+            if tier == "investigation":
+                band.append(build_investigation_nav(arts, current))
+            else:
+                for a in arts:
+                    cls = ' class="current"' if a["slug"] == current else ""
+                    band.append('<li><a%s href="%s.html">%s</a></li>' % (cls, a["slug"], html.escape(a["title"])))
+            band.append("</ul></details>")
+        if not any(band):
+            continue  # an org with no repos and no articles renders no band
+        out.append('<div class="side-org">%s</div>' % html.escape(ORG_LABEL.get(org, org)))
+        out.extend(band)
     out.append("</nav>")
     out.insert(-1, '<div class="sidebar-resizer" role="separator" aria-orientation="vertical" '
                    'aria-label="Resize navigation" aria-valuemin="280" aria-valuemax="560" '
@@ -1763,17 +1798,22 @@ def navbox_investigation_reps(arts):
 
 def build_navbox():
     out = ['<nav class="navbox"><div class="navbox-title">%s — index</div><div class="navbox-body">' % html.escape(SITE_NAME)]
-    for tier in TIER_ORDER:
-        arts = sorted([m for m in META.values()
-                       if m["tier"] == tier and not m.get("retired_on")],
-                      key=lambda m: m["title"].lower())
-        if not arts:
-            continue
-        if tier == "investigation":
-            arts = navbox_investigation_reps(arts)
-        links = " · ".join('<a href="%s.html">%s</a>' % (a["slug"], html.escape(a["title"])) for a in arts)
-        out.append('<div class="navbox-row"><span class="navbox-grp">%s</span><span class="navbox-list">%s</span></div>'
-                   % (html.escape(TIER_LABEL.get(tier, tier)), links))
+    # iterate the full org/section structure so newly-valid Transpara pages
+    # appear here like every other nav surface (CFAR r2); org order matches
+    # the sidebar bands, and the org filter uses the same D3 absent-org rule.
+    for org in ORG_ORDER:
+        for tier in ORG_SECTIONS[org]:
+            arts = sorted([m for m in META.values()
+                           if m.get("org", DEFAULT_ORG) == org and m["tier"] == tier
+                           and not m.get("retired_on")],
+                          key=lambda m: m["title"].lower())
+            if not arts:
+                continue
+            if tier == "investigation":
+                arts = navbox_investigation_reps(arts)
+            links = " · ".join('<a href="%s.html">%s</a>' % (a["slug"], html.escape(a["title"])) for a in arts)
+            out.append('<div class="navbox-row"><span class="navbox-grp">%s</span><span class="navbox-list">%s</span></div>'
+                       % (html.escape(SECTION_LABEL.get(tier, tier)), links))
     out.append('</div></nav>')
     return "".join(out)
 
@@ -2160,6 +2200,16 @@ def ingest_page(status):
         '<section class="ingest-card" data-mode-panel="add">'
         '<h2>Batch ingest</h2>'
         '<form id="ingest-form">'
+        # DP-20260710 D4: every article add names its destination org + section
+        # (intake decision 3 — required for ALL ingests). The selects are UI
+        # convenience only; /api/ingest re-validates fail-closed (422).
+        '<label>Org<select name="org" id="ingest-org" required>'
+        '<option value="">Select org…</option>' + "".join(
+            '<option value="%s">%s</option>' % (html.escape(o), html.escape(ORG_LABEL[o]))
+            for o in ORG_ORDER) +
+        '</select></label>'
+        '<label>Section<select name="section" id="ingest-section" required>'
+        '<option value="">Select section…</option></select></label>'
         '<label>Target article<select name="target_slug" id="target-slug">%s</select></label>'
         # R6/§2.1: the "New investigation" toggle (default OFF) is the ONLY
         # browser page-creation path. Checking it reveals a required name field
@@ -2228,6 +2278,16 @@ def ingest_page(status):
         'var newInv=document.getElementById("new-investigation"),nameRow=document.getElementById("new-investigation-name-row"),nameField=document.getElementById("new-investigation-name");'
         'function syncNewInvestigation(){var on=!!(newInv&&newInv.checked);if(nameRow)nameRow.hidden=!on;if(nameField)nameField.required=on;if(target){target.disabled=on;target.required=!on;}}'
         'if(newInv){newInv.addEventListener("change",syncNewInvestigation);syncNewInvestigation();}'
+        # DP-20260710 D4: the Section options track the chosen Org, from the
+        # same org_structure data the server validates against (client-side
+        # convenience; the server stays the authority).
+        + 'var orgSel=document.getElementById("ingest-org"),secSel=document.getElementById("ingest-section");'
+        + 'var ORG_SECTIONS=%s,SECTION_LABEL=%s;' % (
+            json.dumps(ORG_SECTIONS, sort_keys=True), json.dumps(SECTION_LABEL, sort_keys=True))
+        + 'function fillSections(){if(!orgSel||!secSel)return;var opts=ORG_SECTIONS[orgSel.value]||[];'
+        'secSel.innerHTML="<option value=\\"\\">Select section…</option>"+opts.map(function(t){'
+        'return "<option value=\\""+esc(t)+"\\">"+esc(SECTION_LABEL[t]||t)+"</option>";}).join("");}'
+        'if(orgSel){orgSel.addEventListener("change",fillSections);fillSections();}'
         'form.addEventListener("submit",function(e){e.preventDefault();say("Ingesting...");fetch("/api/ingest",{method:"POST",headers:headers(),body:new FormData(form)})'
         '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(reloadWithResult).catch(function(e){say(e);});});'
         'rebuild.addEventListener("click",function(){say("Refreshing status and rebuilding...");fetch("/api/rebuild",{method:"POST",headers:headers()})'

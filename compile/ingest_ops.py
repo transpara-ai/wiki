@@ -24,6 +24,9 @@ import tempfile
 import urllib.parse
 from html.parser import HTMLParser
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import org_structure  # noqa: E402  # side-effect-free org/section allowlists
+
 import markdown
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -63,6 +66,15 @@ LEDGER_SHAPES = {
     "register": {"ts", "operation", "slug", "source_path", "sha256",
                  "authorized_by", "authorization_sha256", "result",
                  "rebuild"},
+}
+# additive, org+section-aware add rows (DP-20260710 D4): LEDGER_SHAPES stays
+# the REQUIRED key sets; these keys MAY additionally appear on new rows, so
+# historical rows (written before the schema existed) still parse unchanged.
+# The optional set is a PACKAGE — all present or all absent (the route always
+# writes both; an org-only/section-only row is an impossible state and must
+# fail the strict preflight, CFAR r4) — and each must be a non-empty string.
+LEDGER_OPTIONAL_KEYS = {
+    "add": {"org", "section"},
 }
 # manifest rows (frozen raw/inbox/manifest.jsonl + manifest.d/ shards):
 # exact key sets for NEW rows; historical rows are read for source_path only
@@ -356,14 +368,35 @@ def _validate_ledger_row(row, where="ledger row"):
     operation = row.get("operation")
     if operation not in LEDGER_SHAPES:
         raise OpRefused("%s: unknown operation" % where)
-    if set(row) != LEDGER_SHAPES[operation]:
-        raise OpRefused("%s: %s keys must be exactly %s"
-                        % (where, operation, sorted(LEDGER_SHAPES[operation])))
+    required = LEDGER_SHAPES[operation]
+    optional = LEDGER_OPTIONAL_KEYS.get(operation, set())
+    missing = required - set(row)
+    extra = set(row) - required - optional
+    if missing or extra:
+        raise OpRefused("%s: %s keys must be exactly %s (plus optional %s)"
+                        % (where, operation, sorted(required), sorted(optional)))
     if not _valid_ts(row.get("ts")):
         raise OpRefused("%s: ts must be ISO-8601 with timezone" % where)
     _require_row_str(row, ("slug",), where)
     if row["rebuild"] not in ("ok", "failed"):
         raise OpRefused("%s: rebuild must be ok|failed" % where)
+    # optional keys are all-or-nothing (the writer emits the whole package;
+    # a partial row is an impossible state — CFAR r4) and, when present,
+    # must be non-empty strings (additive schema)
+    present_optional = optional & set(row)
+    if present_optional and present_optional != optional:
+        raise OpRefused("%s: optional keys %s must appear together or not at all"
+                        % (where, sorted(optional)))
+    _require_row_str(row, tuple(sorted(present_optional)), where)
+    # the pair, when present, must satisfy the same org/section vocabulary the
+    # route and builder enforce — the strict preflight must not bless a row
+    # every other surface refuses (CFAR r5)
+    if {"org", "section"} <= set(row):
+        sections = org_structure.ORG_SECTIONS.get(row["org"])
+        if sections is None or row["section"] not in sections:
+            raise OpRefused(
+                "%s: org/section (%r, %r) not in the allowed vocabulary"
+                % (where, row["org"], row["section"]))
     if operation == "add":
         if not isinstance(row["sources"], list) or any(
                 not isinstance(s, str) or not s for s in row["sources"]):
