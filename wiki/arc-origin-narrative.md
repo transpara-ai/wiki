@@ -412,7 +412,7 @@ metaphysics or implementation authority).
 | `[[the-meta-graph]]` | The Meta Graph — Layer 12 (Scheme A); system watching itself, emergence detection |
 | `[[the-existence-graph]]` | The Existence Graph — Layer 13; the thing you deploy the other graphs inside |
 
-### Architecture — the entities the system is built from (25)
+### Architecture — the entities the system is built from (28)
 
 The standing components and design objects of the platform/runtime, including the
 basis and north-star entities.
@@ -444,13 +444,16 @@ basis and north-star entities.
 | `[[observability]]` | Observability — the T1–T7 transparency contract; fail-legible by construction |
 | `[[open-weight-llm-routing]]` | Open-Weight LLM Routing — v3.9 `df-model-broker` + Pi selector harness (design phase) |
 | `[[upstream-fork-sync]]` | Upstream Fork Sync — institutional one-way fork sync controller |
+| `[[issue-scan-runner-suite]]` | The Issue-Scan Runner Suite — packaged contracts + fixtures for external runners (merged 2026-07-11) |
+| `[[mark-ready-authority]]` | The Mark-Ready Authority Model — single-use human grant for the draft→ready PR transition (merged 2026-07-11) |
+| `[[skill-dialect-home]]` | The Skill Dialect-Home Convention — features own their skills; claude/codex dialect subfolders (merged 2026-07-12) |
 
-### Arc — the dark-factory chronology and turning points (10)
+### Arc — the dark-factory chronology and turning points (11)
 
 The dated stations of the narrative: the upstream fork, the landscape survey, the
 umbrella, the operative baseline, the candidate doctrine shift, the control-plane
-proof, the diagnosed drift, its correction, the first completed society run, and
-the program plan.
+proof, the diagnosed drift, its correction, the first completed society run, the
+program plan, and the July guardrail cycle's stranded-credit lesson.
 
 | Article | Entity |
 |---|---|
@@ -464,6 +467,7 @@ the program plan.
 | `[[the-reunification]]` | The Reunification Workstream — "one civilization, one business" (opened 2026-06-05) |
 | `[[slice-1-completion]]` | Slice 1 Completion — G-1.2 round 6; first society to finish (2026-06-12) |
 | `[[deployment-arc]]` | The Deployment Arc — program plan from Slice 1 to continuous production (2026-06-09) |
+| `[[credit-stranding-under-branch-protection]]` | Credit Stranding Under Branch Protection — head-delta rule × strict protection; the 23-round fresh-head arc (2026-07-11/12) |
 
 ### Investigation — surveyed landscape and research reports (18)
 
