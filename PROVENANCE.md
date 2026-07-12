@@ -1,6 +1,6 @@
 ---
 title: Civilization Wiki — provenance manifest
-last_updated: 2026-06-24
+last_updated: 2026-07-12
 status: partial — searles, open_brain, Stage 0 source snapshot, and browser inbox scaffold mirrored; open_brain mirror current through 2026-07-12 with a named 2026-06-14→30 gap; generated first_party/upstream_context still incomplete
 authority: reference (the source manifest named in DESIGN.md)
 tiers: [searles, first_party, open_brain, civilization_stage0, browser_inbox, upstream_context]
@@ -27,7 +27,7 @@ This manifest is honest about its own gaps, the way `index.md` is honest about
 deferred articles. The declared tiers do not all have complete local mirrors; the
 table records what is actually on disk this run.
 
-| Tier | `raw/` location | Mirrored? | State on disk (2026-06-24) |
+| Tier | `raw/` location | Mirrored? | State on disk (2026-07-12) |
 |---|---|---|---|
 | `searles` | `raw/searles/` | **Yes** | `all-posts-1.md` present (43 posts) |
 | `first_party` | (read in place — see below) | **No local mirror** | read from `docs/dark-factory`; `raw/transpara/` holds only `.gitkeep` |
@@ -168,7 +168,7 @@ its own nightly re-export.
 | **Date / range** | The committed mirror covers **2026-03-03 → 2026-06-13** and **2026-07-01 → 2026-07-12** (July exported 2026-07-12; month in progress). **2026-06-14 → 2026-06-30 is a named gap** — the July export's source pull reached back only to 06-30. `DESIGN.md` still says "Open Brain starts 3/4"; that is treated here as the design/store-open claim, while 2026-03-03 is the actual first date present in the committed mirror. |
 | **Volume** | **1,663 thoughts on disk** in the committed mirror (1,175 through 2026-06-13 + 488 for 2026-07-01→12). Live `thought_stats` checked 2026-06-21 reported **2,338 total thoughts**; the delta beyond the mirror lives in the June gap and later captures. |
 | **Tier** | `open_brain` |
-| **How the wiki uses it** | Phase-1 source alongside `searles` + `first_party` (`DESIGN.md`: "Phase 1 = searles + first_party + open_brain — the arc itself"). Run-1 reached Open Brain via targeted queries to ground specific arc facts (e.g. the earliest spawn-lifecycle thoughts naming `lovyou-ai-hive`, cited in `wiki/agent.md` / `wiki/hive-governance.md`), and the **bulk dated export is now written to `raw/open-brain/`** (4 monthly dumps, 1,175 thoughts, 2026-03-03 through 2026-06-13). |
+| **How the wiki uses it** | Phase-1 source alongside `searles` + `first_party` (`DESIGN.md`: "Phase 1 = searles + first_party + open_brain — the arc itself"). Run-1 reached Open Brain via targeted queries to ground specific arc facts (e.g. the earliest spawn-lifecycle thoughts naming `lovyou-ai-hive`, cited in `wiki/agent.md` / `wiki/hive-governance.md`), and the **bulk dated export is now written to `raw/open-brain/`** (5 monthly dumps, 1,663 thoughts: 2026-03-03→2026-06-13 plus 2026-07-01→12, with the named June 14→30 gap). |
 
 **Fail-legible notes (open_brain):**
 - **Exported 2026-06-13 and 2026-07-12.** `raw/open-brain/` holds 5 monthly dumps
@@ -196,9 +196,11 @@ its own nightly re-export.
   `https://<SUPABASE_PROJECT_REF>.supabase.co/functions/v1/open-brain-rest/{health,stats,thoughts}`
   returned HTTP 404 from this environment on 2026-06-21. Do not claim REST pagination
   or a catch-up dump until that function is deployed/reachable and smoke-tested.
-- **Catch-up condition.** Updating `raw/open-brain/` after 2026-06-13 requires a
-  paginated/export-capable OpenBrain read path plus the normal secret-scrub gate. This
-  PR corrects provenance; it does not add new raw thought dumps.
+- **Catch-up condition.** The 2026-07 export (wiki#78) shows the MCP `list_thoughts`
+  path suffices for windows under the 1000-item cap; filling the June 14→30 gap and
+  future catch-ups need windowed pulls (or `search_thoughts` recovery) plus the normal
+  secret-scrub gate, with fingerprint attestations landed AHEAD of the corpus per the
+  scanner's base-allowlist CI design (wiki#79).
 - **Secret-scrub gate applies.** Per `DESIGN.md`, nothing enters `raw/` with live
   secrets; the Open Brain export must pass the secret scanner before any commit
   (the platform has a known hardcoded-credentials finding, F-01). This is a

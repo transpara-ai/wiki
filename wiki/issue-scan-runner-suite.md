@@ -16,7 +16,7 @@ confidence:
 
 # The Issue-Scan Runner Suite
 
-**The packaged contract surface between the [[hive-governance|hive]]'s governed issue-scan lifecycle and external runners.** Merged 2026-07-11 as `transpara-ai/hive#266` (closing hive#262), the package pairs a manifest with committed fixtures so that an externally-implemented runner — a process that receives a JSON context on stdin and must return exactly one JSON result on stdout — can be validated *offline* against the same shapes the runtime enforces, via `hive factory validate-issue-scan-runner-suite`.
+**The packaged contract surface between the [[hive-governance|hive]]'s governed issue-scan lifecycle and external runners.** Merged 2026-07-11 as `transpara-ai/hive#266` (closing hive#262), the package pairs a manifest with committed fixtures defining the shapes an externally-implemented runner — a process that receives a JSON context on stdin and must return exactly one JSON result on stdout — must satisfy. What ships today is **offline contract-and-fixture validation**: `hive factory validate-issue-scan-runner-suite` checks the manifest and the synthetic fixtures against the runtime's receipt validators. The package is deliberately an inert scaffold — it contains no runner executables, and the validator neither resolves nor executes the manifest's command placeholders; validating a *live* runner implementation end-to-end remains future work.
 
 ## What the contracts pin down
 
