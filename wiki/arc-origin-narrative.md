@@ -537,15 +537,15 @@ these has an article yet; do not read their absence as absence from the project.
 
 - **The full corpus sweep.** The in-scope corpus (`DESIGN.md` §Corpus scope) — the
   dark-factory doc set (~322 md), the runtime repos' own docs (~696 md), the
-  `df-impl-v11..16` iterations, and the ~1,175-thought Open Brain export — has not
+  `df-impl-v11..16` iterations, and the Open Brain export (1,663 thoughts mirrored as of 2026-07-12; see `PROVENANCE.md`) — has not
   been exhausted. Run-3 compiled the arc spine, Searles philosophy, architecture
   entities, and landscape survey from the doc-side view, not the underlying repo
   source. (The earlier "~8,783 files / 73 repos" figure was a raw count of the whole
   nucbuntu clone dir — ~45 repos of which are Transpara's unrelated product line;
   corrected 2026-06-14.)
 - **`raw/` source tiers only partially mirrored** (`PROVENANCE.md`): `open_brain`
-  (`raw/open-brain/` holds monthly exports for **Mar–Jun 2026**; the full
-  per-thought dump is not committed) and `upstream_context`
+  (`raw/open-brain/` holds monthly exports for **Mar 2026 → Jun 13** plus
+  **Jul 1–12, 2026**, with a named **Jun 14→30 gap**) and `upstream_context`
   (`raw/investigations/<project>/` is empty by design, Phase 2). Investigation-tier
   articles exist *despite* this — compiled from first-party survey, not upstream mirrors.
 - **The `mind-zero` / `mind-zero-five` repo entity and the `eventgraph` repo.**

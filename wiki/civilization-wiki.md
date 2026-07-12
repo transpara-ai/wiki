@@ -50,7 +50,7 @@ Four source tiers, each with its own `raw/` subdirectory and its own provenance 
 |---|---|---|---|
 | `searles` | `raw/searles/` | Yes | `all-posts-1.md` — 43 Matt Searles posts (2026-02-28 → 2026-03-24) |
 | `first_party` | `raw/transpara/` | No local mirror (read in place) | ~322 dark-factory markdown files under `docs/dark-factory/` |
-| `open_brain` | `raw/open-brain/` | Partial — 2026-06.md exported | ~1,175 captured thoughts (design estimate); full dump not yet committed |
+| `open_brain` | `raw/open-brain/` | Partial — five monthly dumps (Mar→Jun 13 + Jul 1–12, 2026; named Jun 14→30 gap) | 1,663 thoughts on disk as of 2026-07-12; `PROVENANCE.md` is authoritative |
 | `upstream_context` | `raw/investigations/` | No — Phase 2, empty by design | Upstream forked-project docs (cited as context, never re-published) |
 | `browser_inbox` | `raw/inbox/` | Yes when used | Local browser-ingested source drops and URL manifest rows awaiting article synthesis |
 
@@ -204,7 +204,7 @@ The wiki inherits the platform's fail-safe-by-default doctrine:
 ## What is deferred
 
 The `index.md` deferred list (Run-2) named:
-- The full corpus sweep (~8,783 files / ~73 repos / ~1,175 thoughts — not yet exhausted).
+- The full corpus sweep (~8,783 files / ~73 repos / ~1,175 thoughts — the `DESIGN.md` design-time figures; not yet exhausted, current mirror counts in `PROVENANCE.md`).
 - `open_brain` and `upstream_context` raw tiers — declared but unmirrored.
 - Granular forward-referenced entities (authority-request, execution-receipt, bounded-runtime, remaining individual thirteen-graphs entries, slice-1-first-reunified-order).
 - The `mind-zero` / `mind-zero-five` repo identity disambiguation.
