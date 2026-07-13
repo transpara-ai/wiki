@@ -144,6 +144,13 @@ def test_raw_page_membership_formula():
     link = t.root / "raw" / "civilization" / "tai-res-2026-009-link-evaluation.md"
     link.parent.mkdir(parents=True, exist_ok=True)
     link.symlink_to(outside)
+    # (n) an OS surrogate-escaped (non-UTF-8) filename -> OUT, never a
+    # render-time crash (CFAR r3)
+    import os as _os
+    _os.mkdir(_os.path.join(_os.fsencode(str(t.root)), b"raw", b"civilization2"))
+    with open(_os.path.join(_os.fsencode(str(t.root)), b"raw", b"civilization2",
+                            b"tai-res-2026-010-\xff-evaluation.md"), "wb") as fh:
+        fh.write(b"bad name")
     t.manifest(rows)
     m = model(t)
     listed = {x["rel"] for _, bucket in m["groups"] for x in bucket}
@@ -356,6 +363,17 @@ def test_raw_page_shared_recorded_identity_diverged_bytes():
     assert not ea.get("identical") and not eb.get("identical"), \
         "diverged twins must never claim identical content"
     assert eb["mismatch"], "the diverged twin carries the mismatch mark"
+    # a COMPUTED identity is not recorded: a rowless TAI-RES member whose
+    # current hash equals a drifted member's RECORDED hash must not be pulled
+    # into a shared-recorded group (CFAR r3)
+    t2 = Tree()
+    tai_bytes = b"tai content"
+    drifted = t2.put("raw/inbox/2026-07-07/t/drifted.md", b"changed later")
+    tai = t2.put("raw/civilization/tai-res-2026-008-q-evaluation.md", tai_bytes)
+    t2.manifest([file_row(drifted, tai_bytes)])  # recorded H == tai's computed H
+    m2 = model(t2)
+    assert not entry(m2, tai).get("shared_recorded"), \
+        "computed identity must not join recorded groups"
     print("ok test_raw_page_shared_recorded_identity_diverged_bytes")
 
 
@@ -540,6 +558,12 @@ def test_raw_page_manifest_rejection_lanes():
     m2 = model(t2)
     assert entry(m2, kept) is not None, "valid neighbor line must survive"
     assert sum(1 for a in m2["anomalies"] if "undecodable manifest line" in a) == 1
+    # a whitespace-only FINAL record (no trailing LF) is a real blank-line
+    # anomaly, not the trailing-newline sentinel (CFAR r3)
+    t3 = Tree()
+    (t3.root / "raw" / "inbox" / "manifest.jsonl").write_bytes(good + b"\n   ")
+    m3 = model(t3)
+    assert sum(1 for a in m3["anomalies"] if "blank manifest line" in a) == 1
     print("ok test_raw_page_manifest_rejection_lanes")
 
 

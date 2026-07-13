@@ -1203,8 +1203,11 @@ def raw_area_manifest_rows(root):
         # errors="replace" would coerce it into a "valid" row that could then
         # confer membership (CFAR r2) — while valid neighbor lines survive.
         raw_lines = blob.split(b"\n")
-        if raw_lines and not raw_lines[-1].strip():
-            raw_lines = raw_lines[:-1]  # trailing newline, not a blank data line
+        if raw_lines and raw_lines[-1] == b"":
+            # ONLY the exactly-empty sentinel a trailing \n produces — a
+            # whitespace-only final record is a real blank-line anomaly and
+            # must not be silently dropped (CFAR r3)
+            raw_lines = raw_lines[:-1]
         for lineno, raw_line in enumerate(raw_lines, start=1):
             try:
                 line = raw_line.decode("utf-8")
@@ -1277,6 +1280,11 @@ def raw_area_documents(root, file_rows_by_path):
         except Exception:
             continue
         rel = str(path.relative_to(root))
+        try:  # an OS surrogate-escaped (non-UTF-8) filename cannot render —
+            # it would abort the build at write time; not a member (CFAR r3)
+            rel.encode("utf-8")
+        except UnicodeEncodeError:
+            continue
         if raw_area_control(rel):
             continue
         base = rel.rsplit("/", 1)[-1]
@@ -1425,6 +1433,9 @@ def raw_area_model(root, article_refs=None):
             len(twins), ", ".join(t["rel"] for t in twins)))
     by_recorded = {}
     for entry in entries:
+        if entry["id_source"] == "computed":
+            continue  # a computed identity is not RECORDED — it must never
+            # pull an unrelated member into a shared-recorded group (CFAR r3)
         by_recorded.setdefault(entry["identity"], []).append(entry)
     for _, twins in sorted(by_recorded.items()):
         if len(twins) < 2:
