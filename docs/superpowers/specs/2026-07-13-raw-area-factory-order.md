@@ -1,7 +1,7 @@
 ---
 doc_id: FO-WIKI-RAW-AREA
-version: "0.7.2"
-status: "amended post-PR-review-r4 (wiki#80) — the CONFIRMED READING remains the v0.1.0 object (blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86, confirmed verbatim 2026-07-13); Michael's explicit byte-confirmation of THIS v0.7.2 file is the NAMED PRECONDITION for Human Design Review entry (supersedes every prior pending status)"
+version: "0.7.3"
+status: "amended post-PR-review-r5 (wiki#80) — the CONFIRMED READING remains the v0.1.0 object (blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86, confirmed verbatim 2026-07-13); Michael's explicit byte-confirmation of THIS FILE at its exact blob is the NAMED PRECONDITION for Human Design Review entry (supersedes every prior pending status)"
 factory: transpara-ai/wiki
 author_family: claude
 ---
@@ -10,20 +10,11 @@ author_family: claude
 
 > A visible, rendered "raw area" on the wiki: one global page listing every
 > raw ingested research file, organized by ingestion date, each entry showing
-> a unique identifier distinct from the document's original name.
-> **v0.6.0** repairs CFADA-r4's findings: R1 no longer narrows browser
-> ingests to Markdown (the upload machinery preserves ANY suffix —
-> `<stem>-<sha12><suffix>`, `ingest_server.py:634`–`:666` — so a manifested
-> `.txt` upload is research too); R2's tie rule is a total order; R3
-> distinguishes shared RECORDED identity from identical CURRENT content;
-> R6's reader contract is stated as design-local requirements derived from
-> the production constructors. Intent unchanged from the confirmed v0.1.0
-> reading; deltas in §5. **v0.6.1** added the metadata-visibility
-> widening record (§5 item 8) and restored the three parse-level rejection
-> lanes (CFADA-r5). **v0.6.2** was a reference-consistency repair
-> (CFADA-r6). **v0.7.0** repaired the two wiki#80 PR-review r1 findings: the
-> `raw` route reserved in the creation guard (denial-only §2 carve-out) and
-> the within-group entry order made total via the source-path secondary key.
+> a unique identifier distinct from the document's original name. Intent is
+> unchanged from the confirmed v0.1.0 reading. Amended v0.2.0 → v0.7.3
+> across CFADA rounds 1–7 and wiki#80 PR-review rounds 1–5: the cumulative
+> delta record is §5; the full version chain with exact blobs is §4. This
+> header carries no per-version narrative (so it can never go stale).
 
 ## 0. Source of intent (immutable citations)
 
@@ -77,7 +68,11 @@ author_family: claude
   original name as two distinct fields. Identifier chain: (1) the winning
   manifest row's `sha256` (recorded ingest identity); (2) else the
   filename's sha12; (3) else the file's content sha256 computed at build,
-  labeled "computed". 12-hex display prefixes; prefix collisions between
+  labeled "computed". For a member admitted solely by the upload-filename
+  grammar with no manifest row, the "original name" field is the
+  deterministic reconstruction `<stem><suffix>` (the sha12 infix stripped),
+  visibly labeled "reconstructed from stored name" — a hashed storage
+  basename is never presented as an original name. 12-hex display prefixes; prefix collisions between
   distinct identities expand (64-hex sources) or append a labeled computed
   disambiguator (sha12 sources). **Shared recorded identity ≠ identical
   current content:** entries whose CURRENT computed hashes match render the
@@ -90,7 +85,11 @@ author_family: claude
   diverged twins, and the mismatch mark + count.
 - **R4 — Entries link forward and back.** Forward to the raw file (unservable
   members degrade visibly); back to **every topic page that references it** —
-  active plainly, retired included and marked "(retired)". Unreferenced →
+  active pages as live links; retired pages as visibly marked NON-LINK
+  references ("(retired)" text, no anchor) — the site's fail-closed link
+  policy (`link_state` renders every retired target non-live;
+  `gate_internal_links` suppresses such anchors) is conformed to, not
+  changed. Unreferenced →
   "unassigned — no topic references". Reference domain: `raw_documents` ∪
   `superseded_raw_documents` ∪ `superseded_sources` ∪ class refs in
   `sources`. Superseded marking: the three article-side Topic Details edges
@@ -101,8 +100,9 @@ author_family: claude
   variants; article index rows, investigation nav semantics, and the bottom
   navbox unchanged. **The `raw` route is reserved against future
   article-slug collisions:** the page-creation guard's collision surface
-  gains a constant reserved generated-route slug set (containing at least
-  `raw`) so `subject_absent("Raw")` refuses — a DENIAL-ONLY addition (it can
+  gains a constant reserved generated-route slug set of EXACTLY {`raw`}
+  (widening it requires separate authorization) so `subject_absent("Raw")`
+  refuses — a DENIAL-ONLY addition (it can
   only refuse more, never permit more). The `raw` route also joins the
   existing builder-page classification (`BUILDER_PAGES`, which already
   names `sources`/`ingest`/`repos`) so article links to `raw.html` gate as
@@ -173,11 +173,12 @@ two-step if any pin needed; semver + blob-SHA truth rules.
   v0.5.0 CFADA-r3 (blob `9c2bc7e9…`) → v0.6.0 CFADA-r4 (blob `7fc03d97…`)
   → v0.6.1 CFADA-r5 (blob `c8c51d64…`) → v0.6.2 CFADA-r6 (blob
   `13786b7c…`) → v0.7.0 PR-review r1 (blob `dda6c425…`) → v0.7.1
-  PR-review r2 (blob `f5825535…`) → **v0.7.2 PR-review r4 (this file)**.
-- **Michael's explicit confirmation of the v0.7.2 bytes is a named
+  PR-review r2 (blob `f5825535…`) → v0.7.2 PR-review r4 (blob
+  `76361070…`) → **v0.7.3 PR-review r5 (this file)**.
+- **Michael's explicit confirmation of THIS FILE'S exact blob is a named
   precondition for Human Design Review entry.** Fail closed.
 
-## 5. v0.1.0 → v0.7.2 delta record (what the byte-confirmation covers)
+## 5. v0.1.0 → v0.7.3 delta record (what the byte-confirmation covers)
 
 1. **R1:** membership = `regular ∧ not-control ∧ (evidence ∨ TAI-RES)`;
    evidence = valid row ∨ upload grammar `<stem>-<sha12><suffix>` (ANY
@@ -189,8 +190,10 @@ two-step if any pin needed; semver + blob-SHA truth rules.
 3. **R3:** identity chain + computed fallback; per-source collision
    handling; recorded-vs-current identity distinguished — "identical
    content" only when current hashes match (CFADA-r1 F4, r2 F1/F6, r4 F3).
-4. **R4:** retired back-links included+marked; four-field union; four
-   supersession edges (CFADA-r1 F3, r2 F3).
+4. **R4:** retired references included as visibly marked NON-LINK text —
+   conforming to the site's fail-closed link policy (PR-review r5; replaces
+   the r2-era live-anchor wording); four-field union; four supersession
+   edges (CFADA-r1 F3, r2 F3).
 5. **R5:** shared-nav delta named exactly (CFADA-r1 F8).
 6. **R6:** design-local reader contract derived from production
    constructors (not overclaimed as "the writer's contract"); rendered-field
@@ -198,6 +201,17 @@ two-step if any pin needed; semver + blob-SHA truth rules.
    inspection strengthened beyond imports (CFADA-r3 F2, r4 F2/F5); render
    smoke (r1 F7); fixture scan constraint.
 7. **§3:** measurements corrected cumulatively.
+8. **Metadata-visibility widening (v0.6.1, CFADA-r5 F1) — for explicit HDR
+   attention:** because ingestion evidence admits ANY suffix, a legitimate
+   non-servable-suffix upload (e.g. `report-<sha12>.bin`) appears on the Raw
+   Area by name/date/identifier with a visibly-unserved (non-clickable)
+   entry, while the Source Index — which lists only servable extensions —
+   omits it. The Raw Area therefore INTENTIONALLY widens metadata visibility
+   for evidence-backed ingests relative to the Source Index; file CONTENT
+   serving is unchanged (the serving allowlist is untouched). This is
+   distinct from the crafted-evidence residual (deliberately staged names or
+   rows), which remains a named residual risk.
+
 9. **Route reservation + total entry order (v0.7.0, wiki#80 PR-review
    findings):** the `raw` route is reserved in the creation guard's
    collision surface (denial-only; §2 carve-out) so a future investigation
@@ -211,17 +225,12 @@ two-step if any pin needed; semver + blob-SHA truth rules.
    `sources`/`ingest`/`repos` (equally unreserved in the creation guard
    today) is a named follow-up order, deliberately NOT folded into this
    one.
-8. **Metadata-visibility widening (v0.6.1, CFADA-r5 F1) — for explicit HDR
-   attention:** because ingestion evidence admits ANY suffix, a legitimate
-   non-servable-suffix upload (e.g. `report-<sha12>.bin`) appears on the Raw
-   Area by name/date/identifier with a visibly-unserved (non-clickable)
-   entry, while the Source Index — which lists only servable extensions —
-   omits it. The Raw Area therefore INTENTIONALLY widens metadata visibility
-   for evidence-backed ingests relative to the Source Index; file CONTENT
-   serving is unchanged (the serving allowlist is untouched). This is
-   distinct from the crafted-evidence residual (deliberately staged names or
-   rows), which remains a named residual risk.
+10. **PR-review r5 set (v0.7.3):** retired references non-link (item 4);
+    rowless upload-grammar members render a labeled reconstructed original
+    name, never the hashed storage basename (R3); R5's own sentence requires
+    EXACTLY {`raw`}; all self-referential byte-confirmations are
+    version-agnostic ("this file's exact blob").
 
-This FO grants nothing and authorizes no code. Next: packet v0.7.3 → IADA r11
-→ codex re-review at the PR head → Michael's v0.7.0 byte-confirmation +
-Human Design Review.
+This FO grants nothing and authorizes no code. Next: the packet bound to
+this blob → IADA → codex re-review at the PR head → Michael's confirmation
+of THIS FILE'S exact blob + Human Design Review.

@@ -1,15 +1,15 @@
 ---
 doc_id: DF-DESIGN-WIKI-RAW-AREA
-version: "0.7.3"
-status: "draft — wiki#80 PR-review r4 repairs applied (YAML-safe frontmatter; the reservation set is exactly {raw}); pre-IADA-r11"
+version: "0.7.4"
+status: "draft — wiki#80 PR-review r5 repairs applied (retired refs non-link per site policy; rowless original-name reconstruction; R5 exact-set; version-agnostic self-refs); pre-IADA-r12"
 factory: transpara-ai/wiki
 author_family: claude
-factory_order: "FO-WIKI-RAW-AREA v0.7.2 (blob 7636107071cabe9e90e8c4b956463961c6cd92d4; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; v0.7.2 byte-confirmation by Michael is a NAMED PRECONDITION for stage-6 entry)"
+factory_order: "FO-WIKI-RAW-AREA v0.7.3 (blob 8557566c99b6cfc0684f75eb8ecdf1aec9035376; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; byte-confirmation of the BOUND FO BLOB by Michael is a NAMED PRECONDITION for stage-6 entry)"
 ---
 
 # Raw Area — TLC Design Packet
 
-> Answers FO-WIKI-RAW-AREA v0.7.2 (R1–R6) against measured live state at
+> Answers FO-WIKI-RAW-AREA v0.7.3 (R1–R6) against measured live state at
 > `transpara-ai/wiki` origin/main `7bf55384da70a30f636ad661bb5129d704775180`.
 > One new generated tools page, `raw.html`, in the Sources/Ingest pattern.
 > Builder stays no-LLM/no-network. This packet authorizes nothing.
@@ -45,6 +45,13 @@ factory_order: "FO-WIKI-RAW-AREA v0.7.2 (blob 7636107071cabe9e90e8c4b956463961c6
 > quoted, YAML-parseable scalar (the investigation packet's own r2 lesson,
 > re-learned), and the reservation set is EXACTLY {`raw`} for this order —
 > a wider set now requires separate authorization (FO v0.7.2 carve-out 1).
+> **v0.7.4** repairs the r5 PR-review findings: retired references are
+> marked NON-LINK text conforming to the site's fail-closed link policy
+> (`link_state`/`gate_internal_links` verified); rowless upload-grammar
+> members get a labeled reconstructed original name, never the hashed
+> storage basename; FO R5's own sentence now requires exactly {`raw`}; and
+> every self-referential byte-confirmation is version-agnostic ("this
+> file's exact blob") so the stale-version class cannot recur.
 
 ## 1. Survey — measured, not assumed (file:line at main `7bf5538`)
 
@@ -141,8 +148,12 @@ factory_order: "FO-WIKI-RAW-AREA v0.7.2 (blob 7636107071cabe9e90e8c4b956463961c6
   (2) else filename sha12; (3) else computed content sha256 labeled
   "computed" (4 of today's 20) — 12-hex prefix display; prefix collisions
   between distinct identities expand (64-hex sources) or append a labeled
-  computed disambiguator (sha12 sources); and **original name** (row
-  `original_name` else basename). **Recorded ≠ current:** the "identical
+  computed disambiguator (sha12 sources); and **original name** — the row's
+  `original_name` when one exists; for a rowless upload-grammar member the
+  deterministic reconstruction `<stem><suffix>` (sha12 infix stripped),
+  visibly labeled "reconstructed from stored name"; plain basename only for
+  lane-(b) members (their names are authored, not hashed) — a hashed
+  storage basename is never presented as an original name (FO R3). **Recorded ≠ current:** the "identical
   content ×N" cross-reference renders ONLY when current computed hashes
   match; entries sharing a recorded identity with diverged current bytes
   render a "shared recorded identity" note plus their own "modified since
@@ -156,8 +167,12 @@ factory_order: "FO-WIKI-RAW-AREA v0.7.2 (blob 7636107071cabe9e90e8c4b956463961c6
   in the article build loop from `article_frontmatter` bytes — four-field
   union (`raw_documents` ∪ `superseded_raw_documents` ∪ `superseded_sources`
   ∪ class refs in `sources`); EVERY referencing topic page lists: active
-  plainly, retired marked "(retired)"; unreferenced → "unassigned — no topic
-  references". Supersession — four edges (three article-side incl.
+  pages as live links; retired pages as visibly marked NON-LINK references
+  ("(retired)" text, no anchor) — conforming to the site's fail-closed link
+  policy (`link_state`, `ingest_ops.py:563`, renders every retired target
+  non-live; `gate_internal_links`, `build_site.py:800`, suppresses such
+  anchors; this order changes no link policy); unreferenced → "unassigned —
+  no topic references". Supersession — four edges (three article-side incl.
   `supersedes:` annotations; valid rows' `supersedes` as the named
   extension). Anomalies footer + one warning line each: absent targets;
   rejected rows (per D5 lane); URL rows (counted); prefix collisions;
@@ -204,7 +219,9 @@ factory_order: "FO-WIKI-RAW-AREA v0.7.2 (blob 7636107071cabe9e90e8c4b956463961c6
   6. `test_raw_page_manifest_date_beats_inbox_dir_date`
   7. `test_raw_page_unknown_date_falls_safe`
   8. `test_raw_page_shard_manifest_rows_are_read`
-  9. `test_raw_page_identity_chain_and_labels`
+  9. `test_raw_page_identity_chain_and_labels` — incl. the rowless
+     upload-grammar case: original name shown as the labeled
+     reconstruction, never the hashed storage basename
   10. `test_raw_page_prefix_collision_disambiguates` — cases: (a) 64-hex
       sources expand; (b) sha12 sources append the labeled computed
       disambiguator; both surface anomalies
@@ -218,7 +235,8 @@ factory_order: "FO-WIKI-RAW-AREA v0.7.2 (blob 7636107071cabe9e90e8c4b956463961c6
       member carries an href; (b) an unservable-suffix member degrades to
       the visible unserved style
   15. `test_raw_page_backlink_union_all_four_fields`
-  16. `test_raw_page_retired_backlinks_marked`
+  16. `test_raw_page_retired_backlinks_marked` — the retired reference
+      renders as marked text with NO anchor element (policy-conformant)
   17. `test_raw_page_unreferenced_file_marked_unassigned`
   18. `test_raw_page_superseded_marking_all_edges` — four named edge cases
   19. `test_raw_page_manifest_rejection_lanes` — named cases: **parse-level
@@ -281,7 +299,7 @@ parameterized cases all passing and individually reported); risk per row.
 | AC-T1 | D6.1 | entry set == formula enumeration, both directions | med |
 | AC-T2 | D6.2 | membership formula: all nine named cases | high |
 | AC-T3 | D6.3 | groups newest-first | low |
-| AC-T4 | D6.4 | within-group order by original name | low |
+| AC-T4 | D6.4 | within-group order total: (original name, source path) | low |
 | AC-T5 | D6.5 | duplicate-row winner total order: all four named cases + tie surfacing | med |
 | AC-T6 | D6.6 | manifest date beats inbox-dir date | med |
 | AC-T7 | D6.7 | unknown-date fail-safe group | med |
@@ -293,7 +311,7 @@ parameterized cases all passing and individually reported); risk per row.
 | AC-T13 | D6.13 | mismatch mark + footer count | med |
 | AC-T14 | D6.14 | forward links serve; unservable degrades visibly | med |
 | AC-T15 | D6.15 | back-link union covers all four fields | med |
-| AC-T16 | D6.16 | retired back-links marked, never omitted | med |
+| AC-T16 | D6.16 | retired references marked, non-link, never omitted | med |
 | AC-T17 | D6.17 | unreferenced members carry the explicit note | low |
 | AC-T18 | D6.18 | each of the four supersession edges marks; none hides | med |
 | AC-T19 | D6.19 | every rejection lane rejects+surfaces; blank-optional rows accepted | high |
@@ -302,7 +320,7 @@ parameterized cases all passing and individually reported); risk per row.
 | AC-T22 | D6.22 | one warning line per anomaly lane | low |
 | AC-T23 | D6.23 | rendered-field escaping incl. `note`/`mode` never emitted | med |
 | AC-T24 | D6.24 | exactly the named nav delta and no other | low |
-| AC-T25 | D6.25 | reserved routes refuse creation; the addition is denial-only | high |
+| AC-T25 | D6.25 | the reserved set equals exactly {`raw`}; the reserved name refuses creation; denial-only control case | high |
 | AC-T26 | D6.26 | `raw.html` classifies as a builder page for link gating | med |
 | AC-S1 | D7 | `raw.html` in the render-smoke target set and green | med |
 | AC-I1 | inspection | no network-capable call at the PR head: import sweep AND call-site sweep (`socket`, `http.client`, `urllib`, `requests`, subprocess-to-network tools) over the diff, recorded in review evidence | med |
@@ -352,8 +370,8 @@ parameterized case — ⇒ not satisfied. Default deny.
   class fix is a named follow-up order; this packet only refuses to add a
   fourth instance. Their LINK classification is already handled
   (`BUILDER_PAGES`), and `raw` joins it here.
-- **FO v0.7.2 byte-confirmation pending:** blob
-  `7636107071cabe9e90e8c4b956463961c6cd92d4` — NAMED PRECONDITION for
+- **Byte-confirmation of the bound FO pending:** the frontmatter's exact
+  FO blob (`8557566c99b6cfc0684f75eb8ecdf1aec9035376`) — NAMED PRECONDITION for
   stage-6 entry.
 
 ## 6. Non-authorizations
@@ -363,4 +381,4 @@ ingest-op change beyond the two named FO §2 carve-outs (reserved-route
 denial set; the single additive `BUILDER_PAGES` entry)
 (the reader contract is design-local; strengthening `ingest_ops` would be
 its own order), no `raw/**` moves, no scope beyond
-FO-WIKI-RAW-AREA v0.7.2 R1–R6.
+the bound FO's R1–R6.
