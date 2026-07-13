@@ -374,8 +374,10 @@ accepted 2026-06-12). Within it:
 
 ## Article index
 
-98 articles compiled, grouped by tier. Tier is taken verbatim from each article's
-frontmatter.
+98 articles indexed below — this narrative's curated index as of the 2026-07-13
+July reconciliation, a subset of the live corpus (the front page's auto-derived
+count, 108 at this reconciliation, is authoritative). Tier is taken verbatim
+from each article's frontmatter.
 
 ### Foundational — the Searles source philosophy (27)
 
