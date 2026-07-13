@@ -18,6 +18,7 @@ test("INC-001 operational wiki pages render locally", async ({ page }) => {
     ["sakana-ai-adjacent-landscape.html", "Sakana AI Adjacent Technologies and Organisations"],
     ["hermes-agent.html", "Hermes Agent"],
     ["sources.html", "Source Index"],
+    ["raw.html", "Raw Area"],
     ["ingest.html", "Wiki Source Ingest"],
     ["repos.html", "Transpara-AI Repos"],
     ["repo-hive.html", "hive repository"],

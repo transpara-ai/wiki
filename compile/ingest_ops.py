@@ -47,7 +47,7 @@ MAX_QUARANTINE_BYTES = secret_scan.MAX_BLOB_BYTES
 MAX_AUTH_WINDOW_SECONDS = 24 * 3600
 EDGE_STATES_VOCAB = ("valid", "cleanly-removed", "dangling-pending")
 EDGE_ENTRY_KEYS = {"state", "since", "reason", "queued", "enqueued_at"}
-BUILDER_PAGES = {"repos", "sources", "ingest", "civilization-arc",
+BUILDER_PAGES = {"repos", "sources", "ingest", "raw", "civilization-arc",
                  "civilization_arc"}
 # wiki/*.md-backed slugs the builder ALSO regenerates as a whole page, so they
 # must never be retired as a tombstone (Remove would be reanimated on rebuild)
