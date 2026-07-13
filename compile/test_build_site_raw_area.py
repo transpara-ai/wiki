@@ -591,6 +591,33 @@ def test_raw_page_absent_manifest_target_surfaced():
     print("ok test_raw_page_absent_manifest_target_surfaced")
 
 
+def test_raw_page_anomaly_text_is_sink_safe():
+    # anomalies must be one-line, control-free, and UTF-8-encodable at BOTH
+    # sinks (terminal warning lines and the rendered page) — CFAR r4
+    t = Tree()
+    member = t.put("raw/inbox/2026-07-07/t/doc.md", b"x")
+    rows = [file_row(member, b"x"),
+            # a valid-shape row whose absent source_path carries \n and ESC
+            file_row("raw/inbox/2026-07-07/t/tricky\npath-\x1b[31m.md", b"y")]
+    t.manifest(rows)
+    # a malformed shard whose FILENAME has an undecodable POSIX byte: its
+    # container label enters the anomaly text as surrogates
+    import os as _os
+    shard_dir = _os.path.join(_os.fsencode(str(t.root)), b"raw", b"inbox", b"manifest.d")
+    with open(_os.path.join(shard_dir, b"bad-\xff-name.jsonl"), "wb") as fh:
+        fh.write(b"{malformed\n")
+    m = model(t)
+    joined = "\n".join(m["anomalies"])
+    assert "\x1b" not in joined and all(
+        "\n" not in a for a in m["anomalies"]), "control chars must be escaped"
+    joined.encode("utf-8")  # no lone surrogates survive to the sinks
+    html_page = site.raw_page({"fresh": True, "text": ""}, m)
+    html_page.encode("utf-8")  # the page stays writable
+    assert any("recorded but absent" in a for a in m["anomalies"])
+    assert any("unreadable manifest line" in a for a in m["anomalies"])
+    print("ok test_raw_page_anomaly_text_is_sink_safe")
+
+
 def test_raw_page_anomaly_warnings_emitted():
     # main() prints exactly one "raw-area warning:" line per model anomaly;
     # this asserts the 1:1 contract's substrate — one anomaly entry per

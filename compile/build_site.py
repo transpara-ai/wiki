@@ -1115,6 +1115,23 @@ RAW_AREA_INBOX_DATE_RE = re.compile(r"^raw/inbox/(\d{4}-\d{2}-\d{2})/.")
 RAW_AREA_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
+def raw_area_printable(text):
+    """Anomaly strings cross two sinks — terminal warning lines and the
+    rendered page. Backslash-escape C0 controls, DEL, and lone surrogates so
+    a hostile filename or manifest value can neither crash UTF-8 encoding at
+    either sink nor forge extra one-per-anomaly warning lines (CFAR r4)."""
+    out = []
+    for ch in text:
+        code = ord(ch)
+        if code < 32 or code == 127:
+            out.append("\\x%02x" % code)
+        elif 0xD800 <= code <= 0xDFFF:
+            out.append("\\u%04x" % code)
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
 def _raw_area_pairs_no_dup(pairs):
     seen = set()
     for key, _ in pairs:
@@ -1481,7 +1498,9 @@ def raw_area_model(root, article_refs=None):
         ordered.append(None)
     return {
         "groups": [(g, groups[g]) for g in ordered],
-        "anomalies": anomalies,
+        # one chokepoint for both sinks: every anomaly is one-line,
+        # control-free, and encodable before it can reach print or the page
+        "anomalies": [raw_area_printable(a) for a in anomalies],
         "url_rows": url_rows,
         "member_count": len(entries),
     }
