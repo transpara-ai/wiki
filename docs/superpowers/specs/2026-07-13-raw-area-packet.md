@@ -1,15 +1,15 @@
 ---
 doc_id: DF-DESIGN-WIKI-RAW-AREA
-version: 0.6.2
-status: draft — CFADA-r6 repair applied (reference consistency); pre-IADA-r7
+version: 0.7.0
+status: draft — wiki#80 PR-review repairs applied (route reservation, total entry order); pre-IADA-r8
 factory: transpara-ai/wiki
 author_family: claude
-factory_order: FO-WIKI-RAW-AREA v0.6.2 (blob 13786b7ce2b70f01c6cc1dbc1dea113c9b028bf2; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; v0.6.2 byte-confirmation by Michael is a NAMED PRECONDITION for stage-6 entry)
+factory_order: FO-WIKI-RAW-AREA v0.7.0 (blob dda6c425e9a593e27629b81bb38e5259452feb26; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; v0.7.0 byte-confirmation by Michael is a NAMED PRECONDITION for stage-6 entry)
 ---
 
 # Raw Area — TLC Design Packet
 
-> Answers FO-WIKI-RAW-AREA v0.6.2 (R1–R6) against measured live state at
+> Answers FO-WIKI-RAW-AREA v0.7.0 (R1–R6) against measured live state at
 > `transpara-ai/wiki` origin/main `7bf55384da70a30f636ad661bb5129d704775180`.
 > One new generated tools page, `raw.html`, in the Sources/Ingest pattern.
 > Builder stays no-LLM/no-network. This packet authorizes nothing.
@@ -27,9 +27,11 @@ factory_order: FO-WIKI-RAW-AREA v0.6.2 (blob 13786b7ce2b70f01c6cc1dbc1dea113c9b0
 > carried to HDR via FO §5 item 8 (F1); and the three parse-level rejection
 > lanes restored to D5/D6.19 with named cases (F2) — structure, bijection,
 > and the 30-criterion gate unchanged.
-> **v0.6.2** is the CFADA-r6 reference-consistency repair: the packet binds
-> the corrected FO v0.6.2 blob and every self-reference names the current
-> version; no design content changed.
+> **v0.6.2** was the CFADA-r6 reference-consistency repair.
+> **v0.7.0** repairs the two wiki#80 PR-review findings: the `raw` route is
+> reserved in the creation guard's collision surface (denial-only FO §2
+> carve-out) with a guard test, and within-group ordering gains the
+> source-path secondary key making entry order total on the live corpus.
 
 ## 1. Survey — measured, not assumed (file:line at main `7bf5538`)
 
@@ -110,7 +112,8 @@ factory_order: FO-WIKI-RAW-AREA v0.6.2 (blob 13786b7ce2b70f01c6cc1dbc1dea113c9b0
   container filename descending; then line number descending; then canonical
   row digest (`sha256` of the canonical-JSON row). Any tie past the first
   key surfaces as an anomaly. Groups newest-first; entries within a group by
-  original name.
+  (original name, source path) — total even for duplicate original names
+  (live: two 2026-07-07 entries share `original_name`).
 - **D3 — Identity display; recorded vs current.** Fields per entry:
   **identifier** — (1) winning row `sha256` (recorded ingest identity);
   (2) else filename sha12; (3) else computed content sha256 labeled
@@ -168,7 +171,9 @@ factory_order: FO-WIKI-RAW-AREA v0.6.2 (blob 13786b7ce2b70f01c6cc1dbc1dea113c9b0
      `.gitkeep`); (h) control path WITH crafted evidence OUT (control
      precedence); (i) non-md non-evidence stray OUT
   3. `test_raw_page_groups_by_date_newest_first`
-  4. `test_raw_page_entries_order_by_original_name_within_group`
+  4. `test_raw_page_entries_order_total_within_group` — named cases:
+     (a) original-name primary order; (b) the duplicate-original-name pair
+     (live shape) orders by source path deterministically
   5. `test_raw_page_duplicate_row_winner_total_order` — named cases:
      (a) later `ingested_at` wins; (b) equal instant across containers →
      shard over base, then filename desc; (c) equal instant same container →
@@ -211,11 +216,15 @@ factory_order: FO-WIKI-RAW-AREA v0.6.2 (blob 13786b7ce2b70f01c6cc1dbc1dea113c9b0
       `source_path` escapes; (c) markup in `source_url` escapes; (d) `note`
       and `mode` values never appear in the rendered page
   24. `test_raw_page_single_nav_entry_both_variants`
+  25. `test_raw_route_reserved_in_creation_guard` — `subject_absent("Raw")`
+      (and each reserved-route name) returns False after the reserved-set
+      addition; a control name unaffected by the set still creates (the
+      addition is denial-only)
 - **D7 — File plan.** EDIT `compile/build_site.py` (membership formula,
   reader, folds, `raw_page()`, write at `:2722` block, one anchor per shared
   top-links variant); ADD `compile/test_build_site_raw_area.py` (24 named
   tests); EDIT `tests/inc001-render.spec.js` (add `raw.html`); EDIT
-  `package.json` (wire test module). UNTOUCHED: `ingest_server.py`,
+  `package.json` (wire test module). UNTOUCHED: `ingest_server.py` beyond the single carve-out row above,
   `ingest_ops.py`, `secret_scan.py`, `sources_page`/`ingest_page` bodies,
   article/investigation nav semantics, navbox, arc/board/front page, all
   `raw/**` bytes.
@@ -251,6 +260,7 @@ parameterized cases all passing and individually reported); risk per row.
 | AC-T22 | D6.22 | one warning line per anomaly lane | low |
 | AC-T23 | D6.23 | rendered-field escaping incl. `note`/`mode` never emitted | med |
 | AC-T24 | D6.24 | exactly the named nav delta and no other | low |
+| AC-T25 | D6.25 | reserved routes refuse creation; the addition is denial-only | high |
 | AC-S1 | D7 | `raw.html` in the render-smoke target set and green | med |
 | AC-I1 | inspection | no network-capable call at the PR head: import sweep AND call-site sweep (`socket`, `http.client`, `urllib`, `requests`, subprocess-to-network tools) over the diff, recorded in review evidence | med |
 | AC-I2 | inspection | no new subprocess use | med |
@@ -259,10 +269,11 @@ parameterized cases all passing and individually reported); risk per row.
 | AC-I5 | inspection | colors via existing custom properties only | low |
 
 **FO trace:** R1 → AC-T1, T2 · R2 → AC-T3–T8 · R3 → AC-T9–T13 ·
-R4 → AC-T14–T18, T20–T23 · R5 → AC-T24 · R6 → AC-T19, AC-S1, AC-I1–I5.
+R4 → AC-T14–T18, T20–T23 · R5 → AC-T24, AC-T25 · R6 → AC-T19, AC-S1,
+AC-I1–I5.
 
 **Gate satisfied-only-when (allowlist):** the code PR is satisfied only when
-ALL thirty criteria (24 tests + 1 spec-edit + 5 inspections) are evidenced at
+ALL thirty-one criteria (25 tests + 1 spec-edit + 5 inspections) are evidenced at
 the exact PR head. Any unproven criterion — including any single named
 parameterized case — ⇒ not satisfied. Default deny.
 
@@ -292,13 +303,19 @@ parameterized case — ⇒ not satisfied. Default deny.
 - **"Date unknown" may be empty on today's corpus** — fixture-proven anyway.
 - **Class-concept coupling** to `is_raw_ingested_research` where evidence
   lanes also match (deliberate, named).
-- **FO v0.6.2 byte-confirmation pending:** blob
-  `13786b7ce2b70f01c6cc1dbc1dea113c9b028bf2` — NAMED PRECONDITION for
+- **Pre-existing reserved-route class:** `sources`/`ingest`/`repos` routes
+  are equally unreserved today (an investigation named "Sources" would
+  collide the same way), and tool-route links are unclassified in
+  `canonical_article_target` — the CLASS fix is a named follow-up order;
+  this packet only refuses to add a fourth instance.
+- **FO v0.7.0 byte-confirmation pending:** blob
+  `dda6c425e9a593e27629b81bb38e5259452feb26` — NAMED PRECONDITION for
   stage-6 entry.
 
 ## 6. Non-authorizations
 
 No code (Human Design Review gates stage 7), no merge, no deploy, no
-ingest-op change (the reader contract is design-local; strengthening
-`ingest_ops` would be its own order), no `raw/**` moves, no scope beyond
-FO-WIKI-RAW-AREA v0.6.2 R1–R6.
+ingest-op change beyond the FO §2 denial-only reserved-route carve-out
+(the reader contract is design-local; strengthening `ingest_ops` would be
+its own order), no `raw/**` moves, no scope beyond
+FO-WIKI-RAW-AREA v0.7.0 R1–R6.
