@@ -12,6 +12,7 @@ import os
 import re
 import json
 import html
+import datetime
 import hashlib
 import functools
 import pathlib
@@ -1095,6 +1096,533 @@ def topic_details_superseded(fm):
     return superseded
 
 
+# ---- Raw Area (FO-WIKI-RAW-AREA v0.7.4 / DF-DESIGN-WIKI-RAW-AREA v0.7.6) ----
+# One generated tools page (raw.html) listing every raw ingested research file.
+# Membership requires positive ingestion evidence; the manifest reader applies
+# a design-local default-deny contract; every anomaly surfaces in a footer and
+# a build warning line. Display-only: no ingest op, no raw/** byte is touched.
+
+RAW_AREA_FILE_ROW_KEYS = frozenset(
+    ("ingested_at", "mode", "target_slug", "source_path", "sha256",
+     "original_name", "note", "supersedes"))
+RAW_AREA_URL_ROW_KEYS = frozenset(
+    ("ingested_at", "mode", "target_slug", "source_url", "note", "supersedes"))
+RAW_AREA_BLANKABLE = frozenset(("note", "supersedes", "target_slug"))
+# the browser-upload storage grammar: <stem>-<sha12><suffix> (ANY suffix; the
+# writer preserves the original suffix, ingest_server.py:634-666)
+RAW_AREA_UPLOAD_RE = re.compile(r"^(?P<stem>.+)-(?P<sha12>[0-9a-f]{12})(?P<suffix>\.[^./\\]+)$")
+RAW_AREA_INBOX_DATE_RE = re.compile(r"^raw/inbox/(\d{4}-\d{2}-\d{2})/.")
+RAW_AREA_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def raw_area_printable(text):
+    """Anomaly strings cross two sinks — terminal warning lines and the
+    rendered page. Backslash-escape C0 controls, DEL, and lone surrogates so
+    a hostile filename or manifest value can neither crash UTF-8 encoding at
+    either sink nor forge extra one-per-anomaly warning lines (CFAR r4)."""
+    out = []
+    for ch in text:
+        code = ord(ch)
+        if code < 32 or code == 127 or code == 0x85:
+            out.append("\\x%02x" % code)
+        elif 0xD800 <= code <= 0xDFFF or code in (0x2028, 0x2029):
+            # lone surrogates AND Unicode line/paragraph separators — U+2028
+            # splits logical lines at some sinks, forging extra "warning
+            # lines" past the one-per-anomaly contract (CFAR r7)
+            out.append("\\u%04x" % code)
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+def _raw_area_pairs_no_dup(pairs):
+    seen = set()
+    for key, _ in pairs:
+        if key in seen:
+            raise ValueError("duplicate key: %s" % key)
+        seen.add(key)
+    return dict(pairs)
+
+
+def raw_area_parse_row(line, container, rank, lineno):
+    """Design-local default-deny row validation (packet D5). Returns
+    (row|None, anomaly|None). Parse-level lanes first (blank line, undecodable
+    JSON, non-object top level), then duplicate keys, exact key-set shape,
+    types, blankability, 64-hex sha, timezone-aware ingested_at. A row that
+    fits no lane is rejected — never coerced."""
+    where = "%s line %d" % (container, lineno)
+    if not line.strip():
+        return None, "blank manifest line (%s)" % where
+    try:
+        obj = json.loads(line, object_pairs_hook=_raw_area_pairs_no_dup)
+    except (ValueError, RecursionError) as exc:
+        # RecursionError: a deeply nested but valid JSON value must reject
+        # the row, never terminate the build (CFAR r1).
+        return None, "unreadable manifest line (%s): %s" % (where, type(exc).__name__)
+    if not isinstance(obj, dict):
+        return None, "non-object manifest line (%s)" % where
+    keys = frozenset(obj)
+    if keys == RAW_AREA_FILE_ROW_KEYS:
+        shape = "file"
+    elif keys == RAW_AREA_URL_ROW_KEYS:
+        shape = "url"
+    else:
+        return None, "unknown row shape (%s): keys %s" % (where, ",".join(sorted(keys)))
+    for key, value in obj.items():
+        if not isinstance(value, str):
+            return None, "non-string field %s (%s)" % (key, where)
+        if not value.strip() and key not in RAW_AREA_BLANKABLE:
+            return None, "blank required field %s (%s)" % (key, where)
+        try:  # an escaped lone surrogate (e.g. "\ud800") would survive here
+            # and abort the build later at write_dist_text (CFAR r2)
+            value.encode("utf-8")
+        except UnicodeEncodeError:
+            return None, "unencodable field %s (%s)" % (key, where)
+    if shape == "file" and not RAW_AREA_SHA256_RE.fullmatch(obj["sha256"]):
+        # fullmatch: `$` alone would match before a trailing escaped newline,
+        # accepting a 65-char value against the exact 64-hex contract (CFAR r6)
+        return None, "sha256 is not 64-hex (%s)" % where
+    try:
+        stamp = datetime.datetime.fromisoformat(obj["ingested_at"])
+    except ValueError:
+        return None, "unparseable ingested_at (%s)" % where
+    if stamp.tzinfo is None:
+        return None, "naive ingested_at (%s)" % where
+    try:  # normalize NOW: a boundary offset (e.g. 0001-01-01T00:00:00+23:59)
+        # overflows astimezone later and would abort the build (CFAR r1)
+        stamp = stamp.astimezone(datetime.timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        return None, "non-normalizable ingested_at (%s)" % where
+    row = dict(obj)
+    row["_shape"] = shape
+    row["_container"] = container
+    row["_rank"] = rank
+    row["_line"] = lineno
+    row["_dt"] = stamp
+    return row, None
+
+
+def raw_area_manifest_rows(root):
+    """Read the base manifest plus every manifest.d/*.jsonl shard (the
+    frozen-file law: skipping shards silently loses post-freeze ingests).
+    Returns (rows, anomalies); a bad line never stops the read."""
+    rows, anomalies = [], []
+    sources = []
+
+    def hermetic(path, expect_dir):
+        """A manifest container must be a non-symlink regular file whose
+        resolved path stays inside its expected directory — a symlinked
+        shard could confer membership from outside raw/ or hang the build
+        on a device/FIFO target (CFAR r5). Violations surface, never read."""
+        if path.is_symlink() or not path.is_file():
+            return False
+        try:
+            return str(path.resolve()).startswith(str(expect_dir.resolve()) + os.sep)
+        except Exception:
+            return False
+
+    inbox = root / "raw" / "inbox"
+    shard_dir = inbox / "manifest.d"
+    # a symlinked PARENT defeats per-file containment — both sides of the
+    # resolve comparison land in the external target (CFAR r6): every
+    # directory on the manifest path must itself be a real directory.
+    parent_symlink = next(
+        (p for p in (root / "raw", inbox, shard_dir) if p.is_symlink()), None)
+    if parent_symlink is not None:
+        anomalies.append("non-hermetic manifest parent ignored: %s"
+                         % parent_symlink.name)
+        return rows, anomalies
+    base = inbox / "manifest.jsonl"
+    if base.exists() or base.is_symlink():
+        if hermetic(base, inbox):
+            sources.append((base, "manifest.jsonl", 0))
+        else:
+            anomalies.append("non-hermetic manifest container ignored: manifest.jsonl")
+    if shard_dir.is_dir():
+        for shard in sorted(shard_dir.glob("*.jsonl")):
+            if hermetic(shard, shard_dir):
+                sources.append((shard, "manifest.d/%s" % shard.name, 1))
+            else:
+                anomalies.append(
+                    "non-hermetic manifest container ignored: manifest.d/%s" % shard.name)
+    for path, container, rank in sources:
+        try:
+            blob = path.read_bytes()
+        except Exception as exc:  # unreadable container: surfaced, non-fatal
+            anomalies.append("unreadable manifest container %s: %s" % (container, exc))
+            continue
+        # decode STRICTLY per line: a corrupt byte must reject its own line —
+        # errors="replace" would coerce it into a "valid" row that could then
+        # confer membership (CFAR r2) — while valid neighbor lines survive.
+        raw_lines = blob.split(b"\n")
+        if raw_lines and raw_lines[-1] == b"":
+            # ONLY the exactly-empty sentinel a trailing \n produces — a
+            # whitespace-only final record is a real blank-line anomaly and
+            # must not be silently dropped (CFAR r3)
+            raw_lines = raw_lines[:-1]
+        for lineno, raw_line in enumerate(raw_lines, start=1):
+            try:
+                line = raw_line.decode("utf-8")
+            except UnicodeDecodeError:
+                anomalies.append("undecodable manifest line (%s line %d)"
+                                 % (container, lineno))
+                continue
+            row, anomaly = raw_area_parse_row(line, container, rank, lineno)
+            if anomaly:
+                anomalies.append(anomaly)
+            elif row is not None:
+                rows.append(row)
+    return rows, anomalies
+
+
+def raw_area_row_digest(row):
+    public = {k: v for k, v in row.items() if not k.startswith("_")}
+    return hashlib.sha256(
+        json.dumps(public, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def raw_area_winner(rows):
+    """Total-order winner among valid file rows sharing one source_path
+    (packet D2): latest tz-normalized ingested_at; container rank (shards over
+    base); container name desc; line desc; canonical row digest. Returns
+    (winner, tie_anomaly|None) — a tie past the first key is surfaced."""
+    def key(row):
+        return (row["_dt"], row["_rank"], row["_container"], row["_line"],
+                raw_area_row_digest(row))
+    ordered = sorted(rows, key=key, reverse=True)
+    winner = ordered[0]
+    tie = None
+    if len(ordered) > 1 and ordered[1]["_dt"] == winner["_dt"]:
+        tie = ("equal-timestamp rows for %s (winner: %s line %d)"
+               % (winner["source_path"], winner["_container"], winner["_line"]))
+    return winner, tie
+
+
+def raw_area_control(rel):
+    """The FO R1 control grammar, checked before any evidence lane."""
+    low = rel.lower()
+    base = low.rsplit("/", 1)[-1]
+    if base in ("readme.md", ".gitkeep"):
+        return True
+    return low == "raw/inbox/manifest.jsonl" or low.startswith("raw/inbox/manifest.d/")
+
+
+def raw_area_documents(root, file_rows_by_path):
+    """Membership formula (FO R1): regular ∧ not-control ∧ (inbox-ingestion-
+    evidence ∨ TAI-RES). Evidence = a valid file-shape row whose source_path
+    matches, or the upload-grammar filename. Location alone lists nothing."""
+    members = []
+    raw_root = root / "raw"
+    # a symlinked raw ROOT would make raw_resolved the external target and
+    # every containment check pass — reject before traversal (CFAR r7 P1)
+    if raw_root.is_symlink() or not raw_root.is_dir():
+        return members
+    try:
+        raw_resolved = raw_root.resolve()
+    except Exception:
+        return members
+    for path in sorted(raw_root.rglob("*")):
+        # "regular file" (FO R1) excludes symlinks: a committed tai-res-named
+        # symlink must not make the build read/hash bytes outside raw/ (CFAR
+        # r1 containment finding); the resolved target must stay under raw/.
+        if path.is_symlink() or not path.is_file():
+            continue
+        try:
+            if not str(path.resolve()).startswith(str(raw_resolved) + os.sep):
+                continue
+        except Exception:
+            continue
+        rel = str(path.relative_to(root))
+        try:  # an OS surrogate-escaped (non-UTF-8) filename cannot render —
+            # it would abort the build at write time; not a member (CFAR r3)
+            rel.encode("utf-8")
+        except UnicodeEncodeError:
+            continue
+        if raw_area_control(rel):
+            continue
+        base = rel.rsplit("/", 1)[-1]
+        inbox_dated = bool(RAW_AREA_INBOX_DATE_RE.match(rel))
+        evidence = inbox_dated and (
+            rel in file_rows_by_path or RAW_AREA_UPLOAD_RE.match(base))
+        low = base.lower()
+        tai_res = low.startswith("tai-res-") and low.endswith(".md")
+        if evidence or tai_res:
+            members.append(rel)
+    return members
+
+
+def raw_area_identity(rel, row, computed_sha):
+    """FO R3 identity chain: (1) the winning row's recorded sha256; (2) the
+    filename sha12 — ONLY for dated-inbox members, where the upload grammar
+    is meaningful (an out-of-inbox TAI-RES name that happens to end in 12 hex
+    is an authored name, not storage identity — CFAR r1); (3) the computed
+    content hash, labeled."""
+    if row is not None:
+        return row["sha256"], "manifest"
+    if RAW_AREA_INBOX_DATE_RE.match(rel):
+        match = RAW_AREA_UPLOAD_RE.match(rel.rsplit("/", 1)[-1])
+        if match:
+            return match.group("sha12"), "sha12"
+    return computed_sha, "computed"
+
+
+def raw_area_original_name(rel, row):
+    """FO R3: the row's original_name; for a rowless dated-inbox
+    upload-grammar member the labeled reconstruction <stem><suffix> (a hashed
+    storage basename is never presented as an original name); the full
+    authored basename for everything else, TAI-RES-lane members included."""
+    if row is not None and row.get("original_name", "").strip():
+        return row["original_name"], None
+    base = rel.rsplit("/", 1)[-1]
+    if RAW_AREA_INBOX_DATE_RE.match(rel):
+        match = RAW_AREA_UPLOAD_RE.match(base)
+        if match:
+            return match.group("stem") + match.group("suffix"), "reconstructed from stored name"
+    return base, None
+
+
+def raw_area_fold_article(acc, fm, slug, title, retired):
+    """Fold one article's references into the Raw Area accumulator (packet
+    D4): the four-field union — raw_documents ∪ superseded_raw_documents ∪
+    superseded_sources ∪ class refs in sources — becomes back-links (active
+    pages as live links, retired pages as marked non-link references), and
+    the article's Topic-Details supersession edges join the superseded set."""
+    union = (fm_list(fm, "raw_documents")
+             + fm_list(fm, "superseded_raw_documents")
+             + fm_list(fm, "superseded_sources")
+             + [r for r in fm_list(fm, "sources") if is_raw_ingested_research(r)])
+    for ref in union:
+        ref = source_ref_clean(ref)
+        if not ref:
+            continue
+        entry = (slug, title, retired)
+        if entry not in acc["backlinks"].setdefault(ref, []):
+            acc["backlinks"][ref].append(entry)
+    acc["superseded"] |= topic_details_superseded(fm)
+    return acc
+
+
+def raw_area_model(root, article_refs=None):
+    """The full page model: valid rows -> per-path winners -> members ->
+    dated groups (UTC basis), identities (collision/duplicate/mismatch
+    handling), links, and the anomaly list. `article_refs` is the fold from
+    the article build loop: {"backlinks": {ref: [(slug, title, retired)]},
+    "superseded": set(ref)} — None means an empty fold (unit fixtures)."""
+    article_refs = article_refs or {"backlinks": {}, "superseded": set()}
+    rows, anomalies = raw_area_manifest_rows(root)
+    file_rows, url_rows = {}, []
+    for row in rows:
+        if row["_shape"] == "url":
+            url_rows.append(row)
+            continue
+        file_rows.setdefault(row["source_path"], []).append(row)
+    winners = {}
+    for source_path, candidates in sorted(file_rows.items()):
+        winner, tie = raw_area_winner(candidates)
+        winners[source_path] = winner
+        if tie:
+            anomalies.append(tie)
+    members = raw_area_documents(root, winners)
+    # edge (4): EVERY valid row's supersedes names its target — file AND URL
+    # shapes (a URL re-ingest can be the only record superseding a raw doc —
+    # CFAR r2), and not just per-path winners (IAR).
+    manifest_supersedes = {
+        source_ref_clean(r["supersedes"])
+        for r in rows if r.get("supersedes", "").strip()
+    }
+    entries = []
+    for rel in members:
+        row = winners.get(rel)
+        try:
+            computed = hashlib.sha256((root / rel).read_bytes()).hexdigest()
+        except Exception as exc:
+            computed = ""
+            anomalies.append("unreadable member %s: %s" % (rel, exc))
+        identity, id_source = raw_area_identity(rel, row, computed)
+        if id_source == "computed" and not computed:
+            # an unreadable rowless member must not render a BLANK identifier
+            # shared by every other unreadable member (CFAR r7): a distinct
+            # visible placeholder, excluded from identity groupings
+            identity, id_source = "identity unavailable (unreadable)", "unreadable"
+        name, name_label = raw_area_original_name(rel, row)
+        if row is not None:
+            group = row["_dt"].astimezone(datetime.timezone.utc).date().isoformat()
+            date_label = "ingested %s" % group
+        else:
+            match = RAW_AREA_INBOX_DATE_RE.match(rel)
+            if match:
+                group = rel.split("/")[2]
+                date_label = "inbox date %s" % group
+            else:
+                group = None
+                date_label = "date unknown"
+        # "modified since ingest" fires for BOTH recorded-identity sources:
+        # a manifest row's sha256, and a rowless sha12 filename identity whose
+        # stored prefix no longer matches the current bytes (CFAR r2).
+        mismatch = bool(computed) and (
+            (row is not None and computed != row["sha256"])
+            or (row is None and id_source == "sha12" and computed[:12] != identity))
+        entries.append({
+            "rel": rel, "row": row, "identity": identity,
+            "id_source": id_source, "computed": computed, "name": name,
+            "name_label": name_label, "group": group, "date_label": date_label,
+            "mismatch": mismatch,
+            "superseded": (rel in article_refs["superseded"]
+                           or rel in manifest_supersedes),
+            "backlinks": article_refs["backlinks"].get(rel, []),
+        })
+    if any(e["mismatch"] for e in entries):
+        anomalies.append("modified since ingest: %d member(s)"
+                         % sum(1 for e in entries if e["mismatch"]))
+    # identical-content cross-references are driven by CURRENT computed
+    # hashes (two members whose bytes match cross-reference even under
+    # different recorded identities — CFAR r1); shared-recorded-but-diverged
+    # is driven by recorded identity where current bytes differ (packet D3):
+    by_computed = {}
+    for entry in entries:
+        if entry["computed"]:
+            by_computed.setdefault(entry["computed"], []).append(entry)
+    for _, twins in sorted(by_computed.items()):
+        if len(twins) < 2:
+            continue
+        for t in twins:
+            t["identical"] = len(twins)
+        anomalies.append("identical content ×%d: %s" % (
+            len(twins), ", ".join(t["rel"] for t in twins)))
+    by_recorded = {}
+    for entry in entries:
+        if entry["id_source"] in ("computed", "unreadable"):
+            continue  # neither is a RECORDED identity — they must never
+            # pull an unrelated member into a shared-recorded group (CFAR r3/r7)
+        by_recorded.setdefault(entry["identity"], []).append(entry)
+    for _, twins in sorted(by_recorded.items()):
+        if len(twins) < 2:
+            continue
+        if len({t["computed"] for t in twins}) > 1:
+            for t in twins:
+                t["shared_recorded"] = True
+            anomalies.append("shared recorded identity, diverged bytes: %s"
+                             % ", ".join(t["rel"] for t in twins))
+    # displayed-prefix disambiguation between DISTINCT identities (packet D3);
+    # placeholder identities display whole and never join prefix handling:
+    display = {e["rel"]: (e["identity"] if e["id_source"] == "unreadable"
+                          else e["identity"][:12]) for e in entries}
+    for width in (16, 24, 64):
+        shown = {}
+        for entry in entries:
+            shown.setdefault(display[entry["rel"]], set()).add(entry["identity"])
+        collided = {d for d, idents in shown.items() if len(idents) > 1}
+        if not collided:
+            break
+        anomalies.append("identifier prefix collision: %s" % ", ".join(sorted(collided)))
+        for entry in entries:
+            if display[entry["rel"]] in collided:
+                if len(entry["identity"]) >= width:
+                    display[entry["rel"]] = entry["identity"][:width]
+                else:  # a sha12-source identity cannot expand: disambiguate
+                    display[entry["rel"]] = (
+                        "%s · computed disambiguator %s"
+                        % (entry["identity"], entry["computed"][:12]))
+    for entry in entries:
+        entry["display_identity"] = display[entry["rel"]]
+    # recorded-but-absent targets (packet D4):
+    for source_path in sorted(winners):
+        try:
+            present = (root / source_path).is_file()
+        except (OSError, ValueError):
+            # a hostile schema-valid path (overlong component, NUL) must
+            # surface as an anomaly, never abort the probe (CFAR r6)
+            present = False
+        if not present:
+            anomalies.append("recorded but absent on disk: %s" % source_path)
+    if url_rows:
+        anomalies.append("URL ingests: %d — provenance only, no file entry" % len(url_rows))
+    groups = {}
+    for entry in entries:
+        groups.setdefault(entry["group"], []).append(entry)
+    for bucket in groups.values():
+        bucket.sort(key=lambda e: (e["name"].lower(), e["rel"]))
+    ordered = sorted((g for g in groups if g is not None), reverse=True)
+    if None in groups:
+        ordered.append(None)
+    return {
+        "groups": [(g, groups[g]) for g in ordered],
+        # one chokepoint for both sinks: every anomaly is one-line,
+        # control-free, and encodable before it can reach print or the page
+        "anomalies": [raw_area_printable(a) for a in anomalies],
+        "url_rows": url_rows,
+        "member_count": len(entries),
+    }
+
+
+def raw_page(status, model):
+    """Render the Raw Area tools page (packet D1/D4). Lists and links only;
+    every rendered manifest-derived string is escaped; note/mode never render."""
+    parts = ['<h1 class="page-title">Raw Area</h1>'
+             '<article class="body"><p>Every raw ingested research file — '
+             'grouped by ingestion date (UTC), newest first. Identity is the '
+             'recorded ingest identity where one exists; anomalies surface '
+             'below, never silently.</p>']
+    for group, bucket in model["groups"]:
+        heading = group if group is not None else "Date unknown"
+        parts.append('<h2>%s</h2><ul class="raw-area-group">' % html.escape(heading))
+        for e in bucket:
+            href = source_href(e["rel"])
+            if href:
+                title_html = '<a href="%s">%s</a>' % (html.escape(href), html.escape(e["name"]))
+            else:
+                title_html = '<span class="source-unserved">%s</span>' % html.escape(e["name"])
+            bits = [title_html]
+            if e["name_label"]:
+                bits.append('<em class="raw-name-label">(%s)</em>' % html.escape(e["name_label"]))
+            ident = '<code class="raw-identity">%s</code>' % html.escape(e["display_identity"])
+            if e["id_source"] == "computed":
+                ident += ' <em class="raw-id-label">(computed)</em>'
+            bits.append(ident)
+            bits.append('<code class="raw-path">%s</code>' % html.escape(e["rel"]))
+            if e.get("identical"):
+                bits.append('<span class="raw-identical">identical content ×%d</span>' % e["identical"])
+            if e.get("shared_recorded"):
+                bits.append('<span class="raw-shared-recorded">shared recorded identity</span>')
+            if e["mismatch"]:
+                bits.append('<span class="raw-mismatch">modified since ingest</span>')
+            bits.append('<span class="raw-date">%s</span>' % html.escape(e["date_label"]))
+            if e["backlinks"]:
+                links = []
+                for slug, title, retired in e["backlinks"]:
+                    if retired:
+                        links.append('<span class="raw-backlink-retired">%s (retired)</span>'
+                                     % html.escape(title))
+                    else:
+                        links.append('<a href="%s.html">%s</a>'
+                                     % (html.escape(slug), html.escape(title)))
+                bits.append('<span class="raw-backlinks">topics: %s</span>' % ", ".join(links))
+            else:
+                bits.append('<span class="raw-unassigned">unassigned — no topic references</span>')
+            cls = ""
+            if e["superseded"]:
+                cls = ' class="source-superseded"'
+                # textual badge, not opacity alone — screen readers and
+                # unstyled readers must see the state (CFAR r6; matches the
+                # Topic Details renderer)
+                bits.append('<span class="source-superseded-badge">superseded</span>')
+            parts.append("<li%s>%s</li>" % (cls, " · ".join(bits)))
+        parts.append("</ul>")
+    parts.append('<h2>Anomalies</h2>')
+    if model["anomalies"]:
+        parts.append('<ul class="raw-area-anomalies">%s</ul>' % "".join(
+            "<li>%s</li>" % html.escape(a) for a in model["anomalies"]))
+    else:
+        parts.append("<p>None.</p>")
+    if model["url_rows"]:
+        parts.append('<ul class="raw-area-url-ingests">%s</ul>' % "".join(
+            '<li><code>%s</code></li>' % html.escape(r["source_url"])
+            for r in model["url_rows"]))
+    parts.append("</article>")
+    return tool_page("Raw Area", "".join(parts), status)
+
+
 # R2 — Investigation Topic Standard schema (the "standard"). Required frontmatter
 # keys; the render-driving subset that must additionally be non-empty; the required
 # `## ` headings; and the canonical order (Integration Packet optional, immediately
@@ -2101,6 +2629,7 @@ def top_links():
         '<nav class="top-links" aria-label="Wiki tools">'
         '<a href="repos.html">Repos</a>'
         '<a href="sources.html">Sources</a>'
+        '<a href="raw.html">Raw</a>'
         '<a href="ingest.html">Ingest</a>'
         '</nav>'
     )
@@ -2117,7 +2646,7 @@ def simple_page(title, inner_html, status, *, main_class="content source-content
         'else document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body>'
         '<header class="topbar"><a class="brand" href="../index.html">%s</a>%s'
-        '<nav class="top-links" aria-label="Wiki tools"><a href="../repos.html">Repos</a><a href="../sources.html">Sources</a><a href="../ingest.html">Ingest</a></nav>'
+        '<nav class="top-links" aria-label="Wiki tools"><a href="../repos.html">Repos</a><a href="../sources.html">Sources</a><a href="../raw.html">Raw</a><a href="../ingest.html">Ingest</a></nav>'
         '<div class="top-meta">%s'
         '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
         '</div></header>' % (html.escape(SITE_NAME), search_box(prefix="../"), freshness(status)) +
@@ -2696,9 +3225,15 @@ def build():
     PROGRESS_VER = copy_asset("civilizationProgressEvidence.js")
     ARC_VIEW_VER = copy_asset("civilizationArcView.js")
     count = 0
+    # Raw Area fold (packet D4): collect each article's four-field reference
+    # union and its supersession edges during this loop — active pages as live
+    # back-links, retired pages as marked non-link references.
+    raw_area_refs = {"backlinks": {}, "superseded": set()}
     for p in sorted(WIKI.glob("*.md")):
         fm, body = split_fm(p.read_text())
         meta = META[p.stem]
+        raw_area_fold_article(raw_area_refs, fm, p.stem, meta["title"],
+                              bool(meta.get("retired_on")))
         body = re.sub(r"^#\s+.*\n", "", body, count=1)
         links = set()
         body_html, toc_tokens = to_html(body, links, article_source_refs(fm),
@@ -2721,6 +3256,10 @@ def build():
     )
     write_dist_text(DIST / "sources.html", sources_page(status))
     write_dist_text(DIST / "ingest.html", ingest_page(status))
+    raw_model = raw_area_model(ROOT, raw_area_refs)
+    for anomaly in raw_model["anomalies"]:
+        print("raw-area warning: %s" % anomaly)
+    write_dist_text(DIST / "raw.html", raw_page(status, raw_model))
     write_dist_text(DIST / "repos.html", repos_page(status))
     for repo in REPOS:
         write_dist_text(DIST / repo["href"], repo_page(repo, status))

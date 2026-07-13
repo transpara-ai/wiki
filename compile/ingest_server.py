@@ -384,14 +384,23 @@ def check_target_org_section(slug, org, section):
             % (org, section, slug, page_org, page_tier))
 
 
+# Generated tool-page routes reserved against article-slug collisions.
+# FO-WIKI-RAW-AREA v0.7.4 carve-out 1: EXACTLY {"raw"} — this order authorizes
+# no other member (widening the set requires separate authorization). The
+# addition is denial-only: it can only make subject_absent() refuse more.
+RESERVED_GENERATED_ROUTES = frozenset(("raw",))
+
+
 def _investigation_collision_corpus():
     """The collision surfaces a new investigation name must avoid (§2.4). Returns
     (keys, slugs): `keys` = collision_key of every page slug PLUS, for every
     investigation page (active OR retired tombstone), its entity ∪ aliases ∪
     investigation_topic cluster label; `slugs` = every page slug (active OR
     tombstone). Retired frontmatter is included so a new investigation cannot
-    reanimate a retired subject via its old entity/alias/cluster (CFADA-r12 #28)."""
-    keys, slugs = set(), set()
+    reanimate a retired subject via its old entity/alias/cluster (CFADA-r12 #28).
+    Reserved generated routes join the slug surface so a new investigation can
+    never claim a tool page's rendered route (raw.html)."""
+    keys, slugs = set(), set(RESERVED_GENERATED_ROUTES)
     for p in sorted(WIKI.glob("*.md")):
         fm, _, _ = split_fm(p.read_text())
         slugs.add(p.stem)
