@@ -138,6 +138,12 @@ def test_raw_page_membership_formula():
     # (l) MANIFESTED custom-named unservable -> IN (manifest lane suffix-agnostic)
     l = t.put("raw/inbox/2026-07-13/topic/notes.docx", data)
     rows.append(file_row(l, data))
+    # (m) a tai-res-named SYMLINK escaping raw/ -> OUT (containment; CFAR r1)
+    outside = t.root / "outside.md"
+    outside.write_bytes(b"outside raw")
+    link = t.root / "raw" / "civilization" / "tai-res-2026-009-link-evaluation.md"
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(outside)
     t.manifest(rows)
     m = model(t)
     listed = {x["rel"] for _, bucket in m["groups"] for x in bucket}
@@ -267,6 +273,17 @@ def test_raw_page_identity_chain_and_labels():
     assert eb["name"] == "report.md" and eb["name_label"] == "reconstructed from stored name"
     html_page = site.raw_page({"fresh": True, "text": ""}, m)
     assert "(computed)" in html_page
+    # an OUT-OF-INBOX TAI-RES file that happens to end in -<12hex>.md keeps
+    # its authored basename and takes the computed identity — the upload
+    # grammar is meaningful only for dated-inbox members (CFAR r1)
+    t2 = Tree()
+    suffix12 = sha(b"authored")[:12]
+    authored = t2.put(
+        "raw/civilization/tai-res-2026-007-name-%s.md" % suffix12, b"authored bytes")
+    m2 = model(t2)
+    e2 = entry(m2, authored)
+    assert e2["id_source"] == "computed" and e2["identity"] == sha(b"authored bytes")
+    assert e2["name"] == authored.rsplit("/", 1)[-1] and e2["name_label"] is None
     print("ok test_raw_page_identity_chain_and_labels")
 
 
@@ -314,6 +331,16 @@ def test_raw_page_current_identical_twins_cross_referenced():
     m = model(t)
     assert entry(m, a)["identical"] == 2 and entry(m, b)["identical"] == 2
     assert any("identical content ×2" in x for x in m["anomalies"])
+    # identical CURRENT bytes under DIFFERENT recorded identities still
+    # cross-reference — identity does not gate the computed grouping (CFAR r1)
+    t2 = Tree()
+    x = t2.put("raw/inbox/2026-07-07/t/x.md", data)
+    y = t2.put("raw/inbox/2026-07-07/u/y.md", data)
+    t2.manifest([file_row(x, data),
+                 file_row(y, data, sha256=sha(b"different recorded"))])
+    m2 = model(t2)
+    assert entry(m2, x)["identical"] == 2 and entry(m2, y)["identical"] == 2
+    assert entry(m2, y)["mismatch"], "the wrong-recorded twin still marks mismatch"
     print("ok test_raw_page_current_identical_twins_cross_referenced")
 
 
@@ -462,6 +489,11 @@ def test_raw_page_manifest_rejection_lanes():
     lanes.append((json.dumps(dict(ok_file, ingested_at="not-a-date+00:00")), "unparseable"))
     lanes.append((json.dumps(dict(ok_file, ingested_at="2026-02-30T09:00:00+00:00")),
                   "unparseable"))
+    # boundary offset overflows UTC normalization -> rejected, never a crash
+    lanes.append((json.dumps(dict(ok_file, ingested_at="0001-01-01T00:00:00+23:59")),
+                  "non-normalizable"))
+    # parser recursion from deep nesting -> rejected row, never a build abort
+    lanes.append(("[" * 100000 + "]" * 100000, "unreadable"))
     for line, needle in lanes:
         row, anomaly = site.raw_area_parse_row(line, "m", 0, 1)
         assert row is None and anomaly and needle in anomaly, (line[:60], anomaly)

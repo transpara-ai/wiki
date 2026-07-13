@@ -1135,8 +1135,10 @@ def raw_area_parse_row(line, container, rank, lineno):
         return None, "blank manifest line (%s)" % where
     try:
         obj = json.loads(line, object_pairs_hook=_raw_area_pairs_no_dup)
-    except ValueError as exc:
-        return None, "unreadable manifest line (%s): %s" % (where, exc)
+    except (ValueError, RecursionError) as exc:
+        # RecursionError: a deeply nested but valid JSON value must reject
+        # the row, never terminate the build (CFAR r1).
+        return None, "unreadable manifest line (%s): %s" % (where, type(exc).__name__)
     if not isinstance(obj, dict):
         return None, "non-object manifest line (%s)" % where
     keys = frozenset(obj)
@@ -1159,6 +1161,11 @@ def raw_area_parse_row(line, container, rank, lineno):
         return None, "unparseable ingested_at (%s)" % where
     if stamp.tzinfo is None:
         return None, "naive ingested_at (%s)" % where
+    try:  # normalize NOW: a boundary offset (e.g. 0001-01-01T00:00:00+23:59)
+        # overflows astimezone later and would abort the build (CFAR r1)
+        stamp = stamp.astimezone(datetime.timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        return None, "non-normalizable ingested_at (%s)" % where
     row = dict(obj)
     row["_shape"] = shape
     row["_container"] = container
@@ -1209,8 +1216,7 @@ def raw_area_winner(rows):
     base); container name desc; line desc; canonical row digest. Returns
     (winner, tie_anomaly|None) — a tie past the first key is surfaced."""
     def key(row):
-        return (row["_dt"].astimezone(datetime.timezone.utc),
-                row["_rank"], row["_container"], row["_line"],
+        return (row["_dt"], row["_rank"], row["_container"], row["_line"],
                 raw_area_row_digest(row))
     ordered = sorted(rows, key=key, reverse=True)
     winner = ordered[0]
@@ -1238,8 +1244,20 @@ def raw_area_documents(root, file_rows_by_path):
     raw_root = root / "raw"
     if not raw_root.is_dir():
         return members
+    try:
+        raw_resolved = raw_root.resolve()
+    except Exception:
+        return members
     for path in sorted(raw_root.rglob("*")):
-        if not path.is_file():
+        # "regular file" (FO R1) excludes symlinks: a committed tai-res-named
+        # symlink must not make the build read/hash bytes outside raw/ (CFAR
+        # r1 containment finding); the resolved target must stay under raw/.
+        if path.is_symlink() or not path.is_file():
+            continue
+        try:
+            if not str(path.resolve()).startswith(str(raw_resolved) + os.sep):
+                continue
+        except Exception:
             continue
         rel = str(path.relative_to(root))
         if raw_area_control(rel):
@@ -1257,25 +1275,31 @@ def raw_area_documents(root, file_rows_by_path):
 
 def raw_area_identity(rel, row, computed_sha):
     """FO R3 identity chain: (1) the winning row's recorded sha256; (2) the
-    filename sha12; (3) the computed content hash, labeled."""
+    filename sha12 — ONLY for dated-inbox members, where the upload grammar
+    is meaningful (an out-of-inbox TAI-RES name that happens to end in 12 hex
+    is an authored name, not storage identity — CFAR r1); (3) the computed
+    content hash, labeled."""
     if row is not None:
         return row["sha256"], "manifest"
-    match = RAW_AREA_UPLOAD_RE.match(rel.rsplit("/", 1)[-1])
-    if match:
-        return match.group("sha12"), "sha12"
+    if RAW_AREA_INBOX_DATE_RE.match(rel):
+        match = RAW_AREA_UPLOAD_RE.match(rel.rsplit("/", 1)[-1])
+        if match:
+            return match.group("sha12"), "sha12"
     return computed_sha, "computed"
 
 
 def raw_area_original_name(rel, row):
-    """FO R3: the row's original_name; for a rowless upload-grammar member the
-    labeled reconstruction <stem><suffix> (a hashed storage basename is never
-    presented as an original name); plain basename for TAI-RES-lane members."""
+    """FO R3: the row's original_name; for a rowless dated-inbox
+    upload-grammar member the labeled reconstruction <stem><suffix> (a hashed
+    storage basename is never presented as an original name); the full
+    authored basename for everything else, TAI-RES-lane members included."""
     if row is not None and row.get("original_name", "").strip():
         return row["original_name"], None
     base = rel.rsplit("/", 1)[-1]
-    match = RAW_AREA_UPLOAD_RE.match(base)
-    if match:
-        return match.group("stem") + match.group("suffix"), "reconstructed from stored name"
+    if RAW_AREA_INBOX_DATE_RE.match(rel):
+        match = RAW_AREA_UPLOAD_RE.match(base)
+        if match:
+            return match.group("stem") + match.group("suffix"), "reconstructed from stored name"
     return base, None
 
 
@@ -1363,20 +1387,28 @@ def raw_area_model(root, article_refs=None):
     if any(e["mismatch"] for e in entries):
         anomalies.append("modified since ingest: %d member(s)"
                          % sum(1 for e in entries if e["mismatch"]))
-    # identical-content cross-references vs shared-recorded-only (packet D3):
-    by_identity = {}
+    # identical-content cross-references are driven by CURRENT computed
+    # hashes (two members whose bytes match cross-reference even under
+    # different recorded identities — CFAR r1); shared-recorded-but-diverged
+    # is driven by recorded identity where current bytes differ (packet D3):
+    by_computed = {}
     for entry in entries:
-        by_identity.setdefault(entry["identity"], []).append(entry)
-    for identity, twins in sorted(by_identity.items()):
+        if entry["computed"]:
+            by_computed.setdefault(entry["computed"], []).append(entry)
+    for _, twins in sorted(by_computed.items()):
         if len(twins) < 2:
             continue
-        current = {t["computed"] for t in twins}
-        if len(current) == 1 and "" not in current:
-            for t in twins:
-                t["identical"] = len(twins)
-            anomalies.append("identical content ×%d: %s" % (
-                len(twins), ", ".join(t["rel"] for t in twins)))
-        else:
+        for t in twins:
+            t["identical"] = len(twins)
+        anomalies.append("identical content ×%d: %s" % (
+            len(twins), ", ".join(t["rel"] for t in twins)))
+    by_recorded = {}
+    for entry in entries:
+        by_recorded.setdefault(entry["identity"], []).append(entry)
+    for _, twins in sorted(by_recorded.items()):
+        if len(twins) < 2:
+            continue
+        if len({t["computed"] for t in twins}) > 1:
             for t in twins:
                 t["shared_recorded"] = True
             anomalies.append("shared recorded identity, diverged bytes: %s"
