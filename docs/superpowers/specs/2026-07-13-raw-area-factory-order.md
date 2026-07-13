@@ -1,7 +1,7 @@
 ---
 doc_id: FO-WIKI-RAW-AREA
-version: "0.7.3"
-status: "amended post-PR-review-r5 (wiki#80) — the CONFIRMED READING remains the v0.1.0 object (blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86, confirmed verbatim 2026-07-13); Michael's explicit byte-confirmation of THIS FILE at its exact blob is the NAMED PRECONDITION for Human Design Review entry (supersedes every prior pending status)"
+version: "0.7.4"
+status: "amended post-PR-review-r7 (wiki#80) — the CONFIRMED READING remains the v0.1.0 object (blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86, confirmed verbatim 2026-07-13); Michael's explicit byte-confirmation of THIS FILE at its exact blob is the NAMED PRECONDITION for Human Design Review entry (supersedes every prior pending status)"
 factory: transpara-ai/wiki
 author_family: claude
 ---
@@ -168,13 +168,22 @@ two-step if any pin needed; semver + blob-SHA truth rules.
 
 - **Confirmed:** the v0.1.0 reading (blob in §0), Michael, 2026-07-13,
   verbatim "FO confirmed"; Q1 default locked.
-- Version chain: v0.2.0 confirmation record (blob `8c3c16e7…`) → v0.3.0
-  CFADA-r1 (blob `806aabc9…`) → v0.4.0 CFADA-r2 (blob `9cc2fc69…`) →
-  v0.5.0 CFADA-r3 (blob `9c2bc7e9…`) → v0.6.0 CFADA-r4 (blob `7fc03d97…`)
-  → v0.6.1 CFADA-r5 (blob `c8c51d64…`) → v0.6.2 CFADA-r6 (blob
-  `13786b7c…`) → v0.7.0 PR-review r1 (blob `dda6c425…`) → v0.7.1
-  PR-review r2 (blob `f5825535…`) → v0.7.2 PR-review r4 (blob
-  `76361070…`) → **v0.7.3 PR-review r5 (this file)**.
+- Version chain (full 40-hex git blob IDs; every version file is durably
+  retained at `artifacts/wiki/fo-raw-area/` on the authoring workspace, and
+  the delivered versions are additionally reviewable in wiki#80's commit
+  history):
+  v0.2.0 `8c3c16e7ee317fba6a53f6e00abac9b998f47d58` →
+  v0.3.0 `806aabc96f22d6f7bfb31b2b8cebd82bca2312dc` →
+  v0.4.0 `9cc2fc691331bdf5112c2fdc42fd34059e031c32` →
+  v0.5.0 `9c2bc7e98456f575ca86513db21fb3ee979a7c15` →
+  v0.6.0 `7fc03d97b2b3befe900d5bd47e3577ca6898b3e5` →
+  v0.6.1 `c8c51d64ccd753587e47c1af501b16321cdf501d` →
+  v0.6.2 `13786b7ce2b70f01c6cc1dbc1dea113c9b028bf2` →
+  v0.7.0 `dda6c425e9a593e27629b81bb38e5259452feb26` →
+  v0.7.1 `f5825535968e20ebcd8a7646a511e15533c54fdb` →
+  v0.7.2 `7636107071cabe9e90e8c4b956463961c6cd92d4` →
+  v0.7.3 `8557566c99b6cfc0684f75eb8ecdf1aec9035376` →
+  **v0.7.4 (this file)**.
 - **Michael's explicit confirmation of THIS FILE'S exact blob is a named
   precondition for Human Design Review entry.** Fail closed.
 

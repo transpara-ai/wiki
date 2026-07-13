@@ -1,15 +1,15 @@
 ---
 doc_id: DF-DESIGN-WIKI-RAW-AREA
-version: "0.7.5"
-status: "draft — wiki#80 PR-review r6 repairs applied (UTC grouping semantics; malformed-timestamp lanes; membership variant coverage; URL-row scope reconciled); pre-IADA-r13"
+version: "0.7.6"
+status: "draft — wiki#80 PR-review r7 repairs applied (manifested unservable-suffix case; FO chain full blobs); pre-final-review"
 factory: transpara-ai/wiki
 author_family: claude
-factory_order: "FO-WIKI-RAW-AREA v0.7.3 (blob 8557566c99b6cfc0684f75eb8ecdf1aec9035376; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; byte-confirmation of the BOUND FO BLOB by Michael is a NAMED PRECONDITION for stage-6 entry)"
+factory_order: "FO-WIKI-RAW-AREA v0.7.4 (blob a594125d989df2c6b5df614cf903f10dc7424074; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; byte-confirmation of the BOUND FO BLOB by Michael is a NAMED PRECONDITION for stage-6 entry)"
 ---
 
 # Raw Area — TLC Design Packet
 
-> Answers FO-WIKI-RAW-AREA v0.7.3 (R1–R6) against measured live state at
+> Answers FO-WIKI-RAW-AREA v0.7.4 (R1–R6) against measured live state at
 > `transpara-ai/wiki` origin/main `7bf55384da70a30f636ad661bb5129d704775180`.
 > One new generated tools page, `raw.html`, in the Sources/Ingest pattern.
 > Builder stays no-LLM/no-network. This packet authorizes nothing.
@@ -183,7 +183,9 @@ factory_order: "FO-WIKI-RAW-AREA v0.7.3 (blob 8557566c99b6cfc0684f75eb8ecdf1aec9
      precedence); (i) non-md non-evidence stray OUT; (j) rowless
      upload-grammar UNSERVABLE suffix (`report-<sha12>.bin`) IN — listed,
      visibly unserved; (k) mixed-case `TAI-RES-*.md` and `Tai-Res-*.md` IN
-     (case-insensitive lane)
+     (case-insensitive lane); (l) MANIFESTED custom-named unservable file
+     (valid row, no sha12 name, e.g. `notes.docx`) IN — the manifest lane is
+     suffix-agnostic (listed, visibly unserved)
   3. `test_raw_page_groups_by_date_newest_first` — incl. the UTC basis:
      an offset timestamp crossing midnight groups by its UTC date
   4. `test_raw_page_entries_order_total_within_group` — named cases:
@@ -278,7 +280,7 @@ parameterized cases all passing and individually reported); risk per row.
 | AC | = | Criterion | Risk |
 |---|---|---|---|
 | AC-T1 | D6.1 | entry set == formula enumeration, both directions | med |
-| AC-T2 | D6.2 | membership formula: all eleven named cases | high |
+| AC-T2 | D6.2 | membership formula: all twelve named cases | high |
 | AC-T3 | D6.3 | groups newest-first | low |
 | AC-T4 | D6.4 | within-group order total: (original name, source path) | low |
 | AC-T5 | D6.5 | duplicate-row winner total order: all four named cases + tie surfacing | med |
@@ -352,7 +354,7 @@ parameterized case — ⇒ not satisfied. Default deny.
   fourth instance. Their LINK classification is already handled
   (`BUILDER_PAGES`), and `raw` joins it here.
 - **Byte-confirmation of the bound FO pending:** the frontmatter's exact
-  FO blob (`8557566c99b6cfc0684f75eb8ecdf1aec9035376`) — NAMED PRECONDITION for
+  FO blob (`a594125d989df2c6b5df614cf903f10dc7424074`) — NAMED PRECONDITION for
   stage-6 entry.
 
 ## 6. Non-authorizations
