@@ -1153,6 +1153,11 @@ def raw_area_parse_row(line, container, rank, lineno):
             return None, "non-string field %s (%s)" % (key, where)
         if not value.strip() and key not in RAW_AREA_BLANKABLE:
             return None, "blank required field %s (%s)" % (key, where)
+        try:  # an escaped lone surrogate (e.g. "\ud800") would survive here
+            # and abort the build later at write_dist_text (CFAR r2)
+            value.encode("utf-8")
+        except UnicodeEncodeError:
+            return None, "unencodable field %s (%s)" % (key, where)
     if shape == "file" and not RAW_AREA_SHA256_RE.match(obj["sha256"]):
         return None, "sha256 is not 64-hex (%s)" % where
     try:
@@ -1190,11 +1195,23 @@ def raw_area_manifest_rows(root):
             sources.append((shard, "manifest.d/%s" % shard.name, 1))
     for path, container, rank in sources:
         try:
-            text = path.read_text(errors="replace")
+            blob = path.read_bytes()
         except Exception as exc:  # unreadable container: surfaced, non-fatal
             anomalies.append("unreadable manifest container %s: %s" % (container, exc))
             continue
-        for lineno, line in enumerate(text.splitlines(), start=1):
+        # decode STRICTLY per line: a corrupt byte must reject its own line —
+        # errors="replace" would coerce it into a "valid" row that could then
+        # confer membership (CFAR r2) — while valid neighbor lines survive.
+        raw_lines = blob.split(b"\n")
+        if raw_lines and not raw_lines[-1].strip():
+            raw_lines = raw_lines[:-1]  # trailing newline, not a blank data line
+        for lineno, raw_line in enumerate(raw_lines, start=1):
+            try:
+                line = raw_line.decode("utf-8")
+            except UnicodeDecodeError:
+                anomalies.append("undecodable manifest line (%s line %d)"
+                                 % (container, lineno))
+                continue
             row, anomaly = raw_area_parse_row(line, container, rank, lineno)
             if anomaly:
                 anomalies.append(anomaly)
@@ -1345,13 +1362,12 @@ def raw_area_model(root, article_refs=None):
         if tie:
             anomalies.append(tie)
     members = raw_area_documents(root, winners)
-    # edge (4): EVERY valid file-shape row's supersedes names its target —
-    # not just per-path winners, else a naming row that was itself superseded
-    # by a newer row for the same path would silently drop the mark (IAR).
+    # edge (4): EVERY valid row's supersedes names its target — file AND URL
+    # shapes (a URL re-ingest can be the only record superseding a raw doc —
+    # CFAR r2), and not just per-path winners (IAR).
     manifest_supersedes = {
         source_ref_clean(r["supersedes"])
-        for r in rows
-        if r["_shape"] == "file" and r.get("supersedes", "").strip()
+        for r in rows if r.get("supersedes", "").strip()
     }
     entries = []
     for rel in members:
@@ -1374,7 +1390,12 @@ def raw_area_model(root, article_refs=None):
             else:
                 group = None
                 date_label = "date unknown"
-        mismatch = bool(row is not None and computed and computed != row["sha256"])
+        # "modified since ingest" fires for BOTH recorded-identity sources:
+        # a manifest row's sha256, and a rowless sha12 filename identity whose
+        # stored prefix no longer matches the current bytes (CFAR r2).
+        mismatch = bool(computed) and (
+            (row is not None and computed != row["sha256"])
+            or (row is None and id_source == "sha12" and computed[:12] != identity))
         entries.append({
             "rel": rel, "row": row, "identity": identity,
             "id_source": id_source, "computed": computed, "name": name,

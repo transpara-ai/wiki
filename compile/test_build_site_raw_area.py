@@ -368,6 +368,16 @@ def test_raw_page_modified_since_ingest_mark_and_count():
     assert any(x.startswith("modified since ingest: 1") for x in m["anomalies"])
     html_page = site.raw_page({"fresh": True, "text": ""}, m)
     assert "modified since ingest" in html_page
+    # a rowless sha12-identity member whose bytes no longer match the stored
+    # prefix also marks (CFAR r2); an unmodified one does not
+    t2 = Tree()
+    changed = t2.put("raw/inbox/2026-07-07/t/doc-%s.md" % sha(b"orig")[:12], b"changed")
+    intact_bytes = b"intact"
+    intact = t2.put("raw/inbox/2026-07-07/t/ok-%s.md" % sha(intact_bytes)[:12],
+                    intact_bytes)
+    m2 = model(t2)
+    assert entry(m2, changed)["mismatch"], "sha12 drift must mark"
+    assert not entry(m2, intact)["mismatch"], "matching sha12 must not mark"
     print("ok test_raw_page_modified_since_ingest_mark_and_count")
 
 
@@ -456,6 +466,13 @@ def test_raw_page_superseded_marking_all_edges():
                          ingested_at="2026-07-07T10:00:00+00:00")])
     m = model(t)
     assert entry(m, old)["superseded"], "manifest supersedes edge not honored"
+    # edge (4) also holds for a URL-shape row's supersedes (a URL re-ingest
+    # can be the only record superseding a raw doc — CFAR r2)
+    t2 = Tree()
+    doc = t2.put("raw/inbox/2026-07-06/t/doc.md", data)
+    t2.manifest([file_row(doc, data), url_row(supersedes=doc)])
+    m2 = model(t2)
+    assert entry(m2, doc)["superseded"], "URL-row supersedes edge not honored"
     print("ok test_raw_page_superseded_marking_all_edges")
 
 
@@ -494,6 +511,9 @@ def test_raw_page_manifest_rejection_lanes():
                   "non-normalizable"))
     # parser recursion from deep nesting -> rejected row, never a build abort
     lanes.append(("[" * 100000 + "]" * 100000, "unreadable"))
+    # an escaped lone surrogate would crash UTF-8 encoding at write time
+    lanes.append((json.dumps(dict(ok_file, original_name="bad\ud800.md")),
+                  "unencodable"))
     for line, needle in lanes:
         row, anomaly = site.raw_area_parse_row(line, "m", 0, 1)
         assert row is None and anomaly and needle in anomaly, (line[:60], anomaly)
@@ -511,6 +531,15 @@ def test_raw_page_manifest_rejection_lanes():
     assert entry(m, member) is not None
     assert sum(1 for a in m["anomalies"] if "unreadable manifest line" in a) == 1
     assert sum(1 for a in m["anomalies"] if "not 64-hex" in a) == 1
+    # a corrupt BYTE rejects only its own line; valid neighbors survive
+    t2 = Tree()
+    kept = t2.put("raw/inbox/2026-07-07/t/kept.md", b"k")
+    good = json.dumps(file_row(kept, b"k")).encode()
+    (t2.root / "raw" / "inbox" / "manifest.jsonl").write_bytes(
+        b'{"broken": "\xff\xfe"}\n' + good + b"\n")
+    m2 = model(t2)
+    assert entry(m2, kept) is not None, "valid neighbor line must survive"
+    assert sum(1 for a in m2["anomalies"] if "undecodable manifest line" in a) == 1
     print("ok test_raw_page_manifest_rejection_lanes")
 
 
