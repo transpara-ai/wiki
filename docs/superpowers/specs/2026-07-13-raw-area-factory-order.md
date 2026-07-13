@@ -1,7 +1,7 @@
 ---
 doc_id: FO-WIKI-RAW-AREA
-version: 0.7.1
-status: amended post-PR-review-r2 (wiki#80) — the CONFIRMED READING remains the v0.1.0 object (blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86, confirmed verbatim 2026-07-13); Michael's explicit byte-confirmation of THIS v0.7.1 file is the NAMED PRECONDITION for Human Design Review entry (supersedes every prior pending status)
+version: "0.7.2"
+status: "amended post-PR-review-r4 (wiki#80) — the CONFIRMED READING remains the v0.1.0 object (blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86, confirmed verbatim 2026-07-13); Michael's explicit byte-confirmation of THIS v0.7.2 file is the NAMED PRECONDITION for Human Design Review entry (supersedes every prior pending status)"
 factory: transpara-ai/wiki
 author_family: claude
 ---
@@ -134,8 +134,9 @@ author_family: claude
 
 Unchanged from v0.5.0 EXCEPT two narrow, named carve-outs: (1) the
 page-creation guard (`ingest_server._investigation_collision_corpus`) may
-gain a constant reserved generated-route slug set so reserved routes refuse
-new-page creation — refusal-only; (2) `ingest_ops.BUILDER_PAGES` gains the
+gain a constant reserved generated-route slug set of EXACTLY {`raw`} for
+this order (any wider set requires separate authorization) so the reserved
+route refuses new-page creation — refusal-only; (2) `ingest_ops.BUILDER_PAGES` gains the
 single entry `raw` so the existing link classifier treats the new route as
 the known builder page it is — additive classification with no authority or
 behavioral surface beyond link rendering; no other
@@ -171,12 +172,12 @@ two-step if any pin needed; semver + blob-SHA truth rules.
   CFADA-r1 (blob `806aabc9…`) → v0.4.0 CFADA-r2 (blob `9cc2fc69…`) →
   v0.5.0 CFADA-r3 (blob `9c2bc7e9…`) → v0.6.0 CFADA-r4 (blob `7fc03d97…`)
   → v0.6.1 CFADA-r5 (blob `c8c51d64…`) → v0.6.2 CFADA-r6 (blob
-  `13786b7c…`) → v0.7.0 PR-review r1 (blob `dda6c425…`) → **v0.7.1
-  PR-review r2 (this file)**.
-- **Michael's explicit confirmation of the v0.7.1 bytes is a named
+  `13786b7c…`) → v0.7.0 PR-review r1 (blob `dda6c425…`) → v0.7.1
+  PR-review r2 (blob `f5825535…`) → **v0.7.2 PR-review r4 (this file)**.
+- **Michael's explicit confirmation of the v0.7.2 bytes is a named
   precondition for Human Design Review entry.** Fail closed.
 
-## 5. v0.1.0 → v0.7.1 delta record (what the byte-confirmation covers)
+## 5. v0.1.0 → v0.7.2 delta record (what the byte-confirmation covers)
 
 1. **R1:** membership = `regular ∧ not-control ∧ (evidence ∨ TAI-RES)`;
    evidence = valid row ∨ upload grammar `<stem>-<sha12><suffix>` (ANY
@@ -221,6 +222,6 @@ two-step if any pin needed; semver + blob-SHA truth rules.
    distinct from the crafted-evidence residual (deliberately staged names or
    rows), which remains a named residual risk.
 
-This FO grants nothing and authorizes no code. Next: packet v0.7.1 → IADA r9
+This FO grants nothing and authorizes no code. Next: packet v0.7.3 → IADA r11
 → codex re-review at the PR head → Michael's v0.7.0 byte-confirmation +
 Human Design Review.

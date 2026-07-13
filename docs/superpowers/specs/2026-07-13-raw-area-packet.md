@@ -1,15 +1,15 @@
 ---
 doc_id: DF-DESIGN-WIKI-RAW-AREA
-version: 0.7.2
-status: draft — wiki#80 PR-review r3 repairs applied (file plan made whole: both carve-out edits present, 26-test count; route-integration decision and survey facts added); pre-IADA-r10
+version: "0.7.3"
+status: "draft — wiki#80 PR-review r4 repairs applied (YAML-safe frontmatter; the reservation set is exactly {raw}); pre-IADA-r11"
 factory: transpara-ai/wiki
 author_family: claude
-factory_order: FO-WIKI-RAW-AREA v0.7.1 (blob f5825535968e20ebcd8a7646a511e15533c54fdb; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; v0.7.1 byte-confirmation by Michael is a NAMED PRECONDITION for stage-6 entry)
+factory_order: "FO-WIKI-RAW-AREA v0.7.2 (blob 7636107071cabe9e90e8c4b956463961c6cd92d4; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; v0.7.2 byte-confirmation by Michael is a NAMED PRECONDITION for stage-6 entry)"
 ---
 
 # Raw Area — TLC Design Packet
 
-> Answers FO-WIKI-RAW-AREA v0.7.1 (R1–R6) against measured live state at
+> Answers FO-WIKI-RAW-AREA v0.7.2 (R1–R6) against measured live state at
 > `transpara-ai/wiki` origin/main `7bf55384da70a30f636ad661bb5129d704775180`.
 > One new generated tools page, `raw.html`, in the Sources/Ingest pattern.
 > Builder stays no-LLM/no-network. This packet authorizes nothing.
@@ -41,6 +41,10 @@ factory_order: FO-WIKI-RAW-AREA v0.7.1 (blob f5825535968e20ebcd8a7646a511e15533c
 > count out of the plan prose): D7a specifies both route-integration
 > carve-outs, D7 lists every edited file, and the survey gains the verified
 > `BUILDER_PAGES`/collision-surface facts.
+> **v0.7.3** repairs the r4 PR-review findings: the frontmatter status is a
+> quoted, YAML-parseable scalar (the investigation packet's own r2 lesson,
+> re-learned), and the reservation set is EXACTLY {`raw`} for this order —
+> a wider set now requires separate authorization (FO v0.7.2 carve-out 1).
 
 ## 1. Survey — measured, not assumed (file:line at main `7bf5538`)
 
@@ -235,26 +239,29 @@ factory_order: FO-WIKI-RAW-AREA v0.7.1 (blob f5825535968e20ebcd8a7646a511e15533c
       and `mode` values never appear in the rendered page
   24. `test_raw_page_single_nav_entry_both_variants`
   25. `test_raw_route_reserved_in_creation_guard` — `subject_absent("Raw")`
-      (and each reserved-route name) returns False after the reserved-set
-      addition; a control name unaffected by the set still creates (the
-      addition is denial-only)
+      returns False after the reserved-set addition; the set equals exactly
+      {`raw`} (scope assertion); a control name unaffected by the set still
+      creates (the addition is denial-only)
   26. `test_raw_route_classified_as_builder_page` — the target classifier
       returns ("page", "raw") for `raw.html` (mirroring
       sources/ingest/repos), so article links gate as known-page, not
       unknown/downgraded
 - **D7a — Route integration (the two FO §2 carve-outs).** (1) A constant
-  reserved generated-route slug set (≥ {`raw`}) is added to
+  reserved generated-route slug set of EXACTLY {`raw`} — this order
+  authorizes no other member; widening it (e.g. to sources/ingest/repos,
+  the deferred class) requires separate authorization — is added to
   `_investigation_collision_corpus`'s slug surface so `subject_absent`
-  refuses reserved names — DENIAL-ONLY: it can only refuse more, never
+  refuses the reserved name — DENIAL-ONLY: it can only refuse more, never
   permit more (test D6.25 includes the control case proving an unaffected
-  name still creates). (2) `raw` is added to `ingest_ops.BUILDER_PAGES` so
+  name still creates, and asserts the set equals {`raw`}). (2) `raw` is added to `ingest_ops.BUILDER_PAGES` so
   the link-target classifier returns ("page", "raw") for `raw.html`,
   mirroring sources/ingest/repos — additive classification with no surface
   beyond link rendering (test D6.26).
 - **D7 — File plan.** EDIT `compile/build_site.py` (membership formula,
   reader, folds, `raw_page()`, write at `:2722` block, one anchor per shared
   top-links variant); EDIT `compile/ingest_server.py` (ONE denial-only
-  change: the D7a reserved-route slug set — FO §2 carve-out 1); EDIT
+  change: the D7a reserved-route slug set, exactly {`raw`} — FO §2
+  carve-out 1); EDIT
   `compile/ingest_ops.py` (ONE additive entry: `raw` in `BUILDER_PAGES` —
   FO §2 carve-out 2); ADD `compile/test_build_site_raw_area.py` (26 named
   tests); EDIT `tests/inc001-render.spec.js` (add `raw.html`); EDIT
@@ -345,8 +352,8 @@ parameterized case — ⇒ not satisfied. Default deny.
   class fix is a named follow-up order; this packet only refuses to add a
   fourth instance. Their LINK classification is already handled
   (`BUILDER_PAGES`), and `raw` joins it here.
-- **FO v0.7.1 byte-confirmation pending:** blob
-  `f5825535968e20ebcd8a7646a511e15533c54fdb` — NAMED PRECONDITION for
+- **FO v0.7.2 byte-confirmation pending:** blob
+  `7636107071cabe9e90e8c4b956463961c6cd92d4` — NAMED PRECONDITION for
   stage-6 entry.
 
 ## 6. Non-authorizations
@@ -356,4 +363,4 @@ ingest-op change beyond the two named FO §2 carve-outs (reserved-route
 denial set; the single additive `BUILDER_PAGES` entry)
 (the reader contract is design-local; strengthening `ingest_ops` would be
 its own order), no `raw/**` moves, no scope beyond
-FO-WIKI-RAW-AREA v0.7.1 R1–R6.
+FO-WIKI-RAW-AREA v0.7.2 R1–R6.
