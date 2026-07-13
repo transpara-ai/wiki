@@ -255,6 +255,16 @@ def test_raw_page_shard_manifest_rows_are_read():
     t.shard("s1.jsonl", [file_row(rel, data)])
     m = model(t)
     assert entry(m, rel) is not None, "shard row must confer membership (frozen-file law)"
+    # a SYMLINKED shard is non-hermetic: never read, surfaced, confers
+    # nothing (CFAR r5)
+    t2 = Tree()
+    stray = t2.put("raw/inbox/2026-07-07/t/stray.quux", b"s")  # no evidence
+    external = t2.root / "external.jsonl"
+    external.write_text(json.dumps(file_row(stray, b"s")) + "\n")
+    (t2.root / "raw" / "inbox" / "manifest.d" / "evil.jsonl").symlink_to(external)
+    m2 = model(t2)
+    assert entry(m2, stray) is None, "a symlinked shard must not confer membership"
+    assert any("non-hermetic manifest container" in a for a in m2["anomalies"])
     print("ok test_raw_page_shard_manifest_rows_are_read")
 
 

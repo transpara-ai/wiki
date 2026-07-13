@@ -1203,13 +1203,34 @@ def raw_area_manifest_rows(root):
     Returns (rows, anomalies); a bad line never stops the read."""
     rows, anomalies = [], []
     sources = []
-    base = root / "raw" / "inbox" / "manifest.jsonl"
-    if base.is_file():
-        sources.append((base, "manifest.jsonl", 0))
-    shard_dir = root / "raw" / "inbox" / "manifest.d"
+
+    def hermetic(path, expect_dir):
+        """A manifest container must be a non-symlink regular file whose
+        resolved path stays inside its expected directory — a symlinked
+        shard could confer membership from outside raw/ or hang the build
+        on a device/FIFO target (CFAR r5). Violations surface, never read."""
+        if path.is_symlink() or not path.is_file():
+            return False
+        try:
+            return str(path.resolve()).startswith(str(expect_dir.resolve()) + os.sep)
+        except Exception:
+            return False
+
+    inbox = root / "raw" / "inbox"
+    base = inbox / "manifest.jsonl"
+    if base.exists() or base.is_symlink():
+        if hermetic(base, inbox):
+            sources.append((base, "manifest.jsonl", 0))
+        else:
+            anomalies.append("non-hermetic manifest container ignored: manifest.jsonl")
+    shard_dir = inbox / "manifest.d"
     if shard_dir.is_dir():
         for shard in sorted(shard_dir.glob("*.jsonl")):
-            sources.append((shard, "manifest.d/%s" % shard.name, 1))
+            if hermetic(shard, shard_dir):
+                sources.append((shard, "manifest.d/%s" % shard.name, 1))
+            else:
+                anomalies.append(
+                    "non-hermetic manifest container ignored: manifest.d/%s" % shard.name)
     for path, container, rank in sources:
         try:
             blob = path.read_bytes()
