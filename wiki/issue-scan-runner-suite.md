@@ -5,9 +5,6 @@ tier: architecture
 status: compiled
 last_compiled: "2026-07-12"
 sources:
-  - /Transpara/transpara-ai/repos/hive/packages/issue-scan-runner-suite/README.md  # the package: manifest + fixtures for external runner validation
-  - /Transpara/transpara-ai/repos/hive/docs/factory-orders/FO-hive-262-issue-scan-runner-suite-package-v0.1.0.md  # FO-HIVE-262 — package scope, validation harness requirements
-  - /Transpara/transpara-ai/repos/hive/cmd/hive/factory_issue_scan_runner_contracts.go  # the machine-readable contracts document: per-runner stdin/stdout types, preconditions, authority boundaries
   - raw/open-brain/2026-07.md  # L3662–L3743 — the #262→PR#266 arc within the July cycle and its relation to the finalizer guardrails
 confidence:
   sources: primary — the merged package, Factory Order, and contracts generator.
@@ -32,3 +29,12 @@ The suite treats runner receipts the way the wiki treats articles: recorded evid
 ## Why it matters to the arc
 
 The runner suite is the seam where the hive's [[the-work-graph|Work-graph]] lifecycle stops being a monolith: any model family or external system can implement a stage, provided it satisfies contracts the runtime can check. The finalizer guardrails merged the same day made the *most dangerous* runner boundary — the one that mutates a live PR — the most heavily contracted; the suite is how the remaining boundaries get the same treatment incrementally.
+
+## Primary references
+
+On-Platform primary sources for this article (governed docs and code;
+not web-served — open them from the Transpara workspace):
+
+- `/Transpara/transpara-ai/repos/hive/packages/issue-scan-runner-suite/README.md` — the package: manifest + fixtures for external runner validation
+- `/Transpara/transpara-ai/repos/hive/docs/factory-orders/FO-hive-262-issue-scan-runner-suite-package-v0.1.0.md` — FO-HIVE-262 — package scope, validation harness requirements
+- `/Transpara/transpara-ai/repos/hive/cmd/hive/factory_issue_scan_runner_contracts.go` — the machine-readable contracts document: per-runner stdin/stdout types, preconditions, authority boundaries

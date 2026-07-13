@@ -9,7 +9,6 @@ raw_documents: []
 sources:
   - /Transpara/transpara-ai/repos/docs/dark-factory/v4.0/07-cfar-cfada-dev-arc-gate-standard-v4.0.md  # the gate standard: CFAR credit binds to the exact head SHA; head-delta rule for ready-state review (4.2.0)
   - raw/open-brain/2026-07.md  # L3698 (the merge attempt evidence: admin GraphQL and REST both refuse with "required status checks are expected"), L3743 (both merges complete; the fresh-head arc summary and its meta-lessons)
-  - /Transpara/transpara-ai/repos/hive/docs/factory-orders/FO-hive-265-lifecycle-skill-home-v0.58.0.md  # the fresh-head repair sections (bf–co) the stranding forced into existence
 confidence:
   sources: primary for the hive events (session records with exact SHAs and API error strings); the branch-protection behavior is asserted from the live 405/GraphQL refusals observed, not from GitHub documentation.
   claims: grounded; the "effectively inexhaustible review stream" observation is an operational judgment from one 23-round sample, stated as such.
@@ -38,3 +37,10 @@ The fresh-head arc on the same content ran **23 rounds and surfaced 34 findings 
 ## Disposition
 
 Absorbed as practice, not doctrine change: merge reviewed PRs promptly or accept the fresh-head cost; when a base moves under a reviewed PR, prefer merging the *other* PR first only if it is CLEAN (as was done — `hive#272` merged before the update). The stranding also produced compounding value despite its cost: the follow-on hardening (`hive#275`–`#280`, including the tested unit-posture preflight the runbook had deferred) landed within a day, largely Codex-authored under the reversed review direction.
+
+## Primary references
+
+On-Platform primary sources for this article (governed docs and code;
+not web-served — open them from the Transpara workspace):
+
+- `/Transpara/transpara-ai/repos/hive/docs/factory-orders/FO-hive-265-lifecycle-skill-home-v0.58.0.md` — the fresh-head repair sections (bf–co) the stranding forced into existence

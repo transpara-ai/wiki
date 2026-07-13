@@ -5,9 +5,6 @@ tier: architecture
 status: compiled
 last_compiled: "2026-07-12"
 sources:
-  - /Transpara/transpara-ai/repos/hive/skills/README.md  # the convention itself: features own their skills; claude/ + codex/ dialect subfolders; repo is truth over installed copies
-  - /Transpara/transpara-ai/repos/hive/skills/hive-lifecycle/README.md  # the first feature home: dialect layout, symlink rule for tooling-mandated discovery paths, post-merge install sync
-  - /Transpara/transpara-ai/repos/hive/docs/factory-orders/FO-hive-265-lifecycle-skill-home-v0.58.0.md  # FO-HIVE-265 — seed pins (immutable blob SHAs), the enumerated repair sets (R7 a–q and fresh-head bf–co and successors), acceptance language
   - raw/open-brain/2026-07.md  # L3476 (arc + the symlink/single-copy IAR catch), L3482–L3572 (original CFAR rounds: credential-flow, fail-open-timeout, capture-before-parse lessons), L3662 (29-round completion at a90b1bde), L3743 (fresh-head arc and merge)
 confidence:
   sources: primary — the merged convention documents, the Factory Order, and the session records of both review arcs.
@@ -32,3 +29,12 @@ When strict branch protection later stranded that arc's exact-head review credit
 ## Follow-on
 
 The runbook's repeated deferral — "a mechanical verifier belongs in a tested Go subcommand" — was honored the next morning: `hive factory preflight-hive-unit` merged as Codex-authored `transpara-ai/hive#277`, and a further slice wiring the runbooks to that verifier is in flight as hive#283. The convention's install-sync step and the [[hive-governance|hive]] run-target hardening continued advancing the FO past the versions either arc ended on.
+
+## Primary references
+
+On-Platform primary sources for this article (governed docs and code;
+not web-served — open them from the Transpara workspace):
+
+- `/Transpara/transpara-ai/repos/hive/skills/README.md` — the convention itself: features own their skills; claude/ + codex/ dialect subfolders; repo is truth over installed copies
+- `/Transpara/transpara-ai/repos/hive/skills/hive-lifecycle/README.md` — the first feature home: dialect layout, symlink rule for tooling-mandated discovery paths, post-merge install sync
+- `/Transpara/transpara-ai/repos/hive/docs/factory-orders/FO-hive-265-lifecycle-skill-home-v0.58.0.md` — FO-HIVE-265 — seed pins (immutable blob SHAs), the enumerated repair sets (R7 a–q and fresh-head bf–co and successors), acceptance language

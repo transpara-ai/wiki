@@ -5,11 +5,6 @@ tier: architecture
 status: compiled
 last_compiled: "2026-07-12"
 sources:
-  - /Transpara/transpara-ai/repos/hive/docs/factory-orders/FO-hive-263-finalizer-guardrails-v0.9.0.md  # FO-HIVE-263 final v0.9.0 — requirements R1–R8, the two reversals-by-subtraction, the named irreducible residual
-  - /Transpara/transpara-ai/repos/hive/pkg/hive/issue_scan_mark_ready_authority.go  # the governance lookup: human-decided, unexpired, latest-wins with malformed-record revocation
-  - /Transpara/transpara-ai/repos/hive/pkg/hive/issue_scan_ready_pr_finalizer.go  # the finalizer gate: consume-before-mutate, currency re-check, provenance-bound remediation, human-approval supremacy
-  - /Transpara/transpara-ai/repos/hive/pkg/hive/issue_scan_ready_stage.go  # durable nonce claims (append-then-verify-winner), blocked-evidence terminality, whole-store paged reads
-  - /Transpara/transpara-ai/repos/hive/pkg/safety/safety.go  # RepoProtectedActions — the DF-SOP-0001 repo-narrower extension mechanism carrying pull_request.mark_ready
   - raw/open-brain/2026-07.md  # L3668 (implementation), L3674/L3686 (CFAR rounds 1–5), L3692 (arc completion, 8 rounds to zero), L3698 (merge + strict-protection lesson)
 confidence:
   sources: primary — the merged code and the Factory Order that governed it, plus the session record of the eight review rounds.
@@ -40,3 +35,14 @@ The follow-on chip from this arc — enforcing `ExpiresAt` on the *draft-PR crea
 ## Relation to the wider system
 
 The model instantiates, in running code, the accountability questions the [[dark-factory]] doctrine asks of every material action: who asked, who acted, under what authority, with what evidence, with what residual risk. It is the hive's first protected action whose *undo* path carries its own authority test — "may I undo?" is not implied by "may I do?" — a distinction the [[gates|gate discipline]] had previously only stated in prose.
+
+## Primary references
+
+On-Platform primary sources for this article (governed docs and code;
+not web-served — open them from the Transpara workspace):
+
+- `/Transpara/transpara-ai/repos/hive/docs/factory-orders/FO-hive-263-finalizer-guardrails-v0.9.0.md` — FO-HIVE-263 final v0.9.0 — requirements R1–R8, the two reversals-by-subtraction, the named irreducible residual
+- `/Transpara/transpara-ai/repos/hive/pkg/hive/issue_scan_mark_ready_authority.go` — the governance lookup: human-decided, unexpired, latest-wins with malformed-record revocation
+- `/Transpara/transpara-ai/repos/hive/pkg/hive/issue_scan_ready_pr_finalizer.go` — the finalizer gate: consume-before-mutate, currency re-check, provenance-bound remediation, human-approval supremacy
+- `/Transpara/transpara-ai/repos/hive/pkg/hive/issue_scan_ready_stage.go` — durable nonce claims (append-then-verify-winner), blocked-evidence terminality, whole-store paged reads
+- `/Transpara/transpara-ai/repos/hive/pkg/safety/safety.go` — RepoProtectedActions — the DF-SOP-0001 repo-narrower extension mechanism carrying pull_request.mark_ready
