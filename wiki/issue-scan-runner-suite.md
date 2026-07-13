@@ -5,7 +5,7 @@ tier: architecture
 status: compiled
 last_compiled: "2026-07-12"
 sources:
-  - raw/open-brain/2026-07.md  # L3662–L3743 — the #262→PR#266 arc within the July cycle and its relation to the finalizer guardrails
+  - raw/open-brain/2026-07.md  # L3440 (implementation, feat/hive-262-runner-suite-package), L3470 (PR #266 ready — arc complete), L3506 (merge)
 confidence:
   sources: primary — the merged package, Factory Order, and contracts generator.
   claims: grounded; the contracts summary below paraphrases the generated document rather than quoting every field.

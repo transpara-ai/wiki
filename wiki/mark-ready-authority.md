@@ -5,7 +5,7 @@ tier: architecture
 status: compiled
 last_compiled: "2026-07-12"
 sources:
-  - raw/open-brain/2026-07.md  # L3668 (implementation), L3674/L3686 (CFAR rounds 1–5), L3692 (arc completion, 8 rounds to zero), L3698 (merge + strict-protection lesson)
+  - raw/open-brain/2026-07.md  # L3668 (implementation), L3674/L3680/L3686 (the CFAR repair-round records), L3692 (arc completion, 8 rounds to zero), L3698 (merge + strict-protection lesson)
 confidence:
   sources: primary — the merged code and the Factory Order that governed it, plus the session record of the eight review rounds.
   claims: grounded; the review-arc narrative (findings per round, subtractions) is from the Open Brain record of the authoring session, cross-checked against the FO's versioned repair sections.
