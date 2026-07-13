@@ -1123,9 +1123,12 @@ def raw_area_printable(text):
     out = []
     for ch in text:
         code = ord(ch)
-        if code < 32 or code == 127:
+        if code < 32 or code == 127 or code == 0x85:
             out.append("\\x%02x" % code)
-        elif 0xD800 <= code <= 0xDFFF:
+        elif 0xD800 <= code <= 0xDFFF or code in (0x2028, 0x2029):
+            # lone surrogates AND Unicode line/paragraph separators — U+2028
+            # splits logical lines at some sinks, forging extra "warning
+            # lines" past the one-per-anomaly contract (CFAR r7)
             out.append("\\u%04x" % code)
         else:
             out.append(ch)
@@ -1311,7 +1314,9 @@ def raw_area_documents(root, file_rows_by_path):
     matches, or the upload-grammar filename. Location alone lists nothing."""
     members = []
     raw_root = root / "raw"
-    if not raw_root.is_dir():
+    # a symlinked raw ROOT would make raw_resolved the external target and
+    # every containment check pass — reject before traversal (CFAR r7 P1)
+    if raw_root.is_symlink() or not raw_root.is_dir():
         return members
     try:
         raw_resolved = raw_root.resolve()
@@ -1435,6 +1440,11 @@ def raw_area_model(root, article_refs=None):
             computed = ""
             anomalies.append("unreadable member %s: %s" % (rel, exc))
         identity, id_source = raw_area_identity(rel, row, computed)
+        if id_source == "computed" and not computed:
+            # an unreadable rowless member must not render a BLANK identifier
+            # shared by every other unreadable member (CFAR r7): a distinct
+            # visible placeholder, excluded from identity groupings
+            identity, id_source = "identity unavailable (unreadable)", "unreadable"
         name, name_label = raw_area_original_name(rel, row)
         if row is not None:
             group = row["_dt"].astimezone(datetime.timezone.utc).date().isoformat()
@@ -1482,9 +1492,9 @@ def raw_area_model(root, article_refs=None):
             len(twins), ", ".join(t["rel"] for t in twins)))
     by_recorded = {}
     for entry in entries:
-        if entry["id_source"] == "computed":
-            continue  # a computed identity is not RECORDED — it must never
-            # pull an unrelated member into a shared-recorded group (CFAR r3)
+        if entry["id_source"] in ("computed", "unreadable"):
+            continue  # neither is a RECORDED identity — they must never
+            # pull an unrelated member into a shared-recorded group (CFAR r3/r7)
         by_recorded.setdefault(entry["identity"], []).append(entry)
     for _, twins in sorted(by_recorded.items()):
         if len(twins) < 2:
@@ -1494,8 +1504,10 @@ def raw_area_model(root, article_refs=None):
                 t["shared_recorded"] = True
             anomalies.append("shared recorded identity, diverged bytes: %s"
                              % ", ".join(t["rel"] for t in twins))
-    # displayed-prefix disambiguation between DISTINCT identities (packet D3):
-    display = {e["rel"]: e["identity"][:12] for e in entries}
+    # displayed-prefix disambiguation between DISTINCT identities (packet D3);
+    # placeholder identities display whole and never join prefix handling:
+    display = {e["rel"]: (e["identity"] if e["id_source"] == "unreadable"
+                          else e["identity"][:12]) for e in entries}
     for width in (16, 24, 64):
         shown = {}
         for entry in entries:

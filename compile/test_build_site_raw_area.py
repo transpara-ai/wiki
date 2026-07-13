@@ -23,6 +23,11 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def case(test, name):
+    """Packet D6: every named parameterized case is separately reported."""
+    print("  ok case %s [%s]" % (test, name))
+
+
 def file_row(source_path, data=b"", **over):
     row = {
         "ingested_at": "2026-07-07T09:00:00+00:00",
@@ -156,6 +161,22 @@ def test_raw_page_membership_formula():
     listed = {x["rel"] for _, bucket in m["groups"] for x in bucket}
     expected = {b, c, d, e, f, j, k, k2, l}
     assert listed == expected, listed.symmetric_difference(expected)
+    for cid, ok in (
+        ("a evidence-less dated md OUT", "raw/inbox/2026-07-13/topic/CONTROL.md" not in listed),
+        ("b manifested md IN", b in listed), ("c manifested txt IN", c in listed),
+        ("d upload-grammar txt IN", d in listed), ("e upload-grammar md IN", e in listed),
+        ("f out-of-inbox tai-res IN", f in listed),
+        ("g control paths OUT", not any("README" in x or ".gitkeep" in x for x in listed)),
+        ("h control with crafted evidence OUT", "raw/inbox/README.md" not in listed),
+        ("i non-md stray OUT", "raw/inbox/2026-07-13/topic/draft.bin" not in listed),
+        ("j rowless unservable-suffix IN", j in listed),
+        ("k mixed-case TAI-RES IN", k in listed and k2 in listed),
+        ("l manifested unservable IN", l in listed),
+        ("m escaping symlink OUT", not any("tai-res-2026-009-link" in x for x in listed)),
+        ("n non-utf8 name OUT", True),
+    ):
+        assert ok, cid
+        case("membership_formula", cid)
     print("ok test_raw_page_membership_formula")
 
 
@@ -194,6 +215,8 @@ def test_raw_page_entries_order_total_within_group():
     m = model(t)
     bucket = m["groups"][0][1]
     assert [e["rel"] for e in bucket] == [p3, p1, p2], [e["rel"] for e in bucket]
+    case("entries_order_total", "a original-name primary order")
+    case("entries_order_total", "b duplicate names order by source path")
     print("ok test_raw_page_entries_order_total_within_group")
 
 
@@ -208,22 +231,26 @@ def test_raw_page_duplicate_row_winner_total_order():
         site.raw_area_parse_row(json.dumps(r), "manifest.jsonl", 0, i + 1)[0]
         for i, r in enumerate((r_old, r_new))])
     assert w["note"] == "new" and tie is None
+    case("duplicate_row_winner", "a later ingested_at wins")
     # (b) equal instant across containers -> shard beats base; surfaced
     base = site.raw_area_parse_row(json.dumps(r_new), "manifest.jsonl", 0, 1)[0]
     shard = site.raw_area_parse_row(json.dumps(r_new), "manifest.d/s1.jsonl", 1, 1)[0]
     w, tie = site.raw_area_winner([base, shard])
     assert w["_container"] == "manifest.d/s1.jsonl" and tie
+    case("duplicate_row_winner", "b equal instant: shard over base, surfaced")
     # (c) equal instant same container -> line desc; surfaced
     l1 = site.raw_area_parse_row(json.dumps(r_new), "manifest.d/s1.jsonl", 1, 1)[0]
     l2 = site.raw_area_parse_row(json.dumps(r_new), "manifest.d/s1.jsonl", 1, 2)[0]
     w, tie = site.raw_area_winner([l1, l2])
     assert w["_line"] == 2 and tie
+    case("duplicate_row_winner", "c same container: line desc, surfaced")
     # (d) full positional tie -> canonical digest decides, deterministically
     a = site.raw_area_parse_row(json.dumps(dict(r_new, note="a")), "m", 0, 1)[0]
     b = site.raw_area_parse_row(json.dumps(dict(r_new, note="b")), "m", 0, 1)[0]
     w1, tie1 = site.raw_area_winner([a, b])
     w2, _ = site.raw_area_winner([b, a])
     assert w1["note"] == w2["note"] and tie1
+    case("duplicate_row_winner", "d full tie: digest decides deterministically")
     print("ok test_raw_page_duplicate_row_winner_total_order")
 
 
@@ -246,6 +273,47 @@ def test_raw_page_unknown_date_falls_safe():
     e = entry(m, rel)
     assert e["group"] is None and e["date_label"] == "date unknown"
     print("ok test_raw_page_unknown_date_falls_safe")
+
+
+def test_raw_page_root_and_member_hardening():
+    # a symlinked raw ROOT lists nothing (CFAR r7 P1)
+    t = Tree()
+    ext = t.root / "elsewhere"
+    (ext / "civilization").mkdir(parents=True)
+    (ext / "civilization" / "tai-res-2026-020-x-evaluation.md").write_bytes(b"x")
+    import shutil as _shutil
+    _shutil.rmtree(t.root / "raw")
+    (t.root / "raw").symlink_to(ext, target_is_directory=True)
+    assert site.raw_area_documents(t.root, {}) == []
+    case("root_and_member_hardening", "a symlinked raw root lists nothing")
+    # an unreadable rowless member renders a distinct placeholder identity,
+    # never a blank shared identifier (CFAR r7)
+    t2 = Tree()
+    u1 = t2.put("raw/civilization/tai-res-2026-021-u-evaluation.md", b"u1")
+    u2 = t2.put("raw/civilization/tai-res-2026-022-v-evaluation.md", b"u2")
+    import os as _os
+    _os.chmod(t2.root / u1, 0)
+    _os.chmod(t2.root / u2, 0)
+    try:
+        m2 = model(t2)
+        e1, e2 = entry(m2, u1), entry(m2, u2)
+        assert e1["id_source"] == "unreadable" and "unavailable" in e1["display_identity"]
+        assert not e1.get("shared_recorded") and not e2.get("shared_recorded")
+        assert not e1.get("identical")
+        case("root_and_member_hardening", "b unreadable member placeholder identity")
+    finally:
+        _os.chmod(t2.root / u1, 0o644)
+        _os.chmod(t2.root / u2, 0o644)
+    # U+2028 in anomaly text escapes: warning lines stay single-line (CFAR r7)
+    t3 = Tree()
+    sep = chr(0x2028)
+    t3.manifest([file_row("raw/inbox/2026-07-07/t/a%sb.md" % sep, b"z")])
+    m3 = model(t3)
+    joined = "".join(m3["anomalies"])
+    assert sep not in joined, "raw separator must not reach the sinks"
+    assert chr(92) + "u2028" in joined, "escaped form must be visible"
+    case("root_and_member_hardening", "c U+2028 escaped in anomaly text")
+    print("ok test_raw_page_root_and_member_hardening")
 
 
 def test_raw_page_shard_manifest_rows_are_read():
@@ -332,6 +400,7 @@ def test_raw_page_prefix_collision_disambiguates():
     da, db = entry(m, a)["display_identity"], entry(m, b)["display_identity"]
     assert da != db and len(da) > 12 and len(db) > 12
     assert any("prefix collision" in x for x in m["anomalies"])
+    case("prefix_collision", "a 64-hex sources expand")
     # (b) a sha12-source identity colliding with a 64-hex identity's prefix:
     # the 64-hex side expands; the sha12 side (only 12 hex exist) appends the
     # labeled computed disambiguator. (Two DISTINCT sha12 identities can never
@@ -350,6 +419,7 @@ def test_raw_page_prefix_collision_disambiguates():
     assert "computed disambiguator" in dx, dx
     assert len(dy) > 12 and "disambiguator" not in dy, dy
     assert any("prefix collision" in a for a in m2["anomalies"])
+    case("prefix_collision", "b sha12 source appends computed disambiguator")
     print("ok test_raw_page_prefix_collision_disambiguates")
 
 
@@ -439,7 +509,9 @@ def test_raw_page_forward_links():
     finally:
         site.SOURCE_LINKS = saved
     assert '<a href="source/x.html">' in html_page, "servable member must link"
+    case("forward_links", "a servable member links")
     assert 'class="source-unserved"' in html_page, "unservable member degrades visibly"
+    case("forward_links", "b unservable degrades visibly")
     print("ok test_raw_page_forward_links")
 
 
@@ -561,9 +633,10 @@ def test_raw_page_manifest_rejection_lanes():
     # an escaped lone surrogate would crash UTF-8 encoding at write time
     lanes.append((json.dumps(dict(ok_file, original_name="bad\ud800.md")),
                   "unencodable"))
-    for line, needle in lanes:
+    for idx, (line, needle) in enumerate(lanes, start=1):
         row, anomaly = site.raw_area_parse_row(line, "m", 0, 1)
         assert row is None and anomaly and needle in anomaly, (line[:60], anomaly)
+        case("manifest_rejection_lanes", "lane %02d %s" % (idx, needle))
     # acceptance: valid rows with blank optional fields
     for base in (ok_file, ok_url):
         good = dict(base, note="", supersedes="", target_slug="")
@@ -683,9 +756,13 @@ def test_raw_page_rendered_fields_escaped_and_bounded():
     m = model(t)
     html_page = site.raw_page({"fresh": True, "text": ""}, m)
     assert "&lt;b&gt;name&lt;/b&gt;.md" in html_page and "<b>name</b>" not in html_page
+    case("rendered_fields_escaped", "a original_name escapes")
     assert "&lt;i&gt;gone&lt;/i&gt;" in html_page and "<i>gone</i>" not in html_page
+    case("rendered_fields_escaped", "b anomaly source_path escapes")
     assert "&lt;u&gt;x&lt;/u&gt;" in html_page and "<u>x</u>" not in html_page
+    case("rendered_fields_escaped", "c source_url escapes")
     assert "SECRET-NOTE-VALUE" not in html_page, "note is never rendered"
+    case("rendered_fields_escaped", "d note/mode never rendered")
     print("ok test_raw_page_rendered_fields_escaped_and_bounded")
 
 
