@@ -1,7 +1,7 @@
 ---
 doc_id: DF-DESIGN-WIKI-RAW-AREA
-version: 0.7.1
-status: draft — wiki#80 PR-review r2 repairs applied (BUILDER_PAGES classification, count consistency); pre-IADA-r9
+version: 0.7.2
+status: draft — wiki#80 PR-review r3 repairs applied (file plan made whole: both carve-out edits present, 26-test count; route-integration decision and survey facts added); pre-IADA-r10
 factory: transpara-ai/wiki
 author_family: claude
 factory_order: FO-WIKI-RAW-AREA v0.7.1 (blob f5825535968e20ebcd8a7646a511e15533c54fdb; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; v0.7.1 byte-confirmation by Michael is a NAMED PRECONDITION for stage-6 entry)
@@ -32,10 +32,15 @@ factory_order: FO-WIKI-RAW-AREA v0.7.1 (blob f5825535968e20ebcd8a7646a511e15533c
 > reserved in the creation guard's collision surface (denial-only FO §2
 > carve-out) with a guard test, and within-group ordering gains the
 > source-path secondary key making entry order total on the live corpus.
-> **v0.7.1** repairs the r2 PR-review findings: `raw` joins
+> **v0.7.1** repaired the r2 PR-review findings: `raw` joins
 > `ingest_ops.BUILDER_PAGES` (the classifier that ALREADY names
 > sources/ingest/repos — the deferral premise was wrong) with a link-gate
 > test, and the file-plan test count is made consistent.
+> **v0.7.2** repairs the r3 PR-review findings — the D7 file plan is made
+> whole (silent-replace no-ops had left both carve-out EDITs and the 26-test
+> count out of the plan prose): D7a specifies both route-integration
+> carve-outs, D7 lists every edited file, and the survey gains the verified
+> `BUILDER_PAGES`/collision-surface facts.
 
 ## 1. Survey — measured, not assumed (file:line at main `7bf5538`)
 
@@ -80,6 +85,15 @@ factory_order: FO-WIKI-RAW-AREA v0.7.1 (blob f5825535968e20ebcd8a7646a511e15533c
   treats `sources` as fallback (`:1059`–`:1069`); `topic_details_superseded`
   (`:1078`–`:1095`) recognizes `supersedes:` annotations.
 - **Retired pages render** (`:2699`); search-excluded only (`:2656`–`:2661`).
+- **Route integration surfaces (verified).** `ingest_ops.BUILDER_PAGES`
+  (`:50`) = {`repos`, `sources`, `ingest`, `civilization-arc`,
+  `civilization_arc`} feeds the link-target classifier (`:616`) — `raw` is
+  absent, so article links to `raw.html` would classify unknown; and the
+  creation guard's collision surface
+  (`ingest_server._investigation_collision_corpus`, `:387`) is built from
+  `wiki/*.md` only — no generated route is reserved, so
+  `subject_absent("Raw")` would permit a colliding article. Both integrated
+  by D7a.
 - **Render smoke target set is memorized** (`tests/inc001-render.spec.js:4`–
   `:30`; DOM tests arc+ingest only, `package.json:10`) — D7 adds `raw.html`.
 - **`dist/` untracked**; scanner rules `secret_scan.py:51`–`:54`
@@ -228,12 +242,25 @@ factory_order: FO-WIKI-RAW-AREA v0.7.1 (blob f5825535968e20ebcd8a7646a511e15533c
       returns ("page", "raw") for `raw.html` (mirroring
       sources/ingest/repos), so article links gate as known-page, not
       unknown/downgraded
+- **D7a — Route integration (the two FO §2 carve-outs).** (1) A constant
+  reserved generated-route slug set (≥ {`raw`}) is added to
+  `_investigation_collision_corpus`'s slug surface so `subject_absent`
+  refuses reserved names — DENIAL-ONLY: it can only refuse more, never
+  permit more (test D6.25 includes the control case proving an unaffected
+  name still creates). (2) `raw` is added to `ingest_ops.BUILDER_PAGES` so
+  the link-target classifier returns ("page", "raw") for `raw.html`,
+  mirroring sources/ingest/repos — additive classification with no surface
+  beyond link rendering (test D6.26).
 - **D7 — File plan.** EDIT `compile/build_site.py` (membership formula,
   reader, folds, `raw_page()`, write at `:2722` block, one anchor per shared
-  top-links variant); ADD `compile/test_build_site_raw_area.py` (24 named
+  top-links variant); EDIT `compile/ingest_server.py` (ONE denial-only
+  change: the D7a reserved-route slug set — FO §2 carve-out 1); EDIT
+  `compile/ingest_ops.py` (ONE additive entry: `raw` in `BUILDER_PAGES` —
+  FO §2 carve-out 2); ADD `compile/test_build_site_raw_area.py` (26 named
   tests); EDIT `tests/inc001-render.spec.js` (add `raw.html`); EDIT
-  `package.json` (wire test module). UNTOUCHED: `ingest_server.py` beyond the single carve-out row above,
-  `ingest_ops.py`, `secret_scan.py`, `sources_page`/`ingest_page` bodies,
+  `package.json` (wire test module). UNTOUCHED beyond those named
+  single-line carve-outs: all other `ingest_server.py`/`ingest_ops.py`
+  behavior, `secret_scan.py`, `sources_page`/`ingest_page` bodies,
   article/investigation nav semantics, navbox, arc/board/front page, all
   `raw/**` bytes.
 
