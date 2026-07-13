@@ -1,7 +1,7 @@
 ---
 doc_id: DF-DESIGN-WIKI-RAW-AREA
-version: "0.7.4"
-status: "draft — wiki#80 PR-review r5 repairs applied (retired refs non-link per site policy; rowless original-name reconstruction; R5 exact-set; version-agnostic self-refs); pre-IADA-r12"
+version: "0.7.5"
+status: "draft — wiki#80 PR-review r6 repairs applied (UTC grouping semantics; malformed-timestamp lanes; membership variant coverage; URL-row scope reconciled); pre-IADA-r13"
 factory: transpara-ai/wiki
 author_family: claude
 factory_order: "FO-WIKI-RAW-AREA v0.7.3 (blob 8557566c99b6cfc0684f75eb8ecdf1aec9035376; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; byte-confirmation of the BOUND FO BLOB by Michael is a NAMED PRECONDITION for stage-6 entry)"
@@ -13,45 +13,12 @@ factory_order: "FO-WIKI-RAW-AREA v0.7.3 (blob 8557566c99b6cfc0684f75eb8ecdf1aec9
 > `transpara-ai/wiki` origin/main `7bf55384da70a30f636ad661bb5129d704775180`.
 > One new generated tools page, `raw.html`, in the Sources/Ingest pattern.
 > Builder stays no-LLM/no-network. This packet authorizes nothing.
-> **v0.6.0** repaired all five CFADA-r4 findings: any-suffix ingestion
-> evidence with the membership formula `regular ∧ not-control ∧ (evidence ∨
-> TAI-RES)` (F1); the reader contract stated as design-local requirements
-> derived from the production constructors (F2); recorded identity
-> distinguished from current content (F3); a total-order duplicate-row
-> winner key (F4); named parameterized cases per composite test, every
-> rendered manifest field enumerated (`note`/`mode` never emitted), and a
-> call-site-level network inspection (F5).
-> **v0.6.1** repairs both CFADA-r5 findings: the Source-Index visibility
-> relation stated exactly — narrower for evidence-less files, intentionally
-> wider (metadata only) for evidence-backed non-servable-suffix ingests,
-> carried to HDR via FO §5 item 8 (F1); and the three parse-level rejection
-> lanes restored to D5/D6.19 with named cases (F2) — structure, bijection,
-> and the 30-criterion gate unchanged.
-> **v0.6.2** was the CFADA-r6 reference-consistency repair.
-> **v0.7.0** repaired the two wiki#80 PR-review r1 findings: the `raw` route is
-> reserved in the creation guard's collision surface (denial-only FO §2
-> carve-out) with a guard test, and within-group ordering gains the
-> source-path secondary key making entry order total on the live corpus.
-> **v0.7.1** repaired the r2 PR-review findings: `raw` joins
-> `ingest_ops.BUILDER_PAGES` (the classifier that ALREADY names
-> sources/ingest/repos — the deferral premise was wrong) with a link-gate
-> test, and the file-plan test count is made consistent.
-> **v0.7.2** repairs the r3 PR-review findings — the D7 file plan is made
-> whole (silent-replace no-ops had left both carve-out EDITs and the 26-test
-> count out of the plan prose): D7a specifies both route-integration
-> carve-outs, D7 lists every edited file, and the survey gains the verified
-> `BUILDER_PAGES`/collision-surface facts.
-> **v0.7.3** repairs the r4 PR-review findings: the frontmatter status is a
-> quoted, YAML-parseable scalar (the investigation packet's own r2 lesson,
-> re-learned), and the reservation set is EXACTLY {`raw`} for this order —
-> a wider set now requires separate authorization (FO v0.7.2 carve-out 1).
-> **v0.7.4** repairs the r5 PR-review findings: retired references are
-> marked NON-LINK text conforming to the site's fail-closed link policy
-> (`link_state`/`gate_internal_links` verified); rowless upload-grammar
-> members get a labeled reconstructed original name, never the hashed
-> storage basename; FO R5's own sentence now requires exactly {`raw`}; and
-> every self-referential byte-confirmation is version-agnostic ("this
-> file's exact blob") so the stale-version class cannot recur.
+> Amended v0.1.0 → v0.7.5 across CFADA rounds 1–7 and wiki#80 PR-review
+> rounds 1–6 (every finding accepted-repaired; the round-by-round record is
+> `artifacts/wiki/fo-raw-area/iada/iada.result.md` and
+> `cfada/codex-round*.out`). This header carries no per-version narrative
+> (so it can never go stale); the FO's §5 delta record is the cumulative
+> intent history.
 
 ## 1. Survey — measured, not assumed (file:line at main `7bf5538`)
 
@@ -140,7 +107,11 @@ factory_order: "FO-WIKI-RAW-AREA v0.7.3 (blob 8557566c99b6cfc0684f75eb8ecdf1aec9
   normalized `ingested_at`; then container rank (shards over base); then
   container filename descending; then line number descending; then canonical
   row digest (`sha256` of the canonical-JSON row). Any tie past the first
-  key surfaces as an anomaly. Groups newest-first; entries within a group by
+  key surfaces as an anomaly. **Grouping basis:** an entry's group is the
+  UTC-normalized calendar date of its winning `ingested_at` (an offset
+  timestamp near midnight groups by its UTC date, not its local date);
+  inbox-path dates (chain step 2) are already calendar dates and group
+  as-is. Groups newest-first; entries within a group by
   (original name, source path) — total even for duplicate original names
   (live: two 2026-07-07 entries share `original_name`).
 - **D3 — Identity display; recorded vs current.** Fields per entry:
@@ -161,7 +132,10 @@ factory_order: "FO-WIKI-RAW-AREA v0.7.3 (blob 8557566c99b6cfc0684f75eb8ecdf1aec9
   the footer. Rendered manifest-derived fields are exactly
   {`original_name`; `source_path` in anomaly contexts; `source_url` in the
   URL-ingest footer}, all `html.escape`d; **`note` and `mode` are never
-  emitted**.
+  emitted**. **URL-row scope:** URL rows NEVER produce a document entry;
+  their `source_url` appears ONLY in the anomalies footer's URL-ingest
+  count/listing (escaped) — "counted, not listed" means absent from the
+  document-entry container, present in the footer.
 - **D4 — Links, back-links, supersession, anomalies.** Forward via
   `source_href` (unservable → visible `.source-unserved`). Back-links folded
   in the article build loop from `article_frontmatter` bytes — four-field
@@ -206,8 +180,12 @@ factory_order: "FO-WIKI-RAW-AREA v0.7.3 (blob 8557566c99b6cfc0684f75eb8ecdf1aec9
      without row IN; (f) out-of-inbox `tai-res-*.md` IN; (g) control paths
      OUT (manifest base, shard, shard-dir README, generic inbox README,
      `.gitkeep`); (h) control path WITH crafted evidence OUT (control
-     precedence); (i) non-md non-evidence stray OUT
-  3. `test_raw_page_groups_by_date_newest_first`
+     precedence); (i) non-md non-evidence stray OUT; (j) rowless
+     upload-grammar UNSERVABLE suffix (`report-<sha12>.bin`) IN — listed,
+     visibly unserved; (k) mixed-case `TAI-RES-*.md` and `Tai-Res-*.md` IN
+     (case-insensitive lane)
+  3. `test_raw_page_groups_by_date_newest_first` — incl. the UTC basis:
+     an offset timestamp crossing midnight groups by its UTC date
   4. `test_raw_page_entries_order_total_within_group` — named cases:
      (a) original-name primary order; (b) the duplicate-original-name pair
      (live shape) orders by source path deterministically
@@ -245,10 +223,13 @@ factory_order: "FO-WIKI-RAW-AREA v0.7.3 (blob 8557566c99b6cfc0684f75eb8ecdf1aec9
       nothing, build exit 0)**; then each of the 8 file-row keys removed;
       each of the 6 URL-row keys removed; extra key; hybrid row; duplicate
       JSON keys; wrong-typed field; blank required field; non-64-hex sha;
-      naive timestamp; PLUS acceptance cases: valid file/URL rows with blank
+      naive timestamp; malformed offset-bearing timestamp
+      (`not-a-date+00:00`); invalid calendar date with valid offset; PLUS acceptance cases: valid file/URL rows with blank
       `note`/`supersedes`/`target_slug`; every rejection surfaced, build
       exit 0, no contribution
-  20. `test_raw_page_url_rows_counted_not_listed`
+  20. `test_raw_page_url_rows_counted_not_listed` — asserts absence from
+      the document-entry container AND presence (escaped) in the footer's
+      URL-ingest listing (scope per D3; no conflict with D6.23c)
   21. `test_raw_page_absent_manifest_target_surfaced`
   22. `test_raw_page_anomaly_warnings_emitted` — one line per exercised lane
   23. `test_raw_page_rendered_fields_escaped_and_bounded` — named cases:
@@ -297,7 +278,7 @@ parameterized cases all passing and individually reported); risk per row.
 | AC | = | Criterion | Risk |
 |---|---|---|---|
 | AC-T1 | D6.1 | entry set == formula enumeration, both directions | med |
-| AC-T2 | D6.2 | membership formula: all nine named cases | high |
+| AC-T2 | D6.2 | membership formula: all eleven named cases | high |
 | AC-T3 | D6.3 | groups newest-first | low |
 | AC-T4 | D6.4 | within-group order total: (original name, source path) | low |
 | AC-T5 | D6.5 | duplicate-row winner total order: all four named cases + tie surfacing | med |
