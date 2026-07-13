@@ -7,14 +7,14 @@ last_compiled: "2026-06-24"
 sources:
   - DESIGN.md  # substrate design, purpose, pattern, layout, compilation engine
   - PROVENANCE.md  # source manifest: tiers, mirroring status, in-place reads
-  - index.md  # front-page narrative frame + arc spine + article index (Run-10 state, 101 articles)
+  - index.md  # front-page narrative frame + arc spine (July keep-current state; auto-derived article count 108)
   - raw/open-brain/2026-06.md  # lines 4050–4134: genesis, design decisions, compile runs
   - raw/transpara/dark-factory/v3.9/06-memory-knowledge-capability-v3.9.md  # DF-V3.9-SPEC-006: LLM Wiki advisory knowledge substrate contract
   - compile/refresh.py  # nightly deterministic refresh logic
   - compile/REBUILD.md  # two-tier rebuild protocol
   - compile/build_site.py  # Wikipedia-style renderer, dark/light theme
   - compile/ingest_server.py  # local browser ingest/update/rebuild authoring server
-  - README.md  # top-level description (101 articles, Run-10 service hardening)
+  - README.md  # top-level description (still Run-10-era text: 101 articles, service hardening)
 confidence:
   sources: primary
   claims: grounded
@@ -50,13 +50,13 @@ Four source tiers, each with its own `raw/` subdirectory and its own provenance 
 |---|---|---|---|
 | `searles` | `raw/searles/` | Yes | `all-posts-1.md` — 43 Matt Searles posts (2026-02-28 → 2026-03-24) |
 | `first_party` | `raw/transpara/` | No local mirror (read in place) | ~322 dark-factory markdown files under `docs/dark-factory/` |
-| `open_brain` | `raw/open-brain/` | Partial — 2026-06.md exported | ~1,175 captured thoughts (design estimate); full dump not yet committed |
+| `open_brain` | `raw/open-brain/` | Partial — five monthly dumps (Mar→Jun 13 + Jul 1–12, 2026; named Jun 14→30 gap) | 1,663 thoughts on disk as of 2026-07-12; `PROVENANCE.md` is authoritative |
 | `upstream_context` | `raw/investigations/` | No — Phase 2, empty by design | Upstream forked-project docs (cited as context, never re-published) |
 | `browser_inbox` | `raw/inbox/` | Yes when used | Local browser-ingested source drops and URL manifest rows awaiting article synthesis |
 
-`DESIGN.md` names the full target corpus as **~8,783 markdown files across ~73 repos + ~1,175 Open Brain thoughts + the Matt Searles posts**. As of Run-3 (2026-06-14) only the `searles` tier is fully reproducible from the repo alone; the `first_party` tier was read in place from a sibling checkout and the `open_brain` tier was queried live or exported as individual month files rather than bulk-dumped. See `PROVENANCE.md` for the per-tier mirroring status.
+`DESIGN.md` originally framed the target corpus as ~8,783 markdown files across ~73 repos + ~1,175 Open Brain thoughts + the Matt Searles posts, and now **explicitly corrects that scope** (correction of 2026-06-14): the real boundary is ~12 first-party repos plus ~16 cite-only investigation forks — a few thousand curated markdown files — with `PROVENANCE.md` authoritative for Open Brain counts. Reproducibility from the repo alone has widened since Run-3: the `searles` tier is fully reproducible, and the `open_brain` tier is now partially reproducible from the five on-disk monthly dumps (Mar→Jun 13 + Jul 1–12, 2026, with the named Jun 14→30 gap — 1,663 thoughts on disk as of 2026-07-12); the `first_party` tier is still read in place from a sibling checkout. See `PROVENANCE.md` for the per-tier mirroring status.
 
-> ⚠ **Corpus completeness is declared, not verified.** The 8,783-file / 73-repo / 1,175-thought figures come from `DESIGN.md` (2026-06-13 draft). They are the design-time estimate, not an on-disk count. Do not read any empty `raw/` subdirectory as "no such source" — read it as "not yet mirrored."
+> ⚠ **Corpus completeness is declared, not verified.** The 8,783-file / 73-repo / 1,175-thought figures were `DESIGN.md` (2026-06-13 draft) design-time estimates, and `DESIGN.md` itself now rejects them (scope correction 2026-06-14); `PROVENANCE.md` is authoritative for on-disk mirror counts. Do not read any empty `raw/` subdirectory as "no such source" — read it as "not yet mirrored."
 
 ## The compile runs
 
@@ -88,13 +88,20 @@ service was renamed from the temporary `wiki-refit.service` to
 `transpara-ai-civilization-wiki.service`. Article total after Run-9 remains
 **100**; generated repo pages are repository references, not wiki articles.
 
-**Run-10 (2026-06-24, current):** service hardening and source safety — promoted
+**Run-10 (2026-06-24):** service hardening and source safety — promoted
 the wiki into a first-class local systemd authoring service, added a 15-minute
 deterministic freshness timer, restricted remote write authority, hardened upload
 path containment, escaped raw HTML in rendered source/README markdown, redacted
 non-canonical git remotes, and kept repository/source navigation visible.
 Article total after Run-10: **101**; generated repo pages are still repository
 references, not wiki articles.
+
+**July keep-current cycle (2026-07-12/13, current):** governed PR-cycle
+additions rather than a numbered run — the Open Brain July 1–12 export (with
+the named Jun 14→30 gap recorded in `PROVENANCE.md`), four hive
+guardrail-cycle architecture/arc articles, and repo-wide truth-ups of corpus
+and freshness claims. Article totals from this cycle onward are maintained by
+the front page's auto-derived count (`compile/refresh.py`), not by run notes.
 
 ## The compilation engine and house style
 
@@ -204,7 +211,7 @@ The wiki inherits the platform's fail-safe-by-default doctrine:
 ## What is deferred
 
 The `index.md` deferred list (Run-2) named:
-- The full corpus sweep (~8,783 files / ~73 repos / ~1,175 thoughts — not yet exhausted).
+- The full corpus sweep (the `DESIGN.md` design-time figures of ~8,783 files / ~73 repos / ~1,175 thoughts, since corrected by `DESIGN.md` to a few-thousand-file curated boundary; current mirror counts in `PROVENANCE.md`).
 - `open_brain` and `upstream_context` raw tiers — declared but unmirrored.
 - Granular forward-referenced entities (authority-request, execution-receipt, bounded-runtime, remaining individual thirteen-graphs entries, slice-1-first-reunified-order).
 - The `mind-zero` / `mind-zero-five` repo identity disambiguation.
@@ -229,4 +236,4 @@ Compiled from:
 - Run-1/Run-2 token and agent counts (2.17M/28 and 3.6M/42) come from task-framing metadata, not independently captured thoughts — labeled as such.
 - Run-3 article count (78 total) is an as-written historical figure; the authoritative current count is the generated stats block in `index.md`.
 - PR #1 and PR #2 cited for the renderer are from task framing; not independently verified against GitHub history.
-- Corpus size estimate (~8,783 files / ~73 repos / ~1,175 thoughts) is the `DESIGN.md` design-time figure, not an on-disk count.
+- Corpus size estimate (~8,783 files / ~73 repos / ~1,175 thoughts) is the `DESIGN.md` design-time figure — corrected in `DESIGN.md` itself — not an on-disk count.

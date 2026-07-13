@@ -4,7 +4,7 @@
 
 ## Purpose
 
-A [Karpathy-style LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f): the single, self-maintaining, interlinked knowledge **substrate** for the Transpara-AI Civilization arc. Compiled from the Civilization corpus — the dark-factory doc set and runtime repos, the ~1,175-thought Open Brain export, and the Matt Searles lovyou.ai posts (see **§Corpus scope (allowlist)** below for the explicit source list) — and kept current as the work progresses.
+A [Karpathy-style LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f): the single, self-maintaining, interlinked knowledge **substrate** for the Transpara-AI Civilization arc. Compiled from the Civilization corpus — the dark-factory doc set and runtime repos, the Open Brain export (~1,175 thoughts at 2026-06 design time; `PROVENANCE.md` is authoritative for current counts and gaps), and the Matt Searles lovyou.ai posts (see **§Corpus scope (allowlist)** below for the explicit source list) — and kept current as the work progresses.
 
 Everything downstream (the Mission Control board, the spine/story view) becomes a **read view onto this wiki**. The wiki is the source of truth for the narrative; the visualization is a lens, built later.
 
@@ -26,7 +26,7 @@ wiki/
   raw/
     searles/            day-1 provocation: the ~45–50 lovyou.ai posts
     transpara/          first-party: docs, df-impl-v11..v16, dark-factory, design iterations
-    open-brain/         the 1,175 thoughts, exported as dated markdown
+    open-brain/         the captured thoughts, exported as dated monthly markdown (counts/gaps: PROVENANCE.md)
     investigations/<x>/ forked-upstream context, one dir per investigated project
   wiki/                 LLM-compiled, interlinked entity articles
   index.md              spine + index, with a fail-loud freshness header
@@ -44,7 +44,7 @@ Per Karpathy (and Michael's call): within the **§Corpus scope (allowlist)**, mi
   - `searles` — the foundational philosophy
   - `upstream_context` — a forked project's own docs (context for its investigation article, **not** the subject of the wiki)
 - **Phased to manage token cost** (not to filter): Phase 1 = `searles` + `first_party` + `open_brain` (the arc itself); Phase 2 = `investigations/*`.
-- **Open Brain export**: dump all 1,175 thoughts to `raw/open-brain/` as dated markdown.
+- **Open Brain export**: dump the captured thoughts to `raw/open-brain/` as dated monthly markdown (1,175 at 2026-06 design time; current counts and the named June 14→30 gap: `PROVENANCE.md`).
 - **Secret-scrub before any commit** — the corpus includes config-laden repos and the platform has a known hardcoded-credentials finding (F-01). `raw/` runs a secret scanner; nothing with live secrets is committed. Non-negotiable.
 
 ## Corpus scope (allowlist)
@@ -71,7 +71,7 @@ Per Karpathy (and Michael's call): within the **§Corpus scope (allowlist)**, mi
 - `docs/dark-factory/` — the dark-factory doc set (**~322 md**); the load-bearing doctrine/implementation authority.
 - the runtime repos' own docs + READMEs — `agent` (8) + `eventgraph` (164) + `hive` (171) + `site` (325) + `work` (28) ≈ **~696 md** — to deepen the entity articles past the doc-side view.
 - `df-impl-v11 … v16` — the six implementation-iteration snapshots (arc history); compile the latest + the deltas, not every snapshot in full.
-- **Open Brain** — the captured-thought export (**~1,175 thoughts**) via `raw/open-brain/`.
+- **Open Brain** — the captured-thought export via `raw/open-brain/` (**~1,175 thoughts** at 2026-06 design time; `PROVENANCE.md` is authoritative for current counts).
 
 **`searles` — compile from:** `raw/searles/` — the lovyou.ai Substack posts (**43** on disk; the "~45–50" in this doc is an estimate, per `PROVENANCE.md`).
 
