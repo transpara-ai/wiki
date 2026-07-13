@@ -1175,7 +1175,9 @@ def raw_area_parse_row(line, container, rank, lineno):
             value.encode("utf-8")
         except UnicodeEncodeError:
             return None, "unencodable field %s (%s)" % (key, where)
-    if shape == "file" and not RAW_AREA_SHA256_RE.match(obj["sha256"]):
+    if shape == "file" and not RAW_AREA_SHA256_RE.fullmatch(obj["sha256"]):
+        # fullmatch: `$` alone would match before a trailing escaped newline,
+        # accepting a 65-char value against the exact 64-hex contract (CFAR r6)
         return None, "sha256 is not 64-hex (%s)" % where
     try:
         stamp = datetime.datetime.fromisoformat(obj["ingested_at"])
@@ -1217,13 +1219,22 @@ def raw_area_manifest_rows(root):
             return False
 
     inbox = root / "raw" / "inbox"
+    shard_dir = inbox / "manifest.d"
+    # a symlinked PARENT defeats per-file containment — both sides of the
+    # resolve comparison land in the external target (CFAR r6): every
+    # directory on the manifest path must itself be a real directory.
+    parent_symlink = next(
+        (p for p in (root / "raw", inbox, shard_dir) if p.is_symlink()), None)
+    if parent_symlink is not None:
+        anomalies.append("non-hermetic manifest parent ignored: %s"
+                         % parent_symlink.name)
+        return rows, anomalies
     base = inbox / "manifest.jsonl"
     if base.exists() or base.is_symlink():
         if hermetic(base, inbox):
             sources.append((base, "manifest.jsonl", 0))
         else:
             anomalies.append("non-hermetic manifest container ignored: manifest.jsonl")
-    shard_dir = inbox / "manifest.d"
     if shard_dir.is_dir():
         for shard in sorted(shard_dir.glob("*.jsonl")):
             if hermetic(shard, shard_dir):
@@ -1505,7 +1516,13 @@ def raw_area_model(root, article_refs=None):
         entry["display_identity"] = display[entry["rel"]]
     # recorded-but-absent targets (packet D4):
     for source_path in sorted(winners):
-        if not (root / source_path).is_file():
+        try:
+            present = (root / source_path).is_file()
+        except (OSError, ValueError):
+            # a hostile schema-valid path (overlong component, NUL) must
+            # surface as an anomaly, never abort the probe (CFAR r6)
+            present = False
+        if not present:
             anomalies.append("recorded but absent on disk: %s" % source_path)
     if url_rows:
         anomalies.append("URL ingests: %d — provenance only, no file entry" % len(url_rows))
@@ -1571,7 +1588,13 @@ def raw_page(status, model):
                 bits.append('<span class="raw-backlinks">topics: %s</span>' % ", ".join(links))
             else:
                 bits.append('<span class="raw-unassigned">unassigned — no topic references</span>')
-            cls = ' class="source-superseded"' if e["superseded"] else ""
+            cls = ""
+            if e["superseded"]:
+                cls = ' class="source-superseded"'
+                # textual badge, not opacity alone — screen readers and
+                # unstyled readers must see the state (CFAR r6; matches the
+                # Topic Details renderer)
+                bits.append('<span class="source-superseded-badge">superseded</span>')
             parts.append("<li%s>%s</li>" % (cls, " · ".join(bits)))
         parts.append("</ul>")
     parts.append('<h2>Anomalies</h2>')

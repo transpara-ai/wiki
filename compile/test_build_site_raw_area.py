@@ -265,6 +265,20 @@ def test_raw_page_shard_manifest_rows_are_read():
     m2 = model(t2)
     assert entry(m2, stray) is None, "a symlinked shard must not confer membership"
     assert any("non-hermetic manifest container" in a for a in m2["anomalies"])
+    # a symlinked manifest.d PARENT defeats per-file containment: the whole
+    # directory is rejected and surfaced (CFAR r6)
+    t3 = Tree()
+    stray3 = t3.put("raw/inbox/2026-07-07/t/stray.quux", b"s")
+    ext_dir = t3.root / "external.d"
+    ext_dir.mkdir()
+    (ext_dir / "row.jsonl").write_text(json.dumps(file_row(stray3, b"s")) + "\n")
+    real = t3.root / "raw" / "inbox" / "manifest.d"
+    import shutil as _shutil
+    _shutil.rmtree(real)
+    real.symlink_to(ext_dir, target_is_directory=True)
+    m3 = model(t3)
+    assert entry(m3, stray3) is None, "a symlinked parent must not confer membership"
+    assert any("non-hermetic manifest parent" in a for a in m3["anomalies"])
     print("ok test_raw_page_shard_manifest_rows_are_read")
 
 
@@ -501,6 +515,9 @@ def test_raw_page_superseded_marking_all_edges():
     t2.manifest([file_row(doc, data), url_row(supersedes=doc)])
     m2 = model(t2)
     assert entry(m2, doc)["superseded"], "URL-row supersedes edge not honored"
+    # the superseded state renders as a TEXTUAL badge, not opacity alone
+    html_page = site.raw_page({"fresh": True, "text": ""}, m2)
+    assert 'source-superseded-badge">superseded</span>' in html_page
     print("ok test_raw_page_superseded_marking_all_edges")
 
 
@@ -530,6 +547,8 @@ def test_raw_page_manifest_rejection_lanes():
     lanes.append((json.dumps(dict(ok_file, mode=7)), "non-string"))
     lanes.append((json.dumps(dict(ok_file, source_path="  ")), "blank required"))
     lanes.append((json.dumps(dict(ok_file, sha256="abc123")), "not 64-hex"))
+    # 64 hex + escaped trailing newline: `$` would match pre-newline (CFAR r6)
+    lanes.append((json.dumps(dict(ok_file, sha256=sha(b"nl") + "\n")), "not 64-hex"))
     lanes.append((json.dumps(dict(ok_file, ingested_at="2026-07-07T09:00:00")), "naive"))
     lanes.append((json.dumps(dict(ok_file, ingested_at="not-a-date+00:00")), "unparseable"))
     lanes.append((json.dumps(dict(ok_file, ingested_at="2026-02-30T09:00:00+00:00")),
@@ -598,6 +617,12 @@ def test_raw_page_absent_manifest_target_surfaced():
     t.manifest([file_row("raw/inbox/2026-07-07/t/gone.md", b"gone")])
     m = model(t)
     assert any("recorded but absent on disk" in x for x in m["anomalies"])
+    # a hostile schema-valid path (overlong component) surfaces as absent
+    # instead of aborting the probe (CFAR r6)
+    t2 = Tree()
+    t2.manifest([file_row("raw/inbox/2026-07-07/t/%s.md" % ("x" * 300), b"y")])
+    m2 = model(t2)
+    assert any("recorded but absent on disk" in x for x in m2["anomalies"])
     print("ok test_raw_page_absent_manifest_target_surfaced")
 
 
