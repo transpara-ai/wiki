@@ -1,15 +1,15 @@
 ---
 doc_id: DF-DESIGN-WIKI-RAW-AREA
-version: 0.7.0
-status: draft — wiki#80 PR-review repairs applied (route reservation, total entry order); pre-IADA-r8
+version: 0.7.1
+status: draft — wiki#80 PR-review r2 repairs applied (BUILDER_PAGES classification, count consistency); pre-IADA-r9
 factory: transpara-ai/wiki
 author_family: claude
-factory_order: FO-WIKI-RAW-AREA v0.7.0 (blob dda6c425e9a593e27629b81bb38e5259452feb26; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; v0.7.0 byte-confirmation by Michael is a NAMED PRECONDITION for stage-6 entry)
+factory_order: FO-WIKI-RAW-AREA v0.7.1 (blob f5825535968e20ebcd8a7646a511e15533c54fdb; confirmed READING = v0.1.0 blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86; v0.7.1 byte-confirmation by Michael is a NAMED PRECONDITION for stage-6 entry)
 ---
 
 # Raw Area — TLC Design Packet
 
-> Answers FO-WIKI-RAW-AREA v0.7.0 (R1–R6) against measured live state at
+> Answers FO-WIKI-RAW-AREA v0.7.1 (R1–R6) against measured live state at
 > `transpara-ai/wiki` origin/main `7bf55384da70a30f636ad661bb5129d704775180`.
 > One new generated tools page, `raw.html`, in the Sources/Ingest pattern.
 > Builder stays no-LLM/no-network. This packet authorizes nothing.
@@ -28,10 +28,14 @@ factory_order: FO-WIKI-RAW-AREA v0.7.0 (blob dda6c425e9a593e27629b81bb38e5259452
 > lanes restored to D5/D6.19 with named cases (F2) — structure, bijection,
 > and the 30-criterion gate unchanged.
 > **v0.6.2** was the CFADA-r6 reference-consistency repair.
-> **v0.7.0** repairs the two wiki#80 PR-review findings: the `raw` route is
+> **v0.7.0** repaired the two wiki#80 PR-review r1 findings: the `raw` route is
 > reserved in the creation guard's collision surface (denial-only FO §2
 > carve-out) with a guard test, and within-group ordering gains the
 > source-path secondary key making entry order total on the live corpus.
+> **v0.7.1** repairs the r2 PR-review findings: `raw` joins
+> `ingest_ops.BUILDER_PAGES` (the classifier that ALREADY names
+> sources/ingest/repos — the deferral premise was wrong) with a link-gate
+> test, and the file-plan test count is made consistent.
 
 ## 1. Survey — measured, not assumed (file:line at main `7bf5538`)
 
@@ -220,6 +224,10 @@ factory_order: FO-WIKI-RAW-AREA v0.7.0 (blob dda6c425e9a593e27629b81bb38e5259452
       (and each reserved-route name) returns False after the reserved-set
       addition; a control name unaffected by the set still creates (the
       addition is denial-only)
+  26. `test_raw_route_classified_as_builder_page` — the target classifier
+      returns ("page", "raw") for `raw.html` (mirroring
+      sources/ingest/repos), so article links gate as known-page, not
+      unknown/downgraded
 - **D7 — File plan.** EDIT `compile/build_site.py` (membership formula,
   reader, folds, `raw_page()`, write at `:2722` block, one anchor per shared
   top-links variant); ADD `compile/test_build_site_raw_area.py` (24 named
@@ -261,6 +269,7 @@ parameterized cases all passing and individually reported); risk per row.
 | AC-T23 | D6.23 | rendered-field escaping incl. `note`/`mode` never emitted | med |
 | AC-T24 | D6.24 | exactly the named nav delta and no other | low |
 | AC-T25 | D6.25 | reserved routes refuse creation; the addition is denial-only | high |
+| AC-T26 | D6.26 | `raw.html` classifies as a builder page for link gating | med |
 | AC-S1 | D7 | `raw.html` in the render-smoke target set and green | med |
 | AC-I1 | inspection | no network-capable call at the PR head: import sweep AND call-site sweep (`socket`, `http.client`, `urllib`, `requests`, subprocess-to-network tools) over the diff, recorded in review evidence | med |
 | AC-I2 | inspection | no new subprocess use | med |
@@ -269,11 +278,11 @@ parameterized cases all passing and individually reported); risk per row.
 | AC-I5 | inspection | colors via existing custom properties only | low |
 
 **FO trace:** R1 → AC-T1, T2 · R2 → AC-T3–T8 · R3 → AC-T9–T13 ·
-R4 → AC-T14–T18, T20–T23 · R5 → AC-T24, AC-T25 · R6 → AC-T19, AC-S1,
-AC-I1–I5.
+R4 → AC-T14–T18, T20–T23 · R5 → AC-T24, AC-T25, AC-T26 · R6 → AC-T19,
+AC-S1, AC-I1–I5.
 
 **Gate satisfied-only-when (allowlist):** the code PR is satisfied only when
-ALL thirty-one criteria (25 tests + 1 spec-edit + 5 inspections) are evidenced at
+ALL thirty-two criteria (26 tests + 1 spec-edit + 5 inspections) are evidenced at
 the exact PR head. Any unproven criterion — including any single named
 parameterized case — ⇒ not satisfied. Default deny.
 
@@ -303,19 +312,21 @@ parameterized case — ⇒ not satisfied. Default deny.
 - **"Date unknown" may be empty on today's corpus** — fixture-proven anyway.
 - **Class-concept coupling** to `is_raw_ingested_research` where evidence
   lanes also match (deliberate, named).
-- **Pre-existing reserved-route class:** `sources`/`ingest`/`repos` routes
-  are equally unreserved today (an investigation named "Sources" would
-  collide the same way), and tool-route links are unclassified in
-  `canonical_article_target` — the CLASS fix is a named follow-up order;
-  this packet only refuses to add a fourth instance.
-- **FO v0.7.0 byte-confirmation pending:** blob
-  `dda6c425e9a593e27629b81bb38e5259452feb26` — NAMED PRECONDITION for
+- **Pre-existing reserved-route class (slug reservation only):**
+  `sources`/`ingest`/`repos` routes are unreserved in the CREATION GUARD
+  today (an investigation named "Sources" would collide the same way) — the
+  class fix is a named follow-up order; this packet only refuses to add a
+  fourth instance. Their LINK classification is already handled
+  (`BUILDER_PAGES`), and `raw` joins it here.
+- **FO v0.7.1 byte-confirmation pending:** blob
+  `f5825535968e20ebcd8a7646a511e15533c54fdb` — NAMED PRECONDITION for
   stage-6 entry.
 
 ## 6. Non-authorizations
 
 No code (Human Design Review gates stage 7), no merge, no deploy, no
-ingest-op change beyond the FO §2 denial-only reserved-route carve-out
+ingest-op change beyond the two named FO §2 carve-outs (reserved-route
+denial set; the single additive `BUILDER_PAGES` entry)
 (the reader contract is design-local; strengthening `ingest_ops` would be
 its own order), no `raw/**` moves, no scope beyond
-FO-WIKI-RAW-AREA v0.7.0 R1–R6.
+FO-WIKI-RAW-AREA v0.7.1 R1–R6.

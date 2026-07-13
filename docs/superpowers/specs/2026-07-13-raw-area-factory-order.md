@@ -1,7 +1,7 @@
 ---
 doc_id: FO-WIKI-RAW-AREA
-version: 0.7.0
-status: amended post-PR-review-r1 (wiki#80) — the CONFIRMED READING remains the v0.1.0 object (blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86, confirmed verbatim 2026-07-13); Michael's explicit byte-confirmation of THIS v0.7.0 file is the NAMED PRECONDITION for Human Design Review entry (supersedes every prior pending status)
+version: 0.7.1
+status: amended post-PR-review-r2 (wiki#80) — the CONFIRMED READING remains the v0.1.0 object (blob 7c10b2ffe4f9e6903328669baf68ab2ff004df86, confirmed verbatim 2026-07-13); Michael's explicit byte-confirmation of THIS v0.7.1 file is the NAMED PRECONDITION for Human Design Review entry (supersedes every prior pending status)
 factory: transpara-ai/wiki
 author_family: claude
 ---
@@ -21,7 +21,7 @@ author_family: claude
 > reading; deltas in §5. **v0.6.1** added the metadata-visibility
 > widening record (§5 item 8) and restored the three parse-level rejection
 > lanes (CFADA-r5). **v0.6.2** was a reference-consistency repair
-> (CFADA-r6). **v0.7.0** repairs the two wiki#80 PR-review findings: the
+> (CFADA-r6). **v0.7.0** repaired the two wiki#80 PR-review r1 findings: the
 > `raw` route reserved in the creation guard (denial-only §2 carve-out) and
 > the within-group entry order made total via the source-path secondary key.
 
@@ -103,8 +103,13 @@ author_family: claude
   article-slug collisions:** the page-creation guard's collision surface
   gains a constant reserved generated-route slug set (containing at least
   `raw`) so `subject_absent("Raw")` refuses — a DENIAL-ONLY addition (it can
-  only refuse more, never permit more). Verifiable: the nav test asserts
-  exactly the named delta; a guard test proves reserved names are refused.
+  only refuse more, never permit more). The `raw` route also joins the
+  existing builder-page classification (`BUILDER_PAGES`, which already
+  names `sources`/`ingest`/`repos`) so article links to `raw.html` gate as
+  a known page instead of downgrading — an additive classification entry.
+  Verifiable: the nav test asserts exactly the named delta; a guard test
+  proves reserved names are refused; a link-gate test proves `raw.html`
+  classifies as a builder page.
 - **R6 — Builder invariants; design-local manifest reader contract.** No
   LLM; no network-capable calls (imports AND call sites); air-gap-safe; both
   themes via the existing palette; degraded states visible. The reader
@@ -127,11 +132,14 @@ author_family: claude
 
 ## 2. Non-goals and constraints
 
-Unchanged from v0.5.0 EXCEPT one narrow, denial-only carve-out: the
+Unchanged from v0.5.0 EXCEPT two narrow, named carve-outs: (1) the
 page-creation guard (`ingest_server._investigation_collision_corpus`) may
 gain a constant reserved generated-route slug set so reserved routes refuse
-new-page creation — an addition that can only REFUSE more, never permit
-more; no other ingest-op/authorization/scanner change (the reader's stricter
+new-page creation — refusal-only; (2) `ingest_ops.BUILDER_PAGES` gains the
+single entry `raw` so the existing link classifier treats the new route as
+the known builder page it is — additive classification with no authority or
+behavioral surface beyond link rendering; no other
+ingest-op/authorization/scanner change (the reader's stricter
 row requirements are design-local — strengthening `ingest_ops` itself would
 be a separately authorized order); no `raw/**`
 moves; no Topic Details changes; no RBAC; no public exposure; no content
@@ -163,11 +171,12 @@ two-step if any pin needed; semver + blob-SHA truth rules.
   CFADA-r1 (blob `806aabc9…`) → v0.4.0 CFADA-r2 (blob `9cc2fc69…`) →
   v0.5.0 CFADA-r3 (blob `9c2bc7e9…`) → v0.6.0 CFADA-r4 (blob `7fc03d97…`)
   → v0.6.1 CFADA-r5 (blob `c8c51d64…`) → v0.6.2 CFADA-r6 (blob
-  `13786b7c…`) → **v0.7.0 wiki#80 PR-review repairs (this file)**.
-- **Michael's explicit confirmation of the v0.7.0 bytes is a named
+  `13786b7c…`) → v0.7.0 PR-review r1 (blob `dda6c425…`) → **v0.7.1
+  PR-review r2 (this file)**.
+- **Michael's explicit confirmation of the v0.7.1 bytes is a named
   precondition for Human Design Review entry.** Fail closed.
 
-## 5. v0.1.0 → v0.7.0 delta record (what the byte-confirmation covers)
+## 5. v0.1.0 → v0.7.1 delta record (what the byte-confirmation covers)
 
 1. **R1:** membership = `regular ∧ not-control ∧ (evidence ∨ TAI-RES)`;
    evidence = valid row ∨ upload grammar `<stem>-<sha12><suffix>` (ANY
@@ -191,12 +200,16 @@ two-step if any pin needed; semver + blob-SHA truth rules.
 9. **Route reservation + total entry order (v0.7.0, wiki#80 PR-review
    findings):** the `raw` route is reserved in the creation guard's
    collision surface (denial-only; §2 carve-out) so a future investigation
-   named "Raw" cannot overwrite the tool page; within-group entry ordering
-   gains the source-path secondary key (the live corpus already holds two
-   entries sharing one `original_name`). The SAME collision class
-   pre-exists for `sources`/`ingest`/`repos` (their routes are equally
-   unreserved today) and their link classification — that class fix is a
-   named follow-up order, deliberately NOT folded into this one.
+   named "Raw" cannot overwrite the tool page; `raw` joins
+   `ingest_ops.BUILDER_PAGES` so article links to the route classify as a
+   known page (r2 finding — `sources`/`ingest`/`repos` are ALREADY
+   classified there; only the slug-reservation half of the class
+   pre-exists); within-group entry ordering gains the source-path secondary
+   key (the live corpus already holds two entries sharing one
+   `original_name`). The pre-existing SLUG-RESERVATION exposure for
+   `sources`/`ingest`/`repos` (equally unreserved in the creation guard
+   today) is a named follow-up order, deliberately NOT folded into this
+   one.
 8. **Metadata-visibility widening (v0.6.1, CFADA-r5 F1) — for explicit HDR
    attention:** because ingestion evidence admits ANY suffix, a legitimate
    non-servable-suffix upload (e.g. `report-<sha12>.bin`) appears on the Raw
@@ -208,6 +221,6 @@ two-step if any pin needed; semver + blob-SHA truth rules.
    distinct from the crafted-evidence residual (deliberately staged names or
    rows), which remains a named residual risk.
 
-This FO grants nothing and authorizes no code. Next: packet v0.7.0 → IADA r8
+This FO grants nothing and authorizes no code. Next: packet v0.7.1 → IADA r9
 → codex re-review at the PR head → Michael's v0.7.0 byte-confirmation +
 Human Design Review.
