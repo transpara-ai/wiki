@@ -6,8 +6,8 @@ aliases:
   - the epiphany
 tier: foundational
 status: compiled
-last_compiled: 2026-07-02
-provenance_note: moved wholesale from index.md (the pre-board front page essay) on 2026-07-02 during the Item-2a front-page vision board arc; content unchanged except this frontmatter and the title heading.
+last_compiled: 2026-07-13
+provenance_note: moved wholesale from index.md (the pre-board front page essay) on 2026-07-02 during the Item-2a front-page vision board arc; content unchanged except this frontmatter and the title heading. July keep-current reconciliation 2026-07-13 — four hive guardrail-cycle rows added to the article index (Architecture/Arc), Open Brain coverage statements updated to include the Jul 1–12 export and the named Jun 14→30 gap, index total regenerated.
 ---
 
 # Arc Origin Narrative
@@ -374,7 +374,7 @@ accepted 2026-06-12). Within it:
 
 ## Article index
 
-92 articles compiled, grouped by tier. Tier is taken verbatim from each article's
+98 articles compiled, grouped by tier. Tier is taken verbatim from each article's
 frontmatter.
 
 ### Foundational — the Searles source philosophy (27)
@@ -553,9 +553,10 @@ these has an article yet; do not read their absence as absence from the project.
   (mind-zero-five at `github.com/mattxo/mind-zero-five` vs.
   `transpara-ai/eventgraph` vs. `lovyou-ai/eventgraph`) remains unresolved. See
   `[[event-graph]]` and `[[the-lovyou-ai-fork]]`.
-- **Open Brain depth.** The `raw/open-brain/` monthly exports cover **Mar–Jun 2026**
-  (Open Brain began 2026-03-03); deepening from monthly summaries to finer
-  per-thought granularity is a future run.
+- **Open Brain depth.** The `raw/open-brain/` monthly exports cover **Mar 2026 → Jun 13**
+  plus **Jul 1–12, 2026**, with a named **Jun 14→30 gap** (Open Brain began
+  2026-03-03); deepening from monthly summaries to finer per-thought granularity
+  is a future run.
 - **v16 fix-set implementation.** F1 (Reason-phase cwd), F2 (spec-diff gate at
   subtask creation), F3 (quiescence detector + `hive.run.completed`) are named in
   `[[slice-1-completion]]` as the candidate scope for a future fix set. The 2026-06-15 Gate-E hard stop
@@ -564,7 +565,7 @@ these has an article yet; do not read their absence as absence from the project.
 
 ---
 
-*Compiled by Run-3 on 2026-06-14; reconciled 2026-06-17 for the Event-1/Gate-K grant and pre-live waiver. Fail-legible: gaps are marked TBD, conflicts
+*Compiled by Run-3 on 2026-06-14; reconciled 2026-06-17 for the Event-1/Gate-K grant and pre-live waiver; July keep-current additions reconciled 2026-07-13 (four hive guardrail-cycle articles, Open Brain July coverage, regenerated index total). Fail-legible: gaps are marked TBD, conflicts
 are stated rather than resolved, and every `[[...]]` link above resolves to a real
 file in `wiki/`. Re-run the compiler to refresh `last_compiled` and fold in the
 deferred entities.*
