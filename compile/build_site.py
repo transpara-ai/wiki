@@ -1321,9 +1321,13 @@ def raw_area_model(root, article_refs=None):
         if tie:
             anomalies.append(tie)
     members = raw_area_documents(root, winners)
+    # edge (4): EVERY valid file-shape row's supersedes names its target —
+    # not just per-path winners, else a naming row that was itself superseded
+    # by a newer row for the same path would silently drop the mark (IAR).
     manifest_supersedes = {
         source_ref_clean(r["supersedes"])
-        for r in winners.values() if r.get("supersedes", "").strip()
+        for r in rows
+        if r["_shape"] == "file" and r.get("supersedes", "").strip()
     }
     entries = []
     for rel in members:
