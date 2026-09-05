@@ -20,7 +20,7 @@ PLATFORM_SEEDS = {
     "transpara-data-ingestion-vdl",
     "transpara-deployment-air-gap",
     "transpara-security-compliance",
-    "transpara-apis-mcp-boundary",
+    "platform-transpara-mcp-boundary",
     "transpara-operations-troubleshooting",
     "transpara-decisions-reference",
 }
