@@ -36,6 +36,7 @@ from urllib.parse import parse_qsl, urlsplit
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ingest_ops  # noqa: E402
 import org_structure  # noqa: E402  # side-effect-free org/section allowlists
+from article_catalog import load_catalog  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
@@ -158,18 +159,21 @@ def prospective_unassigned_slug(form=None, name=""):
 
 def article_records(include_sources=True):
     out = []
-    for p in sorted(WIKI.glob("*.md")):
-        fm, _, _ = split_fm(p.read_text())
-        if fm_val(fm, "retired_on"):
+    for record in load_catalog(WIKI.parent, wiki_dir=WIKI):
+        if record.retired_on:
             continue  # retired tombstones are not offered in the ingest selector
         out.append({
-            "slug": p.stem,
-            "title": fm_val(fm, "entity") or p.stem.replace("-", " "),
-            "tier": fm_val(fm, "tier") or "concept",
-            "sources": fm_list(fm, "sources") if include_sources else [],
+            "slug": record.slug,
+            "title": record.title,
+            "tier": record.tier,
+            "org": record.org,
+            "primary_placement": record.primary_placement,
+            "placements": list(record.placements),
+            "classification": record.classification,
+            "sources": list(record.sources) if include_sources else [],
             # the replace preflight accepts sources OR raw_documents, so the
             # UI selector must be able to offer both (CFAR r1 P2); same gate
-            "raw_documents": (fm_list(fm, "raw_documents")
+            "raw_documents": (list(record.raw_documents)
                               if include_sources else []),
         })
     return out
@@ -328,25 +332,13 @@ def collision_key(s):
 
 
 def article_tier(slug):
-    path = WIKI / ("%s.md" % slug)
-    if not path.exists():
-        return ""
-    fm, _, _ = split_fm(path.read_text())
-    # fm_scalar: a commented `tier: investigation # x` must still gate the ADD
-    # stale stamp, else no re-derivation banner is produced (CFAR: Codex).
-    return fm_scalar(fm, "tier")
+    record = load_catalog(WIKI.parent, wiki_dir=WIKI).by_slug.get(slug)
+    return record.tier if record else ""
 
 
 def article_org(slug):
-    path = WIKI / ("%s.md" % slug)
-    if not path.exists():
-        return ""
-    fm, _, _ = split_fm(path.read_text())
-    # an absent org key defaults like the builder does; a present key is taken
-    # verbatim so a bad value can never silently pass a coherence check
-    if re.search(r"(?m)^org\s*:", fm):
-        return fm_scalar(fm, "org")
-    return org_structure.DEFAULT_ORG
+    record = load_catalog(WIKI.parent, wiki_dir=WIKI).by_slug.get(slug)
+    return record.org if record else ""
 
 
 def validate_org_section(org, section, new_investigation):

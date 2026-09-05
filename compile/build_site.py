@@ -23,6 +23,7 @@ import markdown
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ingest_ops  # noqa: E402
+from article_catalog import CatalogError, load_catalog  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REPOS_ROOT = pathlib.Path("/Transpara/transpara-ai/repos")
@@ -387,36 +388,32 @@ def source_is_archived(ref):
 
 def article_meta():
     meta = {}
-    for p in sorted(WIKI.glob("*.md")):
-        fm, _ = split_fm(p.read_text())
-        # fail-closed org/tier resolution (DP-20260710 D3): a present-but-
-        # empty/unknown org, a missing tier, or a tier foreign to the resolved
-        # org kills the build loudly — there is no silent `concept` fallback.
-        # Absent org defaults to DEFAULT_ORG so the existing corpus needs no
-        # frontmatter edits (corpus-evidenced: all pages carry explicit tiers).
-        org_present = bool(re.search(r"(?m)^org\s*:", fm))
-        try:
-            org, tier = resolve_org_tier(
-                p.stem, org_present, fm_scalar(fm, "org"), fm_scalar(fm, "tier"))
-        except ValueError as exc:
-            raise SystemExit("article_meta: %s" % exc)
-        source_refs = fm_list(fm, "sources") + fm_list(fm, "raw_documents")
+    try:
+        catalog = load_catalog(WIKI.parent, wiki_dir=WIKI)
+    except CatalogError as exc:
+        raise SystemExit("article_meta: %s" % exc)
+    for record in catalog:
+        source_refs = list(record.sources + record.raw_documents)
         local_source_refs = [ref for ref in source_refs
                              if not ref.startswith(("http://", "https://"))]
         inherited_archive_date = ""
         if local_source_refs and all(source_is_archived(ref)
                                      for ref in local_source_refs):
             inherited_archive_date = ARCHIVE_BOUNDARY["archived_on"]
-        meta[p.stem] = {
-            "slug": p.stem,
+        meta[record.slug] = {
+            "slug": record.slug,
             # fm_scalar for the value-load-bearing title/tier (a commented
             # `tier: investigation # x` must still gate the TOC, nav group, and
             # contribution box); retired_on stays fm_val so an ambiguous/comment-
             # only value still drops the page from nav (fail-safe) (CFAR: Codex).
-            "title": fm_scalar(fm, "entity") or p.stem.replace("-", " "),
-            "tier": tier,
-            "org": org,
-            "retired_on": fm_val(fm, "retired_on") or inherited_archive_date,
+            "title": record.title,
+            "tier": record.tier,
+            "org": record.org,
+            "primary_placement": record.primary_placement,
+            "placements": list(record.placements),
+            "classification": record.classification,
+            "source_authority": list(record.source_authorities),
+            "retired_on": record.retired_on or inherited_archive_date,
             "archive_inherited": bool(inherited_archive_date),
         }
     return meta
@@ -1482,10 +1479,13 @@ def link_source_alias_refs(body_html, refs):
 
 def frontmatter_source_refs():
     refs = set()
-    for p in sorted(WIKI.glob("*.md")):
-        fm, _ = split_fm(p.read_text())
-        for key in ("sources", "raw_documents"):
-            refs.update(source_ref_clean(r) for r in fm_list(fm, key) if source_ref_clean(r))
+    try:
+        catalog = load_catalog(WIKI.parent, wiki_dir=WIKI)
+    except CatalogError as exc:
+        raise SystemExit("frontmatter_source_refs: %s" % exc)
+    for record in catalog:
+        refs.update(source_ref_clean(ref) for ref in record.sources + record.raw_documents
+                    if source_ref_clean(ref))
     return refs
 
 

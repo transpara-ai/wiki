@@ -23,6 +23,7 @@ import re
 import os
 
 import stats
+from article_catalog import load_catalog
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 RAW = ROOT / "raw"
@@ -72,12 +73,10 @@ def hash_sources():
 
 def article_sources():
     out = {}
-    for p in WIKI.glob("*.md"):
-        txt = p.read_text()
-        m = re.search(r"\nsources:\n(.*?)\n[A-Za-z_]+:", txt, re.S)
-        block = m.group(1) if m else ""
-        cites = [c.strip() for c in re.findall(r"(raw/[^\n#]+)", block)]
-        out[p.stem] = set(cites)
+    for record in load_catalog(ROOT):
+        out[record.slug] = {
+            ref for ref in record.sources if ref.startswith("raw/")
+        }
     return out
 
 

@@ -12,6 +12,8 @@ import re
 import pathlib
 import os
 
+from article_catalog import load_catalog
+
 # Canonical breakdown order. Any tier value NOT listed here, and any article
 # missing a `tier:` field (-> NO_TIER), is surfaced as its own bucket rather
 # than folded into a default: an unexpected tier shows up, never hides.
@@ -46,9 +48,10 @@ def compute_counts(root):
     """
     root = pathlib.Path(root)
     counts = {}
+    catalog = load_catalog(root)
     total = 0
-    for p in sorted((root / "wiki").glob("*.md")):
-        tier = _tier_of(p)
+    for record in catalog:
+        tier = record.tier
         counts[tier] = counts.get(tier, 0) + 1
         total += 1
     ordered = [(t, counts[t]) for t in CANONICAL_TIERS if t in counts]
