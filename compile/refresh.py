@@ -44,6 +44,11 @@ def sh(*a):
 def mirror_sources():
     dst = RAW / "transpara" / "dark-factory"
     dst.mkdir(parents=True, exist_ok=True)
+    boundary = dst / ".civilization-archive.json"
+    # This marker is local governance state, even when the mirrored source tree
+    # does not carry a copy. Preserve it across rsync --delete; if upstream does
+    # provide a marker, rsync remains free to update it.
+    preserved_boundary = boundary.read_bytes() if boundary.is_file() else None
     if DF.exists():
         try:
             out = sh("rsync", "-a", "--delete", "--prune-empty-dirs",
@@ -56,6 +61,8 @@ def mirror_sources():
         if out.returncode != 0:
             print("refresh: source mirror warning: %s" %
                   ((out.stderr or out.stdout).strip() or "rsync failed"), file=sys.stderr)
+        if preserved_boundary is not None and not boundary.exists():
+            boundary.write_bytes(preserved_boundary)
 
 
 def hash_sources():

@@ -209,6 +209,33 @@ def test_mirror_sources_carries_the_single_archive_boundary():
     print("ok test_mirror_sources_carries_the_single_archive_boundary")
 
 
+def test_mirror_sources_preserves_local_boundary_when_upstream_lacks_it():
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        df = root / "docs" / "dark-factory"
+        df.mkdir(parents=True)
+        dst = root / "raw" / "transpara" / "dark-factory"
+        dst.mkdir(parents=True)
+        boundary = dst / ".civilization-archive.json"
+        original = b'{"authority":"historical-evidence-only"}\n'
+        boundary.write_bytes(original)
+        old_raw, old_df, old_sh = refresh.RAW, refresh.DF, refresh.sh
+
+        def simulated_delete(*_args):
+            boundary.unlink()
+            return Proc()
+
+        try:
+            refresh.RAW = root / "raw"
+            refresh.DF = df
+            refresh.sh = simulated_delete
+            refresh.mirror_sources()
+            assert boundary.read_bytes() == original
+        finally:
+            refresh.RAW, refresh.DF, refresh.sh = old_raw, old_df, old_sh
+    print("ok test_mirror_sources_preserves_local_boundary_when_upstream_lacks_it")
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items())
            if k.startswith("test_") and callable(v)]
