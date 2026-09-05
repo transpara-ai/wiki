@@ -1,5 +1,10 @@
 ---
 entity: Civilization Institutional Substrate
+org: transpara-ai
+primary_placement: civilization/institutional
+placements:
+  - civilization/institutional
+classification: internal
 aliases:
   - institutional substrate
   - Civilization substrate

@@ -1,5 +1,10 @@
 ---
 entity: Site (Operator Console)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [site, the operator console, the governed console, the Site console, Gate-E surface, the society view]
 tier: architecture
 status: compiled

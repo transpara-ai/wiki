@@ -1,5 +1,10 @@
 ---
 entity: The Ethics Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [ethics graph, EthicsGraph, Layer 7 ethics, harm detection graph, accountability graph]
 tier: foundational
 status: compiled

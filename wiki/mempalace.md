@@ -1,5 +1,10 @@
 ---
 entity: MemPalace
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases:
   - MemPalace
   - mempalace

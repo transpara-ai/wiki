@@ -1,5 +1,10 @@
 ---
 entity: The Meta Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [meta graph, MetaGraph, layer 12 meta, emergence graph, the nervous system, layer 12 emergence]
 tier: foundational
 status: compiled

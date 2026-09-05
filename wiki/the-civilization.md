@@ -1,5 +1,10 @@
 ---
 entity: The Civilization (One Civilization, One Business)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases:
   - the civilization
   - one civilization one business

@@ -1,5 +1,10 @@
 ---
 entity: Dark Factory
+org: transpara-ai
+primary_placement: civilization/arc
+placements:
+  - civilization/arc
+classification: internal
 aliases:
   - dark factory
   - the dark factory

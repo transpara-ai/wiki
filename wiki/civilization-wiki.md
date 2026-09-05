@@ -1,5 +1,10 @@
 ---
 entity: The Transpara-AI Civilization Wiki
+org: transpara-ai
+primary_placement: civilization/meta
+placements:
+  - civilization/meta
+classification: internal
 aliases: [civilization-wiki, Transpara-AI Civilization Wiki, Karpathy-style wiki, the wiki, the knowledge substrate, the LLM wiki]
 tier: meta
 status: compiled

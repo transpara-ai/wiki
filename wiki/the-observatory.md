@@ -1,5 +1,10 @@
 ---
 entity: The Observatory
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [observatory, ops/observatory, civilization transparency surface, mission control read view]
 tier: architecture
 status: compiled

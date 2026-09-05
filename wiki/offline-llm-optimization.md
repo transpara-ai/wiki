@@ -1,5 +1,10 @@
 ---
 entity: Offline LLM Optimization
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases:
   - offline LLM optimization
   - offline models

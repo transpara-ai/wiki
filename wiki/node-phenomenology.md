@@ -1,5 +1,10 @@
 ---
 entity: What It's Like to Be a Node
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases:
   - node phenomenology
   - the phenomenology of the node

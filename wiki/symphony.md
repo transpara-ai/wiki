@@ -1,5 +1,10 @@
 ---
 entity: Symphony
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases: [symphony, transpara-ai/symphony, candidate 22]
 tier: investigation
 status: compiled

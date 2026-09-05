@@ -1,5 +1,10 @@
 ---
 entity: The Population Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [population graph, PopulationGraph, layer 9 population, demographic graph]
 tier: foundational
 status: compiled

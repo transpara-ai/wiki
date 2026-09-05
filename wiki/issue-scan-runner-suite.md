@@ -1,5 +1,10 @@
 ---
 entity: The Issue-Scan Runner Suite
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [runner suite, issue-scan runner-suite package, runner contracts, hive#262 package]
 tier: architecture
 status: compiled

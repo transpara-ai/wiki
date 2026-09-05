@@ -1,5 +1,10 @@
 ---
 entity: Dark Factory Lineage
+org: transpara-ai
+primary_placement: civilization/institutional
+placements:
+  - civilization/institutional
+classification: internal
 aliases:
   - Dark Factory lineage
   - dark-factory lineage

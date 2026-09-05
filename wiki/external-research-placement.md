@@ -1,5 +1,10 @@
 ---
 entity: External Research Placement
+org: transpara-ai
+primary_placement: civilization/institutional
+placements:
+  - civilization/institutional
+classification: internal
 aliases:
   - research placement
   - competitor research placement

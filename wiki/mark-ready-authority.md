@@ -1,5 +1,10 @@
 ---
 entity: The Mark-Ready Authority Model
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [mark-ready authority, pull_request.mark_ready, the finalizer guardrails, managed ready-PR finalizer, hive#263 guardrails]
 tier: architecture
 status: compiled

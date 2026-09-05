@@ -1,5 +1,10 @@
 ---
 entity: The Event Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [event graph, EventGraph, the event store, the moral ledger, the sovereign truth layer, the kernel]
 tier: foundational
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: mind-zero-five
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [mind-zero-five, mind zero five, mindzerofive, the Go implementation, mind-zero-five repo]
 tier: architecture
 status: compiled

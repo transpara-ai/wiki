@@ -1,5 +1,10 @@
 ---
 entity: bitsandpieces
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases:
   - bitsandpieces
   - the Atoms

@@ -1,5 +1,10 @@
 ---
 entity: RuntimeBroker (Bounded Execution Envelope)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [RuntimeBroker, RuntimeEnvelope, runtime invocation envelope, bounded runtime, bounded execution envelope, BoundedWorker]
 tier: architecture
 status: compiled

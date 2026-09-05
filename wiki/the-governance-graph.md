@@ -1,5 +1,10 @@
 ---
 entity: The Governance Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [governance graph, GovernanceGraph, Layer 11 governance, accountability infrastructure, governance accountability graph]
 tier: foundational
 status: compiled

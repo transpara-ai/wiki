@@ -1,5 +1,10 @@
 ---
 entity: Hive / Governance Layer
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [hive, the hive, transpara-ai/hive, the governance layer, the civilization runtime, the hive daemon, the civic roles]
 tier: architecture
 status: compiled

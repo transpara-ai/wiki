@@ -1,5 +1,10 @@
 ---
 entity: The Cognitive Grammar (Derive / Traverse / Need)
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases:
   - the cognitive grammar
   - cognitive grammar

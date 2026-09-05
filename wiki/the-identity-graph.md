@@ -1,5 +1,10 @@
 ---
 entity: The Identity Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [identity graph, IdentityGraph, Layer 8, self-sovereign identity, behaviour-first identity]
 tier: foundational
 status: compiled

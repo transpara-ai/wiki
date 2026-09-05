@@ -1,5 +1,10 @@
 ---
 entity: Gate K
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [gate-k, Gate K, interim loop hardened, development loop hardened]
 tier: architecture
 status: compiled

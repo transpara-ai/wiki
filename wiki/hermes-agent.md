@@ -1,5 +1,10 @@
 ---
 entity: Hermes Agent
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases:
   - hermes-agent
   - Hermes

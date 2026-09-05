@@ -1,5 +1,10 @@
 ---
 entity: Agent Governance Toolkit
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases:
   - agent-governance-toolkit
   - transpara-ai/agent-governance-toolkit

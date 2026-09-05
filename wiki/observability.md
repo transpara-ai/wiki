@@ -1,5 +1,10 @@
 ---
 entity: Observability
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [transparency contract, T1–T7, civilization transparency, dark-factory observability, fail-legible]
 tier: architecture
 status: compiled

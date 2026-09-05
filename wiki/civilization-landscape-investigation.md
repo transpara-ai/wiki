@@ -1,5 +1,10 @@
 ---
 entity: The Civilization Landscape Investigation
+org: transpara-ai
+primary_placement: civilization/arc
+placements:
+  - civilization/arc
+classification: internal
 aliases:
   - Civilization Landscape Investigation
   - Dark Factory Landscape Investigation

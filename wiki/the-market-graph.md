@@ -1,5 +1,10 @@
 ---
 entity: The Market Graph
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases: [Market Graph, Layer 2 Market Graph, the exchange layer, the toll-booth economy]
 tier: concept
 status: compiled

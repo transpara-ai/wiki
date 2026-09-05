@@ -1,5 +1,10 @@
 ---
 entity: Arc Origin Narrative
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases:
   - front page narrative
   - origin narrative

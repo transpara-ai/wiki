@@ -1,5 +1,10 @@
 ---
 entity: The lovyou.ai Fork
+org: transpara-ai
+primary_placement: civilization/arc
+placements:
+  - civilization/arc
+classification: internal
 aliases: [the lovyou-ai fork, lovyou.ai fork, the fork, lovyou-ai → transpara-ai, the origin fork]
 tier: arc
 status: compiled

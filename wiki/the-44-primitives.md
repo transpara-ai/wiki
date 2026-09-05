@@ -1,5 +1,10 @@
 ---
 entity: The 44 Primitives
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases:
   - the 44 primitives
   - 44 foundation primitives

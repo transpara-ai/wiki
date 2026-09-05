@@ -1,5 +1,10 @@
 ---
 entity: Thirteen Graphs, One Infrastructure
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases: [thirteen graphs, 13 graphs, views not products, one substrate thirteen lenses, the thirteen product graphs]
 tier: concept
 status: compiled

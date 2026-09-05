@@ -1,5 +1,10 @@
 ---
 entity: The Permanent Tensions
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [permanent tensions, the four tensions, the irreducible tensions, the anti-utopian feature]
 tier: foundational
 status: compiled

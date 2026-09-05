@@ -1,5 +1,10 @@
 ---
 entity: The Roles Catalog
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [roles catalog, 24-role catalog, dual-layer catalog, Hive Civilization Roles Catalog, DF-ROLES-CATALOG]
 tier: architecture
 status: compiled

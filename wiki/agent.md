@@ -1,5 +1,10 @@
 ---
 entity: Agent (Identity and Lifecycle Core)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [agent, transpara-ai/agent, the agent package, identity and lifecycle core, agent repo]
 tier: architecture
 status: compiled

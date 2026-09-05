@@ -1,5 +1,10 @@
 ---
 entity: The Social Graph
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases: [social graph, the social graph, Layer 3, the society layer, the relationship layer]
 tier: concept
 status: compiled

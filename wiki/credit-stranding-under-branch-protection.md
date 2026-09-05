@@ -1,5 +1,10 @@
 ---
 entity: Credit Stranding Under Branch Protection
+org: transpara-ai
+primary_placement: civilization/arc
+placements:
+  - civilization/arc
+classification: internal
 aliases: [credit stranding, the stranded CFAR credit, head-delta vs strict protection, the fresh-head arc]
 tier: arc
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: Platform and Transpara-MCP Boundary
+org: transpara-ai
+primary_placement: civilization/institutional
+placements:
+  - civilization/institutional
+classification: internal
 aliases:
   - Platform/MCP boundary
   - Transpara Platform boundary

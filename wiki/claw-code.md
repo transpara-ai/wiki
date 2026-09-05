@@ -1,5 +1,10 @@
 ---
 entity: claw-code
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases:
   - claw-code
   - claw code

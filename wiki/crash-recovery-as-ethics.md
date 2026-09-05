@@ -1,5 +1,10 @@
 ---
 entity: Crash Recovery as Ethics
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases: [crash recovery, crash-recovery, recoverState, stale task recovery, reboot survival]
 tier: concept
 status: compiled

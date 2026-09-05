@@ -1,5 +1,10 @@
 ---
 entity: Bounded Runtime (Execution Envelope)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [bounded runtime, BoundedRuntime, bounded-runtime, CanOperate, Loop Config, execution envelope, workspace containment, BudgetConfig]
 tier: architecture
 status: compiled

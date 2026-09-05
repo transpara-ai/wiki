@@ -1,5 +1,10 @@
 ---
 entity: Work (Production DAG and Task Lifecycle)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [work, the work repo, transpara-ai/work, the flow system, Work DAG, the production DAG]
 tier: architecture
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: Owain Lewis Work System (Blueprint & Factory)
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases:
   - owainlewis
   - Blueprint

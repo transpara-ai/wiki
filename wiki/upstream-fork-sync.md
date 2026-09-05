@@ -1,5 +1,10 @@
 ---
 entity: Upstream Fork Sync
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [upstream-fork-sync, fork sync controller, institutional sync, reconcile workflow]
 tier: architecture
 status: compiled

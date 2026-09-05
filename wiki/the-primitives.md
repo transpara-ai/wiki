@@ -1,5 +1,10 @@
 ---
 entity: The Primitives (Derivation Ladder: 20 → 44 → 200)
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [the primitives, the derivation ladder, the primitive ladder, 20-44-200, the primitive framework]
 tier: foundational
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: Searles Primitive Basis (Source Philosophy)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [primitive basis, source philosophy, the Searles corpus, source-philosophy basis, accepted philosophical basis]
 tier: architecture
 status: compiled

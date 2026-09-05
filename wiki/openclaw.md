@@ -1,5 +1,10 @@
 ---
 entity: OpenClaw
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases: [openclaw, transpara-ai/openclaw, the personal AI assistant, the lobster, the local-first gateway]
 tier: investigation
 status: compiled
