@@ -1,72 +1,78 @@
-# Transpara-AI Civilization Wiki
+# Transpara Knowledge Hub
 
-A [Karpathy-style LLM wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — a self-maintaining, interlinked knowledge **substrate** for the Transpara-AI Civilization arc, compiled from the source corpus (Matt Searles' lovyou.ai posts + first-party Dark Factory docs + Open Brain + the Stage 0 institutional-substrate source snapshot).
+A compiled, interlinked knowledge system with one canonical article graph and several purposeful views. The current spaces are **Civilization**, **Transpara Platform**, and **Competition**.
 
-**Start here: [`index.md`](index.md)** — the front-page narrative frame for the Searles-to-Civilization arc, followed by the chronology and article index.
+Start at [`index.md`](index.md), the neutral portal. Space-specific source homes live under `spaces/`; canonical articles remain in `wiki/` and retain flat HTML routes such as `/event-graph.html`.
 
-## Layout
+## Architecture
 
-- `index.md` — the encyclopedia-style front page, historical narrative frame, chronology, and article index (read this first)
-- `wiki/` — interlinked entity articles (foundational philosophy · architecture · dark-factory arc · investigations)
-- `raw/` — source material: `searles/` (the posts), `open-brain/` (exported thoughts), `civilization/` (Stage 0 institutional-substrate proposal snapshot), and `inbox/` (browser-ingested source drops). Generated first-party Dark Factory mirrors are recorded in `PROVENANCE.md`.
-- `civilization-arc.html` — the single normalized wiki page for the progress chart; not the home page and not authority.
-- `DESIGN.md` — substrate design, compile pipeline, keep-current plan
-- `PROVENANCE.md` — source manifest
+- `compile/knowledge_structure.json` — governed registry for spaces, sections, stewards, classifications, source authorities, and publication profiles.
+- `index.md` — neutral Knowledge Hub portal source.
+- `spaces/civilization/index.md` — Civilization home and existing board.
+- `spaces/platform/index.md` — Transpara Platform home.
+- `spaces/competition/index.md` — Competition home.
+- `wiki/` — canonical articles. One article can have several explicit placements without duplicating its body.
+- `raw/` — source material and browser-ingested evidence. Historical material is not physically moved merely to match the presentation taxonomy.
+- `compile/` — catalog, builder, validation, lifecycle, refresh, and local authoring services.
+- `DESIGN.md` and `PROVENANCE.md` — pipeline design and source manifest.
 
-## Principles
+The Knowledge Hub is advisory. Running code, versioned configuration, accepted decisions, release systems, customer systems, and EventGraph retain their respective authority.
 
-- **Ingest broadly, synthesize at compile** — curation happens in `wiki/`, not at the door.
-- **Fail-legible** — articles state source conflicts and mark asserted-vs-proven claims; gaps are `TBD`, never invented.
-- **Compounding** — pre-compiled, cross-linked entity pages re-derived from sources (not RAG-per-query).
+## Content rules
 
-## Setup
+- Ingest broadly and synthesize curatively; source registration is not automatic publication.
+- Make source conflicts and implemented/normative/planned/positioning boundaries legible.
+- Keep one canonical slug and steward per article, one primary placement, and explicit additional placements.
+- Never ingest customer production content, credentials, or unauthorized prospect evidence.
+- Keep competitive claims time-bounded and label Transpara-authored interpretation as first-party positioning.
 
-One-time, per clone — enables the fail-closed pre-commit secret scan
-(`compile/secret_scan.py`; CI enforces the same scan on every PR regardless):
+The migration retains all 108 original article routes and the intentional unresolved-reference baseline. The initial curated Platform and Competition set is classified `company-internal`; the original Civilization corpus remains `internal` unless separately reviewed.
+
+## Build and verify
+
+One-time per clone, enable the fail-closed pre-commit secret scan:
 
 ```bash
 git config core.hooksPath .githooks
 ```
 
-## Status
-
-Run 10 service hardening: **101 articles**, served source pages, a browser
-authoring surface, and generated Transpara-AI repository pages. The wiki exposes `repos.html`,
-`sources.html`, and `ingest.html`; raw/source references open served
-source-viewer pages, and `compile/ingest_server.py` can batch-ingest documents
-into `raw/inbox/`, append selected article source references, update
-`raw_documents`, create a provisional investigation article when no target
-article is selected, and rebuild the generated site. Static full-site search
-includes source documents and repository README pages as first-class results.
-Stage 0 material remains advisory proposal source, not accepted doctrine.
-The browser **Refresh status and rebuild** action uses the same deterministic
-`compile/refresh.py` path as the systemd timer, so the header freshness banner
-is recomputed with the rendered site. Successful browser ingest/rebuild actions
-reload the generated shell after the rebuild so the left navigation and
-freshness chip reflect the newly built `dist/` output immediately.
-
-Article source declarations are the wiki's click-through contract. Literal raw
-paths in code formatting and declared source document identifiers/titles
-(`ADR-0008`, `DF-V3.9-SPEC-006`, `Decision 15`, etc.) render as one-click links
-to served source pages when the source document exists in frontmatter.
-
-Read-only serving can still use
-`python3 -m http.server --bind 127.0.0.1 --directory dist` for local throwaway
-previews. On nucbuntu, the first-class authoring route is the
-Transpara-AI Civilization Wiki service on loopback `:8787`, managed by
-linger-enabled user systemd. It is intentionally not the LAN write surface:
+Build the complete host-local authoring view:
 
 ```bash
-systemctl --user status transpara-ai-civilization-wiki.service
-systemctl --user status transpara-ai-civilization-wiki-refresh.timer
-# equivalent foreground command:
+npm run build
+npm run verify
+```
+
+Build isolated publication profiles:
+
+```bash
+python3 compile/build_site.py --profile authoring-local --output dist-next
+python3 compile/build_site.py --profile company-internal --output dist-company
+```
+
+`public-platform` is intentionally disabled and fails before it creates output. Enabling or serving it is a separate publication-authority decision.
+
+`npm run test:shadow` builds `dist-next`, proves it byte-equivalent to the current `dist` authoring artifact, checks the preserved route and link inventories, and runs browser tests through a separate loopback-only endpoint on `127.0.0.1:8800`.
+
+## Local service
+
+The authoring service remains bound to loopback at `127.0.0.1:8787`:
+
+```bash
+systemctl --user status transpara-knowledge-hub.service
+systemctl --user status transpara-knowledge-hub-refresh.timer
+# equivalent foreground command
 python3 compile/ingest_server.py 127.0.0.1 8787
 ```
 
-The service auto-starts on reboot. The refresh timer runs the deterministic
-`compile/refresh.py` path every 15 minutes to rebuild and update the freshness
-banner; it does not perform LLM article synthesis. If a LAN-visible read route
-is needed, expose a separate read-only static/proxy service rather than exposing
-the authoring endpoints. Do not proxy `source/*.html` or `search-index.js`
-outside the host-local trust boundary unless the confidential raw-source corpus
-has been deliberately approved for that audience.
+Generic `transpara-knowledge-hub*` systemd templates are canonical. The former `transpara-ai-civilization-wiki*` templates remain for one compatibility window; the two service families conflict and must not be run together. Migration and rollback instructions are in [`compile/REBUILD.md`](compile/REBUILD.md).
+
+New environment names use `KNOWLEDGE_HUB_*`; `CIVWIKI_*` authoring, allowed-host, Python, and Dark Factory source names remain fallback aliases during the compatibility window.
+
+Static throwaway previews must also stay loopback-only unless a separate authority approves a broader audience:
+
+```bash
+python3 -m http.server 8798 --bind 127.0.0.1 --directory dist
+```
+
+Do not expose the authoring endpoints as a public or LAN read route. A broader read-only publication must use an appropriate restricted profile and must not include raw sources, mutation controls, repository mirrors, or full-text indexes outside their authorized boundary.

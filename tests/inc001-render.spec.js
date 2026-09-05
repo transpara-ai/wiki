@@ -1,8 +1,12 @@
 const { test, expect } = require("@playwright/test");
 
 test("INC-001 operational wiki pages render locally", async ({ page }) => {
+  await page.goto("/index.html");
+  await expect(page.locator(".hub-hero h1")).toHaveText("Transpara Knowledge Hub");
+  await expect(page.locator("article.body")).toBeVisible();
+  await expect(page.locator("footer.page-foot")).toContainText("source systems retain authority");
+
   const pages = [
-    ["index.html", "Transpara-AI Civilization Wiki"],
     ["the-observatory.html", "The Observatory"],
     ["civilization-wiki.html", "The Transpara-AI Civilization Wiki"],
     ["gate-k.html", "Gate K"],

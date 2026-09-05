@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local authoring server for the Civilization Wiki.
+"""Local authoring server for the Transpara Knowledge Hub.
 
 Serves dist/ like http.server, plus small write endpoints used by ingest.html:
   GET  /api/articles
@@ -45,9 +45,11 @@ RAW_INBOX = ROOT / "raw" / "inbox"
 MANIFEST = RAW_INBOX / "manifest.jsonl"
 LOCK_PATH = ROOT / "compile" / ".wiki-write.lock"
 MAX_POST_BYTES = 100 * 1024 * 1024
-AUTHORING_TOKEN_ENV = "CIVWIKI_AUTHORING_TOKEN"
+AUTHORING_TOKEN_ENV = "KNOWLEDGE_HUB_AUTHORING_TOKEN"
+LEGACY_AUTHORING_TOKEN_ENV = "CIVWIKI_AUTHORING_TOKEN"
 AUTHORING_TOKEN_HEADER = "X-CivWiki-Authoring-Token"
-ALLOWED_HOSTS_ENV = "CIVWIKI_ALLOWED_HOSTS"
+ALLOWED_HOSTS_ENV = "KNOWLEDGE_HUB_ALLOWED_HOSTS"
+LEGACY_ALLOWED_HOSTS_ENV = "CIVWIKI_ALLOWED_HOSTS"
 
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 SAFE_NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
@@ -524,6 +526,11 @@ def split_host_header(host_header):
     return host_header.rstrip("."), ""
 
 
+def compatible_env(primary, legacy):
+    """Prefer the Knowledge Hub name while retaining one migration window."""
+    return os.environ.get(primary, "") or os.environ.get(legacy, "")
+
+
 def host_header_allowed(host_header, server_port=None):
     host, port = split_host_header(host_header)
     if not host:
@@ -531,7 +538,7 @@ def host_header_allowed(host_header, server_port=None):
     server_port = str(server_port or "")
     if host in {"localhost", "127.0.0.1", "::1"} and (not port or not server_port or port == server_port):
         return True
-    for allowed in os.environ.get(ALLOWED_HOSTS_ENV, "").split(","):
+    for allowed in compatible_env(ALLOWED_HOSTS_ENV, LEGACY_ALLOWED_HOSTS_ENV).split(","):
         allowed_host, allowed_port = split_host_header(allowed)
         if not allowed_host:
             continue
@@ -587,7 +594,8 @@ def same_origin_authoring_request(headers, server_port=None):
 
 def authoring_allowed(client_host, supplied_token, configured_token=None):
     if configured_token is None:
-        configured_token = os.environ.get(AUTHORING_TOKEN_ENV, "")
+        configured_token = compatible_env(
+            AUTHORING_TOKEN_ENV, LEGACY_AUTHORING_TOKEN_ENV)
     if configured_token:
         return hmac.compare_digest(supplied_token or "", configured_token)
     return is_loopback_host(client_host)
@@ -971,7 +979,8 @@ class IngestHandler(SimpleHTTPRequestHandler):
 
     def require_authoring(self):
         supplied = self.headers.get(AUTHORING_TOKEN_HEADER, "")
-        configured = bool(os.environ.get(AUTHORING_TOKEN_ENV, ""))
+        configured = bool(compatible_env(
+            AUTHORING_TOKEN_ENV, LEGACY_AUTHORING_TOKEN_ENV))
         if configured and authoring_allowed(self.client_address[0], supplied):
             return True
         if not configured and authoring_allowed(self.client_address[0], supplied):
@@ -1273,7 +1282,7 @@ def main():
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("wiki ingest server stopped")
+        print("knowledge hub ingest server stopped")
     finally:
         server.server_close()
 

@@ -110,25 +110,28 @@ class TestOrgSections(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     build_site.article_meta()
 
-    # ---- TC3 (AC1): the real corpus has explicit Civilization placement ----
-    def test_legacy_pages_unchanged(self):
-        # Build import proves the catalog accepted every real page. The migration
-        # removes reliance on compatibility inference for the live corpus while
-        # preserving each article's legacy tier and organization identity.
+    # ---- TC3 (AC1): the real corpus has explicit registry-valid placement ----
+    def test_real_corpus_uses_explicit_registry_metadata(self):
+        # Build import proves the catalog accepted every real page. Original
+        # Civilization pages and curated transpara-owned seeds share one catalog;
+        # neither may rely on compatibility inference.
         explicit = 0
         for p in sorted((BASE / "wiki").glob("*.md")):
             fm = p.read_text().split("---", 2)[1]
-            self.assertRegex(fm, r"(?m)^org\s*:\s*transpara-ai\s*$")
-            self.assertRegex(fm, r"(?m)^primary_placement\s*:\s*civilization/")
-            self.assertRegex(fm, r"(?m)^classification\s*:\s*internal\s*$")
+            self.assertRegex(fm, r"(?m)^org\s*:\s*(transpara|transpara-ai)\s*$")
+            self.assertRegex(fm, r"(?m)^primary_placement\s*:\s*(civilization|platform|competition)/")
+            self.assertRegex(fm, r"(?m)^placements\s*:")
+            self.assertRegex(fm, r"(?m)^classification\s*:\s*(internal|company-internal|public-candidate)\s*$")
             m = re.search(r"(?m)^tier\s*:\s*([^#\n]+)", fm)
             tier = m.group(1).strip().strip('"').strip("'")
             self.assertEqual(build_site.META[p.stem]["tier"], tier)
-            self.assertEqual(build_site.META[p.stem]["org"], "transpara-ai")
-            self.assertEqual(build_site.META[p.stem]["primary_placement"],
-                             "civilization/%s" % tier)
+            meta = build_site.META[p.stem]
+            space = meta["primary_placement"].split("/", 1)[0]
+            self.assertEqual(
+                build_site.STRUCTURE.space_map[space].steward, meta["org"])
+            self.assertIn(meta["primary_placement"], meta["placements"])
             explicit += 1
-        self.assertGreater(explicit, 0)
+        self.assertEqual(explicit, 131)
         # A page with no legacy tier and no explicit placement fails loudly.
         with tempfile.TemporaryDirectory() as tmp:
             page(tmp, "no-tier", ["entity: N"])

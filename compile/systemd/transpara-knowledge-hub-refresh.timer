@@ -1,6 +1,6 @@
 [Unit]
-Description=Legacy compatibility name for Transpara Knowledge Hub refresh
-Conflicts=transpara-knowledge-hub-refresh.timer
+Description=Refresh the Transpara Knowledge Hub freshness signal
+Conflicts=transpara-ai-civilization-wiki-refresh.timer
 
 [Timer]
 OnBootSec=3min

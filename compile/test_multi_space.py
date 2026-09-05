@@ -139,6 +139,25 @@ def test_article_location_and_space_switcher_render():
     print("ok test_article_location_and_space_switcher_render")
 
 
+def test_generic_service_templates_remain_loopback_only_with_legacy_window():
+    units = ROOT / "compile" / "systemd"
+    service = (units / "transpara-knowledge-hub.service").read_text()
+    refresh = (units / "transpara-knowledge-hub-refresh.service").read_text()
+    timer = (units / "transpara-knowledge-hub-refresh.timer").read_text()
+    assert "127.0.0.1 8787" in service
+    assert "0.0.0.0" not in service
+    assert "KNOWLEDGE_HUB_PROFILE=authoring-local" in service
+    assert "KNOWLEDGE_HUB_DIST=dist" in service
+    assert "transpara-ai-civilization-wiki.service" in service
+    assert "transpara-ai-civilization-wiki-refresh.service" in refresh
+    assert "transpara-ai-civilization-wiki-refresh.timer" in timer
+    for legacy in ("transpara-ai-civilization-wiki.service",
+                   "transpara-ai-civilization-wiki-refresh.service",
+                   "transpara-ai-civilization-wiki-refresh.timer"):
+        assert (units / legacy).is_file(), legacy
+    print("ok test_generic_service_templates_remain_loopback_only_with_legacy_window")
+
+
 if __name__ == "__main__":
     tests = [value for name, value in sorted(globals().items())
              if name.startswith("test_") and callable(value)]

@@ -2825,8 +2825,8 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *,
         '<div class="layout">%s' % sidebar +
         '<main class="%s"><h1 class="page-title">%s</h1>%s%s' % (html.escape(main_class), h1, tagline, state_banner) +
         '%s%s%s%s%s%s' % (infobox, article_html, seealso, source_panel, source_updates, navbox) +
-        '<footer class="page-foot">Generated from <code>wiki/</code> + <code>index.md</code> · '
-        'a Karpathy-style LLM wiki · fail-legible: gaps are TBD, conflicts are stated.</footer>'
+        '<footer class="page-foot">Generated from canonical <code>wiki/</code>, governed '
+        '<code>spaces/</code>, and the central catalog · fail-legible: gaps are TBD, conflicts are stated.</footer>'
         '</main></div><script src="%ssearch-index.js?v=%s"></script>' % (prefix, SEARCH_VER) + THEME_JS + NAV_JS + SEARCH_JS +
         deploy_status_script(prefix) +
         '</body></html>'

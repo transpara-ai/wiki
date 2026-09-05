@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic nightly refresh for the Civilization Wiki.
+"""Deterministic refresh for the Transpara Knowledge Hub.
 
 What it DOES (cheap, deterministic, safe to run unattended):
   1. Mirror first-party dark-factory markdown into raw/transpara/ (makes provenance real + trackable).
@@ -29,7 +29,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 RAW = ROOT / "raw"
 WIKI = ROOT / "wiki"
 DF = pathlib.Path(
-    os.environ.get("CIVWIKI_DARK_FACTORY_SOURCE", "")
+    os.environ.get("KNOWLEDGE_HUB_DARK_FACTORY_SOURCE", "")
+    or os.environ.get("CIVWIKI_DARK_FACTORY_SOURCE", "")
     or "/Transpara/transpara-ai/repos/docs/dark-factory"
 )
 SNAP = ROOT / "compile" / "source-snapshot.json"

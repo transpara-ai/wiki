@@ -58,6 +58,7 @@ def test_authoring_policy_requires_token_for_remote_clients():
 
 def test_host_header_policy_blocks_rebinding_hosts():
     old_allowed = os.environ.pop(srv.ALLOWED_HOSTS_ENV, None)
+    old_legacy = os.environ.pop(srv.LEGACY_ALLOWED_HOSTS_ENV, None)
     try:
         assert srv.host_header_allowed("127.0.0.1:8787", 8787) is True
         assert srv.host_header_allowed("localhost:8787", 8787) is True
@@ -72,7 +73,35 @@ def test_host_header_policy_blocks_rebinding_hosts():
             os.environ.pop(srv.ALLOWED_HOSTS_ENV, None)
         else:
             os.environ[srv.ALLOWED_HOSTS_ENV] = old_allowed
+        if old_legacy is None:
+            os.environ.pop(srv.LEGACY_ALLOWED_HOSTS_ENV, None)
+        else:
+            os.environ[srv.LEGACY_ALLOWED_HOSTS_ENV] = old_legacy
     print("ok test_host_header_policy_blocks_rebinding_hosts")
+
+
+def test_knowledge_hub_environment_names_precede_legacy_aliases():
+    names = (srv.AUTHORING_TOKEN_ENV, srv.LEGACY_AUTHORING_TOKEN_ENV,
+             srv.ALLOWED_HOSTS_ENV, srv.LEGACY_ALLOWED_HOSTS_ENV)
+    old = {name: os.environ.pop(name, None) for name in names}
+    try:
+        os.environ[srv.LEGACY_AUTHORING_TOKEN_ENV] = "legacy-token"
+        assert srv.authoring_allowed("192.0.2.1", "legacy-token")
+        os.environ[srv.AUTHORING_TOKEN_ENV] = "hub-token"
+        assert srv.authoring_allowed("192.0.2.1", "hub-token")
+        assert not srv.authoring_allowed("192.0.2.1", "legacy-token")
+        os.environ[srv.LEGACY_ALLOWED_HOSTS_ENV] = "legacy.internal:8787"
+        assert srv.host_header_allowed("legacy.internal:8787", 8787)
+        os.environ[srv.ALLOWED_HOSTS_ENV] = "hub.internal:8787"
+        assert srv.host_header_allowed("hub.internal:8787", 8787)
+        assert not srv.host_header_allowed("legacy.internal:8787", 8787)
+    finally:
+        for name, value in old.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+    print("ok test_knowledge_hub_environment_names_precede_legacy_aliases")
 
 
 def test_same_origin_authoring_policy_blocks_browser_csrf():

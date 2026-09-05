@@ -1,0 +1,24 @@
+[Unit]
+Description=Transpara Knowledge Hub local authoring service
+Documentation=file:/Transpara/transpara-ai/repos/wiki/compile/REBUILD.md
+After=network-online.target
+Wants=network-online.target
+Conflicts=transpara-ai-civilization-wiki.service
+
+[Service]
+Type=simple
+WorkingDirectory=/Transpara/transpara-ai/repos/wiki
+Environment=PYTHONUNBUFFERED=1
+Environment=KNOWLEDGE_HUB_PYTHON=/Transpara/transpara-ai/repos/wiki/.venv/bin/python3
+Environment=KNOWLEDGE_HUB_PROFILE=authoring-local
+Environment=KNOWLEDGE_HUB_DIST=dist
+EnvironmentFile=-%h/.config/transpara-ai-civilization-wiki.env
+EnvironmentFile=-%h/.config/transpara-knowledge-hub.env
+ExecStart=/bin/sh -lc 'PY="${KNOWLEDGE_HUB_PYTHON:-${CIVWIKI_PYTHON:-/Transpara/transpara-ai/repos/wiki/.venv/bin/python3}}"; [ -x "$PY" ] || PY=/usr/bin/python3; exec "$PY" /Transpara/transpara-ai/repos/wiki/compile/ingest_server.py 127.0.0.1 8787'
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=15s
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target
