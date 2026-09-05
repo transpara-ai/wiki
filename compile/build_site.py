@@ -55,6 +55,8 @@ PROFILE = STRUCTURE.profile("authoring-local")
 ALLOWED_SOURCE_ROOTS = [
     ROOT,
     REPOS_ROOT / "wiki",
+    REPOS_ROOT / "platform",
+    REPOS_ROOT / "ai-sdr",
     REPOS_ROOT / "docs" / "dark-factory",
     REPOS_ROOT / "docs" / "civilization",
     REPOS_ROOT / "OB1",
