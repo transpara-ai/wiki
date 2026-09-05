@@ -8,6 +8,7 @@ title, right-floated infobox (from frontmatter), auto table of contents, rendere
 No network, no LLM, no push. The repository catalog is derived from local
 Transpara-AI sibling checkouts when that host-local tree is present.
 """
+import argparse
 import os
 import re
 import json
@@ -50,6 +51,7 @@ SITE_NAME = STRUCTURE.site_name
 SOURCE_LINKS = {}
 SOURCE_INDEX = []
 GENERATED_DIST_PATHS = set()
+PROFILE = STRUCTURE.profile("authoring-local")
 ALLOWED_SOURCE_ROOTS = [
     ROOT,
     REPOS_ROOT / "wiki",
@@ -426,8 +428,66 @@ def article_meta():
     return meta
 
 
-META = article_meta()
+ALL_META = article_meta()
+META = dict(ALL_META)
 SLUGS = set(META) | {"index"}
+
+
+def _project_meta_for_profile(meta, profile):
+    """Return the publication-safe projection of canonical article metadata."""
+    if meta.get("classification", "internal") not in profile.classifications:
+        return None
+    placements = [
+        value for value in meta.get("placements", [])
+        if value.split("/", 1)[0] in profile.spaces
+    ]
+    if not placements:
+        return None
+    projected = dict(meta)
+    projected["placements"] = placements
+    if projected.get("primary_placement") not in placements:
+        projected["primary_placement"] = placements[0]
+    return projected
+
+
+def configure_build(profile_key="authoring-local", output=None):
+    """Configure one isolated, allowlisted publication build.
+
+    Output is deliberately constrained to a dist* directory immediately under
+    the repository root because prune_dist removes obsolete generated files.
+    """
+    global PROFILE, META, SLUGS, DIST, SOURCE_DIST
+    global SOURCE_LINKS, SOURCE_INDEX, GENERATED_DIST_PATHS
+    PROFILE = STRUCTURE.profile(profile_key)
+    output_path = pathlib.Path(output or (ROOT / "dist"))
+    if not output_path.is_absolute():
+        output_path = ROOT / output_path
+    output_path = output_path.resolve()
+    if output_path.parent != ROOT.resolve() or not output_path.name.startswith("dist"):
+        raise ValueError(
+            "publication output must be a dist* directory directly under %s"
+            % ROOT)
+    DIST = output_path
+    SOURCE_DIST = DIST / "source"
+    META = {}
+    for slug, article in ALL_META.items():
+        projected = _project_meta_for_profile(article, PROFILE)
+        if projected is not None:
+            META[slug] = projected
+    SLUGS = set(META) | {"index"}
+    SOURCE_LINKS = {}
+    SOURCE_INDEX = []
+    GENERATED_DIST_PATHS = set()
+
+
+def active_spaces():
+    return tuple(space for space in STRUCTURE.spaces if space.key in PROFILE.spaces)
+
+
+configure_build(
+    os.environ.get("KNOWLEDGE_HUB_PROFILE", "authoring-local"),
+    os.environ.get("KNOWLEDGE_HUB_DIST") or None,
+)
 
 # Committed edge-state truth (per-ingestion ops packet §2.7). The strict
 # loader FAILS the build on corrupt/duplicate/unreadable state — bad state is
@@ -478,7 +538,7 @@ def section_label(space, section):
 
 def space_switcher(active_space="", prefix=""):
     links = []
-    for space in STRUCTURE.spaces:
+    for space in active_spaces():
         cls = ' class="current" aria-current="page"' if space.key == active_space else ""
         links.append('<a%s href="%s%s/index.html">%s</a>' % (
             cls, prefix, html.escape(space.key), html.escape(space.label)))
@@ -1873,7 +1933,8 @@ def build_sidebar(current, current_repo="", active_space="", prefix=""):
         '<div class="side-org">%s · %s</div>' %
         (html.escape(STRUCTURE.organization_labels[space.steward]), html.escape(space.label)),
     ]
-    out.append(build_repo_nav(current_repo, org=space.steward, prefix=prefix))
+    if PROFILE.include_repositories:
+        out.append(build_repo_nav(current_repo, org=space.steward, prefix=prefix))
     for section in space.sections:
         placement = "%s/%s" % (active_space, section.key)
         arts = sorted([m for m in META.values()
@@ -2139,7 +2200,7 @@ def repos_page(status):
 def search_box(prefix="", active_space=""):
     options = ['<option value="all"%s>All spaces</option>' %
                (' selected' if not active_space else '')]
-    for space in STRUCTURE.spaces:
+    for space in active_spaces():
         options.append('<option value="%s"%s>%s</option>' % (
             html.escape(space.key),
             ' selected' if space.key == active_space else '',
@@ -2257,13 +2318,18 @@ def deploy_status_script(prefix=""):
 
 
 def top_links(prefix=""):
+    links = []
+    if PROFILE.include_repositories:
+        links.append('<a href="%srepos.html">Repos</a>' % prefix)
+    if PROFILE.include_sources:
+        links.append('<a href="%ssources.html">Sources</a>' % prefix)
+    if PROFILE.include_ingest:
+        links.append('<a href="%singest.html">Ingest</a>' % prefix)
     return (
         '<nav class="top-links" aria-label="Wiki tools">'
-        '<a href="%srepos.html">Repos</a>'
-        '<a href="%ssources.html">Sources</a>'
-        '<a href="%singest.html">Ingest</a>'
+        '%s'
         '</nav>'
-    ) % (prefix, prefix, prefix)
+    ) % "".join(links)
 
 
 def simple_page(title, inner_html, status, *, main_class="content source-content"):
@@ -2363,16 +2429,17 @@ def ingest_page(status):
         '<section class="ingest-card" data-mode-panel="add">'
         '<h2>Batch ingest</h2>'
         '<form id="ingest-form">'
-        # DP-20260710 D4: every article add names its destination org + section
-        # (intake decision 3 — required for ALL ingests). The selects are UI
-        # convenience only; /api/ingest re-validates fail-closed (422).
-        '<label>Org<select name="org" id="ingest-org" required>'
-        '<option value="">Select org…</option>' + "".join(
-            '<option value="%s">%s</option>' % (html.escape(o), html.escape(ORG_LABEL[o]))
-            for o in ORG_ORDER) +
+        # Every Add names its placement and steward. The API proves an append
+        # uses an existing placement; changing article placement remains PR-only.
+        '<label>Space<select name="space" id="ingest-space" required>'
+        '<option value="">Select space…</option>' + "".join(
+            '<option value="%s">%s</option>' %
+            (html.escape(space.key), html.escape(space.label))
+            for space in STRUCTURE.spaces) +
         '</select></label>'
         '<label>Section<select name="section" id="ingest-section" required>'
         '<option value="">Select section…</option></select></label>'
+        '<label>Steward<input name="steward" id="ingest-steward" readonly required></label>'
         '<label>Target article<select name="target_slug" id="target-slug">%s</select></label>'
         # R6/§2.1: the "New investigation" toggle (default OFF) is the ONLY
         # browser page-creation path. Checking it reveals a required name field
@@ -2439,18 +2506,28 @@ def ingest_page(status):
         # server-refused empty-target path (CFAR: Codex); default OFF, so create is
         # never the accidental path.
         'var newInv=document.getElementById("new-investigation"),nameRow=document.getElementById("new-investigation-name-row"),nameField=document.getElementById("new-investigation-name");'
-        'function syncNewInvestigation(){var on=!!(newInv&&newInv.checked);if(nameRow)nameRow.hidden=!on;if(nameField)nameField.required=on;if(target){target.disabled=on;target.required=!on;}}'
-        'if(newInv){newInv.addEventListener("change",syncNewInvestigation);syncNewInvestigation();}'
-        # DP-20260710 D4: the Section options track the chosen Org, from the
-        # same org_structure data the server validates against (client-side
-        # convenience; the server stays the authority).
-        + 'var orgSel=document.getElementById("ingest-org"),secSel=document.getElementById("ingest-section");'
-        + 'var ORG_SECTIONS=%s,SECTION_LABEL=%s;' % (
-            json.dumps(ORG_SECTIONS, sort_keys=True), json.dumps(SECTION_LABEL, sort_keys=True))
-        + 'function fillSections(){if(!orgSel||!secSel)return;var opts=ORG_SECTIONS[orgSel.value]||[];'
-        'secSel.innerHTML="<option value=\\"\\">Select section…</option>"+opts.map(function(t){'
-        'return "<option value=\\""+esc(t)+"\\">"+esc(SECTION_LABEL[t]||t)+"</option>";}).join("");}'
-        'if(orgSel){orgSel.addEventListener("change",fillSections);fillSections();}'
+        'function syncNewInvestigation(){var on=!!(newInv&&newInv.checked);if(nameRow)nameRow.hidden=!on;if(nameField)nameField.required=on;if(target){target.disabled=on;target.required=!on;}'
+        'if(on&&spaceSel){spaceSel.value="civilization";fillSections("investigation");if(steward)steward.value="transpara-ai";}}'
+        'if(newInv)newInv.addEventListener("change",syncNewInvestigation);'
+        # The same registry drives client convenience and server validation.
+        + 'var spaceSel=document.getElementById("ingest-space"),secSel=document.getElementById("ingest-section"),steward=document.getElementById("ingest-steward");'
+        + 'var SPACE_SECTIONS=%s,SPACE_STEWARDS=%s;' % (
+            json.dumps({
+                space.key: [{"key": section.key, "label": section.label}
+                            for section in space.sections]
+                for space in STRUCTURE.spaces
+            }, sort_keys=True),
+            json.dumps({space.key: space.steward for space in STRUCTURE.spaces},
+                       sort_keys=True))
+        + 'function fillSections(selected){if(!spaceSel||!secSel)return;var opts=SPACE_SECTIONS[spaceSel.value]||[];'
+        'secSel.innerHTML="<option value=\\"\\">Select section…</option>"+opts.map(function(x){'
+        'return "<option value=\\""+esc(x.key)+"\\""+(x.key===selected?" selected":"")+">"+esc(x.label)+"</option>";}).join("");'
+        'var a=articles[target.value];if(steward)steward.value=a?a.org:(SPACE_STEWARDS[spaceSel.value]||"");}'
+        'function syncTargetPlacement(){var a=articles[target.value];if(!a)return;var p=String(a.primary_placement||"").split("/");'
+        'if(p.length===2){spaceSel.value=p[0];fillSections(p[1]);}if(steward)steward.value=a.org||"";}'
+        'target.addEventListener("change",syncTargetPlacement);'
+        'if(spaceSel){spaceSel.addEventListener("change",function(){fillSections("");});fillSections("");}'
+        'syncNewInvestigation();'
         'form.addEventListener("submit",function(e){e.preventDefault();say("Ingesting...");fetch("/api/ingest",{method:"POST",headers:headers(),body:new FormData(form)})'
         '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(reloadWithResult).catch(function(e){say(e);});});'
         'rebuild.addEventListener("click",function(){say("Refreshing status and rebuilding...");fetch("/api/rebuild",{method:"POST",headers:headers()})'
@@ -2473,7 +2550,8 @@ def ingest_page(status):
         'function disarm(){seq++;previewedSeq=-1;["replace","remove"].forEach(function(m){el[m].confirm.checked=false;el[m].confirm.disabled=true;el[m].submit.disabled=true;});}'
         'function arm(m){el[m].submit.disabled=!(el[m].confirm.checked&&previewedSeq===seq);}'
         'function renderPreview(m,p){if(m==="remove"){var items=(p.inbound||[]).map(function(s){return "<li><a href=\\""+esc(s)+".html\\">"+esc(s)+"</a></li>";}).join("");'
-        'return "<p>Retiring <strong>"+esc(p.slug)+"</strong> writes a tombstone at <code>"+esc(p.tombstone)+"</code> and marks <strong>"+esc(String(p.edges_would_pend))+"</strong> inbound edge(s) pending reconciliation:</p><ul>"+(items||"<li>(no inbound articles)</li>")+"</ul><p>A recompile follows. Nothing is deleted.</p>";}'
+        'var places=(p.placements_removed||[]).map(function(x){return "<li><code>"+esc(x)+"</code></li>";}).join("");'
+        'return "<p>Retiring <strong>"+esc(p.slug)+"</strong> writes a tombstone at <code>"+esc(p.tombstone)+"</code>, removes it from every listed placement, and marks <strong>"+esc(String(p.edges_would_pend))+"</strong> inbound edge(s) pending reconciliation.</p><p>Placements affected:</p><ul>"+(places||"<li>(legacy placement inferred)</li>")+"</ul><p>Inbound references:</p><ul>"+(items||"<li>(no inbound articles)</li>")+"</ul><p>A recompile follows. Nothing is deleted.</p>";}'
         'return "<p>Source <code>"+esc(p.superseded)+"</code> is superseded (moved to superseded_sources) and a recompile follows.</p>";}'
         'function fetchPreview(m){var e=el[m];var slug=e.target.value;var src=(m==="replace"&&e.source)?e.source.value:"";'
         'if(!slug||(m==="replace"&&!src)){e.panel.textContent="Select a target"+(m==="replace"?" and source":"")+" to preview consequences.";return;}'
@@ -2705,8 +2783,10 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *,
     infobox = "" if is_home else build_infobox(meta, fm, prefix=prefix)
     toc = article_toc(meta, toc_tokens, is_home=is_home)
     seealso = "" if is_home else build_seealso(links, slug, prefix=prefix)
-    source_updates = "" if is_home else build_source_update_panel(fm)
-    source_panel = "" if is_home else build_source_panel(fm)
+    source_updates = ("" if is_home or not PROFILE.include_sources
+                      else build_source_update_panel(fm))
+    source_panel = ("" if is_home or not PROFILE.include_sources
+                    else build_source_panel(fm))
     navbox = build_navbox(active_space, prefix=prefix)
     tagline = "" if is_home else '<div class="tagline">%s · %s · an article in %s</div>' % (
         '<span class="tier %s">%s</span>' %
@@ -2835,6 +2915,9 @@ def space_home_page(space_key, status):
     if not path.is_file():
         raise SystemExit("space home missing: %s" % path)
     fm, body = split_fm(path.read_text())
+    if PROFILE.key != "authoring-local":
+        body = STRUCTURE.space_map[space_key].description
+        fm = "title: %s" % STRUCTURE.space_map[space_key].label
     body = re.sub(r"^#\s+.*\n", "", body, count=1)
     links = set()
     body_html, toc_tokens = to_html(
@@ -2842,7 +2925,7 @@ def space_home_page(space_key, status):
         href_prefix="../",
     )
     lead = ""
-    if space_key == "civilization":
+    if space_key == "civilization" and PROFILE.key == "authoring-local":
         lead = gate_internal_links(
             build_board(fm, prefix="../"), source_slug="space-civilization")
     content = lead + body_html + space_section_overview(space_key)
@@ -2856,10 +2939,13 @@ def space_home_page(space_key, status):
 
 def portal_page(status):
     fm, body = split_fm(PORTAL_INDEX.read_text())
+    if PROFILE.key != "authoring-local":
+        body = ("This publication contains only articles explicitly admitted "
+                "by the %s profile." % PROFILE.key)
     body = re.sub(r"^#\s+.*\n", "", body, count=1)
     body_html, _ = to_html(body, set(), source_slug="index")
     cards = []
-    for space in STRUCTURE.spaces:
+    for space in active_spaces():
         count = sum(
             1 for meta in META.values()
             if any(placement.startswith(space.key + "/") for placement in resolved_placements(meta))
@@ -2898,15 +2984,16 @@ def build():
     # fail closed BEFORE any dist mutation: a malformed board must never
     # leave the served site partially updated (CFAR 2a-r6); the index
     # render below re-runs build_board on the same fm
-    build_board(split_fm(INDEX.read_text())[0])
+    if PROFILE.key == "authoring-local" and "civilization" in PROFILE.spaces:
+        build_board(split_fm(INDEX.read_text())[0])
     if not PORTAL_INDEX.is_file():
         raise SystemExit("portal home missing: %s" % PORTAL_INDEX)
-    for space in STRUCTURE.spaces:
+    for space in active_spaces():
         if not (SPACES / space.key / "index.md").is_file():
             raise SystemExit("space home missing: %s" % (SPACES / space.key / "index.md"))
-    REPOS = repo_records()
+    REPOS = repo_records() if PROFILE.include_repositories else []
     prepare_dist()
-    status = load_status()
+    status = load_status() if PROFILE.key == "authoring-local" else {}
 
     def copy_asset(name):
         asset = (ASSETS / name).read_text()
@@ -2916,6 +3003,8 @@ def build():
     def build_search_index():
         docs = []
         fm, body = split_fm(PORTAL_INDEX.read_text())
+        if PROFILE.key != "authoring-local":
+            body = "Publication profile %s" % PROFILE.key
         docs.append({
             "slug": "index",
             "title": SITE_NAME,
@@ -2924,10 +3013,13 @@ def build():
             "space_labels": [],
             "text": search_text(fm, body)[:12000],
         })
-        for space in STRUCTURE.spaces:
+        for space in active_spaces():
             space_fm, space_body = split_fm((SPACES / space.key / "index.md").read_text())
-            space_text = search_text(space_fm, space_body)
-            if space.key == "civilization":
+            if PROFILE.key == "authoring-local":
+                space_text = search_text(space_fm, space_body)
+            else:
+                space_text = space.description
+            if space.key == "civilization" and PROFILE.key == "authoring-local":
                 space_text = "%s %s" % (board_search_text(space_fm), space_text)
             docs.append({
                 "slug": "space-%s" % space.key,
@@ -2939,6 +3031,8 @@ def build():
                 "text": space_text[:12000],
             })
         for p in sorted(WIKI.glob("*.md")):
+            if p.stem not in META:
+                continue
             meta = META[p.stem]
             if meta.get("retired_on"):
                 continue  # retired tombstones drop from search — the search
@@ -2982,15 +3076,21 @@ def build():
     CSS_VER = copy_asset("style.css")
     # First pass populates SOURCE_INDEX for search; second pass refreshes source
     # pages after SEARCH_VER is known so the normal page chrome uses cache-busted JS.
-    build_source_pages(status)
+    if PROFILE.include_sources:
+        build_source_pages(status)
     SEARCH_VER = build_search_index()
-    build_source_pages(status)
-    ONTO_VER = copy_asset("civilizationOntology.js")
-    ARC_DATA_VER = copy_asset("civilizationArcData.js")
-    PROGRESS_VER = copy_asset("civilizationProgressEvidence.js")
-    ARC_VIEW_VER = copy_asset("civilizationArcView.js")
+    if PROFILE.include_sources:
+        build_source_pages(status)
+    build_arc = "civilization" in PROFILE.spaces and "civilization-arc" in META
+    if build_arc:
+        ONTO_VER = copy_asset("civilizationOntology.js")
+        ARC_DATA_VER = copy_asset("civilizationArcData.js")
+        PROGRESS_VER = copy_asset("civilizationProgressEvidence.js")
+        ARC_VIEW_VER = copy_asset("civilizationArcView.js")
     count = 0
     for p in sorted(WIKI.glob("*.md")):
+        if p.stem not in META:
+            continue
         fm, body = split_fm(p.read_text())
         meta = META[p.stem]
         body = re.sub(r"^#\s+.*\n", "", body, count=1)
@@ -3003,20 +3103,31 @@ def build():
         )
         count += 1
     write_dist_text(DIST / "index.html", portal_page(status))
-    for space in STRUCTURE.spaces:
+    for space in active_spaces():
         write_dist_text(DIST / space.key / "index.html", space_home_page(space.key, status))
-    write_dist_text(DIST / "sources.html", sources_page(status))
-    write_dist_text(DIST / "ingest.html", ingest_page(status))
-    write_dist_text(DIST / "repos.html", repos_page(status))
-    for repo in REPOS:
-        write_dist_text(DIST / repo["href"], repo_page(repo, status))
-    arc_html = arc_page(status)
-    write_dist_text(DIST / "civilization-arc.html", arc_html)
-    write_dist_text(DIST / "civilization_arc.html", arc_html)
+    if PROFILE.include_sources:
+        write_dist_text(DIST / "sources.html", sources_page(status))
+    if PROFILE.include_ingest:
+        write_dist_text(DIST / "ingest.html", ingest_page(status))
+    if PROFILE.include_repositories:
+        write_dist_text(DIST / "repos.html", repos_page(status))
+        for repo in REPOS:
+            write_dist_text(DIST / repo["href"], repo_page(repo, status))
+    if build_arc:
+        arc_html = arc_page(status)
+        write_dist_text(DIST / "civilization-arc.html", arc_html)
+        write_dist_text(DIST / "civilization_arc.html", arc_html)
     prune_dist()
-    print("built %d articles + %d repo pages + portal + %d spaces + arc -> %s" %
-          (count, len(REPOS), len(STRUCTURE.spaces), DIST))
+    print("built profile %s: %d articles + %d repo pages + portal + %d spaces%s -> %s" %
+          (PROFILE.key, count, len(REPOS), len(active_spaces()),
+           " + arc" if build_arc else "", DIST))
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Build a Knowledge Hub publication profile")
+    parser.add_argument("--profile", default=os.environ.get(
+        "KNOWLEDGE_HUB_PROFILE", "authoring-local"))
+    parser.add_argument("--output", default=os.environ.get("KNOWLEDGE_HUB_DIST"))
+    args = parser.parse_args()
+    configure_build(args.profile, args.output)
     build()

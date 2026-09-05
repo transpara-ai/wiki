@@ -142,7 +142,7 @@ def test_save_uploads_rejects_target_slug_traversal_before_write():
                 )
             }
             try:
-                srv.save_uploads(form, "../escape", "", "")
+                srv.save_uploads(form, "../escape", "", "", "civilization")
             except ValueError:
                 assert not list(root.rglob("escape*"))
                 print("ok test_save_uploads_rejects_target_slug_traversal_before_write")
@@ -476,8 +476,9 @@ def test_ingest_endpoint_path_runs_refresh_and_returns_refresh_payload():
         )
         body = (
             "target_slug=example&"
-            "org=transpara-ai&"
+            "space=civilization&"
             "section=investigation&"
+            "steward=transpara-ai&"
             "external_urls=https%3A%2F%2Fexample.com%2Fpaper&"
             "note=citation%20update"
         ).encode("utf-8")
@@ -958,6 +959,14 @@ def test_new_investigation_emits_canonical_skeleton():
             assert deficiencies == set(), "skeleton must be R2-conformant: %s" % deficiencies
             assert srv.fm_val(fm, "stale_since"), "skeleton sets stale_since"
             assert srv.fm_val(fm, "status") == "browser-ingested source; awaiting synthesis"
+            assert srv.fm_val(fm, "org") == "transpara-ai"
+            assert srv.fm_val(fm, "primary_placement") == \
+                "civilization/investigation"
+            assert srv.fm_list(fm, "placements") == \
+                ["civilization/investigation"]
+            assert srv.fm_val(fm, "classification") == "internal"
+            assert srv.fm_val(fm, "source_authority") == \
+                "external-primary-source"
             assert "investigation_topic" not in fm, "no auto investigation_topic (CFADA-r21 #44)"
             # CFAR (Codex): a create seeds a topic and supersedes nothing — the
             # skeleton's seed source carries no `supersedes:` provenance.

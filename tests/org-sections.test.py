@@ -185,95 +185,100 @@ class TestOrgSections(unittest.TestCase):
         self.assertNotIn('data-current-group="true"',
                          build_site.build_repo_nav("index", org="transpara"))
 
-    # ---- TC6 (AC5): the full fail-closed input matrix ----
+    # ---- TC6 (AC5): the registry-backed placement gate fails closed ----
     def test_ingest_org_section_fail_closed(self):
-        v = ingest_server.validate_org_section
+        v = ingest_server.validate_placement
         refused = ingest_ops.OpRefused
-        # {missing, empty, unknown, mixed-case, foreign-section} x new_investigation
-        for org, section in [("", ""), ("", "organization"),
-                             ("transporo", "concept"),
-                             ("Transpara", "organization"),
-                             ("TRANSPARA-AI", "concept"),
-                             ("transpara", "concept"),
-                             ("transpara", "investigation"),
-                             ("transpara-ai", "organization"),
-                             ("transpara-ai", "")]:
+        # Missing, unknown, mixed-case, foreign-section and unknown-steward
+        # inputs all refuse for either route intent.
+        for space, section, steward in [
+                ("", "", ""), ("", "product-overview", "transpara"),
+                ("platfrom", "capabilities", "transpara"),
+                ("Platform", "capabilities", "transpara"),
+                ("platform", "concept", "transpara"),
+                ("civilization", "product-overview", "transpara-ai"),
+                ("civilization", "concept", "Transpara-AI"),
+                ("competition", "", "transpara")]:
             for new_inv in (False, True):
-                with self.assertRaises(refused, msg=(org, section, new_inv)):
-                    v(org, section, new_inv)
-        # valid pairs accepted (no exception, no I/O by construction)
-        v("transpara", "organization", False)
-        v("transpara", "product", False)
-        v("transpara-ai", "concept", False)
-        v("transpara-ai", "investigation", True)
-        # new-investigation coherence: valid pairs that are NOT
-        # (transpara-ai, investigation) still refuse when the flag is on
-        for org, section in [("transpara", "organization"),
-                             ("transpara", "product"),
-                             ("transpara-ai", "concept")]:
+                with self.assertRaises(
+                        refused, msg=(space, section, steward, new_inv)):
+                    v(space, section, steward, new_inv)
+        v("platform", "product-overview", "transpara", False)
+        v("civilization", "concept", "transpara-ai", False)
+        v("civilization", "investigation", "transpara-ai", True)
+        for space, section, steward in [
+                ("platform", "product-overview", "transpara"),
+                ("competition", "competitors", "transpara"),
+                ("civilization", "concept", "transpara-ai")]:
             with self.assertRaises(refused):
-                v(org, section, True)
+                v(space, section, steward, True)
         # target coherence: destination truth lives on the page
         with tempfile.TemporaryDirectory() as tmp:
             page(tmp, "existing", ["entity: E", "tier: concept"])
             with wiki_root(ingest_server, tmp):
-                ingest_server.check_target_org_section(
-                    "existing", "transpara-ai", "concept")  # matches -> passes
+                ingest_server.check_target_placement(
+                    "existing", "civilization", "concept", "transpara-ai")
                 with self.assertRaises(refused):
-                    ingest_server.check_target_org_section(
-                        "existing", "transpara-ai", "architecture")
+                    ingest_server.check_target_placement(
+                        "existing", "civilization", "architecture", "transpara-ai")
                 with self.assertRaises(refused):
-                    ingest_server.check_target_org_section(
-                        "existing", "transpara", "organization")
+                    ingest_server.check_target_placement(
+                        "existing", "competition", "competitors", "transpara")
                 # no page -> nothing to contradict (unassigned lane)
-                ingest_server.check_target_org_section(
-                    "absent", "transpara-ai", "concept")
+                ingest_server.check_target_placement(
+                    "absent", "civilization", "concept", "transpara-ai")
 
-    # ---- TC7 (AC6): ledger rows carry org+section; old rows still parse ----
+    # ---- TC7 (AC6): current placement rows and historical rows both parse ----
     def test_ingest_ledger_records_org_section(self):
         base = {"ts": "2026-07-10T12:00:00+00:00", "operation": "add",
                 "slug": "existing", "sources": ["raw/x.md"], "created": False,
                 "rebuild": "ok"}
         ingest_ops._validate_ledger_row(dict(base))  # historical shape parses
-        new = dict(base, org="transpara", section="product")
-        ingest_ops._validate_ledger_row(new)  # additive shape parses
-        # empty values, partial pairs (impossible states — the route always
-        # writes both, CFAR r4), and foreign keys all refuse
-        for bad in (dict(base, org="", section="product"),    # empty value
-                    dict(base, org="transpara"),              # org w/o section
-                    dict(base, section="product"),            # section w/o org
-                    dict(base, orgg="x"),                     # foreign key
-                    dict(base, org="bogus", section="concept"),        # bad org
-                    dict(base, org="transpara-ai", section="organization")):
-            # last two: out-of-vocabulary values/pairs the route and builder
-            # refuse must not pass the preflight either (CFAR r5)
+        historical = dict(base, org="transpara", section="product")
+        ingest_ops._validate_ledger_row(historical)
+        new = dict(base, space="platform", section="product-overview",
+                   steward="transpara", placement="platform/product-overview")
+        ingest_ops._validate_ledger_row(new)
+        for bad in (
+                dict(base, space="platform", section="product-overview"),
+                dict(base, space="", section="product-overview",
+                     steward="transpara", placement="platform/product-overview"),
+                dict(base, space="platform", section="product-overview",
+                     steward="transpara", placement="platform/capabilities"),
+                dict(base, space="bogus", section="product-overview",
+                     steward="transpara", placement="bogus/product-overview"),
+                dict(base, space="platform", section="product-overview",
+                     steward="bogus", placement="platform/product-overview"),
+                dict(base, orgg="x")):
             with self.assertRaises(ingest_ops.OpRefused, msg=bad):
                 ingest_ops._validate_ledger_row(bad)
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "ledger.jsonl"
             ingest_ops.append_ledger(path, new)
             row = json.loads(path.read_text().strip().splitlines()[-1])
-        self.assertEqual(row["org"], "transpara")
-        self.assertEqual(row["section"], "product")
+        self.assertEqual(row["space"], "platform")
+        self.assertEqual(row["placement"], "platform/product-overview")
 
-    # ---- TC8 (AC7): ingest UI presents org-scoped required dropdowns ----
+    # ---- TC8 (AC7): ingest UI presents registry-backed placement fields ----
     def test_ingest_ui_org_section_fields(self):
         html_out = build_site.ingest_page({})
-        self.assertIn('id="ingest-org"', html_out)
+        self.assertIn('id="ingest-space"', html_out)
         self.assertIn('id="ingest-section"', html_out)
-        self.assertRegex(html_out, r'<select name="org" id="ingest-org" required>')
+        self.assertIn('id="ingest-steward"', html_out)
+        self.assertRegex(html_out, r'<select name="space" id="ingest-space" required>')
         self.assertRegex(html_out, r'<select name="section" id="ingest-section" required>')
-        for org in org_structure.ORG_ORDER:
-            self.assertIn('<option value="%s">' % org, html_out)
-        # the section options the JS swaps in come from the same declaration
-        self.assertIn(json.dumps(org_structure.ORG_SECTIONS, sort_keys=True), html_out)
+        self.assertRegex(html_out, r'<input name="steward" id="ingest-steward" readonly required>')
+        for space in build_site.STRUCTURE.spaces:
+            self.assertIn('<option value="%s">' % space.key, html_out)
+            self.assertIn(space.steward, html_out)
 
-    # ---- TC9 (AC6): raw-doc registration lines carry org+section ----
+    # ---- TC9 (AC6): raw-doc registrations carry placement + steward ----
     def test_ingest_rawdoc_registration_carries_org_section(self):
         line = ingest_server.source_line(
-            "raw/inbox/x.md", "a note", "", "transpara", "product")
-        self.assertIn("org: transpara", line)
-        self.assertIn("section: product", line)
+            "raw/inbox/x.md", "a note", "", "platform",
+            "product-overview", "transpara")
+        self.assertIn("placement: platform/product-overview", line)
+        self.assertIn("steward: transpara", line)
         self.assertIn('"raw/inbox/x.md"', line)
         # and through the real append path on a real page file
         with tempfile.TemporaryDirectory() as tmp:
@@ -283,10 +288,12 @@ class TestOrgSections(unittest.TestCase):
             with wiki_root(ingest_server, tmp):
                 added = ingest_server.append_sources_to_article(
                     "existing", ["raw/inbox/new.md"], "n", "",
-                    org="transpara-ai", section="concept")
+                    space="civilization", section="concept",
+                    steward="transpara-ai")
             text = (pathlib.Path(tmp) / "existing.md").read_text()
         self.assertEqual(added, ["raw/inbox/new.md"])
-        self.assertIn("org: transpara-ai; section: concept", text)
+        self.assertIn(
+            "placement: civilization/concept; steward: transpara-ai", text)
         # the CREATE route's seed source line carries the pair too — the later
         # append skips the seed as already-present, so it must ride the
         # skeleton itself (CFAR r1 P2)
@@ -294,11 +301,15 @@ class TestOrgSections(unittest.TestCase):
             with wiki_root(ingest_server, tmp):
                 slug, created = ingest_server.create_article_from_source(
                     "raw/inbox/2026-07-10/x/doc.md", "seed note",
-                    name="Seed Topic", org="transpara-ai",
-                    section="investigation")
+                    name="Seed Topic", space="civilization",
+                    section="investigation", steward="transpara-ai")
                 seed_text = (pathlib.Path(tmp) / ("%s.md" % slug)).read_text()
         self.assertTrue(created)
-        self.assertIn("org: transpara-ai; section: investigation", seed_text)
+        self.assertIn("org: transpara-ai", seed_text)
+        self.assertIn("primary_placement: civilization/investigation", seed_text)
+        self.assertIn(
+            "placement: civilization/investigation; steward: transpara-ai",
+            seed_text)
 
 
 if __name__ == "__main__":
