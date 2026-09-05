@@ -49,6 +49,11 @@ EDGE_STATES_VOCAB = ("valid", "cleanly-removed", "dangling-pending")
 EDGE_ENTRY_KEYS = {"state", "since", "reason", "queued", "enqueued_at"}
 BUILDER_PAGES = {"repos", "sources", "ingest", "civilization-arc",
                  "civilization_arc"}
+BUILDER_ROUTE_PATHS = {
+    "civilization/index.html",
+    "platform/index.html",
+    "competition/index.html",
+}
 # wiki/*.md-backed slugs the builder ALSO regenerates as a whole page, so they
 # must never be retired as a tombstone (Remove would be reanimated on rebuild)
 PROTECTED_SLUGS = {"index", "civilization-arc"}
@@ -604,6 +609,8 @@ def canonical_article_target(href, *, meta, repo_slugs=()):
     # x/../slug.html and /slug.html all canonicalize to slug.html
     norm = posixpath.normpath("/" + path).lstrip("/")
     if SOURCE_VIEW_RE.match(norm):
+        return ("page", norm)
+    if norm in BUILDER_ROUTE_PATHS:
         return ("page", norm)
     if "/" in norm:
         return ("unknown", norm)

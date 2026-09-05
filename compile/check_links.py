@@ -26,6 +26,7 @@ from article_catalog import load_catalog
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 WIKI = ROOT / "wiki"
 INDEX = ROOT / "index.md"
+SPACES = ROOT / "spaces"
 
 # Identical to build_site.py's WL regex.
 WL = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)(?:\|([^\]]+))?\]\]")
@@ -80,6 +81,10 @@ def scan():
     pages = [(record.path, record.body) for record in catalog]
     index_raw = INDEX.read_text()
     pages.append((INDEX, split_fm(index_raw)[1]))
+    if SPACES.exists():
+        for space_home in sorted(SPACES.glob("*/index.md")):
+            raw = space_home.read_text()
+            pages.append((space_home, split_fm(raw)[1]))
     for p, body in pages:
         raw = p.read_text()
         offset = raw[: len(raw) - len(body)].count("\n")  # lines consumed by frontmatter

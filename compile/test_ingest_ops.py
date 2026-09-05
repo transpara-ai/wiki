@@ -10,6 +10,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -1305,7 +1306,9 @@ def test_cfar3_board_links_are_gated():
     assert 'href="pillar-purple.html"' in gated, "live board links stay live"
     # build() must actually apply the gate to board_html (wiring proof)
     build_src = (pathlib.Path(__file__).resolve().parent / "build_site.py").read_text()
-    assert "gate_internal_links(build_board(" in build_src
+    assert re.search(
+        r"gate_internal_links\(\s*build_board\(", build_src
+    ), "build() must gate links emitted by build_board()"
     print("ok test_cfar3_board_links_are_gated")
 
 

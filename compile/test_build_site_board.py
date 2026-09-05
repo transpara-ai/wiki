@@ -14,7 +14,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import build_site as site  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-REAL_FM = site.split_fm((ROOT / "index.md").read_text())[0]
+REAL_FM = site.split_fm(site.INDEX.read_text())[0]
 
 
 def good_fm(**over):
@@ -163,7 +163,7 @@ def test_narrative_article_moved_and_linked():
     body = art.read_text()
     assert "memory and interpretation layer" in body, \
         "the essay moved wholesale, not paraphrased"
-    index_body = site.split_fm((ROOT / "index.md").read_text())[1]
+    index_body = site.split_fm(site.INDEX.read_text())[1]
     assert "memory and interpretation layer" not in index_body, \
         "the essay must no longer live in index.md"
     html_out = site.build_board(REAL_FM)
@@ -172,14 +172,16 @@ def test_narrative_article_moved_and_linked():
     # CFAR 2a-r1 P1: compile/refresh.py rewrites the stats block in INDEX.md
     # and hard-fails without exactly one marker pair — the live 15-min
     # refresh loop and the ingest/rebuild endpoint both run that path
-    index_text = (ROOT / "index.md").read_text()
+    index_text = site.INDEX.read_text()
     assert index_text.count("stats:begin") == 1 and \
         index_text.count("stats:end") == 1, \
         "index.md must keep exactly one stats marker pair for refresh.py"
     # CFAR 2a-r2: the committed generated block must carry the real count
     # (a zero count would render as durable generated truth)
-    m = re.search(r"frontmatter\):\*\* (\d+)", index_text)
-    real_count = len(list((ROOT / "wiki").glob("*.md")))
+    m = re.search(r"placements\):\*\* (\d+)", index_text)
+    real_count = sum(1 for meta in site.META.values()
+                     if any(p.startswith("civilization/")
+                            for p in site.resolved_placements(meta)))
     assert m and int(m.group(1)) == real_count, \
         "committed stats block must match wiki/*.md count (%d)" % real_count
     assert "stats:begin" not in body, \
@@ -249,13 +251,13 @@ def test_home_board_accessibility():
 # ------------------------------------------- integration: board in dist
 
 def test_home_board_in_dist():
-    dist_index = ROOT / "dist" / "index.html"
+    dist_index = ROOT / "dist" / "civilization" / "index.html"
     if not dist_index.exists():
         # keep bare `npm run test:py` runnable from a clean checkout
         # (dist/ is gitignored); CI has already built by this point
         subprocess.run([sys.executable, str(ROOT / "compile" / "build_site.py")],
                        cwd=str(ROOT), check=True, capture_output=True)
-    assert dist_index.exists(), "the build must emit dist/index.html"
+    assert dist_index.exists(), "the build must emit dist/civilization/index.html"
     emitted = dist_index.read_text()
     assert 'class="board-hero"' in emitted and 'class="board-guardrail"' in emitted, \
         "the emitted home page must carry the board"
@@ -264,7 +266,7 @@ def test_home_board_in_dist():
     import json as _json
     sidx = (ROOT / "dist" / "search-index.js").read_text()
     docs = _json.loads(sidx[sidx.index("=") + 1:].rstrip(";\n"))
-    home = next(d for d in docs if d["slug"] == "index")
+    home = next(d for d in docs if d["slug"] == "space-civilization")
     assert "certified-or-rejected" in home["text"], \
         "the home search document must include the board method text"
     assert "six questions every material action answers" in home["text"], \

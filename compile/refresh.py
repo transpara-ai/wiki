@@ -111,6 +111,8 @@ def main():
     final_status = {
         "synced": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "article_count": counts["article_count"],
+        "space_counts": counts["space_counts"],
+        "section_counts": counts["section_counts"],
         "sources_total": len(cur),
         "sources_changed": (len(changed) if prev else 0),
         "changed_articles": changed_articles,
@@ -121,7 +123,10 @@ def main():
 
     # Durable, idempotent stats block in the committed index.md (you commit the diff).
     try:
-        index_changed = stats.write_index_block(ROOT / "index.md", counts)
+        civilization_index = ROOT / "spaces" / "civilization" / "index.md"
+        if not civilization_index.exists():  # isolated legacy fixtures
+            civilization_index = ROOT / "index.md"
+        index_changed = stats.write_index_block(civilization_index, counts)
     except ValueError as e:
         print("refresh: index.md stats block FAILED — %s" % e)
         sys.exit(1)

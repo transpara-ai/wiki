@@ -24,6 +24,7 @@ import markdown
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ingest_ops  # noqa: E402
 from article_catalog import CatalogError, load_catalog  # noqa: E402
+from knowledge_structure import STRUCTURE  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REPOS_ROOT = pathlib.Path("/Transpara/transpara-ai/repos")
@@ -32,7 +33,11 @@ DIST = ROOT / "dist"
 ASSETS = ROOT / "compile" / "assets"
 RAW = ROOT / "raw"
 STATUS = ROOT / "compile" / "refresh-status.json"
-INDEX = ROOT / "index.md"
+PORTAL_INDEX = ROOT / "index.md"
+SPACES = ROOT / "spaces"
+# Compatibility name retained for board tests and refresh callers: the former
+# root home is now the Civilization space home.
+INDEX = SPACES / "civilization" / "index.md"
 ARCHIVE_BOUNDARY_PATH = RAW / "transpara" / "dark-factory" / ".civilization-archive.json"
 SOURCE_DIST = DIST / "source"
 CSS_VER = ""
@@ -41,7 +46,7 @@ ARC_DATA_VER = ""
 ARC_VIEW_VER = ""
 ONTO_VER = ""
 PROGRESS_VER = ""
-SITE_NAME = "Transpara-AI Civilization Wiki"
+SITE_NAME = STRUCTURE.site_name
 SOURCE_LINKS = {}
 SOURCE_INDEX = []
 GENERATED_DIST_PATHS = set()
@@ -76,7 +81,7 @@ NAV_JS = (
     'function write(s){try{localStorage.setItem(store,JSON.stringify(s));}catch(e){}}'
     'var state=read();'
     'nav.querySelectorAll(".side-group").forEach(function(d){'
-    'var k=d.getAttribute("data-tier");'
+    'var k=d.getAttribute("data-section")||d.getAttribute("data-tier");'
     'if(Object.prototype.hasOwnProperty.call(state,k))d.open=!!state[k];'
     'else if(d.hasAttribute("data-current-group")||d.hasAttribute("data-default-open"))d.open=true;'
     'd.addEventListener("toggle",function(){var s=read();s[k]=d.open;write(s);setAllLabel();});'
@@ -108,7 +113,7 @@ NAV_JS = (
     'function anyOpen(){return groups().some(function(d){return d.open;});}'
     'function setAllLabel(){if(all)all.textContent=anyOpen()?"hide":"show";}'
     'if(all)all.addEventListener("click",function(){var open=!anyOpen();'
-    'var s=read();groups().forEach(function(d){d.open=open;s[d.getAttribute("data-tier")]=open;});write(s);setAllLabel();});'
+    'var s=read();groups().forEach(function(d){var k=d.getAttribute("data-section")||d.getAttribute("data-tier");d.open=open;s[k]=open;});write(s);setAllLabel();});'
     'setAllLabel();'
     '})();</script>'
 )
@@ -117,10 +122,12 @@ SEARCH_JS = (
     '<script>(function(){'
     'var input=document.getElementById("wiki-search");'
     'var box=document.getElementById("search-results");'
-    'if(!input||!box)return;'
+    'var scope=document.getElementById("wiki-search-scope");'
+    'if(!input||!box)return;var form=input.closest("form");var prefix=form&&form.getAttribute("data-prefix")||"";'
     'var docs=window.CIVWIKI_SEARCH_INDEX||[];var active=-1;var hits=[];'
     'function norm(s){return String(s||"").toLowerCase().replace(/\\s+/g," ").trim();}'
-    'function score(row,terms,q){var title=norm(row.title),tier=norm(row.tier),text=norm(row.text);var s=0;'
+    'function inScope(row){var wanted=scope?scope.value:"all";return wanted==="all"||(row.spaces||[]).indexOf(wanted)!==-1;}'
+    'function score(row,terms,q){if(!inScope(row))return -1;var title=norm(row.title),tier=norm((row.section||row.tier||"")+" "+(row.space_labels||[]).join(" ")),text=norm(row.text);var s=0;'
     'for(var i=0;i<terms.length;i++){var t=terms[i];'
     'if(title.indexOf(t)!==-1)s+=25;else if(tier.indexOf(t)!==-1)s+=8;'
     'else if(text.indexOf(t)!==-1)s+=3;else return -1;}'
@@ -136,24 +143,24 @@ SEARCH_JS = (
     'var terms=q.split(" ").filter(Boolean);hits=docs.map(function(row){return {row:row,score:score(row,terms,q)};})'
     '.filter(function(x){return x.score>=0;}).sort(function(a,b){return b.score-a.score||a.row.title.localeCompare(b.row.title);}).slice(0,10);'
     'box.innerHTML="";if(!hits.length){var empty=document.createElement("div");empty.className="search-empty";'
-    'empty.textContent="No matches";box.appendChild(empty);box.hidden=false;input.setAttribute("aria-expanded","true");return;}'
+    'empty.textContent="No matches in this scope";box.appendChild(empty);box.hidden=false;input.setAttribute("aria-expanded","true");return;}'
     'function href(row){var h=row.href||((row.slug==="index"?"index":row.slug)+".html");'
     'if(/^https?:\\/\\//.test(h)||h.charAt(0)==="/")return h;'
-    'return location.pathname.indexOf("/source/")!==-1?"../"+h:h;}'
+    'return prefix+h;}'
     'hits.forEach(function(hit,i){var row=hit.row;var a=document.createElement("a");a.className="search-result";'
     'a.href=href(row);a.setAttribute("role","option");'
     'a.setAttribute("aria-selected","false");var title=document.createElement("span");title.className="search-result-title";title.textContent=row.title;'
-    'var meta=document.createElement("span");meta.className="search-result-meta";meta.textContent=row.tier||"article";'
+    'var meta=document.createElement("span");meta.className="search-result-meta";meta.textContent=(row.space_labels||[]).join(" · ")+(row.section?" / "+row.section:(row.tier||"article"));'
     'var ex=document.createElement("span");ex.className="search-result-excerpt";ex.textContent=excerpt(row,terms);'
     'a.appendChild(title);a.appendChild(meta);a.appendChild(ex);box.appendChild(a);});'
     'box.hidden=false;input.setAttribute("aria-expanded","true");setActive(0);}'
-    'input.addEventListener("input",render);'
+    'input.addEventListener("input",render);if(scope)scope.addEventListener("change",render);'
     'input.addEventListener("keydown",function(e){if(box.hidden)return;'
     'if(e.key==="Escape"){hide();input.blur();}'
     'else if(e.key==="ArrowDown"){e.preventDefault();setActive(Math.min(active+1,hits.length-1));}'
     'else if(e.key==="ArrowUp"){e.preventDefault();setActive(Math.max(active-1,0));}'
     'else if(e.key==="Enter"&&hits[active]){e.preventDefault();location.href=href(hits[active].row);}});'
-    'document.addEventListener("click",function(e){if(!box.contains(e.target)&&e.target!==input)hide();});'
+    'document.addEventListener("click",function(e){if(!box.contains(e.target)&&e.target!==input&&e.target!==scope)hide();});'
     '})();</script>'
 )
 
@@ -436,6 +443,49 @@ def title_of(slug):
     return META.get(slug, {}).get("title", slug.replace("-", " "))
 
 
+def placement_parts(placement):
+    return STRUCTURE.split_placement(placement)
+
+
+def resolved_primary_placement(meta):
+    value = meta.get("primary_placement", "")
+    if value:
+        return value
+    return STRUCTURE.legacy_placement(
+        meta.get("org", DEFAULT_ORG), meta.get("tier", ""))
+
+
+def resolved_placements(meta):
+    return list(meta.get("placements") or [resolved_primary_placement(meta)])
+
+
+def primary_space(meta):
+    return placement_parts(resolved_primary_placement(meta))[0]
+
+
+def primary_section(meta):
+    return placement_parts(resolved_primary_placement(meta))[1]
+
+
+def space_label(space):
+    return STRUCTURE.space_map[space].label
+
+
+def section_label(space, section):
+    return next(item.label for item in STRUCTURE.space_map[space].sections
+                if item.key == section)
+
+
+def space_switcher(active_space="", prefix=""):
+    links = []
+    for space in STRUCTURE.spaces:
+        cls = ' class="current" aria-current="page"' if space.key == active_space else ""
+        links.append('<a%s href="%s%s/index.html">%s</a>' % (
+            cls, prefix, html.escape(space.key), html.escape(space.label)))
+    return ('<nav class="space-switcher" aria-label="Knowledge spaces">'
+            '<span>Spaces</span>%s</nav>' % "".join(links))
+
+
 def search_text(fm, body):
     body = re.sub(r"```.*?```", " ", body, flags=re.S)
     body = re.sub(r"`([^`]*)`", r"\1", body)
@@ -685,7 +735,7 @@ def repo_records():
 REPOS = []
 
 
-def to_html(body, link_acc=None, source_refs=None, source_slug=""):
+def to_html(body, link_acc=None, source_refs=None, source_slug="", href_prefix=""):
     MD.reset()
     store = []
 
@@ -699,7 +749,7 @@ def to_html(body, link_acc=None, source_refs=None, source_slug=""):
         if slug in SLUGS:
             if link_acc is not None and slug != "index":
                 link_acc.add(slug)
-            return '<a class="wl" href="%s.html">%s</a>' % (slug, label)
+            return '<a class="wl" href="%s%s.html">%s</a>' % (href_prefix, slug, label)
         return '<a class="wl tbd" title="not yet written (TBD)">%s</a>' % label
 
     out = RUNTOK.sub(emit, MD.convert(WL.sub(grab, body)))
@@ -1556,6 +1606,15 @@ def build_source_pages(status):
     SOURCE_INDEX = []
     SOURCE_DIST.mkdir(parents=True, exist_ok=True)
     refs = set(frontmatter_source_refs())
+    source_spaces = {}
+    try:
+        catalog = load_catalog(WIKI.parent, wiki_dir=WIKI)
+    except CatalogError as exc:
+        raise SystemExit("build_source_pages: %s" % exc)
+    for record in catalog:
+        spaces = {placement.split("/", 1)[0] for placement in record.placements}
+        for ref in record.sources + record.raw_documents:
+            source_spaces.setdefault(source_ref_clean(ref), set()).update(spaces)
     if RAW.exists():
         for p in RAW.rglob("*"):
             if p.is_file() and p.suffix.lower() in {".md", ".txt", ".json", ".yml", ".yaml", ".csv", ".toml"}:
@@ -1595,6 +1654,9 @@ def build_source_pages(status):
                 "href": href,
                 "title": title,
                 "tier": "source",
+                "spaces": sorted(source_spaces.get(ref, {STRUCTURE.default_space})),
+                "space_labels": [space_label(space) for space in
+                                 sorted(source_spaces.get(ref, {STRUCTURE.default_space}))],
                 "ref": ref,
                 "text": ("%s %s %s" % (ref, title, text))[:12000],
             })
@@ -1695,7 +1757,7 @@ def repos_by_group():
     return grouped
 
 
-def build_repo_nav(current_repo="", org=DEFAULT_ORG):
+def build_repo_nav(current_repo="", org=DEFAULT_ORG, prefix=""):
     # each org band lists only its own repo groups (DP-20260710 D2, intake
     # decision 2): platform -> Transpara, civilization+other -> Transpara-AI.
     org_groups = [g for g in REPO_GROUP_ORDER if g in ORG_REPO_GROUPS.get(org, [])]
@@ -1712,13 +1774,13 @@ def build_repo_nav(current_repo="", org=DEFAULT_ORG):
     # historical "repos" key so stored preferences survive; transpara gets its
     # own key so the two bands never share open/closed state.
     tier_key = "repos" if org == DEFAULT_ORG else "repos-%s" % org
-    attrs = ['class="side-group repo-side-group"', 'data-tier="%s"' % html.escape(tier_key)]
+    attrs = ['class="side-group repo-side-group"', 'data-section="%s"' % html.escape(tier_key)]
     if current_here:
         attrs.append('data-current-group="true"')
     # the full repository index (repos.html) spans all orgs; its overview link
     # stays on the transpara-ai block only, where it always lived.
-    overview = ('<div class="repo-nav-overview"><a%s href="repos.html">Repository index</a></div>'
-                % (' class="current"' if current_repo == "index" else "")) if org == DEFAULT_ORG else ""
+    overview = ('<div class="repo-nav-overview"><a%s href="%srepos.html">Repository index</a></div>'
+                % (' class="current"' if current_repo == "index" else "", prefix)) if org == DEFAULT_ORG else ""
     out = ['<details %s><summary><span>%s Repos</span><em>%d</em></summary>'
            '%s<div class="repo-nav-sections">' %
            (" ".join(attrs), html.escape(ORG_LABEL.get(org, org)), total, overview)]
@@ -1729,14 +1791,14 @@ def build_repo_nav(current_repo="", org=DEFAULT_ORG):
         out.append('<section class="repo-nav-section"><h6>%s</h6><ul>' % html.escape(REPO_GROUP_LABEL.get(key, key)))
         for repo in repos:
             cls = ' class="current"' if repo["slug"] == current_repo else ""
-            out.append('<li><a%s href="%s">%s</a></li>' %
-                       (cls, html.escape(repo["href"]), html.escape(repo["name"])))
+            out.append('<li><a%s href="%s%s">%s</a></li>' %
+                       (cls, prefix, html.escape(repo["href"]), html.escape(repo["name"])))
         out.append("</ul></section>")
     out.append("</div></details>")
     return "".join(out)
 
 
-def build_investigation_nav(arts, current):
+def build_investigation_nav(arts, current, prefix=""):
     grouped = {}
     flat = []
     for article in arts:
@@ -1764,8 +1826,8 @@ def build_investigation_nav(arts, current):
             count = raw_doc_count_for_articles(articles)
             count_html = '<em>%d</em>' % count if count else ""
             marker = nav_contribution_marker(articles)
-            out.append('<li class="nav-article-row"><a%s href="%s.html" title="%s">%s</a>%s%s</li>' %
-                       (cls, single["slug"], html.escape(single["title"]), html.escape(topic), marker, count_html))
+            out.append('<li class="nav-article-row"><a%s href="%s%s.html" title="%s">%s</a>%s%s</li>' %
+                       (cls, prefix, single["slug"], html.escape(single["title"]), html.escape(topic), marker, count_html))
             continue
         open_attr = " open" if any(a["slug"] == current for a in articles) else ""
         marker = nav_contribution_marker(articles)
@@ -1776,8 +1838,8 @@ def build_investigation_nav(arts, current):
         )
         for article in articles:
             cls = ' class="current"' if article["slug"] == current else ""
-            out.append('<li><a%s href="%s.html">%s</a></li>' %
-                       (cls, article["slug"], html.escape(article["title"])))
+            out.append('<li><a%s href="%s%s.html">%s</a></li>' %
+                       (cls, prefix, article["slug"], html.escape(article["title"])))
         out.append("</ul></details></li>")
     for article in flat:
         fm = article_frontmatter(article["slug"])
@@ -1785,54 +1847,55 @@ def build_investigation_nav(arts, current):
         cls = ' class="current"' if article["slug"] == current else ""
         count_html = '<em>%d</em>' % count if count else ""
         marker = nav_contribution_marker([article])
-        out.append('<li class="nav-article-row"><a%s href="%s.html">%s</a>%s%s</li>' %
-                   (cls, article["slug"], html.escape(article["title"]), marker, count_html))
+        out.append('<li class="nav-article-row"><a%s href="%s%s.html">%s</a>%s%s</li>' %
+                   (cls, prefix, article["slug"], html.escape(article["title"]), marker, count_html))
     return "".join(out)
 
 
-def build_sidebar(current, current_repo=""):
-    current_tier = META.get(current, {}).get("tier", "")
+def build_sidebar(current, current_repo="", active_space="", prefix=""):
+    if not active_space:
+        active_space = primary_space(META[current]) if current in META else STRUCTURE.default_space
+    space = STRUCTURE.space_map[active_space]
+    current_section = ""
+    if current in META:
+        for placement in resolved_placements(META[current]):
+            placed_space, placed_section = placement_parts(placement)
+            if placed_space == active_space:
+                current_section = placed_section
+                break
     out = [
         '<nav class="sidebar" aria-label="%s navigation">' % html.escape(SITE_NAME),
         '<div class="side-tools"><strong>Contents</strong>'
         '<button id="side-toggle-all" type="button" aria-label="Hide or show all navigation sections">hide</button>'
         '</div>',
-        '<div class="side-home"><a href="index.html">Main page</a><span>home</span></div>',
+        '<div class="side-home"><a href="%s%s/index.html">%s</a><span>space home</span></div>' %
+        (prefix, html.escape(active_space), html.escape(space.label)),
+        '<div class="side-org">%s · %s</div>' %
+        (html.escape(STRUCTURE.organization_labels[space.steward]), html.escape(space.label)),
     ]
-    # two org bands, TRANSPARA above TRANSPARA-AI (DP-20260710 D2, operator
-    # mock): each band renders its own repos block, then its own sections.
-    for org in ORG_ORDER:
-        band = []
-        band.append(build_repo_nav(current_repo, org=org))
-        for tier in ORG_SECTIONS[org]:
-            # retired articles drop from nav but stay reachable by direct link
-            # .get with DEFAULT_ORG mirrors D3's absent-org rule exactly; an
-            # UNKNOWN org can never reach here (article_meta fails the build),
-            # so this is the grandfather default, not an acceptance path.
-            arts = sorted([m for m in META.values()
-                           if m.get("org", DEFAULT_ORG) == org and m["tier"] == tier
-                           and not m.get("retired_on")],
-                          key=lambda m: m["title"].lower())
-            if not arts:
-                continue
-            attrs = ['class="side-group"', 'data-tier="%s"' % html.escape(tier)]
-            if tier == current_tier:
-                attrs.append('data-current-group="true"')
-            elif not current and tier in {"institutional", "meta"}:
-                attrs.append('data-default-open="true"')
-            band.append('<details %s><summary><span>%s</span><em>%d</em></summary><ul>'
-                        % (" ".join(attrs), html.escape(SECTION_LABEL.get(tier, tier)), len(arts)))
-            if tier == "investigation":
-                band.append(build_investigation_nav(arts, current))
-            else:
-                for a in arts:
-                    cls = ' class="current"' if a["slug"] == current else ""
-                    band.append('<li><a%s href="%s.html">%s</a></li>' % (cls, a["slug"], html.escape(a["title"])))
-            band.append("</ul></details>")
-        if not any(band):
-            continue  # an org with no repos and no articles renders no band
-        out.append('<div class="side-org">%s</div>' % html.escape(ORG_LABEL.get(org, org)))
-        out.extend(band)
+    out.append(build_repo_nav(current_repo, org=space.steward, prefix=prefix))
+    for section in space.sections:
+        placement = "%s/%s" % (active_space, section.key)
+        arts = sorted([m for m in META.values()
+                       if placement in resolved_placements(m) and not m.get("retired_on")],
+                      key=lambda m: m["title"].lower())
+        if not arts:
+            continue
+        attrs = ['class="side-group"', 'data-section="%s"' % html.escape(placement)]
+        if section.key == current_section:
+            attrs.append('data-current-group="true"')
+        elif not current and section.key in {"institutional", "meta", "product-overview", "market-categories"}:
+            attrs.append('data-default-open="true"')
+        out.append('<details %s><summary><span>%s</span><em>%d</em></summary><ul>'
+                   % (" ".join(attrs), html.escape(section.label), len(arts)))
+        if active_space == "civilization" and section.key == "investigation":
+            out.append(build_investigation_nav(arts, current, prefix=prefix))
+        else:
+            for article in arts:
+                cls = ' class="current"' if article["slug"] == current else ""
+                out.append('<li><a%s href="%s%s.html">%s</a></li>' %
+                           (cls, prefix, article["slug"], html.escape(article["title"])))
+        out.append("</ul></details>")
     out.append("</nav>")
     out.insert(-1, '<div class="sidebar-resizer" role="separator" aria-orientation="vertical" '
                    'aria-label="Resize navigation" aria-valuemin="280" aria-valuemax="560" '
@@ -1859,35 +1922,48 @@ def navbox_investigation_reps(arts):
     return [a for a in arts if a["slug"] not in hidden]
 
 
-def build_navbox():
-    out = ['<nav class="navbox"><div class="navbox-title">%s — index</div><div class="navbox-body">' % html.escape(SITE_NAME)]
-    # iterate the full org/section structure so newly-valid Transpara pages
-    # appear here like every other nav surface (CFAR r2); org order matches
-    # the sidebar bands, and the org filter uses the same D3 absent-org rule.
-    for org in ORG_ORDER:
-        for tier in ORG_SECTIONS[org]:
-            arts = sorted([m for m in META.values()
-                           if m.get("org", DEFAULT_ORG) == org and m["tier"] == tier
-                           and not m.get("retired_on")],
-                          key=lambda m: m["title"].lower())
-            if not arts:
-                continue
-            if tier == "investigation":
-                arts = navbox_investigation_reps(arts)
-            links = " · ".join('<a href="%s.html">%s</a>' % (a["slug"], html.escape(a["title"])) for a in arts)
-            out.append('<div class="navbox-row"><span class="navbox-grp">%s</span><span class="navbox-list">%s</span></div>'
-                       % (html.escape(SECTION_LABEL.get(tier, tier)), links))
+def build_navbox(active_space="civilization", prefix=""):
+    space = STRUCTURE.space_map[active_space]
+    out = ['<nav class="navbox"><div class="navbox-title">%s — index</div><div class="navbox-body">' % html.escape(space.label)]
+    for section in space.sections:
+        placement = "%s/%s" % (active_space, section.key)
+        arts = sorted([m for m in META.values()
+                       if placement in resolved_placements(m) and not m.get("retired_on")],
+                      key=lambda m: m["title"].lower())
+        if not arts:
+            continue
+        if active_space == "civilization" and section.key == "investigation":
+            arts = navbox_investigation_reps(arts)
+        links = " · ".join('<a href="%s%s.html">%s</a>' %
+                           (prefix, article["slug"], html.escape(article["title"]))
+                           for article in arts)
+        out.append('<div class="navbox-row"><span class="navbox-grp">%s</span><span class="navbox-list">%s</span></div>'
+                   % (html.escape(section.label), links))
     out.append('</div></nav>')
     return "".join(out)
 
 
-def build_infobox(meta, fm):
+def build_infobox(meta, fm, prefix=""):
     rows = []
     def row(k, v):
         if v:
             rows.append('<tr><th>%s</th><td>%s</td></tr>' % (html.escape(k), v))
     tier = meta["tier"]
     row("Tier", '<span class="tier %s">%s</span>' % (html.escape(tier), html.escape(tier)))
+    placed = {}
+    placements = resolved_placements(meta)
+    primary = resolved_primary_placement(meta)
+    for placement in placements:
+        space, section = placement_parts(placement)
+        placed[placement] = '<a href="%s%s/index.html">%s / %s</a>' % (
+            prefix, html.escape(space), html.escape(space_label(space)),
+            html.escape(section_label(space, section)))
+    row("Primary location", placed.get(primary, ""))
+    row("Also in", "<br>".join(
+        placed[value] for value in placements if value != primary))
+    row("Steward", html.escape(STRUCTURE.organization_labels[
+        meta.get("org", DEFAULT_ORG)]))
+    row("Classification", html.escape(meta.get("classification", "internal")))
     row("Status", html.escape(fm_val(fm, "status")))
     row("Last compiled", html.escape(fm_val(fm, "last_compiled")))
     aliases = fm_list(fm, "aliases")
@@ -1917,8 +1993,8 @@ def build_infobox(meta, fm):
     if not rows:
         return ""
     return ('<aside class="infobox"><div class="infobox-title">%s</div><table>%s</table>'
-            '<div class="infobox-foot">part of the <a href="index.html">%s</a></div></aside>'
-            % (html.escape(meta["title"]), "".join(rows), html.escape(SITE_NAME)))
+        '<div class="infobox-foot">part of the <a href="%sindex.html">%s</a></div></aside>'
+        % (html.escape(meta["title"]), "".join(rows), prefix, html.escape(SITE_NAME)))
 
 
 def build_contribution_box(fm):
@@ -1989,6 +2065,7 @@ def repo_readme_html(repo):
 def repo_page(repo, status):
     title = "%s repository" % repo["name"]
     page_title = "%s — %s" % (title, SITE_NAME)
+    active_space = "platform" if repo["group"] == "platform" else "civilization"
     return (
         '<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -1998,11 +2075,12 @@ def repo_page(repo, status):
         'if(t==="dark")document.documentElement.removeAttribute("data-theme");'
         'else document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body>'
-        '<header class="topbar"><a class="brand" href="index.html">%s</a>%s%s'
+        '<header class="topbar"><a class="brand" href="index.html">%s</a>%s%s%s'
         '<div class="top-meta">%s'
         '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
-        '</div></header>' % (html.escape(SITE_NAME), search_box(), top_links(), freshness(status)) +
-        '<div class="layout">%s' % build_sidebar("", current_repo=repo["slug"]) +
+        '</div></header>' % (html.escape(SITE_NAME), space_switcher(active_space),
+                              search_box(active_space=active_space), top_links(), freshness(status, active_space)) +
+        '<div class="layout">%s' % build_sidebar("", current_repo=repo["slug"], active_space=active_space) +
         '<main class="content repo-content"><h1 class="page-title">%s</h1>'
         '<div class="tagline"><span class="tier repo">%s</span> · repository README</div>'
         '%s%s'
@@ -2058,18 +2136,28 @@ def repos_page(status):
         build_sidebar(""), build_sidebar("", current_repo="index"), 1)
 
 
-def search_box(prefix=""):
+def search_box(prefix="", active_space=""):
+    options = ['<option value="all"%s>All spaces</option>' %
+               (' selected' if not active_space else '')]
+    for space in STRUCTURE.spaces:
+        options.append('<option value="%s"%s>%s</option>' % (
+            html.escape(space.key),
+            ' selected' if space.key == active_space else '',
+            html.escape(space.label),
+        ))
     return (
-        '<form class="search" role="search" autocomplete="off">'
+        '<form class="search" role="search" autocomplete="off" data-prefix="%s">'
         '<label class="sr-only" for="wiki-search">Search %s</label>'
         '<input id="wiki-search" class="search-input" type="search" '
         'placeholder="Search %s" aria-controls="search-results" aria-expanded="false">'
+        '<label class="sr-only" for="wiki-search-scope">Search scope</label>'
+        '<select id="wiki-search-scope" class="search-scope" aria-label="Search scope">%s</select>'
         '<div id="search-results" class="search-results" role="listbox" hidden></div>'
         '</form>'
-    ) % (html.escape(SITE_NAME), html.escape(SITE_NAME))
+    ) % (html.escape(prefix), html.escape(SITE_NAME), html.escape(SITE_NAME), "".join(options))
 
 
-def build_seealso(links, current):
+def build_seealso(links, current, prefix=""):
     # a wikilink the body gate suppressed (retired target / cleanly-removed
     # edge) must not reappear as a live link here — filter through the SAME
     # link_state gate the body used (CFAR r1 P2-3)
@@ -2078,7 +2166,8 @@ def build_seealso(links, current):
                  key=lambda s: title_of(s).lower())
     if not rel:
         return ""
-    items = "".join('<li><a href="%s.html">%s</a></li>' % (s, html.escape(title_of(s))) for s in rel)
+    items = "".join('<li><a href="%s%s.html">%s</a></li>' %
+                    (prefix, s, html.escape(title_of(s))) for s in rel)
     return '<section class="seealso"><h2>See also</h2><ul>%s</ul></section>' % items
 
 
@@ -2105,19 +2194,27 @@ def pending_edges_chip(edge_states):
             'reconciliation</span>' % (n, "" if n == 1 else "s"))
 
 
-def freshness(status):
+def freshness(status, active_space=""):
     synced = status.get("synced", "")
     stale = status.get("stale_articles", [])
     changed = status.get("changed_articles", [])
     chip = pending_edges_chip(EDGE_STATES)
+    scope = ""
+    if active_space and active_space in STRUCTURE.space_map:
+        count = status.get("space_counts", {}).get(active_space)
+        scope = space_label(active_space)
+        if isinstance(count, int):
+            scope += ": %d article%s · " % (count, "" if count == 1 else "s")
+        else:
+            scope += " · "
     if not synced:
-        return '<span class="fresh warn">not yet refreshed</span>' + chip
+        return '<span class="fresh warn">%snot yet refreshed</span>%s' % (html.escape(scope), chip)
     if not stale:
         changed_text = ""
         if changed:
             changed_text = " · %d rebuilt" % len(changed)
-        return '<span class="fresh ok">updated %s · 0 stale%s</span>%s' % (
-            html.escape(synced), changed_text, chip)
+        return '<span class="fresh ok">%supdated %s · 0 stale%s</span>%s' % (
+            html.escape(scope), html.escape(synced), changed_text, chip)
     # "stale" = a deterministic rebuild failed after refresh.py identified
     # articles whose declared sources changed. Make the chip name the affected
     # articles so the retry/fix target is actionable rather than opaque.
@@ -2142,13 +2239,13 @@ def freshness(status):
     ) % (html.escape(synced), n, n, "" if n == 1 else "s", links) + chip
 
 
-def deploy_status_script():
+def deploy_status_script(prefix=""):
     """Client-side: fetch deploy-status.json (written by autodeploy.py each tick,
     NOT baked at build time) and render a blocked banner + a live footer."""
     return (
         '<div id="deploy-banner" hidden></div>'
         '<div id="deploy-foot" class="deploy-foot"></div>'
-        '<script>(function(){fetch("deploy-status.json",{cache:"no-store"})'
+        '<script>(function(){fetch("%sdeploy-status.json",{cache:"no-store"})' % prefix +
         '.then(function(r){return r.ok?r.json():null}).then(function(s){if(!s)return;'
         'var f=document.getElementById("deploy-foot");'
         'if(f)f.textContent="live deploy: "+String(s.deployed_sha||"").slice(0,7)+" · "+(s.checked||"");'
@@ -2159,14 +2256,14 @@ def deploy_status_script():
     )
 
 
-def top_links():
+def top_links(prefix=""):
     return (
         '<nav class="top-links" aria-label="Wiki tools">'
-        '<a href="repos.html">Repos</a>'
-        '<a href="sources.html">Sources</a>'
-        '<a href="ingest.html">Ingest</a>'
+        '<a href="%srepos.html">Repos</a>'
+        '<a href="%ssources.html">Sources</a>'
+        '<a href="%singest.html">Ingest</a>'
         '</nav>'
-    )
+    ) % (prefix, prefix, prefix)
 
 
 def simple_page(title, inner_html, status, *, main_class="content source-content"):
@@ -2179,20 +2276,21 @@ def simple_page(title, inner_html, status, *, main_class="content source-content
         'if(t==="dark")document.documentElement.removeAttribute("data-theme");'
         'else document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body>'
-        '<header class="topbar"><a class="brand" href="../index.html">%s</a>%s'
-        '<nav class="top-links" aria-label="Wiki tools"><a href="../repos.html">Repos</a><a href="../sources.html">Sources</a><a href="../ingest.html">Ingest</a></nav>'
+        '<header class="topbar"><a class="brand" href="../index.html">%s</a>%s%s%s'
         '<div class="top-meta">%s'
         '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
-        '</div></header>' % (html.escape(SITE_NAME), search_box(prefix="../"), freshness(status)) +
+        '</div></header>' % (html.escape(SITE_NAME), space_switcher("civilization", "../"),
+                              search_box(prefix="../", active_space="civilization"),
+                              top_links("../"), freshness(status, "civilization")) +
         '<main class="%s">%s'
         '<footer class="page-foot">Generated from <code>wiki/</code> + <code>raw/</code> · source viewer.</footer>'
         '</main><script src="../search-index.js?v=%s"></script>' % (html.escape(main_class), inner_html, SEARCH_VER) +
-        THEME_JS + SEARCH_JS + deploy_status_script().replace('fetch("deploy-status.json"', 'fetch("../deploy-status.json"') +
+        THEME_JS + SEARCH_JS + deploy_status_script("../") +
         '</body></html>'
     )
 
 
-def tool_page(title, inner_html, status):
+def tool_page(title, inner_html, status, active_space="civilization"):
     return (
         '<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -2202,13 +2300,15 @@ def tool_page(title, inner_html, status):
         'if(t==="dark")document.documentElement.removeAttribute("data-theme");'
         'else document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body>'
-        '<header class="topbar"><a class="brand" href="index.html">%s</a>%s%s'
+        '<header class="topbar"><a class="brand" href="index.html">%s</a>%s%s%s'
         '<div class="top-meta">%s'
         '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
-        '</div></header>' % (html.escape(SITE_NAME), search_box(), top_links(), freshness(status)) +
+        '</div></header>' % (html.escape(SITE_NAME), space_switcher(active_space),
+                              search_box(active_space=active_space), top_links(), freshness(status, active_space)) +
         '<div class="layout">%s<main class="content">%s'
         '<footer class="page-foot">Generated from <code>wiki/</code> + <code>raw/</code>.</footer>'
-        '</main></div><script src="search-index.js?v=%s"></script>' % (build_sidebar(""), inner_html, SEARCH_VER) +
+        '</main></div><script src="search-index.js?v=%s"></script>' %
+        (build_sidebar("", active_space=active_space), inner_html, SEARCH_VER) +
         THEME_JS + NAV_JS + SEARCH_JS + deploy_status_script() + '</body></html>'
     )
 
@@ -2482,7 +2582,7 @@ def board_search_text(fm):
     return re.sub(r"\s+", " ", " ".join(p for p in parts if p)).strip()
 
 
-def build_board(fm):
+def build_board(fm, prefix=""):
     """Compose the front-page vision board from index.md frontmatter,
     validating fail-closed (design packet §3/§4). Returns board HTML that the
     caller passes into page(is_home=True); page() stays a dumb frame."""
@@ -2559,17 +2659,17 @@ def build_board(fm):
         + "</div></div>")
 
     tiles = "".join(
-        '<a class="board-tile board-%s" href="%s.html">'
+        '<a class="board-tile board-%s" href="%s%s.html">'
         '<span class="board-tile-hook">%s</span>'
         '<span class="board-tile-name">%s</span>'
         '<span class="board-tile-obj">%s</span>'
         '<span class="board-tile-cta">read the article →</span></a>'
-        % (color, slug, html.escape(hook) if hook else "◆",
+        % (color, prefix, slug, html.escape(hook) if hook else "◆",
            html.escape(name), html.escape(objective))
         for name, objective, hook, slug, color in pillars)
 
     strip = " <span class=\"board-arrow\">→</span> ".join(
-        '<a href="%s.html">%s</a>' % (slug, html.escape(label))
+        '<a href="%s%s.html">%s</a>' % (prefix, slug, html.escape(label))
         for label, slug in inheritance)
 
     summary = html.escape(
@@ -2583,31 +2683,38 @@ def build_board(fm):
         '<div class="board-eyebrow">%s</div>'
         '<h2 class="board-claim">%s</h2>'
         '<p class="board-subtitle">%s</p>'
-        '<p class="board-narrative"><a href="%s.html">Read the full origin '
+        '<p class="board-narrative"><a href="%s%s.html">Read the full origin '
         'narrative →</a></p></header>'
         '%s'
         '<nav class="board-tiles" aria-label="The four objectives">%s</nav>'
         '<div class="board-inheritance">inherited, not owned: %s</div>'
-        '<footer class="board-guardrail"><a href="%s.html">Cult test</a> — '
+        '<footer class="board-guardrail"><a href="%s%s.html">Cult test</a> — '
         '%s</footer>'
         "</div>"
-        % (eyebrow, hero, subtitle, narrative, centerpiece, tiles, strip,
-           guard_slug, html.escape(guard_text)))
+        % (eyebrow, hero, subtitle, prefix, narrative, centerpiece, tiles, strip,
+           prefix, guard_slug, html.escape(guard_text)))
 
 
-def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home=False, extra_head="", main_class="content"):
-    sidebar = build_sidebar(slug if not is_home else "")
-    infobox = "" if is_home else build_infobox(meta, fm)
+def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *,
+         is_home=False, extra_head="", main_class="content", active_space="",
+         prefix=""):
+    if not active_space:
+        active_space = primary_space(meta) if meta else STRUCTURE.default_space
+    sidebar = build_sidebar(slug if not is_home else "", active_space=active_space,
+                            prefix=prefix)
+    infobox = "" if is_home else build_infobox(meta, fm, prefix=prefix)
     toc = article_toc(meta, toc_tokens, is_home=is_home)
-    seealso = "" if is_home else build_seealso(links, slug)
+    seealso = "" if is_home else build_seealso(links, slug, prefix=prefix)
     source_updates = "" if is_home else build_source_update_panel(fm)
     source_panel = "" if is_home else build_source_panel(fm)
-    navbox = build_navbox()
-    tagline = "" if is_home else '<div class="tagline">%s%s</div>' % (
-        ('<span class="tier %s">%s</span> · ' % (html.escape(meta["tier"]), html.escape(meta["tier"]))),
-        "an article in the %s" % SITE_NAME)
-    h1 = SITE_NAME if is_home else html.escape(title)
-    page_title = SITE_NAME if is_home or title == SITE_NAME else ("%s — %s" % (title, SITE_NAME))
+    navbox = build_navbox(active_space, prefix=prefix)
+    tagline = "" if is_home else '<div class="tagline">%s · %s · an article in %s</div>' % (
+        '<span class="tier %s">%s</span>' %
+        (html.escape(primary_section(meta)), html.escape(section_label(active_space, primary_section(meta)))),
+        html.escape(STRUCTURE.organization_labels[meta.get("org", DEFAULT_ORG)]),
+        html.escape(space_label(active_space)))
+    h1 = html.escape(title)
+    page_title = title if is_home else ("%s — %s" % (title, SITE_NAME))
     state_banner = "" if is_home else state_banner_html(fm, meta)
     if is_home:
         article_html = '<article class="body">%s</article>' % body_html
@@ -2620,23 +2727,26 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *, is_home
         '<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         '<title>%s</title>' % html.escape(page_title) +
-        '<link rel="stylesheet" href="style.css?v=%s">' % CSS_VER +
+        '<link rel="stylesheet" href="%sstyle.css?v=%s">' % (prefix, CSS_VER) +
         extra_head +
         '<script>(function(){try{var t=localStorage.getItem("civwiki-theme");'
         'if(t==="dark")document.documentElement.removeAttribute("data-theme");'
         'else document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body>' +
-        '<header class="topbar"><a class="brand" href="index.html">%s</a>%s%s'
+        '<header class="topbar"><a class="brand" href="%sindex.html">%s</a>%s%s%s'
         '<div class="top-meta">%s'
         '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
-        '</div></header>' % (html.escape(SITE_NAME), search_box(), top_links(), freshness(status)) +
+        '</div></header>' % (prefix, html.escape(SITE_NAME),
+                              space_switcher(active_space, prefix),
+                              search_box(prefix=prefix, active_space=active_space),
+                              top_links(prefix), freshness(status, active_space)) +
         '<div class="layout">%s' % sidebar +
         '<main class="%s"><h1 class="page-title">%s</h1>%s%s' % (html.escape(main_class), h1, tagline, state_banner) +
         '%s%s%s%s%s%s' % (infobox, article_html, seealso, source_panel, source_updates, navbox) +
         '<footer class="page-foot">Generated from <code>wiki/</code> + <code>index.md</code> · '
         'a Karpathy-style LLM wiki · fail-legible: gaps are TBD, conflicts are stated.</footer>'
-        '</main></div><script src="search-index.js?v=%s"></script>' % SEARCH_VER + THEME_JS + NAV_JS + SEARCH_JS +
-        deploy_status_script() +
+        '</main></div><script src="%ssearch-index.js?v=%s"></script>' % (prefix, SEARCH_VER) + THEME_JS + NAV_JS + SEARCH_JS +
+        deploy_status_script(prefix) +
         '</body></html>'
     )
 
@@ -2691,12 +2801,109 @@ def arc_page(status):
                 extra_head=arc_scripts, main_class="content arc-content")
 
 
+def space_section_overview(space_key, prefix="../"):
+    space = STRUCTURE.space_map[space_key]
+    cards = []
+    for section in space.sections:
+        placement = "%s/%s" % (space_key, section.key)
+        articles = sorted(
+            (meta for meta in META.values()
+             if placement in resolved_placements(meta) and not meta.get("retired_on")),
+            key=lambda meta: meta["title"].lower(),
+        )
+        links = "".join(
+            '<li><a href="%s%s.html">%s</a></li>' %
+            (prefix, article["slug"], html.escape(article["title"]))
+            for article in articles[:8]
+        )
+        remainder = ""
+        if len(articles) > 8:
+            remainder = '<li class="space-more">+ %d more in navigation</li>' % (len(articles) - 8)
+        empty = '<li class="space-empty">Curated content pending.</li>' if not articles else ""
+        cards.append(
+            '<section class="space-section-card" id="%s"><header><h2>%s</h2><span>%d</span></header>'
+            '<ul>%s%s%s</ul></section>' %
+            (html.escape(section.key), html.escape(section.label), len(articles),
+             links, remainder, empty)
+        )
+    return '<div class="space-section-grid">%s</div>' % "".join(cards)
+
+
+def space_home_page(space_key, status):
+    space = STRUCTURE.space_map[space_key]
+    path = SPACES / space_key / "index.md"
+    if not path.is_file():
+        raise SystemExit("space home missing: %s" % path)
+    fm, body = split_fm(path.read_text())
+    body = re.sub(r"^#\s+.*\n", "", body, count=1)
+    links = set()
+    body_html, toc_tokens = to_html(
+        body, links, article_source_refs(fm), source_slug="space-%s" % space_key,
+        href_prefix="../",
+    )
+    lead = ""
+    if space_key == "civilization":
+        lead = gate_internal_links(
+            build_board(fm, prefix="../"), source_slug="space-civilization")
+    content = lead + body_html + space_section_overview(space_key)
+    title = fm_scalar(fm, "title") or space.label
+    return page(
+        "space-%s" % space_key, title, {}, fm, content, toc_tokens, links,
+        status, is_home=True, active_space=space_key, prefix="../",
+        main_class="content space-home",
+    )
+
+
+def portal_page(status):
+    fm, body = split_fm(PORTAL_INDEX.read_text())
+    body = re.sub(r"^#\s+.*\n", "", body, count=1)
+    body_html, _ = to_html(body, set(), source_slug="index")
+    cards = []
+    for space in STRUCTURE.spaces:
+        count = sum(
+            1 for meta in META.values()
+            if any(placement.startswith(space.key + "/") for placement in resolved_placements(meta))
+            and not meta.get("retired_on")
+        )
+        cards.append(
+            '<a class="hub-space-card" href="%s/index.html">'
+            '<span class="hub-space-steward">%s</span><strong>%s</strong>'
+            '<span>%s</span><em>%d article%s</em></a>' %
+            (html.escape(space.key), html.escape(STRUCTURE.organization_labels[space.steward]),
+             html.escape(space.label), html.escape(space.description), count,
+             "" if count == 1 else "s")
+        )
+    title = fm_scalar(fm, "title") or SITE_NAME
+    return (
+        '<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        '<title>%s</title><link rel="stylesheet" href="style.css?v=%s">' %
+        (html.escape(title), CSS_VER) +
+        '<script>(function(){try{var t=localStorage.getItem("civwiki-theme");if(t==="dark")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
+        '</head><body><header class="topbar"><a class="brand" href="index.html">%s</a>%s%s%s'
+        '<div class="top-meta">%s<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button></div></header>' %
+        (html.escape(SITE_NAME), space_switcher(), search_box(), top_links(), freshness(status)) +
+        '<main class="hub-portal"><header class="hub-hero"><span>Governed knowledge</span>'
+        '<h1>%s</h1><p>One canonical graph. Several purposeful views.</p></header>' % html.escape(title) +
+        '<article class="body hub-intro">%s</article><nav class="hub-space-grid" aria-label="Knowledge spaces">%s</nav>' %
+        (body_html, "".join(cards)) +
+        '<footer class="page-foot">Advisory knowledge; source systems retain authority.</footer></main>'
+        '<script src="search-index.js?v=%s"></script>' % SEARCH_VER + THEME_JS + SEARCH_JS +
+        deploy_status_script() + '</body></html>'
+    )
+
+
 def build():
     global CSS_VER, SEARCH_VER, ARC_DATA_VER, ARC_VIEW_VER, ONTO_VER, PROGRESS_VER, REPOS
     # fail closed BEFORE any dist mutation: a malformed board must never
     # leave the served site partially updated (CFAR 2a-r6); the index
     # render below re-runs build_board on the same fm
     build_board(split_fm(INDEX.read_text())[0])
+    if not PORTAL_INDEX.is_file():
+        raise SystemExit("portal home missing: %s" % PORTAL_INDEX)
+    for space in STRUCTURE.spaces:
+        if not (SPACES / space.key / "index.md").is_file():
+            raise SystemExit("space home missing: %s" % (SPACES / space.key / "index.md"))
     REPOS = repo_records()
     prepare_dist()
     status = load_status()
@@ -2708,14 +2915,29 @@ def build():
 
     def build_search_index():
         docs = []
-        fm, body = split_fm(INDEX.read_text())
+        fm, body = split_fm(PORTAL_INDEX.read_text())
         docs.append({
             "slug": "index",
             "title": SITE_NAME,
             "tier": "front page",
-            "text": ("%s %s" % (board_search_text(fm),
-                                search_text(fm, body)))[:12000],
+            "spaces": [],
+            "space_labels": [],
+            "text": search_text(fm, body)[:12000],
         })
+        for space in STRUCTURE.spaces:
+            space_fm, space_body = split_fm((SPACES / space.key / "index.md").read_text())
+            space_text = search_text(space_fm, space_body)
+            if space.key == "civilization":
+                space_text = "%s %s" % (board_search_text(space_fm), space_text)
+            docs.append({
+                "slug": "space-%s" % space.key,
+                "href": "%s/index.html" % space.key,
+                "title": fm_scalar(space_fm, "title") or space.label,
+                "tier": "space home",
+                "spaces": [space.key],
+                "space_labels": [space.label],
+                "text": space_text[:12000],
+            })
         for p in sorted(WIKI.glob("*.md")):
             meta = META[p.stem]
             if meta.get("retired_on"):
@@ -2727,6 +2949,12 @@ def build():
                 "slug": p.stem,
                 "title": meta["title"],
                 "tier": meta["tier"],
+                "org": meta.get("org", DEFAULT_ORG),
+                "classification": meta.get("classification", "internal"),
+                "spaces": [placement_parts(value)[0] for value in resolved_placements(meta)],
+                "space_labels": [space_label(placement_parts(value)[0])
+                                 for value in resolved_placements(meta)],
+                "section": section_label(primary_space(meta), primary_section(meta)),
                 "text": search_text(fm, body)[:12000],
             })
         for repo in REPOS:
@@ -2735,6 +2963,9 @@ def build():
                 "href": repo["href"],
                 "title": "%s repository" % repo["name"],
                 "tier": "repo/%s" % repo["group"],
+                "spaces": ["platform" if repo["group"] == "platform" else "civilization"],
+                "space_labels": [space_label(
+                    "platform" if repo["group"] == "platform" else "civilization")],
                 "text": ("%s %s %s %s %s" % (
                     repo["name"],
                     REPO_GROUP_LABEL.get(repo["group"], repo["group"]),
@@ -2771,17 +3002,9 @@ def build():
             page(p.stem, meta["title"], meta, fm, body_html, toc_tokens, links, status),
         )
         count += 1
-    fm, body = split_fm(INDEX.read_text())
-    body = re.sub(r"^#\s+.*\n", "", body, count=1)
-    body_html, _ = to_html(body, set(), article_source_refs(fm), source_slug="index")
-    # gate the board's generated links through the SAME fail-closed renderer
-    # as article bodies — board tiles to a retired slug must not stay live
-    # (CFAR r3 P2-2); the homepage is the most visible generated-link surface
-    board_html = gate_internal_links(build_board(fm), source_slug="index")
-    write_dist_text(
-        DIST / "index.html",
-        page("index", SITE_NAME, {}, "", board_html + body_html, [], set(), status, is_home=True),
-    )
+    write_dist_text(DIST / "index.html", portal_page(status))
+    for space in STRUCTURE.spaces:
+        write_dist_text(DIST / space.key / "index.html", space_home_page(space.key, status))
     write_dist_text(DIST / "sources.html", sources_page(status))
     write_dist_text(DIST / "ingest.html", ingest_page(status))
     write_dist_text(DIST / "repos.html", repos_page(status))
@@ -2791,7 +3014,8 @@ def build():
     write_dist_text(DIST / "civilization-arc.html", arc_html)
     write_dist_text(DIST / "civilization_arc.html", arc_html)
     prune_dist()
-    print("built %d articles + %d repo pages + index + arc -> %s" % (count, len(REPOS), DIST))
+    print("built %d articles + %d repo pages + portal + %d spaces + arc -> %s" %
+          (count, len(REPOS), len(STRUCTURE.spaces), DIST))
 
 
 if __name__ == "__main__":

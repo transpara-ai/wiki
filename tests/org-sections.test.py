@@ -110,57 +110,56 @@ class TestOrgSections(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     build_site.article_meta()
 
-    # ---- TC3 (AC1): the real corpus is unchanged; the fallback is gone ----
+    # ---- TC3 (AC1): the real corpus has explicit Civilization placement ----
     def test_legacy_pages_unchanged(self):
-        # build_site imported fine at module load — the strict gate accepted
-        # every real page. Now prove the inventory matches an independent scan
-        # and that every page defaulted to the transpara-ai org.
-        # the grandfather property holds for pages that OMIT org — future
-        # legitimate `org: transpara` pages must not fail this suite (CFAR r4)
-        legacy = 0
+        # Build import proves the catalog accepted every real page. The migration
+        # removes reliance on compatibility inference for the live corpus while
+        # preserving each article's legacy tier and organization identity.
+        explicit = 0
         for p in sorted((BASE / "wiki").glob("*.md")):
             fm = p.read_text().split("---", 2)[1]
-            if re.search(r"(?m)^org\s*:", fm):
-                continue  # explicit-org pages are validated by the build gate
-            legacy += 1
+            self.assertRegex(fm, r"(?m)^org\s*:\s*transpara-ai\s*$")
+            self.assertRegex(fm, r"(?m)^primary_placement\s*:\s*civilization/")
+            self.assertRegex(fm, r"(?m)^classification\s*:\s*internal\s*$")
             m = re.search(r"(?m)^tier\s*:\s*([^#\n]+)", fm)
             tier = m.group(1).strip().strip('"').strip("'")
             self.assertEqual(build_site.META[p.stem]["tier"], tier)
             self.assertEqual(build_site.META[p.stem]["org"], "transpara-ai")
-        self.assertGreater(legacy, 0, "corpus should contain legacy pages")
-        # the removed `concept` fallback: a page with NO tier now fails loudly
+            self.assertEqual(build_site.META[p.stem]["primary_placement"],
+                             "civilization/%s" % tier)
+            explicit += 1
+        self.assertGreater(explicit, 0)
+        # A page with no legacy tier and no explicit placement fails loudly.
         with tempfile.TemporaryDirectory() as tmp:
             page(tmp, "no-tier", ["entity: N"])
             with wiki_root(build_site, tmp):
                 with self.assertRaises(SystemExit):
                     build_site.article_meta()
 
-    # ---- TC4 (AC4): two org bands in mock order, sections org-scoped ----
+    # ---- TC4 (AC4): space-scoped navigation follows the central registry ----
     def test_sidebar_two_org_bands(self):
-        html_out = build_site.build_sidebar("")
-        t = html_out.find('<div class="side-org">Transpara</div>')
-        tai = html_out.find('<div class="side-org">Transpara-AI</div>')
-        self.assertGreater(t, -1)
-        self.assertGreater(tai, t, "TRANSPARA band must render above TRANSPARA-AI")
-        # no transpara articles exist yet -> its article sections are skipped
-        self.assertNotIn('data-tier="organization"', html_out)
-        self.assertNotIn('data-tier="product"', html_out)
-        # the transpara-ai band keeps its tier groups
-        self.assertIn('data-tier="foundational"', html_out)
-        # every nav surface includes Transpara sections when populated: the
-        # bottom navbox must list a transpara page, not only TIER_ORDER rows
-        # (CFAR r2)
+        html_out = build_site.build_sidebar("", active_space="civilization")
+        self.assertIn('aria-label="Transpara Knowledge Hub navigation"', html_out)
+        self.assertIn('Transpara-AI · Civilization', html_out)
+        self.assertIn('data-section="civilization/foundational"', html_out)
+        self.assertNotIn('data-section="platform/product-overview"', html_out)
+        # A shared article appears in each placement's navigation without
+        # cloning the underlying article or changing its canonical route.
         old_meta = build_site.META
         try:
             build_site.META = dict(build_site.META, **{
                 "acme-org": {"slug": "acme-org", "title": "Acme Org",
-                             "tier": "organization", "org": "transpara",
+                             "tier": "concept", "org": "transpara-ai",
+                             "primary_placement": "civilization/concept",
+                             "placements": ["civilization/concept",
+                                            "competition/competitors"],
+                             "classification": "internal",
                              "retired_on": ""}})
-            navbox = build_site.build_navbox()
+            navbox = build_site.build_navbox(active_space="competition")
         finally:
             build_site.META = old_meta
         self.assertIn('href="acme-org.html"', navbox)
-        self.assertIn('<span class="navbox-grp">Organization</span>', navbox)
+        self.assertIn('<span class="navbox-grp">Competitors</span>', navbox)
 
     # ---- TC5 (AC4): repos split by org, nothing dropped or duplicated ----
     def test_repo_nav_split_by_org(self):
