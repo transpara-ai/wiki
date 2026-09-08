@@ -1,0 +1,44 @@
+Robert Hylton downloaded the Forrester study of Cognite and plugged it into Claude. It really exposed their pricing:
+ 
+I read the full study and checked it against what's actually in your project folders.
+ 
+What makes this document valuable
+It's commissioned by Cognite. Every number in it is a number Cognite has publicly endorsed, which means you can use it against them without any "you're mischaracterizing us" exposure. Four things in it are worth more than the headline.
+ 
+1. They published their pricing. Subscription fees: $175K (year 1, 2 sites), $1.2M (year 2, 5 sites), $2.0M (year 3, 10 sites) — $3.71M over three years, at 30–50K tags per site. That's roughly $200K per site per year at full deployment. Your Transpara-Pricing competitor table currently says "Cognite: custom-quoted, services-heavy" with no numbers. Now it has numbers with a Forrester byline on them.
+ 
+2. Services cost more than the software. Implementation and project management: $3.86M against $3.71M in subscription over the same three years. Plus 6 internal FTEs for a 9-month initial implementation, 4 FTEs at 75% time ongoing, 1–2 external consultants, and $650K + $400K/yr in professional service fees. All-in three-year cost: $7.57M for 10 sites. Your battlecard argues the services-heavy case today by inferring it from headcount (18 quota reps out of 839). This replaces inference with Cognite's own arithmetic.
+ 
+3. Three years to deploy ten sites. The model runs 20% deployed in year 1, 50% in year 2, 100% in year 3. Their marketing says eight weeks. Battlecard §4b already makes this argument from the Skagerak case study; this is a cleaner citation because it's the financial model Cognite paid Forrester to build.
+ 
+4. The 465% is almost entirely assumed, not measured. $10.7M from an assumed 1–2% throughput lift on $500M production value per site. $14.5M from an assumed 8 extra root-cause analyses per site per year × 10 hours avoided × $150K/hour. $10.5M from an assumed 25% reduction in time that 1,000 staff spend on the 30% of their day they spend looking for data. Risk-adjusted downward by only 10–15%. Nothing is measured after the fact.
+ 
+ 
+Robert Hylton | +1-206-965-5126 (GMT -8hrs) | https://transpara.com
+ 
+From: Cognite <cognite.marketing@cognite.com>
+Sent: Friday, September 4, 2026 7:01 AM
+To: Robert Hylton <Robert.Hylton@transpara.com>
+Subject: Results in weeks. Not years.
+ 
+465% ROI, based on real customer data.
+ 
+COGNITE AI FOR INDUSTRY
+ 
+ 
+Image
+ 
+ 
+In industrial environments, delivering real results faster matters more than launching another initiative.
+ 
+That’s why we focus on shortening the time between implementation and impact.
+ 
+Forrester conducted an independent Total Economic Impact™ study based on interviews with Cognite customers to evaluate the financial impact of the Cognite Industrial AI and Data Platform.
+ 
+Across the organizations interviewed, Forrester found:
+465% return on investment
+< 6 month payback period
+$35.7M in risk-adjusted benefits over three years
+Those outcomes came from improvements in production optimization, onsite staff efficiency, and reduced unplanned downtime — grounded in real customer data, not projections.
+ 
+We’ve summarized the findings in an infographic for a quick overview of what faster time to impact can translate into.

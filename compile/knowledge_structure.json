@@ -73,6 +73,23 @@
         {"key": "win-loss-evidence", "label": "Win/Loss Evidence", "legacy_tiers": []},
         {"key": "research-methods", "label": "Research Methods", "legacy_tiers": []}
       ]
+    },
+    {
+      "key": "devops",
+      "label": "DevOps",
+      "steward": "transpara",
+      "description": "Infrastructure, networking, containers, delivery automation, and operational runbooks.",
+      "sections": [
+        {"key": "overview", "label": "Overview", "legacy_tiers": []},
+        {"key": "infrastructure", "label": "Infrastructure", "legacy_tiers": []},
+        {"key": "networking", "label": "Networking", "legacy_tiers": []},
+        {"key": "containers", "label": "Containers", "legacy_tiers": []},
+        {"key": "delivery", "label": "CI/CD & Deployment", "legacy_tiers": []},
+        {"key": "observability", "label": "Observability", "legacy_tiers": []},
+        {"key": "runbooks", "label": "Runbooks", "legacy_tiers": []},
+        {"key": "security", "label": "Security & Access", "legacy_tiers": []},
+        {"key": "decisions", "label": "Decisions & Incidents", "legacy_tiers": []}
+      ]
     }
   ],
   "publication_profiles": [

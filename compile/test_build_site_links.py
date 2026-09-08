@@ -3,6 +3,7 @@
 import pathlib
 import sys
 import tempfile
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import build_site as site  # noqa: E402
@@ -177,6 +178,70 @@ def test_later_sources_win_for_duplicate_document_aliases():
             site.SOURCE_LINKS = old_links
             site.source_link_aliases.cache_clear()
     print("ok test_later_sources_win_for_duplicate_document_aliases")
+
+
+def test_first_upload_keeps_legacy_documents_and_web_sources_visible():
+    old_ref = "raw/inbox/old/cognite-overview.md"
+    new_ref = "raw/inbox/new/cognite-email.txt"
+    web_ref = "https://docs.example.test/cdf"
+    before = "sources:\n  - %s\n  - %s\n" % (web_ref, old_ref)
+    # The older document predates raw_documents. The new upload is registered
+    # in both fields, as browser ingestion does; it must count only once.
+    after = before + "  - %s\nraw_documents:\n  - %s\n" % (new_ref, new_ref)
+    with tempfile.TemporaryDirectory() as directory:
+        root = pathlib.Path(directory)
+        for ref, text in [(old_ref, "# Earlier overview\n"), (new_ref, "Additional evidence\n")]:
+            path = root / ref
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+        with mock.patch.multiple(site, ROOT=root, ALLOWED_SOURCE_ROOTS=[root],
+                                 SOURCE_LINKS={old_ref: "source/old.html", new_ref: "source/new.html"}):
+            assert site.raw_doc_refs(before) == [old_ref]
+            assert set(site.raw_doc_refs(after)) == {old_ref, new_ref}
+            assert set(site.topic_details_refs(after)) == {old_ref, new_ref}
+            panel = site.build_source_panel(after)
+            assert 'id="article-sources" open' in panel
+            assert "Article sources (3)" in panel
+            for href in (web_ref, "source/old.html", "source/new.html"):
+                assert panel.count('href="%s"' % href) == 1
+            assert "source-superseded" not in panel, "Add must not imply supersession"
+            # A document stored only in raw_documents still belongs in the
+            # complete source list and its count.
+            raw_only = before + "raw_documents:\n  - %s\n" % new_ref
+            assert "Article sources (3)" in site.build_source_panel(raw_only)
+            meta = {"title": "Competitor", "tier": "product", "org": "transpara",
+                    "primary_placement": "competition/competitors",
+                    "placements": ["competition/competitors"]}
+            box = site.build_infobox(meta, raw_only)
+            assert 'href="#article-sources">3 total — view all</a>' in box
+            assert "Ingested documents" in box
+    print("ok test_first_upload_keeps_legacy_documents_and_web_sources_visible")
+
+
+def test_source_index_includes_deduplicated_web_references_with_all_spaces():
+    from types import SimpleNamespace
+    shared = "https://docs.example.test/cdf"
+    specific = "https://docs.example.test/cdf/architecture"
+    records = [
+        SimpleNamespace(placements=["competition/competitors"],
+                        sources=[shared, specific], raw_documents=[]),
+        SimpleNamespace(placements=["platform/architecture"],
+                        sources=[shared], raw_documents=[]),
+    ]
+    with tempfile.TemporaryDirectory() as directory:
+        root = pathlib.Path(directory)
+        with mock.patch.multiple(site, ROOT=root, WIKI=root / "wiki", RAW=root / "raw",
+                                 SOURCE_DIST=root / "dist" / "source",
+                                 SOURCE_INDEX=[], SOURCE_LINKS={}), \
+                mock.patch.object(site, "load_catalog", return_value=records):
+            site.build_source_pages({})
+            rows = {row["href"]: row for row in site.SOURCE_INDEX}
+            assert len(rows) == 2
+            assert rows[shared]["spaces"] == ["competition", "platform"]
+            assert rows[specific]["spaces"] == ["competition"]
+            assert rows[shared]["title"] != rows[specific]["title"]
+            assert not list(site.SOURCE_DIST.iterdir()), "external refs link directly; no fetched copies"
+    print("ok test_source_index_includes_deduplicated_web_references_with_all_spaces")
 
 
 if __name__ == "__main__":

@@ -43,7 +43,7 @@ def search_rows():
 
 def test_portal_and_space_routes_exist():
     routes = ["index.html", "civilization/index.html", "platform/index.html",
-              "competition/index.html"]
+              "competition/index.html", "devops/index.html"]
     for route in routes:
         assert (DIST / route).is_file(), route
     portal = read("index.html")
@@ -51,7 +51,8 @@ def test_portal_and_space_routes_exist():
     assert "board-hero" not in portal
     for route, label in [("civilization/index.html", "Civilization"),
                          ("platform/index.html", "Transpara Platform"),
-                         ("competition/index.html", "Competition")]:
+                         ("competition/index.html", "Competition"),
+                         ("devops/index.html", "DevOps")]:
         assert 'href="%s"' % route in portal
         assert label in portal
     print("ok test_portal_and_space_routes_exist")
@@ -95,13 +96,15 @@ def test_all_generated_local_links_and_assets_resolve():
 
 
 def test_nested_homes_have_depth_aware_chrome():
-    for space in ("civilization", "platform", "competition"):
+    for space in ("civilization", "platform", "competition", "devops"):
         page = read("%s/index.html" % space)
         assert 'href="../style.css?' in page
         assert 'src="../search-index.js?' in page
-        assert 'href="../index.html">Transpara Knowledge Hub</a>' in page
+        assert '<a class="brand" href="../index.html">' in page
+        assert 'class="brand-title">Transpara Knowledge Hub</span>' in page
         assert 'fetch("../deploy-status.json"' in page
-        assert '<option value="%s" selected>' % space in page
+        assert 'class="current" aria-current="page" href="../%s/index.html"' % space in page
+        assert 'href="../ingest.html?space=%s"' % space in page
     civilization = read("civilization/index.html")
     assert 'href="../arc-origin-narrative.html"' in civilization
     assert 'href="arc-origin-narrative.html"' not in civilization
@@ -112,7 +115,7 @@ def test_search_rows_are_space_scoped_and_articles_canonical():
     rows = search_rows()
     by_slug = {row["slug"]: row for row in rows}
     catalog = load_catalog(ROOT)
-    for space in ("civilization", "platform", "competition"):
+    for space in ("civilization", "platform", "competition", "devops"):
         row = by_slug["space-%s" % space]
         assert row["href"] == "%s/index.html" % space
         assert row["spaces"] == [space]

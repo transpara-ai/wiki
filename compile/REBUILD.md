@@ -1,5 +1,10 @@
 # Rebuilding the Transpara Knowledge Hub
 
+For Docker hosting, follow [the Compose deployment guide](../DOCKER.md).
+Compose's refresh container replaces the native systemd refresh timer; both use
+the same deterministic refresh code and persistent checkout lock. The systemd
+instructions below remain the reference for the existing native installation.
+
 The Knowledge Hub refreshes in two tiers — a cheap deterministic one
 (automatic) and an expensive LLM one (manual). The split keeps the substrate
 honest without unattended spend or unattended pushes.
@@ -65,6 +70,12 @@ This is a **source-registration** path, not an LLM article rewrite path. It does
 not synthesize article prose, does not commit, does not push, and does not
 promote the result beyond the checkout it is serving. If a source update
 requires a substantive article rewrite, that remains Tier 2.
+
+Every target with newly attached evidence receives `stale_since`, including
+Competition profiles, so a successful rebuild cannot imply that new source
+claims have already reached the article text. After a curated update incorporates
+the evidence, update `last_compiled` and clear `stale_since`. Duplicate source
+registration leaves a completed article's synthesis state unchanged.
 
 Article sources are also the link contract: every load-bearing source document
 mentioned in article prose should be listed in frontmatter `sources:` or

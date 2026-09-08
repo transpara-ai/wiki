@@ -23,7 +23,7 @@ test("INC-001 operational wiki pages render locally", async ({ page }) => {
     ["hermes-agent.html", "Hermes Agent"],
     ["sources.html", "Source Index"],
     ["ingest.html", "Wiki Source Ingest"],
-    ["repos.html", "Transpara-AI Repos"],
+    ["repos.html", "Repositories"],
     ["repo-hive.html", "hive repository"],
     ["repo-transpara-mcp.html", "transpara-mcp repository"],
     ["hive-governance.html", "Hive / Governance Layer"],
@@ -35,12 +35,16 @@ test("INC-001 operational wiki pages render locally", async ({ page }) => {
 
   for (const [route, heading] of pages) {
     const response = await page.goto(`/${route}`);
-    if (route.startsWith("repo-") && (!response || !response.ok())) {
-      continue;
-    }
+    expect(response && response.ok(), `${route} should resolve`).toBeTruthy();
     await expect(page.locator("h1.page-title")).toHaveText(heading);
     await expect(page.locator("article.body")).toBeVisible();
-    await expect(page.locator("footer.page-foot")).toContainText("Generated from");
+    if (await page.locator('[data-checkout-state="unavailable"]').count()) {
+      await expect(page.locator("footer.page-foot")).toContainText("Published repository reference retained");
+      await expect(page.locator("article.body a").first())
+        .toHaveAttribute("href", /^https:\/\/github\.com\/transpara-ai\//);
+    } else {
+      await expect(page.locator("footer.page-foot")).toContainText("Generated from");
+    }
   }
 });
 

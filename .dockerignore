@@ -1,0 +1,6 @@
+**
+!Dockerfile
+!requirements.txt
+!compile/
+compile/**
+!compile/container-entrypoint.sh

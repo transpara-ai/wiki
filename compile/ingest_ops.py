@@ -949,7 +949,7 @@ def _replace_preflight(root, slug, source_ref):
 
 
 def set_article_stale(root, slug, now):
-    """R5/R7: stamp `stale_since` on an investigation article so the builder's
+    """Stamp `stale_since` on an article so the builder's
     reason-neutral "summary re-derivation pending" banner renders until a governed
     authoring pass clears it (via _drop_scalar, exactly as Replace does on
     engine-ok). A thin wrapper over _set_scalar reused by the ADD lane and

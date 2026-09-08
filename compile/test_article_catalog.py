@@ -17,11 +17,11 @@ from knowledge_structure import (  # noqa: E402
 
 
 class KnowledgeStructureTests(unittest.TestCase):
-    def test_committed_registry_has_three_reader_spaces(self):
+    def test_committed_registry_has_four_reader_spaces(self):
         structure = load_structure()
         self.assertEqual(
             [space.key for space in structure.spaces],
-            ["civilization", "platform", "competition"],
+            ["civilization", "platform", "competition", "devops"],
         )
         self.assertEqual(structure.space_map["platform"].steward, "transpara")
         self.assertEqual(

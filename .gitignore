@@ -11,6 +11,7 @@ __pycache__/
 # local Node/browser verification environment
 /node_modules/
 /.venv/
+/.env
 /test-results/
 /playwright-report/
 /.cache/

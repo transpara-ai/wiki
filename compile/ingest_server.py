@@ -2,6 +2,7 @@
 """Local authoring server for the Transpara Knowledge Hub.
 
 Serves dist/ like http.server, plus small write endpoints used by ingest.html:
+  GET  /api/spaces
   GET  /api/articles
   POST /api/ingest
   POST /api/rebuild
@@ -964,12 +965,68 @@ def run_refresh():
         return run_refresh_unlocked()
 
 
+def validate_devops_article(name, markdown, space, steward, source_authority):
+    """Validate the explicit corpus-import lane before saving any sources."""
+    if space != "devops" or steward != STRUCTURE.space_map["devops"].steward:
+        raise ingest_ops.OpRefused("new_article requires space 'devops' and steward 'transpara'")
+    if not new_investigation_name_ok(name):
+        raise ingest_ops.OpRefused("new_article requires a single-line name that yields a descriptive slug")
+    if not markdown.strip() or markdown.lstrip().startswith("---"):
+        raise ingest_ops.OpRefused("new_article requires article_markdown containing article prose without frontmatter")
+    if source_authority not in STRUCTURE.source_authorities:
+        raise ingest_ops.OpRefused("source_authority must be a registered authority")
+    slug = slugify(name)
+    return slug if slug.startswith("devops-") else "devops-" + slug
+
+
+def check_new_article_absent(slug, name):
+    """Keep corpus imports create-only, including retired identities and aliases."""
+    keys = {collision_key(slug), collision_key(name)}
+    for path in WIKI.glob("*.md"):
+        fm, _, _ = split_fm(path.read_text())
+        identities = [path.stem, fm_scalar(fm, "entity"),
+                      fm_scalar(fm, "investigation_topic")] + fm_list(fm, "aliases")
+        if keys.intersection(collision_key(value) for value in identities if value):
+            raise ingest_ops.OpRefused("article name or slug already exists; use its target_slug to append sources")
+
+
+def create_devops_article(slug, name, markdown, section, source_authority):
+    today = dt.datetime.now(dt.timezone.utc).date().isoformat()
+    fields = {
+        "entity": name, "org": "transpara", "primary_placement": "devops/" + section,
+        "classification": "internal", "source_authority": source_authority,
+        "tier": "reference", "status": "API-authored draft", "last_compiled": today,
+        "render_raw_html": "false",
+    }
+    frontmatter = "".join("%s: %s\n" % (
+        key, json.dumps(value) if key in {"entity", "status", "last_compiled"} else value)
+        for key, value in fields.items())
+    frontmatter += 'placements:\n  - "devops/%s"\nsources: []\nraw_documents: []\n' % section
+    ingest_ops.atomic_write_text(WIKI / (slug + ".md"),
+                                "---\n" + frontmatter + "---\n\n" + markdown.strip() + "\n")
+
+
 class IngestHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(DIST), **kwargs)
 
     def log_message(self, fmt, *args):
         sys.stderr.write("[WikiIngest] " + fmt % args + "\n")
+
+    def send_head(self):
+        self._serving_static = True
+        try:
+            return super().send_head()
+        finally:
+            self._serving_static = False
+
+    def end_headers(self):
+        # Rebuilds replace pages and release metadata at the same URLs. Require
+        # revalidation so browsers do not keep showing an earlier release.
+        # API responses already set their stricter no-store policy.
+        if getattr(self, "_serving_static", False):
+            self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
 
     def require_allowed_host(self):
         if host_header_allowed(self.headers.get("Host", ""), getattr(self.server, "server_port", None)):
@@ -999,6 +1056,17 @@ class IngestHandler(SimpleHTTPRequestHandler):
             return
         if self.path == "/api/health":
             json_response(self, 200, {"ok": True})
+            return
+        if self.path == "/api/spaces":
+            json_response(self, 200, {
+                "spaces": [{"key": space.key, "label": space.label,
+                            "steward": space.steward,
+                            "sections": [{"key": section.key, "label": section.label}
+                                         for section in space.sections],
+                            "can_create_article": space.key == "devops"}
+                           for space in STRUCTURE.spaces],
+                "source_authorities": list(STRUCTURE.source_authorities),
+            })
             return
         if self.path.split("?", 1)[0] == "/api/preview":
             # deliberately STRICTER than /api/articles: full require_authoring
@@ -1061,9 +1129,11 @@ class IngestHandler(SimpleHTTPRequestHandler):
         note = first_value(form, "note").strip()
         supersedes = first_value(form, "supersedes").strip()
         raw_external_urls = first_value(form, "external_urls")
-        # R5/R6: the intent model. `new_investigation` (default OFF) is the ONLY
-        # page-creation lane; its `name` — not the doc title — drives the page.
+        # Both creation lanes require explicit intent; absent flags only append.
         new_investigation = form_flag(form, "new_investigation")
+        new_article = form_flag(form, "new_article")
+        article_markdown = first_value(form, "article_markdown")
+        source_authority = first_value(form, "source_authority", "engineering-docs").strip()
         raw_name = first_value(form, "name").strip()
         # Every add declares a registered placement and canonical steward.
         # Existing placement metadata remains immutable on this route.
@@ -1079,7 +1149,8 @@ class IngestHandler(SimpleHTTPRequestHandler):
         # the lock; a refusal here saves nothing and never echoes finding bytes.
         fields = {"target_slug": raw_target_slug, "note": note,
                   "supersedes": supersedes, "external_urls": raw_external_urls,
-                  "name": raw_name,
+                  "name": raw_name, "article_markdown": article_markdown,
+                  "source_authority": source_authority,
                   # placement/steward are persisted (ledger, source lines) and echoed
                   # in refusals, so they join the quarantine set (extended,
                   # never narrowed)
@@ -1101,6 +1172,13 @@ class IngestHandler(SimpleHTTPRequestHandler):
             space, section, steward, new_investigation)
         target_slug = normalize_target_slug(raw_target_slug)
         external_urls = valid_external_urls(raw_external_urls)
+        if new_article and (new_investigation or target_slug):
+            raise ingest_ops.OpRefused("new_article cannot be combined with new_investigation or target_slug")
+        if article_markdown and not new_article:
+            raise ingest_ops.OpRefused("article_markdown is only accepted with new_article; source append does not rewrite prose")
+        if new_article:
+            target_slug = validate_devops_article(
+                raw_name, article_markdown, space, steward, source_authority)
         # a source-less ingest (no non-empty document, no external URL) is a
         # no-op — refuse BEFORE the lock/save so it neither rebuilds nor appends
         # a misleading `add` ledger row, and creates no raw-inbox directory;
@@ -1123,21 +1201,27 @@ class IngestHandler(SimpleHTTPRequestHandler):
             # would derive) and refuse INSIDE the lock, BEFORE any write — so
             # the check is both write-free AND race-free against a concurrent
             # Remove that retires the target (CFAR r11/r12/r13/r14).
-            # R1/R5/R6 fail-closed router (§2.4): "create" ONLY for an explicit
-            # new investigation whose name is valid AND whose subject is proven
-            # absent; "append" to an existing ACTIVE page; otherwise it raises —
-            # write-free and INSIDE the lock, so retired/collision checks are
-            # race-free against a concurrent Remove (CFAR r11–r14).
-            route = resolve_ingest_route(
-                new_investigation=new_investigation, target_slug=target_slug,
-                name=raw_name, has_document=any_document)
+            # Creation collisions and append target state are checked inside
+            # the lock, before saving files, including retired identities.
+            if new_article:
+                check_new_article_absent(target_slug, raw_name)
+                route = "create_article"
+            else:
+                route = resolve_ingest_route(
+                    new_investigation=new_investigation, target_slug=target_slug,
+                    name=raw_name, has_document=any_document)
             created_article = {"slug": "", "created": False}
             # a brand-new investigation supersedes nothing, so the create lane
             # ignores any `supersedes` the form/API carried (a stale browser
             # selection or an API field) — no misleading cross-topic provenance on
             # the seed source, extra sources, or the manifest (CFAR: Codex).
             add_supersedes = supersedes if route == "append" else ""
-            if route == "create":
+            if route == "create_article":
+                saved = save_uploads(form, target_slug, note, add_supersedes, space)
+                source_refs = [s["path"] for s in saved] + external_urls
+                create_devops_article(target_slug, raw_name, article_markdown, section, source_authority)
+                created_article = {"slug": target_slug, "created": True}
+            elif route == "create":
                 # the operator NAME drives the slug (lockstep with the creator);
                 # target_slug is ignored in this lane.
                 target_slug = prospective_unassigned_slug(form, raw_name)
@@ -1167,11 +1251,11 @@ class IngestHandler(SimpleHTTPRequestHandler):
                 space=space, section=section,
                 steward=steward) if target_slug else []
             raw_added = append_raw_documents_to_article(target_slug, source_refs) if target_slug else []
-            # R5/R7: an investigation ADD (or the new skeleton) stamps stale_since
-            # so the reason-neutral "summary re-derivation pending" banner renders
-            # until an authoring pass clears it. Non-investigation targets keep
-            # today's behavior — no stale stamp (CFADA-r1 #1).
-            if target_slug and article_tier(target_slug) == "investigation":
+            # Registration rebuilds source links, but does not rewrite prose.
+            # Every article with newly added evidence needs a visible pending
+            # update until an authoring pass incorporates it. A duplicate upload
+            # must not mark already incorporated material pending again.
+            if target_slug and (added or raw_added) and not new_article:
                 ingest_ops.set_article_stale(ROOT, target_slug, dt.datetime.now(dt.timezone.utc))
             for url in external_urls:
                 append_manifest({
@@ -1199,6 +1283,7 @@ class IngestHandler(SimpleHTTPRequestHandler):
             "saved": saved,
             "external_urls": external_urls,
             "created_article": created_article,
+            "article_content_written": new_article,
             "article_sources_added": added,
             "article_raw_documents_added": raw_added,
             "article_href": ("%s.html" % target_slug) if target_slug else "",

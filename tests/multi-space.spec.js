@@ -1,6 +1,12 @@
 const { test, expect } = require("@playwright/test");
 
 const BENIGN_404 = /\/(api\/articles|inflight\.json|deploy-status\.json|favicon\.ico)$/;
+const SPACE_HOMES = [
+  ["civilization", "Transpara-AI Civilization Wiki — front page"],
+  ["platform", "Transpara Platform Knowledge Base"],
+  ["competition", "Competition Knowledge Base"],
+  ["devops", "DevOps"],
+];
 
 function collectErrors(page) {
   const errors = [];
@@ -18,13 +24,9 @@ test("portal, space homes, canonical articles, and shared placement render", asy
   const errors = collectErrors(page);
   await page.goto("/index.html");
   await expect(page.locator(".hub-hero h1")).toHaveText("Transpara Knowledge Hub");
-  await expect(page.locator(".hub-space-card")).toHaveCount(3);
+  await expect(page.locator(".hub-space-card")).toHaveCount(SPACE_HOMES.length);
 
-  for (const [space, heading] of [
-    ["civilization", "Transpara-AI Civilization Wiki — front page"],
-    ["platform", "Transpara Platform Knowledge Base"],
-    ["competition", "Competition Knowledge Base"],
-  ]) {
+  for (const [space, heading] of SPACE_HOMES) {
     await page.goto(`/${space}/index.html`);
     await expect(page.locator("h1.page-title")).toHaveText(heading);
     await expect(page.locator(`.space-switcher a[href="../${space}/index.html"]`))
@@ -63,7 +65,7 @@ test("search enforces active-space scope and supports explicit all-space scope",
 test("portal and representative space content remain usable on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/index.html");
-  await expect(page.locator(".hub-space-card")).toHaveCount(3);
+  await expect(page.locator(".hub-space-card")).toHaveCount(SPACE_HOMES.length);
   await expect(page.locator(".hub-space-card").first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth))
     .toBeLessThanOrEqual(391);

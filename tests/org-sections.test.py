@@ -119,7 +119,7 @@ class TestOrgSections(unittest.TestCase):
         for p in sorted((BASE / "wiki").glob("*.md")):
             fm = p.read_text().split("---", 2)[1]
             self.assertRegex(fm, r"(?m)^org\s*:\s*(transpara|transpara-ai)\s*$")
-            self.assertRegex(fm, r"(?m)^primary_placement\s*:\s*(civilization|platform|competition)/")
+            self.assertRegex(fm, r"(?m)^primary_placement\s*:\s*(civilization|platform|competition|devops)/")
             self.assertRegex(fm, r"(?m)^placements\s*:")
             self.assertRegex(fm, r"(?m)^classification\s*:\s*(internal|company-internal|public-candidate)\s*$")
             m = re.search(r"(?m)^tier\s*:\s*([^#\n]+)", fm)
@@ -131,7 +131,7 @@ class TestOrgSections(unittest.TestCase):
                 build_site.STRUCTURE.space_map[space].steward, meta["org"])
             self.assertIn(meta["primary_placement"], meta["placements"])
             explicit += 1
-        self.assertEqual(explicit, 131)
+        self.assertGreaterEqual(explicit, 131)
         # A page with no legacy tier and no explicit placement fails loudly.
         with tempfile.TemporaryDirectory() as tmp:
             page(tmp, "no-tier", ["entity: N"])
