@@ -8,16 +8,18 @@ aliases:
   - the minimalist solo software factory
 tier: investigation
 status: compiled
-last_compiled: 2026-07-07
-civilization_contribution: "Pattern-only; no ADR. Contributes six mineable patterns — review-capacity throttle, definition-of-ready as Factory Order lint, density-over-length gate prose, audit→objective compiler, single-mover/stale-claim label invariants, Neo's runtime cage as worked example — and the strongest independent confirmation yet of the dev-arc's two-human-gate topology. Blueprint/Factory/Neo are never eligible as runtime, gate authority, certification, or truth store."
+last_compiled: 2026-09-09
+civilization_contribution: "Pattern-only; no runtime adoption. September follow-up credits Machinist executable scheduling and durable admission; July observations remain historical."
 sources:
+  - "raw/civilization/external-landscape/tai-res-2026-006-follow-up-2026-09-09.md"
   - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # TAI-RES-2026-006 v1.0.0 — superseded revision, listed FIRST so the later v1.1.0 ref wins the shared document-id alias (build_site alias_link_map: later refs win)
   - "raw/civilization/external-landscape/tai-res-2026-006-v1.1.0-owainlewis-evaluation.md"  # TAI-RES-2026-006 v1.1.0, code-anchored evaluation (this page's primary source); supersedes: raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md
   - https://github.com/owainlewis/blueprint/tree/3815669  # evaluated commit, 2026-07-05 — read in full from local clone
   - https://github.com/owainlewis/factory/tree/8b346d7  # evaluated commit, 2026-07-05 — all ~1,895 Go lines read as ground truth
   - https://github.com/owainlewis/neo/tree/022d001  # evaluated commit — harness/orchestrator; the code-enforced "cage"
   - "raw/inbox/2026-06-24/solo-orchestrator/TAI-RES-2026-005-v1.1.0-Solo-Orchestrator-Evaluation-959878a544d6.md"  # TAI-RES-2026-005 — the session-hook-vs-sovereign-record precedent this eval extends
-current_research_version: 1.1.0
+current_research_version: September-2026-follow-up-1.0.0
+historical_research_version: 1.1.0
 spawned_planning:  # research→planning provenance: intake-only issues filed 2026-07-07 from this eval's §5/§8 (each authorizes nothing; TLC applies; readiness labels are human-set)
   - https://github.com/transpara-ai/hive/issues/250  # §5.1/§8.1 review-capacity throttle (fail-closed WIP gate on the human review queue)
   - https://github.com/transpara-ai/docs/issues/260  # §5.2/§8.2 five-predicate definition-of-ready as Factory Order crafting lint
@@ -30,7 +32,7 @@ spawned_planning:  # research→planning provenance: intake-only issues filed 20
 gate_arc_defects:  # repo defects surfaced by this eval's own PR gate arc — NOT spawned planning; tracked for completeness with live state
   - https://github.com/transpara-ai/wiki/issues/50  # sanctioned register path — CLOSED COMPLETED 2026-07-06 (shipped as FO-WIKI-FRONTEND-UX R6; this eval was its first registered consumer 2026-07-07 — evidence is the #50 closure record, service-side)
   - https://github.com/transpara-ai/wiki/issues/52  # inherited CONFIDENTIAL frontmatter in ledgered inbox evals — CLOSED COMPLETED 2026-07-07 (resolved via the Option-1 supersession pass across all six eval lineages)
-confidence:
+historical_july_confidence:
   enforcement_posture: high — every enforcement claim is code- or prompt-text-anchored (exec lines, prompt wrapper, audit heuristics, cage constants read directly)
   methodology_read: high — all 17 Blueprint skills, guides, Factory PRD/standard/spec, and dogfood files read in full
   author_background: high — Oracle OCI Director-of-Engineering role verified 3–0 by the deep-research sweep (archived GitHub profile snapshots + leaddev.com bio); current roles from self-published materials
@@ -38,11 +40,33 @@ confidence:
   civilization_baseline: high — quoted from the accepted v4.0 doctrine set and shipped gate tool; Level 0 state taken from doc 06's own gate table
   learning_opportunities: medium-high — patterns are text-verifiable; the hive review-capacity-throttle gap should be re-verified before implementation
 raw_documents:
+  - "raw/civilization/external-landscape/tai-res-2026-006-follow-up-2026-09-09.md"
   - "raw/civilization/external-landscape/tai-res-2026-006-owainlewis-evaluation.md"  # sha256 38b8d05a519ca5321a826c9be406182dea7cb695a6c65ff12f250aee55913e90 — v1.0.0, registered on the live ingest service 2026-07-07 per the wiki#50 closure record (service-side manifest shard + ledger row; those artifacts reach this repo through the ingest service's own sync arc — a checkout of this PR alone does not yet carry them); kept byte-identical at its path per the tier's immutability rule; superseded in presentation by the v1.1.0 row above
   - "raw/civilization/external-landscape/tai-res-2026-006-v1.1.0-owainlewis-evaluation.md"  # sha256 5573675edd751d0981b706b746ddce825c161b3219b2fdbfc5d1836dbd19c576 — v1.1.0, current revision (this PR); session-authored Civilization external-landscape research; provenance = git history + frontmatter supersedes linkage; may later become the ledgered ref via the authorized replace operation (operator's option, not a correctness dependency)
 ---
 
 # Owain Lewis Work System (Blueprint & Factory)
+
+**A dated evaluation of Blueprint, Factory/Machinist and Neo, refreshed in September 2026 with no runtime adoption.**
+
+## Current assessment — September 9, 2026
+
+The [September follow-up](../raw/civilization/external-landscape/tai-res-2026-006-follow-up-2026-09-09.md)
+updates the July findings against exact current commits. Factory now presents
+Machinist and has executable scheduling, durable admission and GitHub label
+reconciliation. Blueprint has ten skills. Neo's goal runner remains explicitly
+proposed in the inspected design. The current decision remains pattern-only;
+no external runtime is adopted. The old blanket prompt-only comparison must
+not be applied to today's Machinist.
+
+Wiki #54's refresh was brought forward under the September 9 request. This
+records September evidence, not a future October review.
+
+## Historical July evaluation
+
+The remaining sections preserve the July assessment and planning provenance.
+Their model counts, implementation descriptions, confidence and Civilization
+v4.0 comparisons are dated observations, superseded where the follow-up says so.
 
 **Owain Lewis is building, solo and in public, a minimalist system aimed at the Dark Factory's own goal — "The objective is not to automate coding. The objective is to automate software engineering" — and TAI-RES-2026-006 finds him independently converged on the dev-arc's control points while standing on the opposite side of its load-bearing seam.** His stack: **Blueprint** (211★; 17 markdown skills — spec/plan/implement/review/task-to-pr — plus an unattended GitHub-label loop layer), **Factory** (early Go runner executing repo-owned `.factory/` process: standards, workflows, *objectives* — literally "repo-owned work orders" — and a journal), **Neo** (a minimalist agent harness whose orchestrator enforces depth/fanout/count/time budgets in code), plus a cross-agent skills installer, all under the published creed: *"Blueprint fixes the process and trusts the intelligence… Bet on the model."*
 
