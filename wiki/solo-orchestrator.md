@@ -1,5 +1,10 @@
 ---
 entity: Solo Orchestrator
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases: [solo-orchestrator, transpara-ai/solo-orchestrator, Solo Orchestrator Framework, the phase-gated methodology]
 tier: investigation
 status: compiled

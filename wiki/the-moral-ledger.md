@@ -1,5 +1,10 @@
 ---
 entity: The Moral Ledger
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases:
   - moral ledger
   - the moral ledger argument

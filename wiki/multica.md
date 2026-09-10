@@ -1,5 +1,10 @@
 ---
 entity: Multica
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases: [multica, transpara-ai/multica, the managed-agent teammate platform]
 tier: investigation
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: Paperclip
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases: [paperclip, transpara-ai/paperclip, the company OS]
 tier: investigation
 status: compiled

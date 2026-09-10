@@ -1,5 +1,10 @@
 ---
 entity: The Mind Loop
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [mind loop, mind-loop, the mind loop, bounded-runtime, the autonomous mind loop, mind-zero-five mind loop]
 tier: architecture
 status: compiled

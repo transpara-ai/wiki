@@ -1,5 +1,10 @@
 ---
 entity: Hive Civic Roles
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [civic roles, the civic roles, the nine civic roles, the society of roles, runtime civic roles, starter agents, StarterAgents]
 tier: architecture
 status: compiled

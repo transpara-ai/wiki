@@ -19,6 +19,65 @@ class DummyHandler:
         self.rfile = io.BytesIO(body)
 
 
+def test_static_responses_revalidate_after_rebuild():
+    import http.client
+    import threading
+    from unittest import mock
+
+    with tempfile.TemporaryDirectory() as d:
+        dist = pathlib.Path(d)
+        files = {
+            "index.html": "<html>v0.2.2</html>",
+            "version.json": '{"version":"0.2.2"}',
+            "VERSION": "0.2.2\n",
+        }
+        for name, content in files.items():
+            file = dist / name
+            file.write_text(content)
+            os.utime(file, (1700000000, 1700000000))
+        with mock.patch.object(srv, "DIST", dist), mock.patch.object(srv.IngestHandler, "log_message"):
+            server = srv.ThreadingHTTPServer(("127.0.0.1", 0), srv.IngestHandler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            client = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+
+            def request(method, route, headers=None):
+                client.request(method, route, headers=headers or {})
+                response = client.getresponse()
+                body = response.read().decode()
+                return response, body
+
+            try:
+                for route in ("/", "/index.html?space=competition", "/version.json", "/VERSION"):
+                    for method in ("GET", "HEAD"):
+                        response, _ = request(method, route)
+                        assert response.status == 200
+                        assert response.getheader("Cache-Control") == "no-cache"
+                    modified = response.getheader("Last-Modified")
+                    response, body = request("GET", route, {"If-Modified-Since": modified})
+                    assert response.status == 304 and not body
+                    assert response.getheader("Cache-Control") == "no-cache"
+
+                for name, content in files.items():
+                    file = dist / name
+                    file.write_text(content.replace("0.2.2", "0.2.3"))
+                    os.utime(file, (1700000002, 1700000002))
+                for route in ("/", "/index.html?space=competition", "/version.json", "/VERSION"):
+                    response, body = request("GET", route, {"If-Modified-Since": modified})
+                    assert response.status == 200 and "0.2.3" in body
+                    assert response.getheader("Cache-Control") == "no-cache"
+
+                response, _ = request("GET", "/api/health")
+                assert response.status == 200
+                assert response.getheader("Cache-Control") == "no-store"
+            finally:
+                client.close()
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
+    print("ok test_static_responses_revalidate_after_rebuild")
+
+
 def test_parse_post_form_accepts_browser_multipart_uploads():
     boundary = "----codex-form-boundary"
     body = (
@@ -47,6 +106,102 @@ def test_parse_post_form_accepts_browser_multipart_uploads():
     print("ok test_parse_post_form_accepts_browser_multipart_uploads")
 
 
+def test_pasted_email_document_ingests_into_competition():
+    from unittest import mock
+    import build_site
+
+    email_text = (
+        "From: Research <research@example.test>\n"
+        "Subject: Competitor update — café\n\n"
+        "  Original indentation\n> Quoted reply\n<script>untrusted()</script>\n"
+    )
+    boundary = "----pasted-email-boundary"
+    fields = {"target_slug": "competitor", "space": "competition",
+              "section": "competitors", "steward": "transpara",
+              "note": "Email received 2026-09-06"}
+    body = "".join(
+        '--%s\r\nContent-Disposition: form-data; name="%s"\r\n\r\n%s\r\n'
+        % (boundary, key, value) for key, value in fields.items()
+    ) + (
+        '--%s\r\nContent-Disposition: form-data; name="documents"; '
+        'filename="Competitor update.txt"\r\n'
+        'Content-Type: text/plain;charset=utf-8\r\n\r\n%s\r\n--%s--\r\n'
+        % (boundary, email_text, boundary)
+    )
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        wiki = root / "wiki"
+        wiki.mkdir()
+        article = wiki / "competitor.md"
+        article.write_text(
+            "---\nentity: Competitor\norg: transpara\ntier: product\n"
+            "primary_placement: competition/competitors\n"
+            "placements: [competition/competitors]\n"
+            "classification: company-internal\n---\n\n# Competitor\n"
+        )
+        handler = DummyHandler("multipart/form-data; boundary=" + boundary,
+                               body.encode("utf-8"))
+        handler.wfile = io.BytesIO()
+        handler.send_response = lambda status: setattr(handler, "status", status)
+        handler.send_header = lambda *_: None
+        handler.end_headers = lambda: None
+        with mock.patch.multiple(
+            srv, ROOT=root, WIKI=wiki, RAW_INBOX=root / "raw" / "inbox",
+            LOCK_PATH=root / "compile" / ".wiki-write.lock",
+        ), mock.patch.object(srv, "run_refresh_unlocked", return_value={"ok": True}) as refresh:
+            srv.IngestHandler.handle_ingest(handler)
+        assert handler.status == 200
+        refresh.assert_called_once()
+        result = srv.json.loads(handler.wfile.getvalue())
+        assert len(result["saved"]) == 1
+        saved = result["saved"][0]
+        assert saved["path"].startswith("raw/inbox/competition/")
+        source = root / saved["path"]
+        assert source.suffix == ".txt"
+        assert source.read_bytes() == email_text.encode("utf-8")
+        fm, article_body, _ = srv.split_fm(article.read_text())
+        assert saved["path"] in srv.fm_list(fm, "sources")
+        assert saved["path"] in srv.fm_list(fm, "raw_documents")
+        assert srv.fm_scalar(fm, "primary_placement") == "competition/competitors"
+        assert srv.fm_val(fm, "stale_since"), "Competition prose needs an update after source registration"
+        assert "summary re-derivation pending" in build_site.state_banner_html(fm)
+        assert article_body == "# Competitor\n", "ingest must not claim to have synthesized the email"
+        assert result["source_hrefs"] == [{
+            "source": saved["path"], "href": srv.source_href(saved["path"]),
+        }]
+        shards = list((root / "raw" / "inbox" / "manifest.d").glob("*.jsonl"))
+        assert len(shards) == 1
+        manifest = srv.json.loads(shards[0].read_text())
+        assert manifest["original_name"] == "Competitor-update.txt"
+        assert manifest["note"] == fields["note"]
+        ledger = srv.json.loads((root / "compile" / "ingest-ledger.jsonl").read_text())
+        assert ledger["placement"] == "competition/competitors"
+        assert ledger["sources"] == [saved["path"]]
+        rendered = build_site.render_source_document(saved["path"], source, email_text)
+        assert "&lt;script&gt;untrusted()&lt;/script&gt;" in rendered
+        assert "<script>untrusted()" not in rendered
+
+        # Once an editor incorporates this material, uploading the identical
+        # source again must not mark that completed article update pending.
+        authored = "\n".join(line for line in article.read_text().split("\n")
+                             if not line.startswith("stale_since:"))
+        authored += "\n## Pricing\nReviewed pricing evidence.\n"
+        article.write_text(authored)
+        handler.rfile = io.BytesIO(body.encode("utf-8"))
+        handler.wfile = io.BytesIO()
+        with mock.patch.multiple(
+            srv, ROOT=root, WIKI=wiki, RAW_INBOX=root / "raw" / "inbox",
+            LOCK_PATH=root / "compile" / ".wiki-write.lock",
+        ), mock.patch.object(srv, "run_refresh_unlocked", return_value={"ok": True}):
+            srv.IngestHandler.handle_ingest(handler)
+        assert handler.status == 200
+        duplicate = srv.json.loads(handler.wfile.getvalue())
+        assert duplicate["article_sources_added"] == []
+        assert duplicate["article_raw_documents_added"] == []
+        assert article.read_text() == authored
+    print("ok test_pasted_email_document_ingests_into_competition")
+
+
 def test_authoring_policy_requires_token_for_remote_clients():
     assert srv.authoring_allowed("127.0.0.1", "", "") is True
     assert srv.authoring_allowed("::1", "", "") is True
@@ -58,6 +213,7 @@ def test_authoring_policy_requires_token_for_remote_clients():
 
 def test_host_header_policy_blocks_rebinding_hosts():
     old_allowed = os.environ.pop(srv.ALLOWED_HOSTS_ENV, None)
+    old_legacy = os.environ.pop(srv.LEGACY_ALLOWED_HOSTS_ENV, None)
     try:
         assert srv.host_header_allowed("127.0.0.1:8787", 8787) is True
         assert srv.host_header_allowed("localhost:8787", 8787) is True
@@ -72,7 +228,35 @@ def test_host_header_policy_blocks_rebinding_hosts():
             os.environ.pop(srv.ALLOWED_HOSTS_ENV, None)
         else:
             os.environ[srv.ALLOWED_HOSTS_ENV] = old_allowed
+        if old_legacy is None:
+            os.environ.pop(srv.LEGACY_ALLOWED_HOSTS_ENV, None)
+        else:
+            os.environ[srv.LEGACY_ALLOWED_HOSTS_ENV] = old_legacy
     print("ok test_host_header_policy_blocks_rebinding_hosts")
+
+
+def test_knowledge_hub_environment_names_precede_legacy_aliases():
+    names = (srv.AUTHORING_TOKEN_ENV, srv.LEGACY_AUTHORING_TOKEN_ENV,
+             srv.ALLOWED_HOSTS_ENV, srv.LEGACY_ALLOWED_HOSTS_ENV)
+    old = {name: os.environ.pop(name, None) for name in names}
+    try:
+        os.environ[srv.LEGACY_AUTHORING_TOKEN_ENV] = "legacy-token"
+        assert srv.authoring_allowed("192.0.2.1", "legacy-token")
+        os.environ[srv.AUTHORING_TOKEN_ENV] = "hub-token"
+        assert srv.authoring_allowed("192.0.2.1", "hub-token")
+        assert not srv.authoring_allowed("192.0.2.1", "legacy-token")
+        os.environ[srv.LEGACY_ALLOWED_HOSTS_ENV] = "legacy.internal:8787"
+        assert srv.host_header_allowed("legacy.internal:8787", 8787)
+        os.environ[srv.ALLOWED_HOSTS_ENV] = "hub.internal:8787"
+        assert srv.host_header_allowed("hub.internal:8787", 8787)
+        assert not srv.host_header_allowed("legacy.internal:8787", 8787)
+    finally:
+        for name, value in old.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+    print("ok test_knowledge_hub_environment_names_precede_legacy_aliases")
 
 
 def test_same_origin_authoring_policy_blocks_browser_csrf():
@@ -142,7 +326,7 @@ def test_save_uploads_rejects_target_slug_traversal_before_write():
                 )
             }
             try:
-                srv.save_uploads(form, "../escape", "", "")
+                srv.save_uploads(form, "../escape", "", "", "civilization")
             except ValueError:
                 assert not list(root.rglob("escape*"))
                 print("ok test_save_uploads_rejects_target_slug_traversal_before_write")
@@ -476,8 +660,9 @@ def test_ingest_endpoint_path_runs_refresh_and_returns_refresh_payload():
         )
         body = (
             "target_slug=example&"
-            "org=transpara-ai&"
+            "space=civilization&"
             "section=investigation&"
+            "steward=transpara-ai&"
             "external_urls=https%3A%2F%2Fexample.com%2Fpaper&"
             "note=citation%20update"
         ).encode("utf-8")
@@ -524,6 +709,8 @@ def test_ingest_endpoint_path_runs_refresh_and_returns_refresh_payload():
             assert payload["refresh"]["ok"] is True
             assert payload["refresh"]["stdout"] == "refresh ok"
             assert payload["article_sources_added"] == ["https://example.com/paper"]
+            fm, _, _ = srv.split_fm((wiki / "example.md").read_text())
+            assert srv.fm_val(fm, "stale_since"), "rebuild must leave article synthesis pending"
             assert payload["source_hrefs"] == [{
                 "source": "https://example.com/paper",
                 "href": "https://example.com/paper",
@@ -874,19 +1061,14 @@ def test_add_default_appends_and_flags_stale():
             assert new_ref in srv.fm_list(fm, "raw_documents")
             assert srv.fm_val(fm, "stale_since") == "2026-07-09T10:00:00+00:00"
             assert [p.name for p in wiki.glob("*.md")] == ["acme.md"], "no new page created"
-            # the stale stamp is gated on investigation tier in handle_ingest
-            import inspect
-            hsrc = inspect.getsource(srv.IngestHandler.handle_ingest)
-            assert 'article_tier(target_slug) == "investigation"' in hsrc and \
-                "set_article_stale" in hsrc, "stale stamp gated on investigation tier"
         finally:
             srv.ROOT, srv.WIKI = old_root, old_wiki
     print("ok test_add_default_appends_and_flags_stale")
 
 
-def test_add_to_non_investigation_preserves_behavior():
-    """AC3: adding to a NON-investigation page keeps today's behavior — the
-    source is appended and NO stale_since is stamped (the tier gate)."""
+def test_source_reference_append_preserves_article_body():
+    """The reference helper changes frontmatter only; the ingest transaction
+    owns the pending-synthesis stamp (covered through the endpoint above)."""
     with tempfile.TemporaryDirectory() as d:
         root = pathlib.Path(d)
         wiki = root / "wiki"
@@ -904,10 +1086,11 @@ def test_add_to_non_investigation_preserves_behavior():
             srv.append_sources_to_article("arch", [new_ref])
             fm, _, _ = srv.split_fm((wiki / "arch.md").read_text())
             assert new_ref in srv.fm_list(fm, "sources")
-            assert not srv.fm_val(fm, "stale_since"), "non-investigation add gets no stale stamp"
+            assert not srv.fm_val(fm, "stale_since"), "the helper does not own synthesis state"
+            assert srv.split_fm((wiki / "arch.md").read_text())[1] == "# Arch\n"
         finally:
             srv.ROOT, srv.WIKI = old_root, old_wiki
-    print("ok test_add_to_non_investigation_preserves_behavior")
+    print("ok test_source_reference_append_preserves_article_body")
 
 
 def _seed_source(root):
@@ -958,6 +1141,14 @@ def test_new_investigation_emits_canonical_skeleton():
             assert deficiencies == set(), "skeleton must be R2-conformant: %s" % deficiencies
             assert srv.fm_val(fm, "stale_since"), "skeleton sets stale_since"
             assert srv.fm_val(fm, "status") == "browser-ingested source; awaiting synthesis"
+            assert srv.fm_val(fm, "org") == "transpara-ai"
+            assert srv.fm_val(fm, "primary_placement") == \
+                "civilization/investigation"
+            assert srv.fm_list(fm, "placements") == \
+                ["civilization/investigation"]
+            assert srv.fm_val(fm, "classification") == "internal"
+            assert srv.fm_val(fm, "source_authority") == \
+                "external-primary-source"
             assert "investigation_topic" not in fm, "no auto investigation_topic (CFADA-r21 #44)"
             # CFAR (Codex): a create seeds a topic and supersedes nothing — the
             # skeleton's seed source carries no `supersedes:` provenance.

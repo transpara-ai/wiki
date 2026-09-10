@@ -1,5 +1,10 @@
 ---
 entity: AuthorityRequest (Gated Consent Object)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [AuthorityRequest, authority request, authority.request.recorded, AuthorityRequestRecordedContent, protectedActionRequest]
 tier: architecture
 status: compiled

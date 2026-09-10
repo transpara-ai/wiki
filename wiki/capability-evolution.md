@@ -1,5 +1,10 @@
 ---
 entity: Capability Evolution (Governed Self-Improvement)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [capability evolution, governed self-improvement, CapabilityArtifact, EvolutionOrder, capability promotion, capability-evolution chain, optimizer constraints, OptimizationRun]
 tier: architecture
 status: compiled

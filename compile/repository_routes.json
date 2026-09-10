@@ -1,0 +1,615 @@
+{
+  "schema_version": 1,
+  "routes": {
+    "af-interface": {
+      "name": "af-interface",
+      "origin": "https://github.com/transpara-ai/af-interface",
+      "group": "platform"
+    },
+    "agent": {
+      "name": "agent",
+      "origin": "https://github.com/transpara-ai/agent",
+      "group": "civilization"
+    },
+    "agent-governance-toolkit": {
+      "name": "agent-governance-toolkit",
+      "origin": "https://github.com/transpara-ai/agent-governance-toolkit",
+      "group": "other"
+    },
+    "agentic-dev-console": {
+      "name": "agentic-dev-console",
+      "origin": "https://github.com/transpara-ai/agentic-dev-console",
+      "group": "platform"
+    },
+    "agentic-dev-playbook": {
+      "name": "agentic-dev-playbook",
+      "origin": "https://github.com/transpara-ai/agentic-dev-playbook",
+      "group": "platform"
+    },
+    "ai-finance": {
+      "name": "ai-finance",
+      "origin": "https://github.com/transpara-ai/ai-finance",
+      "group": "platform"
+    },
+    "ai-sdr": {
+      "name": "ai-sdr",
+      "origin": "https://github.com/transpara-ai/ai-sdr",
+      "group": "platform"
+    },
+    "analytics-gateway": {
+      "name": "analytics-gateway",
+      "origin": "https://github.com/transpara-ai/analytics-gateway",
+      "group": "platform"
+    },
+    "autoresearch": {
+      "name": "autoresearch",
+      "origin": "https://github.com/transpara-ai/autoresearch",
+      "group": "other"
+    },
+    "bitsandpieces": {
+      "name": "bitsandpieces",
+      "origin": "https://github.com/transpara-ai/bitsandpieces",
+      "group": "other"
+    },
+    "blueprint": {
+      "name": "blueprint",
+      "origin": "https://github.com/transpara-ai/blueprint",
+      "group": "other"
+    },
+    "cdata": {
+      "name": "CData",
+      "origin": "https://github.com/transpara-ai/CData",
+      "group": "platform"
+    },
+    "ci": {
+      "name": "ci",
+      "origin": "https://github.com/transpara-ai/ci",
+      "group": "platform"
+    },
+    "claude-plugin": {
+      "name": "claude-plugin",
+      "origin": "https://github.com/transpara-ai/claude-plugin",
+      "group": "platform"
+    },
+    "claude-toolbox": {
+      "name": "claude-toolbox",
+      "origin": "https://github.com/transpara-ai/claude-toolbox",
+      "group": "platform"
+    },
+    "claw-code": {
+      "name": "claw-code",
+      "origin": "https://github.com/transpara-ai/claw-code",
+      "group": "other"
+    },
+    "content": {
+      "name": "content",
+      "origin": "https://github.com/transpara-ai/content",
+      "group": "platform"
+    },
+    "data-connectors": {
+      "name": "data-connectors",
+      "origin": "https://github.com/transpara-ai/data-connectors",
+      "group": "other"
+    },
+    "deployment-downstream": {
+      "name": "deployment-downstream",
+      "origin": "https://github.com/transpara-ai/deployment",
+      "group": "platform"
+    },
+    "deployment-fork-runtime-resilience": {
+      "name": "deployment-fork-runtime-resilience",
+      "origin": "https://github.com/transpara-ai/deployment",
+      "group": "platform"
+    },
+    "dev-ops": {
+      "name": "dev-ops",
+      "origin": "https://github.com/transpara-ai/dev-ops",
+      "group": "other"
+    },
+    "docs": {
+      "name": "docs",
+      "origin": "https://github.com/transpara-ai/docs",
+      "group": "civilization"
+    },
+    "eventgraph": {
+      "name": "eventgraph",
+      "origin": "https://github.com/transpara-ai/eventgraph",
+      "group": "civilization"
+    },
+    "excel-add-in": {
+      "name": "Excel-add-in",
+      "origin": "https://github.com/transpara-ai/Excel-add-in",
+      "group": "platform"
+    },
+    "excel-addin-releases": {
+      "name": "excel-addin-releases",
+      "origin": "https://github.com/transpara-ai/excel-addin-releases",
+      "group": "platform"
+    },
+    "extractor-file": {
+      "name": "extractor-file",
+      "origin": "https://github.com/transpara-ai/extractor-file",
+      "group": "platform"
+    },
+    "extractor-opcda": {
+      "name": "extractor-opcda",
+      "origin": "https://github.com/transpara-ai/extractor-opcda",
+      "group": "platform"
+    },
+    "extractor-opchda": {
+      "name": "extractor-opchda",
+      "origin": "https://github.com/transpara-ai/extractor-opchda",
+      "group": "platform"
+    },
+    "extractor-pirda": {
+      "name": "extractor-pirda",
+      "origin": "https://github.com/transpara-ai/extractor-pirda",
+      "group": "platform"
+    },
+    "extractor-pisdk": {
+      "name": "extractor-pisdk",
+      "origin": "https://github.com/transpara-ai/extractor-pisdk",
+      "group": "platform"
+    },
+    "github": {
+      "name": ".github",
+      "origin": "https://github.com/transpara-ai/.github",
+      "group": "other"
+    },
+    "github-tlc46-distribution-020": {
+      "name": "github-tlc46-distribution-020",
+      "origin": "https://github.com/transpara-ai/.github",
+      "group": "platform"
+    },
+    "graphify": {
+      "name": "graphify",
+      "origin": "https://github.com/transpara-ai/graphify",
+      "group": "other"
+    },
+    "gstack": {
+      "name": "gstack",
+      "origin": "https://github.com/transpara-ai/gstack",
+      "group": "other"
+    },
+    "hermes-agent-self-evolution": {
+      "name": "hermes-agent-self-evolution",
+      "origin": "https://github.com/transpara-ai/hermes-agent-self-evolution",
+      "group": "other"
+    },
+    "hermes-example-plugins": {
+      "name": "hermes-example-plugins",
+      "origin": "https://github.com/transpara-ai/hermes-example-plugins",
+      "group": "other"
+    },
+    "hive": {
+      "name": "hive",
+      "origin": "https://github.com/transpara-ai/hive",
+      "group": "civilization"
+    },
+    "impeccable": {
+      "name": "impeccable",
+      "origin": "https://github.com/transpara-ai/impeccable",
+      "group": "other"
+    },
+    "inmation-interface": {
+      "name": "inmation-interface",
+      "origin": "https://github.com/transpara-ai/inmation-interface",
+      "group": "platform"
+    },
+    "knowledge-catalog": {
+      "name": "knowledge-catalog",
+      "origin": "https://github.com/transpara-ai/knowledge-catalog",
+      "group": "other"
+    },
+    "kpi-dashboard": {
+      "name": "kpi-dashboard",
+      "origin": "https://github.com/transpara-ai/kpi-dashboard",
+      "group": "other"
+    },
+    "machine-learning": {
+      "name": "machine-learning",
+      "origin": "https://github.com/transpara-ai/machine-learning",
+      "group": "platform"
+    },
+    "matlab-client": {
+      "name": "matlab-client",
+      "origin": "https://github.com/transpara-ai/matlab-client",
+      "group": "other"
+    },
+    "matlab-integration-endpoint": {
+      "name": "matlab-integration-endpoint",
+      "origin": "https://github.com/transpara-ai/matlab-integration-endpoint",
+      "group": "platform"
+    },
+    "mempalace": {
+      "name": "mempalace",
+      "origin": "https://github.com/transpara-ai/mempalace",
+      "group": "other"
+    },
+    "metagpt": {
+      "name": "MetaGPT",
+      "origin": "https://github.com/transpara-ai/MetaGPT",
+      "group": "other"
+    },
+    "miroeval": {
+      "name": "MiroEval",
+      "origin": "https://github.com/transpara-ai/MiroEval",
+      "group": "other"
+    },
+    "miroflow": {
+      "name": "MiroFlow",
+      "origin": "https://github.com/transpara-ai/MiroFlow",
+      "group": "other"
+    },
+    "miromind-m1": {
+      "name": "MiroMind-M1",
+      "origin": "https://github.com/transpara-ai/MiroMind-M1",
+      "group": "other"
+    },
+    "mirorl": {
+      "name": "MiroRL",
+      "origin": "https://github.com/transpara-ai/MiroRL",
+      "group": "other"
+    },
+    "mirothinker": {
+      "name": "MiroThinker",
+      "origin": "https://github.com/transpara-ai/MiroThinker",
+      "group": "other"
+    },
+    "model-builder": {
+      "name": "model-builder",
+      "origin": "https://github.com/transpara-ai/model-builder",
+      "group": "platform"
+    },
+    "neo": {
+      "name": "neo",
+      "origin": "https://github.com/transpara-ai/neo",
+      "group": "other"
+    },
+    "ob1": {
+      "name": "OB1",
+      "origin": "https://github.com/transpara-ai/OB1",
+      "group": "civilization"
+    },
+    "odbc-extractor": {
+      "name": "odbc-extractor",
+      "origin": "https://github.com/transpara-ai/odbc-extractor",
+      "group": "platform"
+    },
+    "odbc-interface": {
+      "name": "odbc-interface",
+      "origin": "https://github.com/transpara-ai/odbc-interface",
+      "group": "platform"
+    },
+    "opcua-extractor": {
+      "name": "opcua-extractor",
+      "origin": "https://github.com/transpara-ai/opcua-extractor",
+      "group": "platform"
+    },
+    "openmanus": {
+      "name": "OpenManus",
+      "origin": "https://github.com/transpara-ai/OpenManus",
+      "group": "other"
+    },
+    "operation": {
+      "name": "operation",
+      "origin": "https://github.com/transpara-ai/operation",
+      "group": "civilization"
+    },
+    "ops": {
+      "name": "ops",
+      "origin": "https://github.com/transpara-ai/ops",
+      "group": "platform"
+    },
+    "org-memories": {
+      "name": "org-memories",
+      "origin": "https://github.com/transpara-ai/org-memories",
+      "group": "other"
+    },
+    "pageindex": {
+      "name": "PageIndex",
+      "origin": "https://github.com/transpara-ai/PageIndex",
+      "group": "other"
+    },
+    "paperclip": {
+      "name": "paperclip",
+      "origin": "https://github.com/transpara-ai/paperclip",
+      "group": "other"
+    },
+    "pirda-interface": {
+      "name": "pirda-interface",
+      "origin": "https://github.com/transpara-ai/pirda-interface",
+      "group": "platform"
+    },
+    "platform": {
+      "name": "platform",
+      "origin": "https://github.com/transpara-ai/platform",
+      "group": "platform"
+    },
+    "platform-index": {
+      "name": "platform-index",
+      "origin": "https://github.com/transpara-ai/platform-index",
+      "group": "other"
+    },
+    "platform-tlc46-package-020": {
+      "name": "platform-tlc46-package-020",
+      "origin": "https://github.com/transpara-ai/platform",
+      "group": "platform"
+    },
+    "playbooks": {
+      "name": "playbooks",
+      "origin": "https://github.com/transpara-ai/playbooks",
+      "group": "platform"
+    },
+    "proxmox": {
+      "name": "proxmox",
+      "origin": "https://github.com/transpara-ai/proxmox",
+      "group": "other"
+    },
+    "python-interface": {
+      "name": "python-interface",
+      "origin": "https://github.com/transpara-ai/python-interface",
+      "group": "platform"
+    },
+    "site": {
+      "name": "site",
+      "origin": "https://github.com/transpara-ai/site",
+      "group": "civilization"
+    },
+    "skills": {
+      "name": "skills",
+      "origin": "https://github.com/transpara-ai/skills",
+      "group": "other"
+    },
+    "solo-orchestrator": {
+      "name": "solo-orchestrator",
+      "origin": "https://github.com/transpara-ai/solo-orchestrator",
+      "group": "other"
+    },
+    "summary": {
+      "name": "summary",
+      "origin": "https://github.com/transpara-ai/summary",
+      "group": "other"
+    },
+    "symphony": {
+      "name": "symphony",
+      "origin": "https://github.com/transpara-ai/symphony",
+      "group": "other"
+    },
+    "tai-gateway": {
+      "name": "tai-gateway",
+      "origin": "https://github.com/transpara-ai/tai-gateway",
+      "group": "platform"
+    },
+    "tauth-scraper": {
+      "name": "tauth-scraper",
+      "origin": "https://github.com/transpara-ai/tauth-scraper",
+      "group": "platform"
+    },
+    "tcalc": {
+      "name": "tcalc",
+      "origin": "https://github.com/transpara-ai/tcalc",
+      "group": "platform"
+    },
+    "telegraf-extractor": {
+      "name": "telegraf-extractor",
+      "origin": "https://github.com/transpara-ai/telegraf-extractor",
+      "group": "platform"
+    },
+    "testclaude": {
+      "name": "testclaude",
+      "origin": "https://github.com/transpara-ai/testclaude",
+      "group": "other"
+    },
+    "tevent-processor-python": {
+      "name": "tevent-processor-python",
+      "origin": "https://github.com/transpara-ai/tevent-processor-python",
+      "group": "platform"
+    },
+    "tgraph-api": {
+      "name": "tgraph-api",
+      "origin": "https://github.com/transpara-ai/tgraph-api",
+      "group": "platform"
+    },
+    "tgraph-api-ha-isolated": {
+      "name": "tgraph-api-ha-isolated",
+      "origin": "https://github.com/transpara-ai/tgraph-api",
+      "group": "other"
+    },
+    "tgraph-api-tauth-remediation": {
+      "name": "tgraph-api-tauth-remediation",
+      "origin": "https://github.com/transpara-ai/tgraph-api",
+      "group": "other"
+    },
+    "tgraph-controller": {
+      "name": "tgraph-controller",
+      "origin": "https://github.com/transpara-ai/tgraph-controller",
+      "group": "platform"
+    },
+    "tgraph-controller-tlc46-canary": {
+      "name": "tgraph-controller-tlc46-canary",
+      "origin": "https://github.com/transpara-ai/tgraph-controller",
+      "group": "other"
+    },
+    "tgraph-controller-tlc46-canary-020": {
+      "name": "tgraph-controller-tlc46-canary-020",
+      "origin": "https://github.com/transpara-ai/tgraph-controller",
+      "group": "platform"
+    },
+    "tgraph-controller-transpara-ai": {
+      "name": "tgraph-controller-transpara-ai",
+      "origin": "https://github.com/transpara-ai/tgraph-controller",
+      "group": "other"
+    },
+    "tgraph-mcp": {
+      "name": "tgraph-mcp",
+      "origin": "https://github.com/transpara-ai/tgraph-mcp",
+      "group": "platform"
+    },
+    "timescale": {
+      "name": "timescale",
+      "origin": "https://github.com/transpara-ai/timescale",
+      "group": "other"
+    },
+    "tinstaller": {
+      "name": "tinstaller",
+      "origin": "https://github.com/transpara-ai/tinstaller",
+      "group": "platform"
+    },
+    "tinstaller-fork-runtime-resilience": {
+      "name": "tinstaller-fork-runtime-resilience",
+      "origin": "https://github.com/transpara-ai/tinstaller",
+      "group": "platform"
+    },
+    "tinstaller-releases": {
+      "name": "tinstaller-releases",
+      "origin": "https://github.com/transpara-ai/tinstaller-releases",
+      "group": "platform"
+    },
+    "tinstaller-small-pr-ti05": {
+      "name": "tinstaller-small-pr-ti05",
+      "origin": "https://github.com/transpara-ai/tinstaller",
+      "group": "platform"
+    },
+    "tlc": {
+      "name": "tlc",
+      "origin": "https://github.com/transpara-ai/tlc",
+      "group": "other"
+    },
+    "tlc-tlc51-seed-bootstrap-design": {
+      "name": "tlc-tlc51-seed-bootstrap-design",
+      "origin": "https://github.com/transpara-ai/tlc",
+      "group": "other"
+    },
+    "transpara-mcp": {
+      "name": "transpara-mcp",
+      "origin": "https://github.com/transpara-ai/transpara-mcp",
+      "group": "platform"
+    },
+    "transpara-py-sdk": {
+      "name": "transpara-py-sdk",
+      "origin": "https://github.com/transpara-ai/transpara-py-sdk",
+      "group": "platform"
+    },
+    "transpara-r-client": {
+      "name": "transpara-r-client",
+      "origin": "https://github.com/transpara-ai/transpara-r-client",
+      "group": "other"
+    },
+    "transparalegacymigrationtool": {
+      "name": "TransparaLegacyMigrationTool",
+      "origin": "https://github.com/transpara-ai/TransparaLegacyMigrationTool",
+      "group": "platform"
+    },
+    "transparaservicemanager": {
+      "name": "TransparaServiceManager",
+      "origin": "https://github.com/transpara-ai/TransparaServiceManager",
+      "group": "platform"
+    },
+    "tstore-af-plugin": {
+      "name": "tstore-af-plugin",
+      "origin": "https://github.com/transpara-ai/tstore-af-plugin",
+      "group": "platform"
+    },
+    "tstore-database": {
+      "name": "tstore-database",
+      "origin": "https://github.com/transpara-ai/tstore-database",
+      "group": "platform"
+    },
+    "tstore-interface": {
+      "name": "tstore-interface",
+      "origin": "https://github.com/transpara-ai/tstore-interface",
+      "group": "platform"
+    },
+    "tstore-promotion-interface": {
+      "name": "tstore-promotion-interface",
+      "origin": "https://github.com/transpara-ai/tstore-promotion-interface",
+      "group": "other"
+    },
+    "tstudio": {
+      "name": "tstudio",
+      "origin": "https://github.com/transpara-ai/tstudio",
+      "group": "platform"
+    },
+    "tsystem-api-downstream": {
+      "name": "tsystem-api-downstream",
+      "origin": "https://github.com/transpara-ai/tsystem-api",
+      "group": "platform"
+    },
+    "tsystem-api-fork-runtime-resilience": {
+      "name": "tsystem-api-fork-runtime-resilience",
+      "origin": "https://github.com/transpara-ai/tsystem-api",
+      "group": "platform"
+    },
+    "tsystem-ha": {
+      "name": "tsystem-ha",
+      "origin": "https://github.com/transpara-ai/tsystem-ha",
+      "group": "other"
+    },
+    "tsystem-promotion": {
+      "name": "tsystem-promotion",
+      "origin": "https://github.com/transpara-ai/tsystem-promotion",
+      "group": "other"
+    },
+    "tsystem-ui": {
+      "name": "tsystem-ui",
+      "origin": "https://github.com/transpara-ai/tsystem-ui",
+      "group": "platform"
+    },
+    "tsystem-watcher": {
+      "name": "tsystem-watcher",
+      "origin": "https://github.com/transpara-ai/tsystem-watcher",
+      "group": "platform"
+    },
+    "tufte-claude-skill": {
+      "name": "tufte-claude-skill",
+      "origin": "https://github.com/transpara-ai/tufte-claude-skill",
+      "group": "other"
+    },
+    "tufte-codex-skill": {
+      "name": "tufte-codex-skill",
+      "origin": "https://github.com/transpara-ai/tufte-codex-skill",
+      "group": "other"
+    },
+    "tview": {
+      "name": "tview",
+      "origin": "https://github.com/transpara-ai/tview",
+      "group": "platform"
+    },
+    "upstream-fork-sync": {
+      "name": "upstream-fork-sync",
+      "origin": "https://github.com/transpara-ai/upstream-fork-sync",
+      "group": "other"
+    },
+    "version-tracker": {
+      "name": "version-tracker",
+      "origin": "https://github.com/transpara-ai/version-tracker",
+      "group": "other"
+    },
+    "wiki": {
+      "name": "wiki",
+      "origin": "https://github.com/transpara-ai/wiki",
+      "group": "civilization"
+    },
+    "wiki-tlc46-public-020": {
+      "name": "wiki-tlc46-public-020",
+      "origin": "https://github.com/transpara-ai/wiki",
+      "group": "other"
+    },
+    "work": {
+      "name": "work",
+      "origin": "https://github.com/transpara-ai/work",
+      "group": "civilization"
+    },
+    "workflows": {
+      "name": "workflows",
+      "origin": "https://github.com/transpara-ai/workflows",
+      "group": "other"
+    },
+    "workflows-tlc46-public-control": {
+      "name": "workflows-tlc46-public-control",
+      "origin": "https://github.com/transpara-ai/workflows",
+      "group": "other"
+    }
+  }
+}

@@ -1,5 +1,10 @@
 ---
 entity: FactoryOrder (Durable Unit of Work)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [factory order, FactoryOrder, the order, the durable starting object, the unit of cooperation, OrderKind]
 tier: architecture
 status: compiled

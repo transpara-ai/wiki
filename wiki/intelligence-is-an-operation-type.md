@@ -1,5 +1,10 @@
 ---
 entity: Intelligence Is Just Another Operation Type
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases:
   - intelligence is an operation type
   - the AI stays inside the graph

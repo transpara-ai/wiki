@@ -1,5 +1,10 @@
 ---
 entity: Edge Weights as Personality
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases:
   - edge weights as personality
   - weighted event graph

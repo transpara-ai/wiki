@@ -1,5 +1,10 @@
 ---
 entity: The Drift (Two Systems on One Substrate)
+org: transpara-ai
+primary_placement: civilization/arc
+placements:
+  - civilization/arc
+classification: internal
 aliases: [the drift, two systems on one substrate, the cage was perfected, lost the Mission]
 tier: arc
 status: compiled

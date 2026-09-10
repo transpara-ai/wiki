@@ -1,5 +1,10 @@
 ---
 entity: ExecutionReceipt (Proof of Work)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [ExecutionReceipt, execution receipt, authority.execution.receipt, AuthorityExecutionReceiptContent, ExecutionReceiptID]
 tier: architecture
 status: compiled

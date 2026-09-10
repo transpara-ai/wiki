@@ -1,5 +1,10 @@
 ---
 entity: The Three Irreducibles (Is-Ought / Moral Ledger)
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases:
   - the three irreducibles
   - three things it can't derive

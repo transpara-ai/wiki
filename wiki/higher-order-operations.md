@@ -1,5 +1,10 @@
 ---
 entity: Higher-Order Operations on the Cognitive Grammar
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases: [higher-order operations, operations on operations, the algebra of the cognitive grammar, six operations on operations]
 tier: concept
 status: compiled

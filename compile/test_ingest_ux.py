@@ -128,7 +128,7 @@ def test_superseded_sources_render_badged():
     # churn. The superseding (current) entry stays plain.
     import re
     page = (DIST / "hermes-agent.html").read_text()
-    panel = re.search(r'<details class="source-panel">.*?</details>', page, re.S).group(0)
+    panel = re.search(r'<details class="source-panel"[^>]*>.*?</details>', page, re.S).group(0)
     lis = re.findall(r"<li[^>]*>.*?</li>", panel, re.S)
     old_li = [li for li in lis if "Capability Evaluation v1.0.0</a>" in li]
     new_li = [li for li in lis if "Capability Evaluation v1.0.1</a>" in li]

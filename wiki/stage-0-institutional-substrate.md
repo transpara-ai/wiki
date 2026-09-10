@@ -1,5 +1,10 @@
 ---
 entity: Stage 0 Institutional Substrate
+org: transpara-ai
+primary_placement: civilization/institutional
+placements:
+  - civilization/institutional
+classification: internal
 aliases:
   - Stage 0
   - institutional substrate Stage 0

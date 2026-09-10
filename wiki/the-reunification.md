@@ -1,5 +1,10 @@
 ---
 entity: The Reunification Workstream
+org: transpara-ai
+primary_placement: civilization/arc
+placements:
+  - civilization/arc
+classification: internal
 aliases: [reunification, df-reunification, the reunification slice, one civilization one business]
 tier: arc
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: Open-Weight LLM Routing (v3.9 Pi/Selector Harness)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases:
   - open-weight LLM routing
   - df-model-broker

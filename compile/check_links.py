@@ -21,14 +21,17 @@ import sys
 import pathlib
 from collections import defaultdict
 
+from article_catalog import load_catalog
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 WIKI = ROOT / "wiki"
 INDEX = ROOT / "index.md"
+SPACES = ROOT / "spaces"
 
 # Identical to build_site.py's WL regex.
 WL = re.compile(r"\[\[([a-z0-9][a-z0-9\-]*)(?:\|([^\]]+))?\]\]")
 
-SLUGS = {p.stem for p in WIKI.glob("*.md")} | {"index"}
+SLUGS = set(load_catalog(ROOT).by_slug) | {"index"}
 
 # Intentional forward references — red by design, disclosed per article footer
 # ("[[wikilinks]] are forward references; several targets may not yet be
@@ -73,14 +76,22 @@ def split_fm(raw):
 
 def scan():
     red = defaultdict(list)  # target -> [(filename, original_lineno)]
-    for p in sorted(WIKI.glob("*.md")) + [INDEX]:
+    catalog = load_catalog(WIKI.parent, wiki_dir=WIKI)
+    slugs = set(catalog.by_slug) | {"index"}
+    pages = [(record.path, record.body) for record in catalog]
+    index_raw = INDEX.read_text()
+    pages.append((INDEX, split_fm(index_raw)[1]))
+    if SPACES.exists():
+        for space_home in sorted(SPACES.glob("*/index.md")):
+            raw = space_home.read_text()
+            pages.append((space_home, split_fm(raw)[1]))
+    for p, body in pages:
         raw = p.read_text()
-        _, body = split_fm(raw)
         offset = raw[: len(raw) - len(body)].count("\n")  # lines consumed by frontmatter
         for i, line in enumerate(body.splitlines(), 1):
             for m in WL.finditer(line):
                 t = m.group(1)
-                if t not in SLUGS:
+                if t not in slugs:
                     red[t].append((p.name, i + offset))
     return red
 

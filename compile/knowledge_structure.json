@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "site_name": "Transpara Knowledge Hub",
+  "default_space": "civilization",
+  "organizations": [
+    {"key": "transpara", "label": "Transpara"},
+    {"key": "transpara-ai", "label": "Transpara-AI"}
+  ],
+  "classifications": [
+    {"key": "internal", "label": "Authoring-local only"},
+    {"key": "company-internal", "label": "Reviewed company-internal"},
+    {"key": "public-candidate", "label": "Reviewed public candidate"}
+  ],
+  "source_authorities": [
+    "code",
+    "configuration",
+    "adr",
+    "engineering-docs",
+    "confluence-decision",
+    "jira-evidence",
+    "figma-intent",
+    "public-docs",
+    "marketing",
+    "first-party-positioning",
+    "external-primary-source",
+    "mixed-provenance"
+  ],
+  "spaces": [
+    {
+      "key": "civilization",
+      "label": "Civilization",
+      "steward": "transpara-ai",
+      "description": "Philosophy, institutional architecture, history, research, and operational learning.",
+      "sections": [
+        {"key": "foundational", "label": "Foundations", "legacy_label": "Foundational — source philosophy", "legacy_tiers": ["foundational"]},
+        {"key": "institutional", "label": "Institutional Substrate", "legacy_label": "Institutional substrate", "legacy_tiers": ["institutional"]},
+        {"key": "architecture", "label": "Architecture", "legacy_tiers": ["architecture"]},
+        {"key": "arc", "label": "Arc", "legacy_label": "The dark-factory arc", "legacy_tiers": ["arc"]},
+        {"key": "investigation", "label": "Investigations", "legacy_tiers": ["investigation"]},
+        {"key": "concept", "label": "Concepts", "legacy_tiers": ["concept"]},
+        {"key": "meta", "label": "Meta", "legacy_tiers": ["meta"]}
+      ]
+    },
+    {
+      "key": "platform",
+      "label": "Transpara Platform",
+      "steward": "transpara",
+      "description": "Accurate commercial and technical knowledge about the Transpara platform.",
+      "sections": [
+        {"key": "product-overview", "label": "Product Overview", "legacy_labels": {"organization": "Organization", "product": "Product"}, "legacy_tiers": ["organization", "product"]},
+        {"key": "capabilities", "label": "Capabilities", "legacy_tiers": []},
+        {"key": "architecture", "label": "Architecture", "legacy_tiers": []},
+        {"key": "components", "label": "Components", "legacy_tiers": []},
+        {"key": "integrations", "label": "Integrations", "legacy_tiers": []},
+        {"key": "deployment-operations", "label": "Deployment & Operations", "legacy_tiers": []},
+        {"key": "security-compliance", "label": "Security & Compliance", "legacy_tiers": []},
+        {"key": "development-apis", "label": "Development & APIs", "legacy_tiers": []},
+        {"key": "troubleshooting", "label": "Troubleshooting", "legacy_tiers": []},
+        {"key": "decisions-reference", "label": "Decisions & Reference", "legacy_tiers": []}
+      ]
+    },
+    {
+      "key": "competition",
+      "label": "Competition",
+      "steward": "transpara",
+      "description": "Competitive, market, positioning, sales, and win/loss intelligence.",
+      "sections": [
+        {"key": "market-categories", "label": "Market & Categories", "legacy_tiers": []},
+        {"key": "competitors", "label": "Competitors", "legacy_tiers": []},
+        {"key": "comparisons", "label": "Comparisons", "legacy_tiers": []},
+        {"key": "positioning", "label": "Positioning", "legacy_tiers": []},
+        {"key": "objections", "label": "Objections", "legacy_tiers": []},
+        {"key": "win-loss-evidence", "label": "Win/Loss Evidence", "legacy_tiers": []},
+        {"key": "research-methods", "label": "Research Methods", "legacy_tiers": []}
+      ]
+    },
+    {
+      "key": "devops",
+      "label": "DevOps",
+      "steward": "transpara",
+      "description": "Infrastructure, networking, containers, delivery automation, and operational runbooks.",
+      "sections": [
+        {"key": "overview", "label": "Overview", "legacy_tiers": []},
+        {"key": "infrastructure", "label": "Infrastructure", "legacy_tiers": []},
+        {"key": "networking", "label": "Networking", "legacy_tiers": []},
+        {"key": "containers", "label": "Containers", "legacy_tiers": []},
+        {"key": "delivery", "label": "CI/CD & Deployment", "legacy_tiers": []},
+        {"key": "observability", "label": "Observability", "legacy_tiers": []},
+        {"key": "runbooks", "label": "Runbooks", "legacy_tiers": []},
+        {"key": "security", "label": "Security & Access", "legacy_tiers": []},
+        {"key": "decisions", "label": "Decisions & Incidents", "legacy_tiers": []}
+      ]
+    }
+  ],
+  "publication_profiles": [
+    {
+      "key": "authoring-local",
+      "enabled": true,
+      "classifications": ["internal", "company-internal", "public-candidate"],
+      "include_sources": true,
+      "include_repositories": true,
+      "include_ingest": true
+    },
+    {
+      "key": "company-internal",
+      "enabled": true,
+      "classifications": ["company-internal", "public-candidate"],
+      "include_sources": false,
+      "include_repositories": false,
+      "include_ingest": false
+    },
+    {
+      "key": "public-platform",
+      "enabled": false,
+      "classifications": ["public-candidate"],
+      "spaces": ["platform"],
+      "include_sources": false,
+      "include_repositories": false,
+      "include_ingest": false
+    }
+  ]
+}

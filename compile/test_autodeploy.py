@@ -19,6 +19,9 @@ def test_site_affecting():
     assert ad.site_affecting(["index.md"])[0] is True
     assert ad.site_affecting(["compile/assets/style.css"])[0] is True
     assert ad.site_affecting(["compile/inflight.py"])[0] is True
+    assert ad.site_affecting(["compile/knowledge_structure.json"])[0] is True
+    assert ad.site_affecting(["compile/article_catalog.py"])[0] is True
+    assert ad.site_affecting(["spaces/platform/index.md"])[0] is True
     # excluded-only -> skip
     assert ad.site_affecting(["docs/a.md", ".github/ci.yml",
                               "compile/test_stats.py",

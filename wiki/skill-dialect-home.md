@@ -1,5 +1,10 @@
 ---
 entity: The Skill Dialect-Home Convention
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [skill dialect home, dialect-home convention, skills/hive-lifecycle, the lifecycle skill home, hive#265]
 tier: architecture
 status: compiled

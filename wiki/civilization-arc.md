@@ -1,5 +1,10 @@
 ---
 entity: Civilization Progress Chart
+org: transpara-ai
+primary_placement: civilization/meta
+placements:
+  - civilization/meta
+classification: internal
 aliases:
   - progress chart
   - Civilization arc chart

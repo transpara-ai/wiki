@@ -1,5 +1,10 @@
 ---
 entity: OB1 (Open Brain)
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases:
   - OB1
   - Open Brain

@@ -1,5 +1,10 @@
 ---
 entity: Slice 1 Completion
+org: transpara-ai
+primary_placement: civilization/arc
+placements:
+  - civilization/arc
+classification: internal
 aliases: [round 6, v16, finished-unsignalled, first society to finish, grant-2 close]
 tier: arc
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: The Architecture of Accountable AI (mind-zero-five)
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [mind-zero-five, accountable AI architecture, the accountability architecture, the code post]
 tier: foundational
 status: compiled

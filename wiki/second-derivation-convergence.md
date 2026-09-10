@@ -1,5 +1,10 @@
 ---
 entity: The Second Derivation (Primitives-Up Meets Physics-Up)
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases:
   - the second derivation
   - physics-up derivation

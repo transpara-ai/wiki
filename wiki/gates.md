@@ -1,5 +1,10 @@
 ---
 entity: Gates (Verification, Trace, and Release Gates)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [gates, the gate system, product gate minimum, TraceCompletenessGate, trace-completeness gate, release gates, gates A-J, gate minimum]
 tier: architecture
 status: compiled

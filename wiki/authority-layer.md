@@ -1,5 +1,10 @@
 ---
 entity: The Authority Layer (Graduated Consent)
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [authority layer, graduated consent, the consent layer, the authority gate, Required/Recommended/Notification]
 tier: foundational
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: Gate L
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases: [gate-l, Gate L, v4.0 reconciliation certification predicate, v3.9-to-v4.0 reconciliation]
 tier: architecture
 status: compiled

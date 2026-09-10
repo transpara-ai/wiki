@@ -1,5 +1,10 @@
 ---
 entity: The 20 Primitives
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [20 primitives, the late-night seed, the primitive framework]
 tier: foundational
 status: compiled

@@ -29,16 +29,17 @@ def test_fixture_counts():
     print("ok test_fixture_counts")
 
 
-def test_unknown_and_missing_tier_visible():
+def test_unknown_and_missing_tier_fail_closed():
     with tempfile.TemporaryDirectory() as d:
         root = pathlib.Path(d)
         _wiki(root, {"a": "foundational", "x": "bogus", "n": None})
-        out = stats.compute_counts(root)
-        tiers = dict(out["tier_counts"])
-        assert tiers.get("bogus") == 1, out
-        assert tiers.get(stats.NO_TIER) == 1, out
-        assert out["tier_counts"][0] == ("foundational", 1), out  # canonical first
-    print("ok test_unknown_and_missing_tier_visible")
+        try:
+            stats.compute_counts(root)
+        except ValueError as exc:
+            assert "legacy org/tier" in str(exc), exc
+        else:
+            raise AssertionError("unknown and missing tiers must fail catalog validation")
+    print("ok test_unknown_and_missing_tier_fail_closed")
 
 
 def test_zero_count_guard():

@@ -1,5 +1,10 @@
 ---
 entity: The Strange Loop
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [strange loop, the circular framework, Return-to-Event, the self-referential ontology]
 tier: foundational
 sources:

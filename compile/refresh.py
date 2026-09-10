@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic nightly refresh for the Civilization Wiki.
+"""Deterministic refresh for the Transpara Knowledge Hub.
 
 What it DOES (cheap, deterministic, safe to run unattended):
   1. Mirror first-party dark-factory markdown into raw/transpara/ (makes provenance real + trackable).
@@ -23,12 +23,14 @@ import re
 import os
 
 import stats
+from article_catalog import load_catalog
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 RAW = ROOT / "raw"
 WIKI = ROOT / "wiki"
 DF = pathlib.Path(
-    os.environ.get("CIVWIKI_DARK_FACTORY_SOURCE", "")
+    os.environ.get("KNOWLEDGE_HUB_DARK_FACTORY_SOURCE", "")
+    or os.environ.get("CIVWIKI_DARK_FACTORY_SOURCE", "")
     or "/Transpara/transpara-ai/repos/docs/dark-factory"
 )
 SNAP = ROOT / "compile" / "source-snapshot.json"
@@ -42,6 +44,11 @@ def sh(*a):
 def mirror_sources():
     dst = RAW / "transpara" / "dark-factory"
     dst.mkdir(parents=True, exist_ok=True)
+    boundary = dst / ".civilization-archive.json"
+    # This marker is local governance state, even when the mirrored source tree
+    # does not carry a copy. Preserve it across rsync --delete; if upstream does
+    # provide a marker, rsync remains free to update it.
+    preserved_boundary = boundary.read_bytes() if boundary.is_file() else None
     if DF.exists():
         try:
             out = sh("rsync", "-a", "--delete", "--prune-empty-dirs",
@@ -54,6 +61,8 @@ def mirror_sources():
         if out.returncode != 0:
             print("refresh: source mirror warning: %s" %
                   ((out.stderr or out.stdout).strip() or "rsync failed"), file=sys.stderr)
+        if preserved_boundary is not None and not boundary.exists():
+            boundary.write_bytes(preserved_boundary)
 
 
 def hash_sources():
@@ -72,12 +81,10 @@ def hash_sources():
 
 def article_sources():
     out = {}
-    for p in WIKI.glob("*.md"):
-        txt = p.read_text()
-        m = re.search(r"\nsources:\n(.*?)\n[A-Za-z_]+:", txt, re.S)
-        block = m.group(1) if m else ""
-        cites = [c.strip() for c in re.findall(r"(raw/[^\n#]+)", block)]
-        out[p.stem] = set(cites)
+    for record in load_catalog(ROOT):
+        out[record.slug] = {
+            ref for ref in record.sources if ref.startswith("raw/")
+        }
     return out
 
 
@@ -112,6 +119,8 @@ def main():
     final_status = {
         "synced": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "article_count": counts["article_count"],
+        "space_counts": counts["space_counts"],
+        "section_counts": counts["section_counts"],
         "sources_total": len(cur),
         "sources_changed": (len(changed) if prev else 0),
         "changed_articles": changed_articles,
@@ -122,7 +131,10 @@ def main():
 
     # Durable, idempotent stats block in the committed index.md (you commit the diff).
     try:
-        index_changed = stats.write_index_block(ROOT / "index.md", counts)
+        civilization_index = ROOT / "spaces" / "civilization" / "index.md"
+        if not civilization_index.exists():  # isolated legacy fixtures
+            civilization_index = ROOT / "index.md"
+        index_changed = stats.write_index_block(civilization_index, counts)
     except ValueError as e:
         print("refresh: index.md stats block FAILED — %s" % e)
         sys.exit(1)

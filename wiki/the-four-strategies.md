@@ -1,5 +1,10 @@
 ---
 entity: The Four Strategies (The Quartet)
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases:
   - the four strategies
   - the quartet

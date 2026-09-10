@@ -1,5 +1,10 @@
 ---
 entity: The Justice Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [justice graph, JusticeGraph, Layer 4, the dispute layer, evidence-assembly layer]
 tier: foundational
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: The Fourteen Layers (Layer 0–13 Stack)
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [fourteen layers, 14 layers, the layer stack, Layer 0–13, the primitive layers, the layered framework]
 tier: foundational
 status: compiled

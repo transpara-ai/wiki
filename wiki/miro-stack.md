@@ -1,5 +1,10 @@
 ---
 entity: The Miro Stack
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases:
   - Miro Stack
   - MiroMind stack

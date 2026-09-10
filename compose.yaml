@@ -1,0 +1,52 @@
+name: transpara-wiki
+
+x-runtime: &runtime
+  image: transpara-wiki:local
+  build: .
+  user: "${WIKI_UID:-1000}:${WIKI_GID:-1000}"
+  init: true
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs:
+    - /tmp:mode=1777
+  environment:
+    KNOWLEDGE_HUB_AUTHORING_TOKEN: "${KNOWLEDGE_HUB_AUTHORING_TOKEN:?Set an editor token in .env}"
+    KNOWLEDGE_HUB_ALLOWED_HOSTS: "${KNOWLEDGE_HUB_ALLOWED_HOSTS:-localhost,127.0.0.1},localhost:${WIKI_PORT:-8787},127.0.0.1:${WIKI_PORT:-8787}"
+    KNOWLEDGE_HUB_REFRESH_SECONDS: "${KNOWLEDGE_HUB_REFRESH_SECONDS:-900}"
+  volumes:
+    # Preserve the absolute paths used by source references and Repos. Only
+    # this wiki checkout is writable, through the more specific mount below.
+    - type: bind
+      source: "${WIKI_REPOS_DIR:-..}"
+      target: /Transpara/transpara-ai/repos
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: .
+      target: /Transpara/transpara-ai/repos/wiki
+      bind:
+        create_host_path: false
+
+services:
+  wiki:
+    <<: *runtime
+    command: serve
+    ports:
+      - "127.0.0.1:${WIKI_PORT:-8787}:8787"
+    healthcheck:
+      test: [CMD, python3, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/api/health', timeout=5).read()"]
+      interval: 15s
+      timeout: 6s
+      start_period: 90s
+      retries: 5
+    stop_grace_period: 5m
+  refresh:
+    <<: *runtime
+    command: refresh
+    depends_on:
+      wiki:
+        condition: service_healthy
+    stop_grace_period: 5m

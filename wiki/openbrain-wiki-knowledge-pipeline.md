@@ -1,5 +1,10 @@
 ---
 entity: OpenBrain and Wiki Knowledge Pipeline
+org: transpara-ai
+primary_placement: civilization/institutional
+placements:
+  - civilization/institutional
+classification: internal
 aliases:
   - OpenBrain/wiki pipeline
   - raw memory to curated knowledge

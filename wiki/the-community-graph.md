@@ -1,5 +1,10 @@
 ---
 entity: The Community Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [community graph, CommunityGraph, layer 10 community, belonging graph]
 tier: foundational
 status: compiled

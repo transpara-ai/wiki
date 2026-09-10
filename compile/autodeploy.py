@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Self-building auto-deploy poller for the Civilization Wiki.
+"""Self-building auto-deploy poller for the Transpara Knowledge Hub.
 
 Self-hosting: rebuilds only via the civilization's own refresh.py/build_site.py,
 local git state, Python stdlib, air-gap. Fail-closed: deploy is the single
@@ -20,6 +20,8 @@ ALLOW_EXACT = {
     "index.md", "PROVENANCE.md",
     "compile/build_site.py", "compile/refresh.py",
     "compile/stats.py", "compile/inflight.py",
+    "compile/article_catalog.py", "compile/knowledge_structure.py",
+    "compile/knowledge_structure.json", "compile/org_structure.py",
 }
 ALLOW_ASSET_PREFIX = "compile/assets/"
 
@@ -35,6 +37,8 @@ def site_affecting(paths):
         if p in ALLOW_EXACT:
             hits.append(p)
         elif p.startswith(ALLOW_ASSET_PREFIX):
+            hits.append(p)
+        elif p.startswith("spaces/") and p.endswith(".md"):
             hits.append(p)
         elif p.startswith("wiki/") and p.endswith(".md"):
             hits.append(p)

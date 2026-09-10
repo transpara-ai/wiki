@@ -1,14 +1,16 @@
 [Unit]
-Description=Transpara-AI Civilization Wiki deterministic freshness refresh
+Description=Legacy compatibility name for Transpara Knowledge Hub refresh
 Documentation=file:/Transpara/transpara-ai/repos/wiki/compile/REBUILD.md
 After=network-online.target
 Wants=network-online.target
+Conflicts=transpara-knowledge-hub-refresh.service
 
 [Service]
 Type=oneshot
 WorkingDirectory=/Transpara/transpara-ai/repos/wiki
 Environment=CIVWIKI_PYTHON=/Transpara/transpara-ai/repos/wiki/.venv/bin/python3
 EnvironmentFile=-%h/.config/transpara-ai-civilization-wiki.env
+EnvironmentFile=-%h/.config/transpara-knowledge-hub.env
 ExecStart=/bin/sh -lc 'PY="${CIVWIKI_PYTHON:-/Transpara/transpara-ai/repos/wiki/.venv/bin/python3}"; [ -x "$PY" ] || PY=/usr/bin/python3; exec /usr/bin/flock -w 300 /Transpara/transpara-ai/repos/wiki/compile/.wiki-write.lock "$PY" /Transpara/transpara-ai/repos/wiki/compile/refresh.py'
 TimeoutStartSec=10min
 NoNewPrivileges=true

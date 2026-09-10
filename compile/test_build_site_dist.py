@@ -1,11 +1,29 @@
 #!/usr/bin/env python3
 """Stdlib-assert tests for live dist handling in compile/build_site.py."""
+import json
 import pathlib
 import sys
 import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import build_site as site  # noqa: E402
+
+
+def test_package_version_accepts_semver_and_rejects_malformed_releases():
+    with tempfile.TemporaryDirectory() as d:
+        package = pathlib.Path(d) / "package.json"
+        for version in ("0.1.1", "1.2.3-rc.1", "1.0.0-beta.0+build.007"):
+            package.write_text(json.dumps({"version": version}))
+            assert site.load_site_version(package) == version
+        for version in ("v1.2.3", "01.2.3", "1.2", "1.0.0-01", "1.0.0+", 123):
+            package.write_text(json.dumps({"version": version}))
+            try:
+                site.load_site_version(package)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("invalid SemVer accepted: %r" % version)
+    print("ok test_package_version_accepts_semver_and_rejects_malformed_releases")
 
 
 def test_prepare_dist_preserves_live_site_until_successful_prune():

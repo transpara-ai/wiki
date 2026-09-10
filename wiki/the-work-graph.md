@@ -1,5 +1,10 @@
 ---
 entity: The Work Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [work graph, Work Graph, Layer 1, Agency layer, agency graph, the Work Graph]
 tier: foundational
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: The Culture Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [culture graph, CultureGraph, layer 12 culture, layer 11 culture, cultural provenance graph]
 tier: foundational
 status: compiled

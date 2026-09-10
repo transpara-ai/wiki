@@ -1,5 +1,10 @@
 ---
 entity: Base Slice 0 (Control-Plane Proof)
+org: transpara-ai
+primary_placement: civilization/arc
+placements:
+  - civilization/arc
+classification: internal
 aliases: [base-slice-0, base slice 0, the control-plane proof, v3.9 base slice 0]
 tier: arc
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: The Derivation Method
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [derivation method, the method, the derivation, the grammar that produces grammars]
 tier: foundational
 status: compiled

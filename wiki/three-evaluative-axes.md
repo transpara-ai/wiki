@@ -1,5 +1,10 @@
 ---
 entity: Three Independent Evaluative Axes
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases:
   - three evaluative axes
   - the three axes

@@ -1,5 +1,10 @@
 ---
 entity: The Deployment Arc
+org: transpara-ai
+primary_placement: civilization/arc
+placements:
+  - civilization/arc
+classification: internal
 aliases: [deployment arc, DF deployment arc, arc from Slice 1 to operated factory]
 tier: arc
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: The Knowledge Graph (Searles)
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [Knowledge Graph, Layer 6 Knowledge Graph, the provenance layer, the truth graph, the information layer, the claim-provenance layer]
 tier: foundational
 status: compiled

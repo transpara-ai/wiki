@@ -12,6 +12,8 @@ import re
 import pathlib
 import os
 
+from article_catalog import load_catalog
+
 # Canonical breakdown order. Any tier value NOT listed here, and any article
 # missing a `tier:` field (-> NO_TIER), is surfaced as its own bucket rather
 # than folded into a default: an unexpected tier shows up, never hides.
@@ -46,15 +48,33 @@ def compute_counts(root):
     """
     root = pathlib.Path(root)
     counts = {}
-    total = 0
-    for p in sorted((root / "wiki").glob("*.md")):
-        tier = _tier_of(p)
+    catalog = load_catalog(root)
+    total = len(catalog)
+    for record in catalog:
+        if not record.is_in_space("civilization"):
+            continue
+        tier = record.tier
         counts[tier] = counts.get(tier, 0) + 1
-        total += 1
     ordered = [(t, counts[t]) for t in CANONICAL_TIERS if t in counts]
     ordered += [(t, counts[t]) for t in sorted(counts) if t not in CANONICAL_TIERS]
-    assert sum(c for _, c in ordered) == total, "tier counts must sum to article_count"
-    return {"article_count": total, "tier_counts": ordered}
+    civilization_total = len(catalog.for_space("civilization", include_retired=True))
+    assert sum(c for _, c in ordered) == civilization_total, \
+        "tier counts must sum to the Civilization placement count"
+    section_counts = {}
+    for space in catalog.structure.spaces:
+        section_counts[space.key] = []
+        for section in space.sections:
+            placement = "%s/%s" % (space.key, section.key)
+            section_counts[space.key].append((
+                section.key,
+                sum(1 for record in catalog if placement in record.placements),
+            ))
+    return {
+        "article_count": total,
+        "tier_counts": ordered,
+        "space_counts": catalog.counts()["space_counts"],
+        "section_counts": section_counts,
+    }
 
 
 def ensure_nonzero(counts):
@@ -78,8 +98,10 @@ _ARTICLE_COUNT_RE = re.compile(r"^(article_count:[ \t]*)(\d+)[ \t]*$", re.M)
 def render_stats_line(counts):
     """The single prose line the generator owns (between the markers)."""
     breakdown = " · ".join("%d %s" % (c, t) for t, c in counts["tier_counts"])
-    return ("**Article count (auto-derived from `wiki/` frontmatter):** "
-            "%d — %s" % (counts["article_count"], breakdown))
+    civilization_count = counts.get("space_counts", {}).get(
+        "civilization", counts["article_count"])
+    return ("**Civilization article count (auto-derived from `wiki/` placements):** "
+            "%d — %s" % (civilization_count, breakdown))
 
 
 def atomic_write_text(path, text):
@@ -134,7 +156,9 @@ def write_index_block(index_path, counts):
     index_path = pathlib.Path(index_path)
     text = index_path.read_text()
     new_text = _replace_between_markers(text, render_stats_line(counts))
-    new_text = _set_frontmatter_article_count(new_text, counts["article_count"])
+    displayed_count = counts.get("space_counts", {}).get(
+        "civilization", counts["article_count"])
+    new_text = _set_frontmatter_article_count(new_text, displayed_count)
     if new_text != text:
         atomic_write_text(index_path, new_text)
         return True

@@ -1,5 +1,10 @@
 ---
 entity: The Existence Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [existence graph, ExistenceGraph, layer 13, the final layer, the strange loop, ecological commons graph]
 tier: foundational
 status: compiled

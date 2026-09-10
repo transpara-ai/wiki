@@ -1,8 +1,9 @@
 [Unit]
-Description=Transpara-AI Civilization Wiki authoring service
+Description=Legacy compatibility name for Transpara Knowledge Hub authoring
 Documentation=file:/Transpara/transpara-ai/repos/wiki/compile/REBUILD.md
 After=network-online.target
 Wants=network-online.target
+Conflicts=transpara-knowledge-hub.service
 
 [Service]
 Type=simple
@@ -10,6 +11,7 @@ WorkingDirectory=/Transpara/transpara-ai/repos/wiki
 Environment=PYTHONUNBUFFERED=1
 Environment=CIVWIKI_PYTHON=/Transpara/transpara-ai/repos/wiki/.venv/bin/python3
 EnvironmentFile=-%h/.config/transpara-ai-civilization-wiki.env
+EnvironmentFile=-%h/.config/transpara-knowledge-hub.env
 ExecStart=/bin/sh -lc 'PY="${CIVWIKI_PYTHON:-/Transpara/transpara-ai/repos/wiki/.venv/bin/python3}"; [ -x "$PY" ] || PY=/usr/bin/python3; exec "$PY" /Transpara/transpara-ai/repos/wiki/compile/ingest_server.py 127.0.0.1 8787'
 Restart=on-failure
 RestartSec=5s

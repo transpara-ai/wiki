@@ -1,5 +1,10 @@
 ---
 entity: The Cult Test
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases: [cult test, the religion test, "So is this a cult?", framework-as-tool, the epistemic guardrail]
 tier: concept
 status: compiled

@@ -1,5 +1,10 @@
 ---
 entity: Sakana AI Adjacent Technologies and Organisations
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases:
   - TAI-RES-2026-002 Sakana
   - Sakana adjacent landscape

@@ -1,5 +1,10 @@
 ---
 entity: The Relationship Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [relationship graph, RelationshipGraph, layer 9 relationship, the layer LovYou was built for]
 tier: foundational
 status: compiled

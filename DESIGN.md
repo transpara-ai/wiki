@@ -1,113 +1,195 @@
-# Civilization Wiki — substrate design
+# Transpara Knowledge Hub — design
 
-**Status:** draft v0.1 · **Date:** 2026-06-13 · **Owner:** Michael Saucier · **Authority:** planning (proposal)
+**Status:** current implementation reference · **Updated:** 2026-09-08
 
-## Purpose
+## Purpose and spaces
 
-A [Karpathy-style LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f): the single, self-maintaining, interlinked knowledge **substrate** for the Transpara-AI Civilization arc. Compiled from the Civilization corpus — the dark-factory doc set and runtime repos, the Open Brain export (~1,175 thoughts at 2026-06 design time; `PROVENANCE.md` is authoritative for current counts and gaps), and the Matt Searles lovyou.ai posts (see **§Corpus scope (allowlist)** below for the explicit source list) — and kept current as the work progresses.
+The Transpara Knowledge Hub is a compiled, interlinked knowledge system spanning
+Civilization, Transpara Platform, Competition, and DevOps. It grew from the
+Civilization wiki into one canonical article graph with several reader views.
 
-Everything downstream (the Mission Control board, the spine/story view) becomes a **read view onto this wiki**. The wiki is the source of truth for the narrative; the visualization is a lens, built later.
+| Space | Steward | Knowledge scope |
+| --- | --- | --- |
+| Civilization | `transpara-ai` | Philosophy, institutional architecture, history, research, and operational learning, including the Dark Factory arc |
+| Transpara Platform | `transpara` | Product portfolio, capabilities, architecture, components, integrations, deployment, security, development, and operations |
+| Competition | `transpara` | Market categories, competitors, comparisons, positioning, objections, win/loss evidence, and research methods |
+| DevOps | `transpara` | Infrastructure, networking, containers, delivery automation, observability, runbooks, security, decisions, and incidents |
 
-## Pattern
+[The registry](compile/knowledge_structure.json) defines space keys, sections,
+stewards, classifications, source authorities, and publication profiles. Stewardship
+identifies responsibility for content; it need not match a source repository's
+GitHub organization. DevOps, for example, is stewarded by Transpara and currently
+cites the `transpara-ai/dev-ops` repository engineering corpus.
 
-Karpathy's three-part loop — knowledge **compounds** instead of being re-discovered per query (the anti-RAG bet):
+The Hub is advisory. Running code, versioned configuration, accepted decisions,
+release and customer systems, and EventGraph retain their respective authority.
+Articles explain and connect evidence; publication does not promote a proposal
+into an accepted decision or establish current runtime state.
 
+## Layout and reader views
+
+```text
+index.md                         shared Knowledge Hub portal
+spaces/civilization/index.md      Civilization home and board
+spaces/platform/index.md          Transpara Platform home
+spaces/competition/index.md       Competition home
+spaces/devops/index.md            DevOps home
+wiki/<slug>.md                   canonical article bodies and metadata
+raw/                             captured sources and ingestion evidence
+compile/knowledge_structure.json  space, stewardship, and publication registry
+compile/repository_routes.json    persistent published repository identities
+compile/                         catalog, renderer, refresh, and authoring services
+PROVENANCE.md                     source origins, dated coverage, and gaps
+docs/                            documentation index and dated design/evidence records
 ```
-raw/   → sources, verbatim, never hand-edited
-wiki/  → LLM compiles raw into encyclopedia articles: synthesize, resolve
-         conflicts, cross-link [[related]]
-index.md → the arc spine + article index
+
+The root renders at `/index.html`; space homes render at `/<space>/index.html`.
+Articles keep flat routes such as `/event-graph.html` and
+`/transpara-platform-overview.html`, even when they have several placements.
+The original `/civilization-wiki.html` route now describes the expanded Hub.
+The Civilization board and Arc remain Civilization views, with existing Arc
+aliases preserved.
+
+Selecting a space scopes the sidebar, search, Repos, Sources, and Ingest.
+Search offers **All spaces** within the selected publication profile. Shared
+articles have one body and one canonical route; global totals count each article
+once, while space totals count its placements in that space.
+
+Repository pages use local clones and worktrees, filtered by the space's
+steward. The versioned route catalog preserves registered URLs when a checkout
+is unavailable. Such pages show the source repository and an availability notice;
+local README content and Git metadata resume when the checkout returns.
+
+## Corpus scope
+
+The June 2026 design bounded the original Civilization corpus to the Searles
+posts, Dark Factory documentation and runtime repositories, implementation
+snapshots, Open Brain exports, and cited investigation context. Its exclusion of
+Transpara's product line applied to that initial Civilization scope. Product,
+competitive, and operational knowledge are now explicit Hub subjects.
+
+| Space | Source basis and interpretation |
+| --- | --- |
+| Civilization | Searles philosophy, first-party Dark Factory and runtime docs, implementation history, Open Brain exports, Stage 0 snapshots, and cited external research. Preserve proposal, historical, and accepted-state distinctions. |
+| Transpara Platform | Product and component repositories, versioned configuration, accepted ADRs, engineering documentation, and approved product references. Distinguish implemented behavior, normative decisions, plans, and marketing. Visual KPI is one product in the portfolio. |
+| Competition | Current external primary sources for competitor facts; separately labeled Transpara first-party positioning for comparisons and sales interpretation. Time-sensitive claims carry verification and review dates. |
+| DevOps | Versioned infrastructure and delivery configuration, repository engineering docs, operational evidence, incident records, and runbooks. Distinguish observed running state from desired configuration and unvalidated procedures. |
+
+Ingest broadly within the relevant scope and synthesize curatively. Source
+registration is not automatic publication or proof that an article reflects its
+new evidence. A repository's presence on the local host does not automatically
+make its full contents part of the article corpus.
+
+Customer production content, credentials, and unauthorized prospect evidence
+remain outside the knowledge boundary. Dependency trees, vendored documents,
+Git internals, and duplicate worktrees are not bulk source imports. External
+research is cited with provenance; this repository does not mirror entire
+upstream projects or write to their remotes.
+
+### Source storage and provenance
+
+Historical sources retain their paths under `raw/searles/`, `raw/transpara/`,
+`raw/open-brain/`, `raw/civilization/`, and `raw/investigations/`. New uploads use
+`raw/inbox/<space>/<date>/<article>/`; legacy inbox paths remain valid. Source
+placement in an article is explicit and does not require moving raw files.
+
+The provenance tiers in [PROVENANCE.md](PROVENANCE.md) describe source origin and
+ingestion history, including `first_party`, `searles`, `open_brain`,
+`civilization_stage0`, `external_landscape_authored`, `browser_inbox`, and
+`upstream_context`. They are distinct from reader spaces, article `tier`, and
+registered `source_authority` values. First-party sources can support any space;
+external-primary-source evidence supports both research and commercial comparison.
+
+Article `sources` and `raw_documents` identify the evidence actually used,
+including local snapshots, sibling-repository paths, and external URLs. Record
+revisions and dates where available. URL registration does not fetch a snapshot;
+an in-place read does not establish a committed mirror. Preserve the dates and
+coverage gaps in the provenance manifest rather than treating old corpus counts
+as a current inventory. Existing ingestion quarantine and pre-commit secret
+scanning apply to every space.
+
+## Article model and authoring
+
+Articles stay in `wiki/<slug>.md`. Each has one steward (`org`), one
+`primary_placement`, and an explicit `placements` list that includes its primary
+placement. For example:
+
+```yaml
+entity: Transpara MCP Boundary
+org: transpara
+primary_placement: platform/development-apis
+placements:
+  - platform/development-apis
+  - civilization/architecture
+classification: company-internal
+source_authority:
+  - engineering-docs
 ```
 
-## Layout
+The catalog validates registry values before distribution output changes.
+Classification controls publication eligibility independently of placement.
+Articles also record status, compilation date, sources, and any relevant
+verification/review dates. Content uses `[[article-slug]]` links between canonical
+articles and cites the evidence behind substantive claims. Conflicts and thin
+evidence are stated explicitly.
 
-```
-wiki/
-  raw/
-    searles/            day-1 provocation: the ~45–50 lovyou.ai posts
-    transpara/          first-party: docs, df-impl-v11..v16, dark-factory, design iterations
-    open-brain/         the captured thoughts, exported as dated monthly markdown (counts/gaps: PROVENANCE.md)
-    investigations/<x>/ forked-upstream context, one dir per investigated project
-  wiki/                 LLM-compiled, interlinked entity articles
-  index.md              spine + index, with a fail-loud freshness header
-  PROVENANCE.md         source manifest: each raw item → origin, date, tier
-  compile/              the compiler: prompts, manifest, scripts
-  DESIGN.md             this file
-```
+Source attachment works for existing articles in every space. The browser's
+new-investigation lane creates internal provisional Civilization investigations.
+The API additionally creates internal DevOps drafts from supplied Markdown and
+sources. Platform and Competition article creation, general prose changes, and
+placement changes use repository edits and review. The endpoint never synthesizes
+source contents automatically. [API.md](API.md) documents the supported fields
+and retry behavior.
 
-## Ingestion — "ingest all, sort at compile" (within scope)
+## Refresh and synthesis
 
-Per Karpathy (and Michael's call): within the **§Corpus scope (allowlist)**, mirror the **whole** of each in-scope source into `raw/`, nothing dropped — curation is a compile-time concern, not a *content* gate at the door. The scope **boundary** itself, however, *is* an allowlist gate (fail-closed): repos outside it — Transpara's product line, `node_modules`, vendored docs, forks — are never ingested. "Ingest all" means *all of the in-scope corpus*, not all of the nucbuntu clone directory.
+The current keep-current process has two tiers:
 
-- **Provenance tiers** (recorded in `PROVENANCE.md` + each file's frontmatter), so the compiler knows what's load-bearing without anything being excluded:
-  - `first_party` — Transpara-authored (docs, df-impl-v*, dark-factory, Open Brain)
-  - `searles` — the foundational philosophy
-  - `upstream_context` — a forked project's own docs (context for its investigation article, **not** the subject of the wiki)
-- **Phased to manage token cost** (not to filter): Phase 1 = `searles` + `first_party` + `open_brain` (the arc itself); Phase 2 = `investigations/*`.
-- **Open Brain export**: dump the captured thoughts to `raw/open-brain/` as dated monthly markdown (1,175 at 2026-06 design time; current counts and the named June 14→30 gap: `PROVENANCE.md`).
-- **Secret-scrub before any commit** — the corpus includes config-laden repos and the platform has a known hardcoded-credentials finding (F-01). `raw/` runs a secret scanner; nothing with live secrets is committed. Non-negotiable.
+1. **Deterministic refresh:** the 15-minute worker mirrors configured Dark Factory
+   Markdown into `raw/transpara/dark-factory/`, hashes raw Markdown and the archive
+   boundary marker, records cited changes, updates Civilization's generated stats,
+   and rebuilds all eligible spaces. It neither calls an LLM nor commits or pushes.
+2. **Manual synthesis:** review changed evidence, revise affected article prose,
+   update `last_compiled`, and clear `stale_since` when the synthesis is complete.
+   Browser/API source registration marks newly attached evidence as pending;
+   rendering alone does not incorporate it into the prose.
 
-## Corpus scope (allowlist)
+The four-space expansion does not add automatic Platform, competitor, DevOps,
+or Open Brain source synchronization. Those imports and reviews remain explicit.
+See [the rebuild guide](compile/REBUILD.md) for freshness fields, locking,
+source registration, and service operation.
 
-> ⚠ **Scope correction (2026-06-14).** Draft v0.1 (the Purpose line above, and
-> earlier `index.md` headers) framed the corpus as *"8,783 markdown files across 73
-> repos."* That was a design-time raw `find -name '*.md'` over the then-current
-> nucbuntu clone directory, not a stable live inventory. After the 2026-06-22
-> canonical root move, the live root is `/Transpara/transpara-ai/repos`; live
-> repo/file counts are intentionally tracked in reorganization inventory
-> manifests instead of this design note. They are **not** counts of Civilization
-> sources: many repos under the live root are Transpara's commercial **product
-> line** (industrial-data extractors, the `t*` server suite, Excel/ML/analytics,
-> protocol interfaces) — the *business the factory will build*, not the factory's
-> own arc — and much of the file count is `node_modules`, vendored docs, and forks.
-> The corpus is therefore defined here as an **explicit allowlist**, consistent with
-> `PROVENANCE.md` (which never claimed 73). "Full corpus sweep" means exhausting
-> *this* list, which is bounded and achievable.
+## Publication and hosting
 
-**Subject — the dark-factory runtime stack (documented as entities), 6 repos:**
-`transpara-ai/{agent, docs, eventgraph, hive, site, work}`.
+| Profile | Content and surfaces |
+| --- | --- |
+| `authoring-local` | All authorized internal spaces, source viewers, repository pages, Arc, and authoring controls |
+| `company-internal` | Articles classified `company-internal` or `public-candidate`; excludes raw source viewers, repository mirrors, Arc, and authoring controls |
+| `public-platform` | Disabled; any future output is limited to eligible Platform content and requires a separate publication decision |
 
-**`first_party` — compile from:**
-- `docs/dark-factory/` — the dark-factory doc set (**~322 md**); the load-bearing doctrine/implementation authority.
-- the runtime repos' own docs + READMEs — `agent` (8) + `eventgraph` (164) + `hive` (171) + `site` (325) + `work` (28) ≈ **~696 md** — to deepen the entity articles past the doc-side view.
-- `df-impl-v11 … v16` — the six implementation-iteration snapshots (arc history); compile the latest + the deltas, not every snapshot in full.
-- **Open Brain** — the captured-thought export via `raw/open-brain/` (**~1,175 thoughts** at 2026-06 design time; `PROVENANCE.md` is authoritative for current counts).
+Space membership does not make content public. The original Civilization corpus
+and current DevOps articles are `internal`; the initial reviewed Platform and
+Competition articles are `company-internal`. A `public-candidate` classification
+alone does not enable public publication.
 
-**`searles` — compile from:** `raw/searles/` — the lovyou.ai Substack posts (**43** on disk; the "~45–50" in this doc is an estimate, per `PROVENANCE.md`).
+The local authoring service binds to `127.0.0.1:8787`. The
+[Docker deployment](DOCKER.md) serves the same Hub through private Tailscale HTTPS;
+[the native service guide](compile/REBUILD.md) covers systemd. Canonical names use
+`transpara-knowledge-hub*` and `KNOWLEDGE_HUB_*`. Historical
+`transpara-ai-civilization-wiki*` units, `CIVWIKI_*` fallbacks, and the
+`X-CivWiki-Authoring-Token` header remain compatibility interfaces as documented
+in those guides.
 
-**`upstream_context` — Phase 2, cite-only (never re-published):** the projects evaluated in the 2026-05-13 Civilization Landscape Investigation — `gstack`, `paperclip`, `symphony`, `multica`, `hermes-agent`, `openclaw`, `pageindex`, `mempalace`, `ob1`, `miro-stack`, `agent-governance-toolkit`, `solo-orchestrator`, `graphify`, `claw-code`, `bitsandpieces`. Quoted to characterize each for its investigation article; their source trees are **not** swept.
+## Design history
 
-**Explicitly OUT of scope — never ingest:**
-- **Transpara's product line:** `extractor-*` (OPC/PI/etc.), the `t*` suite (`tgraph-*`, `tstore-*`, `tsystem-*`, `tCalc`, `tAuth`, `tview`, …), `Excel-add-in`, `analytics-gateway`, `machine-learning`, `model-builder`, `ai-finance`, `ai-sdr`, `*-interface`, `matlab-integration-endpoint`, `CData`, `Transpara*` tools, `platform`, `ci`, `deployment`. These are the factory's eventual *output*, not its arc.
-- **Mechanical noise:** `node_modules/`, vendored/third-party docs, `.git/`.
-- **Variant/worktree dupes of the stack:** `docs-*-sse`, `site-*-sse`, `eventgraph-e2-*`, `docs-gk`.
+The 2026-06-13 draft established the Civilization knowledge substrate before its
+visualizations. Its corpus estimates, proposed nightly LLM compilation, and open
+setup questions describe that starting point. Current behavior is documented
+above and in the implementation; historical coverage stays dated in
+[PROVENANCE.md](PROVENANCE.md).
 
-**Realistic size:** ~12 first-party repos + ~16 cite-only investigation forks; on the order of a **few thousand curated markdown files**, not 8,783 across 73. This boundary should be promoted from prose to a compiler-enforced manifest (a list `compile/refresh.py` reads), so the gate is mechanical rather than aspirational.
-
-## Compilation — wiki/
-
-- **Engine:** Claude Code, multi-agent (subagents / a workflow) to cover the corpus at scale. Each agent owns a source cluster and proposes/updates entity articles.
-- **The article set EMERGES from the sources** — it is *not* pre-authored by me (the lesson from getting the narrative wrong by assumption). A first pass derives the entity list from `raw/`, seeded by the grounded fork-chronology + the Searles philosophy; later passes refine.
-- **Per article:** frontmatter (`entity`, `status`, `last_compiled`, `sources[]`), body that synthesizes the sources, a "Sources & provenance" footer listing the `raw/` files it was built from, and `[[wikilinks]]` to related entities.
-- **Fail-legible / anti-confabulation:** when sources conflict or a fact is unverified, the article **states the disagreement and cites both** rather than silently picking a winner. Thin evidence is labeled thin. (Mirrors the platform's fail-safe-by-default doctrine.)
-
-## Keep-current — cron
-
-- **Nightly:** re-export Open Brain + re-sync first-party repos into `raw/` → **incremental** re-compile of only the entities whose source set changed (a manifest tracks `raw → article` dependencies) → commit.
-- **Fail-loud freshness:** `index.md` header shows `last_compiled` + which sources are synced/stale — same honesty signal as Mission Control. Never looks-current-while-stale.
-
-## The Feb genesis (the gap we must fill by hand)
-
-Day one — the Searles reading + the first lovyou.ai fork/build (~Feb 2026) — is **not in the digital record** (org forks start 3/30, personal GitHub has no Feb-2026 forks, Open Brain starts 3/4). It is reconstructed from `raw/searles/` + a short `raw/transpara/genesis.md` captured from Michael's account + the Substack post dates. The wiki's origin article will say so explicitly — reconstructed, not derived from commit history.
-
-## Boundaries
-
-- **Repo:** new `transpara-ai/wiki`, **private** (internal substrate). Created when we're ready to push, with confirmation first.
-- transpara-ai only; never touch `lovyou-ai`/upstream. `upstream_context` quotes public docs as cited context, never re-publishes wholesale.
-- Air-gap friendly: compile runs locally on nucbuntu; only dependency is the LLM.
-
-## Open questions (for your review)
-
-1. **Wiki readership, v1:** markdown-in-repo (read on GitHub / in an editor) is enough to start; a served browsable renderer on nucbuntu can come with the visualization phase. Agree, or do you want it served from day one?
-2. **Compile engine:** greenlight a multi-agent **workflow** for the Phase-1 compile (real token cost across thousands of sources), or start incremental/manual and scale up?
-3. **Secret-scrub:** confirm `raw/` ingestion must pass a secret scan before any commit (strongly recommended).
+The [2026-09-05 migration plan](docs/superpowers/plans/2026-09-05-multi-space-wiki-migration.md)
+records the initial expansion into Civilization, Transpara Platform, and
+Competition. DevOps followed as the fourth space. Dated plans and evidence remain
+historical records; [the documentation index](docs/README.md) identifies the
+current guides.

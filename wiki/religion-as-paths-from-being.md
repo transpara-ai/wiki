@@ -1,5 +1,10 @@
 ---
 entity: Six Paths from Being (Religion in Primitive Terms)
+org: transpara-ai
+primary_placement: civilization/concept
+placements:
+  - civilization/concept
+classification: internal
 aliases:
   - six paths from being
   - religion as paths from being

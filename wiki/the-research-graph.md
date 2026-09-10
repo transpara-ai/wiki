@@ -1,5 +1,10 @@
 ---
 entity: The Research Graph
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases: [Research Graph, Layer 5 Research Graph, the provenance layer, the replication fix]
 tier: foundational
 status: compiled

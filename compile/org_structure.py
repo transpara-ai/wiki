@@ -1,34 +1,31 @@
-"""Single source for the wiki's org/section information architecture.
+"""Compatibility projection of the Knowledge Hub registry.
 
-Pure data + one pure resolver — deliberately side-effect-free (no I/O, no
-META build, no edge state) so both the builder (build_site.py) and the ingest
-server (ingest_server.py) can import it safely (DP-20260710-wiki-org-sections
-D1/B4). Sections remain the article `tier:` frontmatter mechanism; an org
-simply scopes which tier values are legal.
+Existing callers still speak in organizations and legacy ``tier`` values.
+Canonical definitions live in ``knowledge_structure.json``; this module
+projects them into the prior API during the compatibility window.
 """
 
-TIER_ORDER = ["foundational", "institutional", "architecture", "arc",
-              "investigation", "concept", "meta"]
-TIER_LABEL = {
-    "foundational": "Foundational — source philosophy",
-    "institutional": "Institutional substrate",
-    "architecture": "Architecture",
-    "arc": "The dark-factory arc",
-    "investigation": "Investigations",
-    "concept": "Concepts",
-    "meta": "Meta",
-}
+try:
+    from knowledge_structure import STRUCTURE
+except ModuleNotFoundError:  # direct file-loader compatibility in repository tests
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    from knowledge_structure import STRUCTURE
 
-ORG_ORDER = ["transpara", "transpara-ai"]
-ORG_LABEL = {"transpara": "Transpara", "transpara-ai": "Transpara-AI"}
-ORG_SECTIONS = {
-    "transpara": ["organization", "product"],
-    "transpara-ai": list(TIER_ORDER),
-}
-SECTION_LABEL = dict(TIER_LABEL, **{
-    "organization": "Organization",
-    "product": "Product",
-})
+
+ORG_ORDER = list(STRUCTURE.organization_keys)
+ORG_LABEL = STRUCTURE.organization_labels
+ORG_SECTIONS = {org: [] for org in ORG_ORDER}
+SECTION_LABEL = {}
+for _space in STRUCTURE.spaces:
+    for _section in _space.sections:
+        for _tier in _section.legacy_tiers:
+            ORG_SECTIONS[_space.steward].append(_tier)
+            SECTION_LABEL[_tier] = _section.legacy_label_for(_tier)
+
+TIER_ORDER = list(ORG_SECTIONS["transpara-ai"])
+TIER_LABEL = {tier: SECTION_LABEL[tier] for tier in TIER_ORDER}
 DEFAULT_ORG = "transpara-ai"
 
 # which repo-nav groups render under which org band (intake decision 2)

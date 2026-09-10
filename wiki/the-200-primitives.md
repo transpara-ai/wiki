@@ -1,5 +1,10 @@
 ---
 entity: The 200 Primitives
+org: transpara-ai
+primary_placement: civilization/foundational
+placements:
+  - civilization/foundational
+classification: internal
 aliases:
   - the 200 primitives
   - 200 primitives

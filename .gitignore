@@ -1,5 +1,6 @@
 # generated / regenerable — not committed (rebuilt by compile/refresh.py)
 /dist/
+/dist-*/
 /raw/transpara/
 /compile/source-snapshot.json
 /compile/refresh-status.json
@@ -10,6 +11,7 @@ __pycache__/
 # local Node/browser verification environment
 /node_modules/
 /.venv/
+/.env
 /test-results/
 /playwright-report/
 /.cache/

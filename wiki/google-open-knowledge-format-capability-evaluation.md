@@ -1,5 +1,10 @@
 ---
 entity: Google Open Knowledge Format Capability Evaluation
+org: transpara-ai
+primary_placement: civilization/investigation
+placements:
+  - civilization/investigation
+classification: internal
 aliases:
   - TAI-RES-2026-003
   - Google Open Knowledge Format

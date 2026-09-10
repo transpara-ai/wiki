@@ -1,5 +1,6 @@
 [Unit]
-Description=Refresh the Transpara-AI Civilization Wiki freshness signal
+Description=Legacy compatibility name for Transpara Knowledge Hub refresh
+Conflicts=transpara-knowledge-hub-refresh.timer
 
 [Timer]
 OnBootSec=3min

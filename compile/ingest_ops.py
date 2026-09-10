@@ -26,6 +26,7 @@ from html.parser import HTMLParser
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import org_structure  # noqa: E402  # side-effect-free org/section allowlists
+from knowledge_structure import STRUCTURE, StructureError  # noqa: E402
 
 import markdown
 
@@ -49,6 +50,11 @@ EDGE_STATES_VOCAB = ("valid", "cleanly-removed", "dangling-pending")
 EDGE_ENTRY_KEYS = {"state", "since", "reason", "queued", "enqueued_at"}
 BUILDER_PAGES = {"repos", "sources", "ingest", "civilization-arc",
                  "civilization_arc"}
+BUILDER_ROUTE_PATHS = {
+    "civilization/index.html",
+    "platform/index.html",
+    "competition/index.html",
+}
 # wiki/*.md-backed slugs the builder ALSO regenerates as a whole page, so they
 # must never be retired as a tombstone (Remove would be reanimated on rebuild)
 PROTECTED_SLUGS = {"index", "civilization-arc"}
@@ -67,14 +73,15 @@ LEDGER_SHAPES = {
                  "authorized_by", "authorization_sha256", "result",
                  "rebuild"},
 }
-# additive, org+section-aware add rows (DP-20260710 D4): LEDGER_SHAPES stays
-# the REQUIRED key sets; these keys MAY additionally appear on new rows, so
-# historical rows (written before the schema existed) still parse unchanged.
-# The optional set is a PACKAGE — all present or all absent (the route always
-# writes both; an org-only/section-only row is an impossible state and must
-# fail the strict preflight, CFAR r4) — and each must be a non-empty string.
-LEDGER_OPTIONAL_KEYS = {
-    "add": {"org", "section"},
+# Add rows retain both historical shapes while current writes carry the full
+# registry-backed placement package. Each package is indivisible; partial or
+# mixed shapes are impossible state and fail strict ledger preflight.
+LEDGER_OPTIONAL_PACKAGES = {
+    "add": (
+        frozenset(),
+        frozenset({"org", "section"}),
+        frozenset({"space", "section", "steward", "placement"}),
+    ),
 }
 # manifest rows (frozen raw/inbox/manifest.jsonl + manifest.d/ shards):
 # exact key sets for NEW rows; historical rows are read for source_path only
@@ -369,7 +376,8 @@ def _validate_ledger_row(row, where="ledger row"):
     if operation not in LEDGER_SHAPES:
         raise OpRefused("%s: unknown operation" % where)
     required = LEDGER_SHAPES[operation]
-    optional = LEDGER_OPTIONAL_KEYS.get(operation, set())
+    packages = LEDGER_OPTIONAL_PACKAGES.get(operation, (frozenset(),))
+    optional = set().union(*packages)
     missing = required - set(row)
     extra = set(row) - required - optional
     if missing or extra:
@@ -380,13 +388,12 @@ def _validate_ledger_row(row, where="ledger row"):
     _require_row_str(row, ("slug",), where)
     if row["rebuild"] not in ("ok", "failed"):
         raise OpRefused("%s: rebuild must be ok|failed" % where)
-    # optional keys are all-or-nothing (the writer emits the whole package;
-    # a partial row is an impossible state — CFAR r4) and, when present,
-    # must be non-empty strings (additive schema)
+    # Optional keys must exactly match one historical/current package.
     present_optional = optional & set(row)
-    if present_optional and present_optional != optional:
-        raise OpRefused("%s: optional keys %s must appear together or not at all"
-                        % (where, sorted(optional)))
+    if frozenset(present_optional) not in packages:
+        raise OpRefused(
+            "%s: optional keys must exactly match one of %s"
+            % (where, [sorted(package) for package in packages]))
     _require_row_str(row, tuple(sorted(present_optional)), where)
     # the pair, when present, must satisfy the same org/section vocabulary the
     # route and builder enforce — the strict preflight must not bless a row
@@ -397,6 +404,18 @@ def _validate_ledger_row(row, where="ledger row"):
             raise OpRefused(
                 "%s: org/section (%r, %r) not in the allowed vocabulary"
                 % (where, row["org"], row["section"]))
+    if {"space", "section", "steward", "placement"} <= set(row):
+        if row["placement"] != "%s/%s" % (row["space"], row["section"]):
+            raise OpRefused(
+                "%s: placement must equal '<space>/<section>'" % where)
+        try:
+            STRUCTURE.split_placement(row["placement"])
+        except StructureError as exc:
+            raise OpRefused("%s: %s" % (where, exc)) from exc
+        if row["steward"] not in STRUCTURE.organization_keys:
+            raise OpRefused(
+                "%s: steward %r is not in the allowed vocabulary"
+                % (where, row["steward"]))
     if operation == "add":
         if not isinstance(row["sources"], list) or any(
                 not isinstance(s, str) or not s for s in row["sources"]):
@@ -604,6 +623,8 @@ def canonical_article_target(href, *, meta, repo_slugs=()):
     # x/../slug.html and /slug.html all canonicalize to slug.html
     norm = posixpath.normpath("/" + path).lstrip("/")
     if SOURCE_VIEW_RE.match(norm):
+        return ("page", norm)
+    if norm in BUILDER_ROUTE_PATHS:
         return ("page", norm)
     if "/" in norm:
         return ("unknown", norm)
@@ -928,7 +949,7 @@ def _replace_preflight(root, slug, source_ref):
 
 
 def set_article_stale(root, slug, now):
-    """R5/R7: stamp `stale_since` on an investigation article so the builder's
+    """Stamp `stale_since` on an article so the builder's
     reason-neutral "summary re-derivation pending" banner renders until a governed
     authoring pass clears it (via _drop_scalar, exactly as Replace does on
     engine-ok). A thin wrapper over _set_scalar reused by the ADD lane and
@@ -1203,11 +1224,16 @@ def preview_remove(root, slug):
     and edge enumeration the operation runs. Consumes no authorization, takes
     no lock, writes nothing."""
     root = pathlib.Path(root)
-    _remove_preflight(root, slug)
+    _article_path, fm_lines, _tail = _remove_preflight(root, slug)
     _preview_state_preflights(root)
     inbound = find_inbound_edges(root, slug)
+    placements = fm_list_values(fm_lines, "placements")
+    primary = fm_scalar(fm_lines, "primary_placement")
+    if not placements and primary:
+        placements = [primary]
     return {"operation": "remove", "slug": slug, "inbound": inbound,
             "edges_would_pend": len(inbound),
+            "placements_removed": placements,
             "tombstone": "%s.html" % slug, "will_recompile": True}
 
 
@@ -1469,6 +1495,19 @@ def remove_topic(root, *, slug, now, rebuild_runner=None):
     tier = fm_scalar(fm_lines, "tier")
     if tier:
         stub_fm.append("tier: %s" % tier)
+    # Preserve the structural identity required by the multi-space catalog.
+    for key in ("org", "primary_placement", "classification"):
+        value = fm_scalar(fm_lines, key)
+        if value:
+            stub_fm.append("%s: %s" % (key, value))
+    for key in ("placements", "source_authority"):
+        values = fm_list_values(fm_lines, key)
+        if not values:
+            scalar_value = fm_scalar(fm_lines, key)
+            values = [scalar_value] if scalar_value else []
+        if values:
+            stub_fm.append("%s:" % key)
+            stub_fm.extend("  - %s" % json.dumps(value) for value in values)
     stub_fm.append("retired_on: %s" % json.dumps(_date_of(now)))
     stub_fm.append("retired_reason: %s" % json.dumps(reason))
     # markdown `extra` passes raw HTML through, so escape any HTML in the

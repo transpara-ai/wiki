@@ -1,73 +1,124 @@
 ---
-entity: The Transpara-AI Civilization Wiki
-aliases: [civilization-wiki, Transpara-AI Civilization Wiki, Karpathy-style wiki, the wiki, the knowledge substrate, the LLM wiki]
+entity: Transpara Knowledge Hub
+org: transpara-ai
+primary_placement: civilization/meta
+placements:
+  - civilization/meta
+classification: internal
+aliases: [civilization-wiki, The Transpara-AI Civilization Wiki, Transpara-AI Civilization Wiki, Civilization Wiki, Karpathy-style wiki, the wiki, the knowledge substrate, the LLM wiki]
 tier: meta
 status: compiled
-last_compiled: "2026-06-24"
+last_compiled: "2026-09-08"
+source_authority:
+  - engineering-docs
 sources:
-  - DESIGN.md  # substrate design, purpose, pattern, layout, compilation engine
-  - PROVENANCE.md  # source manifest: tiers, mirroring status, in-place reads
-  - index.md  # front-page narrative frame + arc spine (July keep-current state; auto-derived article count 108)
-  - raw/open-brain/2026-06.md  # lines 4050–4134: genesis, design decisions, compile runs
-  - raw/transpara/dark-factory/v3.9/06-memory-knowledge-capability-v3.9.md  # DF-V3.9-SPEC-006: LLM Wiki advisory knowledge substrate contract
-  - compile/refresh.py  # nightly deterministic refresh logic
-  - compile/REBUILD.md  # two-tier rebuild protocol
-  - compile/build_site.py  # Wikipedia-style renderer, dark/light theme
-  - compile/ingest_server.py  # local browser ingest/update/rebuild authoring server
-  - README.md  # top-level description (still Run-10-era text: 101 articles, service hardening)
+  - README.md
+  - DESIGN.md
+  - PROVENANCE.md
+  - index.md
+  - spaces/civilization/index.md
+  - spaces/platform/index.md
+  - spaces/competition/index.md
+  - spaces/devops/index.md
+  - compile/knowledge_structure.json
+  - compile/repository_routes.json
+  - API.md
+  - DOCKER.md
+  - raw/open-brain/2026-06.md  # genesis, design decisions, early compile runs
+  - raw/transpara/dark-factory/v3.9/06-memory-knowledge-capability-v3.9.md  # original Civilization advisory knowledge contract
+  - compile/refresh.py
+  - compile/REBUILD.md
+  - compile/build_site.py
+  - compile/ingest_server.py
 confidence:
   sources: primary
   claims: grounded
 ---
 
-# The Transpara-AI Civilization Wiki
+# Transpara Knowledge Hub
 
-**The wiki writing about itself.** The Transpara-AI Civilization Wiki is a [Karpathy-style LLM wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — a single, self-maintaining, interlinked knowledge **substrate** for the Transpara-AI Civilization arc. It compiles the source corpus (the Matt Searles lovyou.ai philosophy posts + the first-party [[dark-factory]] docs + Open Brain captured thoughts + Stage 0 institutional-substrate source material) into a set of pre-synthesized, cross-linked entity articles, so that knowledge **compounds** rather than being re-discovered per query. This article describes the wiki itself: why it exists, how it is built, what state it is in, and what governs it.
+The Transpara Knowledge Hub compiles source material into interlinked articles
+for **Civilization**, **Transpara Platform**, **Competition**, and **DevOps**.
+It began as the Transpara-AI Civilization Wiki and now serves all four spaces
+through one canonical article graph. This overview retains the original
+`civilization-wiki` slug and Civilization meta placement so existing references
+continue to resolve.
+
+## Knowledge spaces
+
+| Space | Purpose | Starting article |
+| --- | --- | --- |
+| [Civilization](civilization/index.html) | Philosophy, institutional architecture, history, research, and operational learning; stewarded by Transpara-AI | [[the-civilization]] |
+| [Transpara Platform](platform/index.html) | Product portfolio, capabilities, architecture, components, integrations, deployment, security, and APIs; stewarded by Transpara | [[transpara-platform-overview]] |
+| [Competition](competition/index.html) | Commercial market intelligence, competitor profiles, comparisons, positioning, and win/loss evidence; stewarded by Transpara | [[competition-overview]] |
+| [DevOps](devops/index.html) | Infrastructure, networking, containers, delivery automation, observability, and runbooks; stewarded by Transpara | [[devops-repository-scaffold]] |
+
+Visual KPI is one product in the Platform portfolio. Competition distinguishes
+external competitor facts from Transpara's first-party positioning. DevOps
+currently starts with repository engineering and delivery sources; other
+operational runbooks require their own evidence.
+
+The root portal is `index.md`. Space homes live under `spaces/`; the Civilization
+board and Arc remain in the Civilization space. An article has one steward, one
+primary placement, and explicit additional placements when it serves several
+spaces. Its body and flat HTML route remain canonical. Space totals can overlap;
+the global article count counts each article once.
 
 ## Why it exists
 
-The wiki is the answer to a sequencing decision made on **2026-06-13**. Michael Saucier reprioritized: substrate before visualization. The prior build produced a static Mission Control mockup served on nucbuntu at `:8787` — a disposable HTML/CSS design prototype. That mockup revealed a gap: the visualization had no durable source of truth to render from. The resolution was to build the knowledge substrate first, then treat any downstream visualization (Mission Control, the spine/story view) as a **read lens onto the wiki**, not an independent layer. (`raw/open-brain/2026-06.md` line ~4050.)
+The original sequencing decision on **2026-06-13** was to build the knowledge
+substrate before the visualization. A Mission Control mockup needed durable,
+sourced narrative to render. Michael Saucier's resolution was to compile the
+Civilization knowledge first and treat visualizations as read views onto it.
+The June Open Brain export records that decision around lines 4050–4134.
 
-The Karpathy pattern solves the **anti-RAG** problem: instead of re-deriving answers from raw documents at query time, the wiki pre-compiles the corpus into encyclopedia articles that cross-link related entities and resolve conflicts. Knowledge accumulates in the articles and compounds across sessions; new queries land on pre-synthesized context, not a flat document pile.
+The same pattern now supports product, competitive, and operational knowledge:
+source evidence is synthesized into articles that accumulate context across
+sessions. The Hub remains advisory. Code, versioned configuration, accepted
+decisions, release systems, customer systems, and EventGraph retain their
+respective authority. See [[memory-knowledge-advisory]] for the original
+Civilization knowledge contract.
 
-## The pattern
+## Sources and compilation
 
-Three directories, one loop:
-
+```text
+raw/       captured sources and provenance evidence
+wiki/      canonical articles synthesized from sources
+index.md   shared Knowledge Hub portal
+spaces/    space-specific homes and navigation
+compile/   registry, catalog, renderer, refresh, and authoring services
 ```
-raw/     source material — verbatim, never hand-edited
-wiki/    LLM compiles raw into entity articles: synthesize, resolve conflicts, cross-link
-index.md front-page narrative + arc spine + article index + freshness header
-```
 
-The article set **emerges from the sources** — it is not pre-authored by the maintainer. A first-pass compile derives the entity list from `raw/`; later passes refine. Curation is a compile-time concern, not a gate at the ingestion door ("ingest all, sort at compile," per `DESIGN.md`).
+The original Civilization corpus includes Searles philosophy, Dark Factory and
+runtime documentation, Open Brain exports, Stage 0 snapshots, and external
+research. Platform adds product and engineering sources; Competition adds dated
+primary-source competitor evidence and labeled first-party positioning; DevOps
+adds versioned configuration, engineering procedures, and operational evidence.
 
-## The corpus it compiles from
+Historical raw paths remain valid. New uploads use
+`raw/inbox/<space>/<date>/<article>/`. Sources can also be read from sibling
+repositories or cited by URL; neither case implies a committed snapshot. The
+provenance manifest records source origins and dated coverage gaps. Its older
+corpus counts and Civilization-only boundaries describe their recorded dates,
+not the full current Hub or an automatically synchronized source inventory.
 
-Four source tiers, each with its own `raw/` subdirectory and its own provenance claims:
-
-| Tier | Location | Mirrored? | Content |
-|---|---|---|---|
-| `searles` | `raw/searles/` | Yes | `all-posts-1.md` — 43 Matt Searles posts (2026-02-28 → 2026-03-24) |
-| `first_party` | `raw/transpara/` | No local mirror (read in place) | ~322 dark-factory markdown files under `docs/dark-factory/` |
-| `open_brain` | `raw/open-brain/` | Partial — five monthly dumps (Mar→Jun 13 + Jul 1–12, 2026; named Jun 14→30 gap) | 1,663 thoughts on disk as of 2026-07-12; `PROVENANCE.md` is authoritative |
-| `upstream_context` | `raw/investigations/` | No — Phase 2, empty by design | Upstream forked-project docs (cited as context, never re-published) |
-| `browser_inbox` | `raw/inbox/` | Yes when used | Local browser-ingested source drops and URL manifest rows awaiting article synthesis |
-
-`DESIGN.md` originally framed the target corpus as ~8,783 markdown files across ~73 repos + ~1,175 Open Brain thoughts + the Matt Searles posts, and now **explicitly corrects that scope** (correction of 2026-06-14): the real boundary is ~12 first-party repos plus ~16 cite-only investigation forks — a few thousand curated markdown files — with `PROVENANCE.md` authoritative for Open Brain counts. Reproducibility from the repo alone has widened since Run-3: the `searles` tier is fully reproducible, and the `open_brain` tier is now partially reproducible from the five on-disk monthly dumps (Mar→Jun 13 + Jul 1–12, 2026, with the named Jun 14→30 gap — 1,663 thoughts on disk as of 2026-07-12); the `first_party` tier is still read in place from a sibling checkout. See `PROVENANCE.md` for the per-tier mirroring status.
-
-> ⚠ **Corpus completeness is declared, not verified.** The 8,783-file / 73-repo / 1,175-thought figures were `DESIGN.md` (2026-06-13 draft) design-time estimates, and `DESIGN.md` itself now rejects them (scope correction 2026-06-14); `PROVENANCE.md` is authoritative for on-disk mirror counts. Do not read any empty `raw/` subdirectory as "no such source" — read it as "not yet mirrored."
+Article frontmatter records `entity`, `org`, `primary_placement`, `placements`,
+`classification`, status, compilation date, and sources. Registered
+`source_authority` values and review dates distinguish source roles and
+freshness. Bodies synthesize evidence, link related articles with wikilinks,
+and state conflicts or thin evidence explicitly. The registry in
+`compile/knowledge_structure.json` defines valid spaces and publication profiles.
 
 ## The compile runs
 
-The wiki has been compiled in ten passes, each extending the article set or
-changing how the substrate is presented:
+The first ten recorded passes built the Civilization corpus. These dated
+counts describe those runs, not the current Hub inventory:
 
 **Run-1 (2026-06-13):** The core spine — 24 articles covering the Searles source philosophy (foundational tier) and the dark-factory architecture and arc through the 2026-06-05 reunification. Compiled against `raw/searles/` + the first-party dark-factory docs (read in place) + targeted Open Brain queries. ⚠ Token figures for Run-1 are stated in the task framing as ~2.17M across ~28 agents; this article cites those figures but they are not independently corroborated by a captured thought.
 
 **Run-2 (2026-06-13):** +36 articles — the landscape survey, Searles thirteen-graphs / cognitive-grammar philosophy fill-in, and the **fifteen investigation-tier articles** compiled from the 2026-05-13 Civilization Landscape Investigation. Run-2 also corrected a nine-vs-ten civic-roles wording error from Run-1. Article total after Run-2: **61** (12 foundational · 14 architecture · 8 arc · 15 investigation · 12 concept). ⚠ The ~42-agent / ~3.6M-token figure comes from task framing, not an independent captured thought.
 
-**Run-3 (2026-06-14):** ~29 new or updated articles — the deferred long-tail from Run-2's "not-yet-compiled" list (individual thirteen-graphs entries, roles-catalog, observatory, observability, the-work-graph, slice-1-completion, and this meta article among them). Article total after Run-3 was recorded as **78** including this article. ⚠ The Run-3 count is an as-written figure; the exact count of prior Run-3 articles compiled in that workflow pass was not independently verified here — read the current `index.md` for the authoritative count.
+**Run-3 (2026-06-14):** ~29 new or updated articles — the deferred long-tail from Run-2's "not-yet-compiled" list (individual thirteen-graphs entries, roles-catalog, observatory, observability, the-work-graph, slice-1-completion, and this meta article among them). Article total after Run-3 was recorded as **78** including this article. ⚠ The Run-3 count is an as-written figure; the exact count of prior Run-3 articles compiled in that workflow pass was not independently verified here — read the generated Hub and space totals for current counts.
 
 **Run-4 (2026-06-24):** institutional-substrate refit — copied the Stage 0 institutional-substrate source snapshot into `raw/civilization/`, added the `institutional` and `meta` tiers, compiled six institutional substrate articles, moved the progress chart off the home page and into `civilization-arc.html`, and converted the home page into an article-first wiki index. Article total after Run-4: **99**.
 
@@ -96,144 +147,95 @@ non-canonical git remotes, and kept repository/source navigation visible.
 Article total after Run-10: **101**; generated repo pages are still repository
 references, not wiki articles.
 
-**July keep-current cycle (2026-07-12/13, current):** governed PR-cycle
+**July keep-current cycle (2026-07-12/13):** governed PR-cycle
 additions rather than a numbered run — the Open Brain July 1–12 export (with
 the named Jun 14→30 gap recorded in `PROVENANCE.md`), four hive
 guardrail-cycle architecture/arc articles, and repo-wide truth-ups of corpus
 and freshness claims. Article totals from this cycle onward are maintained by
-the front page's auto-derived count (`compile/refresh.py`), not by run notes.
+generated catalog and space counts, not by run notes. Civilization's durable
+stats block now lives in `spaces/civilization/index.md`.
 
-## The compilation engine and house style
+**September expansion:** the September 5 migration added the shared portal,
+Transpara Platform, and Competition while preserving all 108 original article
+routes. DevOps followed as the fourth space, including its repository
+engineering corpus and an API lane for creating sourced articles. The 108-route
+figure is the migration baseline, not the current article total.
 
-Each article is compiled by a Claude Code subagent reading the relevant `raw/` sources (and any sibling wiki articles that provide context), then synthesizing a single entity article in a fixed format:
+## Refresh and authoring
 
-- **Frontmatter YAML:** `entity`, `tier`, `status`, `last_compiled`, `aliases`, `sources[]`, and a `confidence` block (`sources: primary|secondary|thin`, `claims: grounded|asserted|reconstructed`).
-- **Body:** synthesizes sources, uses `[[wikilinks]]` to related entities, uses sentence-case headings.
-- **Fail-legible inline notes:** `⚠` prefix for uncertain claims, contested facts, or thin evidence. Source conflicts are stated and both sources cited; the wiki never silently picks a winner.
-- **Sources & provenance footer:** lists the exact `raw/` paths (or in-place read paths) and approximate line ranges the article was built from.
+**Deterministic refresh** runs every 15 minutes through the native timer or
+Docker worker. It mirrors configured Dark Factory Markdown into
+`raw/transpara/dark-factory/`, hashes raw Markdown and the archive boundary
+marker, records cited source changes, updates Civilization's generated stats,
+and rebuilds the eligible spaces. It does not call an LLM, commit, or push.
+Platform, Competition, DevOps, and Open Brain source synchronization remains an
+explicit import/review task.
 
-The exemplar house style article is `wiki/event-graph.md`.
+**Source registration** through Ingest works across all four spaces. The active
+space supplies the space and steward; a target article must already have the
+chosen placement. Uploaded files, URLs, and pasted text become source evidence.
+Newly attached evidence sets `stale_since` so a successful render does not imply
+that article prose has incorporated it.
 
-Articles may not invent facts. When sources conflict, the article states the disagreement. When evidence is thin, the article says "thin" or omits the claim. This is the same **fail-safe-by-default** doctrine that governs the dark-factory platform itself, applied to knowledge compilation.
+**Article creation** has two API lanes: provisional Civilization investigations
+from a seeding document, and internal DevOps drafts from supplied Markdown and
+sources. Platform and Competition article creation, placement changes, and
+general prose edits use repository edits and review. The API saves supplied
+DevOps prose without synthesizing the sources. `API.md` documents the fields and
+retry behavior.
 
-## The two-tier keep-current protocol
+**Manual synthesis** reviews evidence and updates article content. After
+incorporating new sources, update `last_compiled` and clear `stale_since`.
+`changed_articles` in refresh status records sources that were rendered;
+`stale_articles` records an unsuccessful deterministic rebuild that needs retry.
+These fields are separate from an article's pending prose synthesis. See
+`compile/REBUILD.md` for the operational procedure.
 
-Keeping the wiki current without unattended LLM spend or unattended pushes requires splitting the refresh into two tiers:
+## Rendering and hosting
 
-**Tier 1 — nightly, deterministic (`compile/refresh.py`, runs ~03:00):**
-1. Mirror first-party dark-factory markdown into `raw/transpara/` via `rsync`.
-2. Hash all `raw/` sources and diff against the previous snapshot (`compile/source-snapshot.json`).
-3. Map changed sources → stale articles (articles whose `sources:` frontmatter cites a changed file).
-4. Write `compile/refresh-status.json` — the fail-loud freshness signal displayed in the served site's header.
-5. Regenerate the served site in `dist/` via `compile/build_site.py`.
+The static renderer provides a space switcher, local sections, shared-article
+placements, source links, repository references, dark/light themes, and search.
+Repos, Sources, and Ingest retain the selected space; search offers **All spaces**
+within the publication profile. Repository pages discover local clones and
+worktrees. Registered repository URLs persist with an availability notice when
+a checkout is absent.
 
-Tier 1 does **not** call an LLM, does not commit, does not push. Open Brain deltas are not auto-detected here (that requires an LLM/MCP run); they are picked up by Tier 2.
+Publication profiles determine what is included:
 
-**Browser source ingest — local authoring (`compile/ingest_server.py`):**
-When the authoring server is running, `/ingest.html` lets a human select one or
-more files, paste one or more source URLs, choose a target article, identify an
-existing source being superseded, and click one button to ingest and rebuild.
-Uploaded documents are written to `raw/inbox/`; external URLs and uploaded files
-are recorded in the inbox manifest; selected references are appended to the
-target article frontmatter; and the static site is regenerated.
+- `authoring-local` includes the authorized internal corpus, sources, repository
+  pages, Arc, and authoring controls.
+- `company-internal` includes eligible `company-internal` and `public-candidate`
+  articles without source viewers, repository mirrors, Arc, or mutation controls.
+- `public-platform` is disabled pending a separate publication decision.
 
-This path registers sources and updates source references only. It does not run
-an LLM, rewrite article prose, commit, push, or make a stale article current by
-assertion. If new source material changes the substance of an article, a Tier-2
-article re-compile is still required.
+The original Civilization corpus and current DevOps articles are `internal`;
+the initial reviewed Platform and Competition articles are `company-internal`.
+A space's existence does not broaden its publication audience.
 
-**Tier 2 — article re-compile, manual (LLM, on demand):**
-When `refresh-status.json` flags stale articles — or to fold in the deferred long-tail / new Open Brain history — a human-authorized compile workflow re-synthesizes the affected articles, reviews the output, and merges via PR. No autonomous LLM content writes land in `wiki/` without human review and a PR.
+The native authoring service binds to `127.0.0.1:8787`:
 
-## The served renderer
-
-The wiki is rendered as a **Wikipedia-style static site** by `compile/build_site.py` (Python stdlib + python-markdown, no network). The renderer produces:
-
-- A persistent left sidebar with collapsible article tiers, current-section auto-open, and scroll/expanded-state preservation across article clicks.
-- Persistent horizontal resizing for the left sidebar, stored in `localStorage`.
-- A static top-bar search box backed by build-time `search-index.js`, with no API or server dependency.
-- Top-bar links to the repository index (`repos.html`), source index (`sources.html`), and browser ingest surface (`ingest.html`).
-- A generated left-rail **Transpara-AI Repos** section with Civilization, Platform, and Other subsections; each repository page renders the local README and git-derived status.
-- Served source-viewer pages under `source/<id>.html`; article source panels and raw-path references link to them.
-- Source documents included in the static search index alongside wiki articles.
-- Per-page: title, right-floated infobox from frontmatter, auto table of contents, rendered body, "See also," and a bottom category navbox.
-- Blue links for resolved `[[wikilinks]]`; red links for TBD forward references.
-- Dark/light theme toggle (persisted in `localStorage`).
-
-The first-class authoring service is managed on **nucbuntu at loopback
-`http://127.0.0.1:8787`**, not as a LAN write surface:
-
+```bash
+systemctl --user status transpara-knowledge-hub.service
 ```
-systemctl --user status transpara-ai-civilization-wiki.service
-```
 
-The old static `:8787` surface from `/Transpara/transpara-ai/repos/wiki/dist` has
-been demoted and archived separately. Static `python3 -m http.server` remains
-valid for throwaway previews on alternate ports, but it does not support browser
-source ingest. A LAN-visible read route must be a deliberately separate
-read-only proxy and must not expose the authoring endpoints or confidential
-raw-source/search artifacts by accident.
+Docker hosting uses the same Hub through private Tailscale HTTPS, with one writer
+and one refresh worker sharing the checkout lock. `DOCKER.md` describes that
+deployment; `compile/REBUILD.md` covers the native service and compatibility
+migration. Old Civilization service/environment names and the
+`X-CivWiki-Authoring-Token` header remain documented compatibility interfaces.
 
-The renderer was introduced alongside the wiki (PRs #1 and #2 per task framing). ⚠ The PR numbers are cited from the task framing; this article did not independently verify them against the GitHub PR history.
+## Sources and historical caveats
 
-## What the wiki is, and is not
-
-**What it is:**
-
-- The **source of truth for the narrative framing** of the Transpara-AI Civilization arc. Every downstream visualization (Mission Control board, spine/story view, progress chart) is a read lens onto this wiki, not an independent layer.
-- A living substrate that **compounds** across sessions: each compile pass deepens the pre-synthesized context available to any future agent or human reader.
-- Per `DF-V3.9-SPEC-006` (see `[[memory-knowledge-advisory]]`): an instance of an **LLM Wiki** in the advisory-only sense — compiled knowledge that advises but does not govern. Anything in this wiki is advisory unless validated by EventGraph evidence. The spec's own terminology applies to its own knowledge substrate.
-
-**What it is not:**
-
-- A RAG system. Knowledge is pre-compiled into articles, not retrieved from raw documents at query time.
-- A Mission Control board or real-time status dashboard. Those are downstream read lenses.
-- A re-publication of upstream source material. The `upstream_context` tier cites upstream docs as context for investigation articles; it never re-publishes them wholesale.
-- Governance or policy. No wiki article is certification evidence, authority record, or event-graph entry. The advisory boundary is strict.
-- A browser button that silently rewrites doctrine. Browser ingest can add and serve source references; article synthesis remains an explicit Tier-2 compile.
-
-## Guard rails carried from the platform
-
-The wiki inherits the platform's fail-safe-by-default doctrine:
-
-- **No secrets, no credentials** in `raw/` or `wiki/`. The `raw/` ingestion must pass a secret scanner before any commit (known hardcoded-credentials finding F-01 in the platform; non-negotiable gate).
-- **No `DROP`, `TRUNCATE`, or destructive SQL** in schema files.
-- **No binaries** over 1 MB.
-- **No confabulation.** Thin evidence is labeled thin. Contested claims carry both sides.
-
-## Scope and governance
-
-- **Repo:** `transpara-ai/wiki` (private). Never touch `lovyou-ai` / upstream; `upstream_context` quotes public docs as cited context, never re-publishes or pushes.
-- **Compile runs:** manual, human-authorized, reviewed as PRs before merge. Article content is not written autonomously without human review.
-- **Air-gap friendly:** compile runs locally on nucbuntu; only dependency is a local LLM (Claude Code).
-- **Org boundary:** transpara-ai only.
-
-## What is deferred
-
-The `index.md` deferred list (Run-2) named:
-- The full corpus sweep (the `DESIGN.md` design-time figures of ~8,783 files / ~73 repos / ~1,175 thoughts, since corrected by `DESIGN.md` to a few-thousand-file curated boundary; current mirror counts in `PROVENANCE.md`).
-- `open_brain` and `upstream_context` raw tiers — declared but unmirrored.
-- Granular forward-referenced entities (authority-request, execution-receipt, bounded-runtime, remaining individual thirteen-graphs entries, slice-1-first-reunified-order).
-- The `mind-zero` / `mind-zero-five` repo identity disambiguation.
-
-Run-3 addresses a portion of the deferred long-tail. The remaining deferred entities stay as legitimate forward-refs until a future compile pass covers them.
-
-## Sources & provenance
-
-Compiled from:
-
-- `/Transpara/transpara-ai/repos/wiki/DESIGN.md` — purpose, pattern, layout, corpus scope, compilation engine, keep-current design, Feb genesis section. Full file (~77 lines).
-- `/Transpara/transpara-ai/repos/wiki/PROVENANCE.md` — per-tier manifest: origin, date/range, volume, mirroring status, fail-legible tier caveats. Full file (~213 lines).
-- `/Transpara/transpara-ai/repos/wiki/index.md` — front-page narrative frame, arc spine, article index, freshness header, and deferred/source-tension notes. Current Run-10 state: 101 articles.
-- `/Transpara/transpara-ai/repos/wiki/raw/open-brain/2026-06.md` — lines ~4050–4134: genesis of the Karpathy-wiki direction, design decisions, compile progress captures (lines 4050, 4052, 4066, 4072).
-- `/Transpara/transpara-ai/repos/wiki/compile/refresh.py` — Tier-1 nightly deterministic refresh implementation. Full file (~102 lines).
-- `/Transpara/transpara-ai/repos/wiki/compile/REBUILD.md` — two-tier rebuild protocol plus browser source-ingest documentation. Full file.
-- `/Transpara/transpara-ai/repos/wiki/compile/build_site.py` — Wikipedia-style renderer: collapsible sidebar, infobox, dark/light theme, blue/red wikilinks, source pages, source index, ingest surface, and generated repository pages. Full file.
-- `/Transpara/transpara-ai/repos/wiki/compile/ingest_server.py` — local authoring server for file/URL ingest, source-reference append, and rebuild. Full file.
-- `/Transpara/transpara-ai/repos/wiki/README.md` — top-level description, principles, Run-10 status, and layout. Full file.
-
-**Fail-legible conflicts and caveats carried into this article:**
-- Run-1/Run-2 token and agent counts (2.17M/28 and 3.6M/42) come from task-framing metadata, not independently captured thoughts — labeled as such.
-- Run-3 article count (78 total) is an as-written historical figure; the authoritative current count is the generated stats block in `index.md`.
-- PR #1 and PR #2 cited for the renderer are from task framing; not independently verified against GitHub history.
-- Corpus size estimate (~8,783 files / ~73 repos / ~1,175 thoughts) is the `DESIGN.md` design-time figure — corrected in `DESIGN.md` itself — not an on-disk count.
+- `README.md`, `DESIGN.md`, the portal, space homes, and knowledge structure
+  registry describe the current four-space scope and article model.
+- `PROVENANCE.md` records evidence origins and dated coverage; a missing mirror
+  is not proof that a source or article does not exist.
+- `API.md`, `compile/REBUILD.md`, and `DOCKER.md` describe authoring and operation;
+  the refresh, builder, authoring server, and repository route catalog establish
+  the implemented behavior.
+- The June Open Brain export grounds the original substrate decision. The
+  original memory/knowledge specification grounds the Civilization advisory
+  contract.
+- Early run article counts are historical. Run-1/Run-2 token and agent counts and
+  the Run-3 total were not independently corroborated; their caveats remain with
+  the run notes above.

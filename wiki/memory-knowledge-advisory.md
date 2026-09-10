@@ -1,5 +1,10 @@
 ---
 entity: Memory and Knowledge (Advisory Layer)
+org: transpara-ai
+primary_placement: civilization/architecture
+placements:
+  - civilization/architecture
+classification: internal
 aliases:
   - memory and knowledge
   - the advisory layer
