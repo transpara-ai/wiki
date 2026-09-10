@@ -58,6 +58,8 @@ jobs:
         run: npm run build
       - name: Python unit tests
         run: npm run test:py
+      - name: Deployment migration and recovery tests
+        run: python3 compile/test_deployment.py
       - name: Arc asset syntax check
         run: npm run test:js
       - name: Arc unit tests (view + ontology)

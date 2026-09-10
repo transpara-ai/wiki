@@ -1,9 +1,17 @@
-# Docker hosting on the private Tailscale network
+# Transpara Knowledge Hub Docker hosting
 
-This is the deployment path for the main authoring host at `192.168.30.104`.
-Docker Compose runs both the wiki and its 15-minute refresh worker. Host-level
+This is the deployment path for the dedicated Velia wiki node at `192.168.30.192`.
+Docker Compose serves all four Knowledge Hub spaces—Civilization, Transpara
+Platform, Competition, and DevOps—and runs the 15-minute refresh worker. Host-level
 Tailscale Serve provides private HTTPS. The wiki publishes only
 `127.0.0.1:8787`; readers connect through the machine's Tailscale DNS name.
+
+For the wiki node migration, use the [automated deployment procedure](docs/deployment-automation.md).
+Its Mac controller installs host prerequisites, relays verified snapshots,
+rehearses the installation, freezes the source for the final copy, tests all
+four spaces, and enables private HTTPS. It works when the Mac can SSH to both
+servers but the source cannot connect directly to Velia. The steps below
+describe the same runtime for manual operation.
 
 ## What persists
 
@@ -26,7 +34,7 @@ content, uploads, Git history, and the private `.env` file.
 SSH to the Velia host using your existing account (examples use `transpara`):
 
 ```bash
-ssh transpara@192.168.30.104
+ssh transpara@192.168.30.192
 docker version
 docker compose version
 tailscale status
@@ -46,30 +54,37 @@ sudo install -d -o "$(id -un)" -g "$(id -gn)" \
   /Transpara/transpara-ai/repos/wiki
 ```
 
-`192.168.30.104` is the server's private administration address. The browser URL
+`192.168.30.192` is the server's private administration address. The browser URL
 will use the Tailscale DNS name printed by `tailscale serve status`.
 
 ## 2. Transfer the current working checkout and source dependencies
 
 The current wiki includes uncommitted changes and uploaded material, so a fresh
-GitHub clone does not contain the complete current state. Pause authoring while
-copying. Run this on the current NUC:
+GitHub clone does not contain the complete current state. Rehearse with a copy
+first. For the final copy, stop and disable the source writer and timer before
+copying, after any active ingest or rebuild has completed. Keep them stopped
+through destination verification and cutover; a lock around only the transfer
+does not prevent new source edits afterward. Run this on the current NUC:
 
 ```bash
 cd /Transpara/transpara-ai/repos/wiki
+systemctl --user disable --now transpara-knowledge-hub-refresh.timer
+systemctl --user disable --now transpara-knowledge-hub.service
 flock -w 300 compile/.wiki-write.lock \
   rsync -az \
     --exclude='.venv/' --exclude='node_modules/' \
     --exclude='__pycache__/' --exclude='.cache/' --exclude='.env' \
     --exclude='dist-*/' --exclude='test-results/' --exclude='playwright-report/' \
     --exclude='compile/*authorization.json' --exclude='compile/.*lock' \
-    ./ transpara@192.168.30.104:/Transpara/transpara-ai/repos/wiki/
+    ./ transpara@192.168.30.192:/Transpara/transpara-ai/repos/wiki/
 ```
 
 Retain the sibling source repositories used by this wiki under the same parent
 directory on Velia. Containerization does not copy these repositories into the
-image. The Repos view indexes the Git checkouts present there; missing checkouts
-disappear from that catalog at the next build. Likewise, referenced documents
+image. The Repos view indexes the Git clones and worktrees present there by
+space steward. Registered routes in `compile/repository_routes.json` remain
+available when their checkout is missing, with a source repository link and an
+availability notice in place of local README/Git data. Referenced documents
 outside `wiki/` must exist in the matching source checkout to retain their
 source viewers. Copy the approved source checkouts, including their current
 document changes, before the first build. Match their ownership to the account
@@ -166,13 +181,15 @@ The `--bg` configuration persists across reboots. See the official
 ## 6. Verify and switch authoring to Velia
 
 Open the printed HTTPS URL from a tailnet-connected computer. Check the version
-against `package.json`, all three spaces, Cognite's pricing and source links,
-and the Repos catalog. Enter the editor token on Ingest and run **Rebuild now**.
+against `package.json`, the root portal, all four spaces (Civilization,
+Transpara Platform, Competition, and DevOps), representative article source
+links, and the Repos catalog. Confirm that Repos, Sources, Ingest, and search
+retain the selected space. Enter the editor token on Ingest and run **Rebuild now**.
 Test an intended new ingestion and confirm its file appears in the host's
 `raw/inbox/` and its article is marked for a prose update.
 
-After verification, retire the old NUC writer and timer so subsequent content
-changes occur only on Velia:
+After verification, confirm the old NUC writer and timer remain disabled so
+subsequent content changes occur only on Velia:
 
 ```bash
 # On the NUC, after any active ingest or rebuild has finished:

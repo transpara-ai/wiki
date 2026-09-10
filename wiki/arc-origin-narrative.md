@@ -17,6 +17,12 @@ provenance_note: moved wholesale from index.md (the pre-board front page essay) 
 
 # Arc Origin Narrative
 
+> This essay preserves the Civilization narrative and corpus scope from the
+> former front page. The wiki has since expanded into the Transpara Knowledge
+> Hub with Civilization, Transpara Platform, Competition, and DevOps spaces.
+> See [[civilization-wiki]] for the current Hub scope; dated counts and deferred
+> work below describe the historical Civilization snapshot.
+
 The Transpara-AI Civilization Wiki is the memory and interpretation layer for a
 specific historical turn: the moment Michael Saucier read Matt Searles' work and
 saw that it was not merely an interesting AI philosophy, but a missing control

@@ -1,4 +1,10 @@
-# Wiki authoring API
+# Transpara Knowledge Hub authoring API
+
+The authoring API serves **Civilization**, **Transpara Platform**,
+**Competition**, and **DevOps** through one article catalog and ingestion
+endpoint. Space keys are `civilization`, `platform`, `competition`, and `devops`;
+the [knowledge structure registry](compile/knowledge_structure.json) defines
+their sections and stewards.
 
 The local authoring endpoint is `http://127.0.0.1:8787`. The Docker deployment
 serves the same API through its configured private Tailscale URL. Use the URL
@@ -17,7 +23,20 @@ log. With no configured token, only same-origin/loopback authoring is allowed.
   and which spaces support `new_article`.
 - `GET /api/articles` lists active articles and their slugs, placements, and
   stewards. Authorized callers also receive source references. Filter
-  `placements` for `devops/` locally.
+  `placements` locally by the desired prefix, such as `platform/`,
+  `competition/`, or `devops/`. Shared articles can match several spaces.
+
+## Supported authoring operations
+
+| Operation | Scope | Result |
+| --- | --- | --- |
+| Add evidence with `target_slug` | Existing articles in any of the four spaces | Appends sources and marks newly attached evidence as pending synthesis |
+| Create with `new_investigation=true` | `civilization/investigation`, steward `transpara-ai` | Creates a provisional investigation from a seeding document |
+| Create with `new_article=true` | Registered DevOps section, steward `transpara` | Saves supplied Markdown as an internal API-authored draft |
+
+Platform and Competition article creation, general prose edits, and placement
+changes use repository edits and review. The API does not create a new article
+in an arbitrary space. Use `/api/spaces` to discover current creation support.
 
 ## Create a DevOps article
 

@@ -1,8 +1,34 @@
 # Transpara Knowledge Hub
 
-A compiled, interlinked knowledge system with one canonical article graph and several purposeful views. The current spaces are **Civilization**, **Transpara Platform**, **Competition**, and **DevOps**.
+A compiled, interlinked knowledge system for Transpara. It has grown from the Civilization wiki into four spaces sharing one canonical article graph:
 
-Start at [`index.md`](index.md), the neutral portal. Space-specific source homes live under `spaces/`; canonical articles remain in `wiki/` and retain flat HTML routes such as `/event-graph.html`.
+| Space | Coverage | Steward |
+| --- | --- | --- |
+| [Civilization](spaces/civilization/index.md) | Philosophy, institutional architecture, history, research, and operational learning | Transpara-AI |
+| [Transpara Platform](spaces/platform/index.md) | Product portfolio, capabilities, architecture, components, integrations, deployment, security, and APIs | Transpara |
+| [Competition](spaces/competition/index.md) | Market research, competitor profiles, comparisons, positioning, and win/loss evidence | Transpara |
+| [DevOps](spaces/devops/index.md) | Infrastructure, networking, containers, delivery automation, observability, and operational runbooks | Transpara |
+
+Start at [`index.md`](index.md), the shared portal. The served homes are
+`/civilization/index.html`, `/platform/index.html`, `/competition/index.html`,
+and `/devops/index.html`. Canonical articles remain in `wiki/` and retain flat
+HTML routes such as `/event-graph.html`; the Civilization board and Arc remain
+part of the Civilization space.
+
+Transpara Platform covers the complete industrial software platform; Visual KPI
+is one product within that portfolio. Competition covers commercial competitive
+intelligence. DevOps currently starts with the repository engineering and
+delivery corpus; additional runbooks need their own operational sources.
+
+## Documentation
+
+- [Design and content model](DESIGN.md) — spaces, source scope, article metadata, and publication profiles.
+- [Source provenance](PROVENANCE.md) — evidence origins, dated mirror coverage, and gaps.
+- [Rebuilding and authoring](compile/REBUILD.md) — deterministic refresh, manual synthesis, and local services.
+- [Authoring API](API.md) — source registration across all spaces and DevOps article creation.
+- [Docker hosting](DOCKER.md) — private hosting and persistent state.
+- [Velia migration automation](docs/deployment-automation.md) — Mac SSH relay, prerequisites, rehearsal, installation, and recovery.
+- [Documentation index](docs/README.md) — current guides and historical design records.
 
 ## Architecture
 
@@ -41,7 +67,13 @@ profiles that include repositories.
 - Never ingest customer production content, credentials, or unauthorized prospect evidence.
 - Keep competitive claims time-bounded and label Transpara-authored interpretation as first-party positioning.
 
-The migration retains all 108 original article routes and the intentional unresolved-reference baseline. The initial curated Platform and Competition set is classified `company-internal`; the original Civilization corpus remains `internal` unless separately reviewed.
+The migration retains all 108 original article routes and the intentional
+unresolved-reference baseline; 108 is a historical baseline, not the current Hub
+article count. The initial curated Platform and Competition set is classified
+`company-internal`; the original Civilization corpus and current DevOps articles
+remain `internal` unless separately reviewed. A space's steward describes
+responsibility for its content, independently of the GitHub organization hosting
+its sources.
 
 ## Build and verify
 

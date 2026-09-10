@@ -8,7 +8,7 @@ test("INC-001 operational wiki pages render locally", async ({ page }) => {
 
   const pages = [
     ["the-observatory.html", "The Observatory"],
-    ["civilization-wiki.html", "The Transpara-AI Civilization Wiki"],
+    ["civilization-wiki.html", "Transpara Knowledge Hub"],
     ["gate-k.html", "Gate K"],
     ["gate-l.html", "Gate L"],
     ["deployment-arc.html", "The Deployment Arc"],

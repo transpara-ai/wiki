@@ -1,31 +1,63 @@
 ---
-title: Civilization Wiki — provenance manifest
-last_updated: 2026-07-12
-status: partial — searles, open_brain, Stage 0 source snapshot, and browser inbox scaffold mirrored; open_brain mirror current through 2026-07-12 with a named 2026-06-14→30 gap; generated first_party/upstream_context still incomplete
+title: Transpara Knowledge Hub — provenance manifest
+last_updated: 2026-09-08
+status: partial — multi-space source map; historical mirror inventory retains its recorded dates and gaps
 authority: reference (the source manifest named in DESIGN.md)
-tiers: [searles, first_party, open_brain, civilization_stage0, browser_inbox, upstream_context]
+tiers: [searles, first_party, open_brain, civilization_stage0, external_landscape_authored, browser_inbox, upstream_context]
 ---
 
-# Civilization Wiki — provenance manifest
+# Transpara Knowledge Hub — provenance manifest
 
-The per-source manifest named in `DESIGN.md` ("`PROVENANCE.md` — source manifest:
-each raw item → origin, date, tier"). It records, for every source the wiki is
-compiled from, its **origin**, its **date or range**, its **provenance tier**, and
-**how the wiki uses it**. Tier vocabulary is anchored in `DESIGN.md`
-§Ingestion: `searles`, `first_party` (Transpara-authored), `open_brain`, and
-`upstream_context` (a forked project's own docs — context, never the subject).
-This manifest also records newer wiki-maintenance tiers that emerged after the
-initial design, including `civilization_stage0` and `browser_inbox`.
+This manifest records source origins, dates, provenance tiers, and known coverage
+gaps for the Knowledge Hub's Civilization, Transpara Platform, Competition, and
+DevOps spaces. It complements each article's `sources` and `raw_documents`
+metadata and the ingestion manifests and ledger.
 
-This file is the durable answer to "where did the wiki get this?" — the
-compile-time companion to each article's "Sources & provenance" footer and to the
-fail-loud freshness header in `index.md`.
+## Current source scope
 
-## ⚠ Read this first — what is, and is NOT, mirrored (fail-legible)
+| Space | Source basis | Where to inspect the evidence |
+| --- | --- | --- |
+| Civilization | Searles philosophy, Dark Factory/runtime docs, Open Brain exports, Stage 0 snapshots, and external research | Historical `raw/searles/`, `raw/transpara/`, `raw/open-brain/`, and `raw/civilization/` paths; sources in Civilization articles |
+| Transpara Platform | Product and engineering docs, component code/configuration, accepted ADRs, and product references | Sources in [Platform Overview](wiki/transpara-platform-overview.md) and related articles, including in-place `platform/` checkout paths and public product URLs |
+| Competition | External primary sources for competitor facts and separately labeled Transpara first-party positioning | Sources and verification/review dates in [Competition Overview](wiki/competition-overview.md), competitor profiles, and comparisons |
+| DevOps | Versioned repository engineering sources, delivery configuration, procedures, and operational evidence | Sources and revisions in [DevOps Repository Scaffold](wiki/devops-repository-scaffold.md) and related articles; API uploads under `raw/inbox/devops/` when used |
 
-This manifest is honest about its own gaps, the way `index.md` is honest about
-deferred articles. The declared tiers do not all have complete local mirrors; the
-table records what is actually on disk this run.
+Spaces and stewards come from the [knowledge structure registry](compile/knowledge_structure.json).
+They describe article responsibility and placement, independently of source
+provenance tiers and GitHub organizations. `first_party` can support any space;
+it is no longer limited to the original Civilization corpus. Raw directories
+retain historical identities and are not a map of reader-facing spaces.
+
+New browser/API uploads use `raw/inbox/<space>/<date>/<article>/`; legacy inbox
+paths remain valid. Pasted email/text is registered as a `.txt` source. External
+URLs are registered without fetching their contents. Local source paths and
+versioned URLs record dependencies, not a claim that every source has been
+mirrored into this repository. Per-article evidence and ingestion records remain
+the detailed record of what was actually used.
+
+The automatic refresh still mirrors only configured Dark Factory Markdown and
+checks raw Markdown plus the archive boundary marker. Platform, Competition,
+DevOps, and Open Brain imports remain explicit operations. Expanding source
+scope does not establish new synchronization or change the historical gaps below.
+See [DESIGN.md](DESIGN.md), [API.md](API.md), and
+[the rebuild guide](compile/REBUILD.md) for current behavior.
+
+## Historical inventory dates
+
+The following per-tier inventory preserves the June–July 2026 Civilization
+coverage record and its later dated entries. Counts, empty-directory reports,
+Run-1/Phase-2 language, references to the original `index.md`, and quotations
+from `DESIGN.md` refer to those historical snapshots and the June design draft.
+They are not a September inventory or the current Hub-wide scope boundary.
+The new spaces' source map above does not claim to re-export or re-count that
+historical material. Current design and navigation are documented in the guides
+linked above; the former Civilization front page now lives under
+`spaces/civilization/` and in the Arc Origin Narrative article.
+
+## Historical mirror inventory — recorded through 2026-07-12
+
+The declared tiers did not all have complete local mirrors. This table records
+the on-disk state reported by the June–July compilation passes.
 
 | Tier | `raw/` location | Mirrored? | State on disk (2026-07-12) |
 |---|---|---|---|
@@ -38,7 +70,7 @@ table records what is actually on disk this run.
 | `upstream_context` | `raw/investigations/` | **No** | empty but for `.gitkeep` — Phase 2 (per `DESIGN.md`) |
 
 **What this means for trust:** the `searles` tier and the committed `open_brain`
-mirror are reproducible from this repo alone today. The `first_party` corpus was
+mirror were reproducible from this repo at the recorded snapshot. The `first_party` corpus was
 read **in place** from a sibling checkout (Run-1 compiled the arc spine directly
 against `docs/dark-factory` rather than copying it into `raw/transpara/` first);
 the `open_brain` tier **has a committed mirror** (`raw/open-brain/2026-{03..07}.md`,
@@ -66,7 +98,8 @@ revision lands as a NEW versioned file carrying `supersedes:` frontmatter, and
 may optionally be promoted to the ledgered ref via the authorized replace
 operation — so registered ledger rows stay verifiable forever. Do not read an empty
 `raw/` subdirectory as "no such source" — read it as "not yet mirrored." The
-nightly keep-current job in `DESIGN.md` is what will populate them.
+current refresh and explicit import paths are described in `compile/REBUILD.md`;
+the original nightly full-corpus proposal is historical.
 
 ---
 
@@ -149,7 +182,9 @@ Architecture and Arc article.
   decision-record-in-review, not as accepted doctrine.
 - **Partial read.** ~322 files exist; Run-1 read the arc-spine subset. The "full
   corpus sweep" remains deferred (see `index.md` §Deferred).
-- **Scope boundary.** `first_party` is `transpara-ai` only. The `upstream` remote
+- **Run-1 scope boundary.** That compilation used `transpara-ai` first-party
+  sources. The expanded Hub also covers Transpara Platform, Competition, and
+  DevOps as described above. The `upstream` remote
   (`transpara/docs`) is never pushed to and never re-published from here.
 
 ---
@@ -297,19 +332,22 @@ investigation article, **not** the subject of the wiki)," and it is explicitly
 
 ---
 
-## Tier vocabulary (`DESIGN.md` plus post-design additions)
+## Current provenance tier vocabulary
 
-| Tier | Definition (from `DESIGN.md` §Ingestion) |
+| Tier | Definition |
 |---|---|
-| `first_party` | Transpara-authored (docs, df-impl-v*, dark-factory, Open Brain). |
+| `first_party` | Transpara-authored sources across all spaces, including product, engineering, operational, and Civilization material. |
 | `searles` | The foundational philosophy. |
-| `upstream_context` | A forked project's own docs (context for its investigation article, **not** the subject of the wiki). |
+| `upstream_context` | A forked project's own docs, cited as investigation context. |
 | `open_brain` | (Tracked as its own ingestion stream — the captured-thought export — within first-party authorship.) |
-| `browser_inbox` | A post-design source-registration tier for human-submitted files and URLs awaiting synthesis. |
+| `civilization_stage0` | The bounded institutional-substrate proposal snapshot. |
+| `external_landscape_authored` | Research documents authored in this repository with versioned provenance. |
+| `browser_inbox` | Browser/API-registered files, pasted text, and URLs across spaces; registration alone does not synthesize article prose. |
 
-Tier is recorded both here and in each `raw/` file's frontmatter, so the compiler
-knows what is load-bearing **without anything being excluded** (`DESIGN.md`:
-"ingest all, sort at compile").
+These tiers describe provenance history. Article `placements`, `classification`,
+and `source_authority` separately determine navigation, publication eligibility,
+and the role of evidence. Uploaded files retain their original bytes and need
+not contain YAML frontmatter; their ingestion records carry provenance.
 
 ---
 

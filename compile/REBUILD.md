@@ -1,5 +1,12 @@
 # Rebuilding the Transpara Knowledge Hub
 
+One build serves Civilization, Transpara Platform, Competition, and DevOps.
+The root `index.md` is the shared portal; space homes live under `spaces/`, and
+all canonical articles live under `wiki/`. Space membership, sections,
+stewardship, and publication profiles come from
+[`knowledge_structure.json`](knowledge_structure.json). See the
+[design guide](../DESIGN.md) for source scope and article metadata.
+
 For Docker hosting, follow [the Compose deployment guide](../DOCKER.md).
 Compose's refresh container replaces the native systemd refresh timer; both use
 the same deterministic refresh code and persistent checkout lock. The systemd
@@ -13,12 +20,19 @@ honest without unattended spend or unattended pushes.
 
 Installed on nucbuntu as a user-level systemd timer for the `transpara` account
 and run every 15 minutes after boot. It:
-1. mirrors the first-party dark-factory sources into `raw/transpara/`,
-2. hashes all `raw/` sources and diffs against the last snapshot,
+1. mirrors the configured first-party dark-factory Markdown sources into `raw/transpara/dark-factory/`,
+2. hashes `raw/` Markdown sources and the Civilization archive boundary marker, then diffs against the last snapshot,
 3. records which articles cite changed sources,
 4. writes `compile/refresh-status.json`; after a successful deterministic rebuild `stale_articles` is empty and `changed_articles` records what was rebuilt, while failed rebuilds exit non-zero, preserve the previously served `dist/`, and leave the affected articles in `stale_articles` for the next successful build or direct status inspection,
 5. **rewrites the generated stats block in `spaces/civilization/index.md`** (Civilization placement count + per-tier breakdown, between the `stats:begin`/`stats:end` markers) and its frontmatter `article_count` — the durable, committed stat surface,
 6. regenerates the served site (`dist/`) via `compile/build_site.py`.
+
+The source mirror is still specific to the dark-factory corpus. Adding Platform,
+Competition, and DevOps spaces does not automatically import their repositories,
+fetch external URLs, or synchronize their source systems. Register or reference
+those sources explicitly, then review their article synthesis. The generated
+Civilization stats block counts that space; shared articles count once in the
+global catalog and once in each space where they are placed.
 
 The deterministic build does not clear the live `dist/` tree before generation.
 It overwrites generated files in place, keeps the previous complete site
@@ -47,8 +61,8 @@ the local authoring server:
 python3 compile/ingest_server.py 127.0.0.1 8787
 ```
 
-Open `/ingest.html` on that server to batch-select one or more local documents,
-paste one or more external source URLs, optionally select a target wiki article,
+Open `/ingest.html` on that server in the desired space to batch-select one or more local documents,
+paste external source URLs or email/text, optionally select a target wiki article,
 optionally name the source being superseded, then click **Ingest and rebuild**.
 The endpoint writes uploaded files under `raw/inbox/<space>/YYYY-MM-DD/<article>/`,
 appends manifest rows to `raw/inbox/manifest.jsonl`, appends selected source
@@ -59,8 +73,13 @@ reloads the generated shell and restores the completed action result so the
 left navigation and freshness badge are no longer one build behind. Every
 request carries a registry-valid space, section, and steward. A selected
 article must already have that placement; placement changes remain PR-only.
-New-page creation is intentionally limited to `civilization/investigation`
+The browser's new-investigation option is limited to `civilization/investigation`
 under the `transpara-ai` steward and produces an internal provisional article.
+The same API also accepts explicit `new_article=true` requests for DevOps under
+the `transpara` steward, with supplied Markdown prose and supporting sources.
+See the [authoring API guide](../API.md) for fields and examples. Creating
+Platform or Competition articles and changing placements remain repository
+authoring work.
 
 Because the browser actions use the full deterministic refresh path, they may
 leave reviewable working-tree diffs in the Civilization home and generated source
@@ -96,7 +115,9 @@ token-authorized clients. The static wiki can be made LAN-visible with a
 separate read-only service/proxy; do not expose the authoring server as the
 public read route.
 
-Open `/sources.html` to browse every served raw/reference source. Article source
+Open `/sources.html` to browse served sources associated with the selected space,
+including shared sources. Repos, Sources, and Ingest retain the active space;
+search can be expanded to **All spaces**. Article source
 panels and inline raw-path references link into `source/<id>.html` so any raw
 article source cited by the wiki can be opened directly.
 
@@ -190,10 +211,12 @@ The timer uses `flock` on `compile/.wiki-write.lock`; browser ingest uses the
 same lock. That keeps timer refreshes and upload-triggered rebuilds from writing
 the wiki/dist surfaces concurrently.
 
-The generated repository catalog is host-local: when sibling Transpara-AI repos
-are present, the build reads their README files and git metadata. On hosts
-without that sibling tree, the wiki still builds and the repo catalog degrades
-to the committed wiki corpus. The refresh job holds the same write lock used by
+The generated repository catalog uses local clones and worktrees from both
+stewardship domains. Repos filters that inventory by the selected space's
+steward. Registered identities in `compile/repository_routes.json` preserve
+published routes when a checkout is unavailable; those pages show a source
+repository link and an availability notice instead of current README/Git data.
+The refresh job holds the same write lock used by
 browser ingest while it rebuilds, so long-running local git scans can briefly
 delay an ingest/rebuild request.
 

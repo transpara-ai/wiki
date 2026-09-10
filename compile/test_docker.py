@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import secrets
+import shlex
 import shutil
 import socket
 import subprocess
@@ -13,6 +14,7 @@ import tempfile
 import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+DOCKER = shlex.split(os.environ.get("WIKI_TEST_DOCKER_COMMAND", "docker"))
 
 
 def main():
@@ -38,7 +40,7 @@ def main():
                    KNOWLEDGE_HUB_AUTHORING_TOKEN=token,
                    KNOWLEDGE_HUB_ALLOWED_HOSTS="wiki-test.example.ts.net,wiki-test.example.ts.net:443",
                    KNOWLEDGE_HUB_REFRESH_SECONDS="2")
-        compose = ["docker", "compose", "--project-name", "wiki-test-" + secrets.token_hex(4),
+        compose = DOCKER + ["compose", "--project-name", "wiki-test-" + secrets.token_hex(4),
                    "--project-directory", str(wiki), "-f", str(wiki / "compose.yaml")]
 
         def run(*args, timeout=240):
@@ -71,7 +73,7 @@ def main():
             assert json.loads(request("GET", "/version.json")[1]) == {"version": version}
             assert request("POST", "/api/rebuild")[0] == 401, "writes require the editor token"
             container = run("ps", "-q", "wiki")
-            info = json.loads(subprocess.check_output(["docker", "inspect", container]))[0]
+            info = json.loads(subprocess.check_output(DOCKER + ["inspect", container]))[0]
             assert info["HostConfig"]["PortBindings"]["8787/tcp"][0]["HostIp"] == "127.0.0.1"
             assert info["HostConfig"]["ReadonlyRootfs"] is True
             assert run("exec", "-T", "wiki", "id", "-u") == str(os.getuid())
