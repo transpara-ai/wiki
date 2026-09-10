@@ -61,6 +61,18 @@ def test_portal_and_space_routes_exist():
 def test_every_baseline_route_survives():
     expected = {line.strip() for line in BASELINE_ROUTES.read_text().splitlines()
                 if line.strip() and not line.startswith("#")}
+    # The captured baseline includes source viewers backed by absolute paths
+    # on the authoring host. A standalone clone cannot render absent host
+    # files. Exempt only those explicit citations; all other routes remain
+    # mandatory. shadow_verify.py checks the full baseline on the source host.
+    unavailable_host_sources = {
+        "source/%s.html" % build_site.source_id(ref)
+        for article in load_catalog(ROOT)
+        for ref in article.sources + article.raw_documents
+        if ref.startswith("/Transpara/transpara-ai/")
+        and not pathlib.Path(ref).is_file()
+    }
+    expected -= unavailable_host_sources
     current = {str(path.relative_to(DIST)) for path in DIST.rglob("*")
                if path.is_file()}
     missing = sorted(expected - current)
@@ -149,8 +161,11 @@ def test_generic_service_templates_remain_loopback_only_with_legacy_window():
     timer = (units / "transpara-knowledge-hub-refresh.timer").read_text()
     assert "127.0.0.1 8787" in service
     assert "0.0.0.0" not in service
-    assert "KNOWLEDGE_HUB_PROFILE=authoring-local" in service
-    assert "KNOWLEDGE_HUB_DIST=dist" in service
+    environment = dict(line.removeprefix("Environment=").split("=", 1)
+                       for line in service.splitlines()
+                       if line.startswith("Environment="))
+    assert environment["KNOWLEDGE_HUB_PROFILE"] == "authoring-local"
+    assert environment["KNOWLEDGE_HUB_DIST"] == "dist"
     assert "transpara-ai-civilization-wiki.service" in service
     assert "transpara-ai-civilization-wiki-refresh.service" in refresh
     assert "transpara-ai-civilization-wiki-refresh.timer" in timer
