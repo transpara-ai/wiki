@@ -56,7 +56,7 @@ raw_documents:
 
 ## Current assessment — September 9, 2026
 
-The [September follow-up](../raw/civilization/external-landscape/tai-res-2026-006-follow-up-2026-09-09.md)
+The September follow-up (`raw/civilization/external-landscape/tai-res-2026-006-follow-up-2026-09-09.md`)
 updates the July findings against exact current commits. Factory now presents
 Machinist and has executable scheduling, durable admission and GitHub label
 reconciliation. Blueprint has ten skills. Neo's goal runner remains explicitly
