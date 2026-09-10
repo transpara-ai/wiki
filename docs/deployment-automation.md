@@ -109,8 +109,8 @@ shell history or deployment logs. Back up `.env` separately with restricted acce
 ## Run from the Mac
 
 Use your existing SSH aliases below. `wiki-source` points to RemoteRepos;
-`wiki-velia` points to the new node. The source scripts include current local
-changes, so copy them from this checkout rather than fetching an older commit:
+`wiki-velia` points to the new node. Copy the controller from the source checkout
+so it matches the migration implementation being rehearsed:
 
 ```bash
 scp -r wiki-source:/Transpara/transpara-ai/repos/wiki/compile/deploy "$HOME/wiki-deploy"

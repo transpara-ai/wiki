@@ -59,9 +59,9 @@ will use the Tailscale DNS name printed by `tailscale serve status`.
 
 ## 2. Transfer the current working checkout and source dependencies
 
-The current wiki includes uncommitted changes and uploaded material, so a fresh
-GitHub clone does not contain the complete current state. Rehearse with a copy
-first. For the final copy, stop and disable the source writer and timer before
+A live authoring checkout can contain uncommitted changes and uploaded material,
+so a GitHub clone alone is not a reliable snapshot of its state. Rehearse with a
+copy first. For the final copy, stop and disable the source writer and timer before
 copying, after any active ingest or rebuild has completed. Keep them stopped
 through destination verification and cutover; a lock around only the transfer
 does not prevent new source edits afterward. Run this on the current NUC:
