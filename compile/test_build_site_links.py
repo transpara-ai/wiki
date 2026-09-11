@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Stdlib-assert tests for source-link rendering in compile/build_site.py."""
 import pathlib
+import os
 import sys
 import tempfile
+import time
 from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -125,6 +127,32 @@ def test_freshness_reports_rebuilt_articles_without_stale_warning():
     assert "0 stale" in out, out
     assert "2 rebuilt" in out, out
     print("ok test_freshness_reports_rebuilt_articles_without_stale_warning")
+
+
+def test_local_times_preserve_instants_calendar_dates_and_safe_fallbacks():
+    out = site.local_time_html("2026-09-11T13:30:00+05:45")
+    assert 'datetime="2026-09-11T07:45:00Z"' in out
+    assert 'data-local-time' in out and '>2026-09-11 07:45 UTC</time>' in out
+    for value in ("2026-09-11", "unknown", "2026-09-11 13:30", "2026-13-40T12:00:00Z"):
+        assert site.local_time_html(value) == value
+    assert site.local_time_html('<img src=x onerror=bad>') == '&lt;img src=x onerror=bad&gt;'
+
+    # Legacy refresh timestamps are server wall time. Resolve the original
+    # winter/summer offsets before sending an explicit instant to the browser.
+    previous = os.environ.get("TZ")
+    try:
+        os.environ["TZ"] = "America/New_York"
+        time.tzset()
+        for value, utc_hour in (("2026-01-15 12:00", "17"), ("2026-07-15 12:00", "16")):
+            out = site.local_time_html(value, legacy_server_time=True)
+            assert 'datetime="%sT%s:00:00Z"' % (value[:10], utc_hour) in out
+    finally:
+        if previous is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = previous
+        time.tzset()
+    print("ok test_local_times_preserve_instants_calendar_dates_and_safe_fallbacks")
 
 
 def test_freshness_stale_branch_describes_failed_rebuild():

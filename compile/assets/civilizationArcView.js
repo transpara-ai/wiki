@@ -24,6 +24,10 @@
   // count toward a phase's rollup or the frontier read.
   var PIECE_TYPES = { work: 1, gate: 1 };
 
+  function displayTime(value) {
+    return root && root.KnowledgeTime ? root.KnowledgeTime.format(value) : String(value || "");
+  }
+
   // D1 — fail-closed phase rollup over the phase's {work, gate} pieces.
   // Empty set => future, never done: CivOntology.rollupCriteria([]) returns
   // done (its allDone seed), which here would render an empty phase as
@@ -311,7 +315,7 @@
       hasSource = true;
     }
     if (item.date) {
-      stamp.appendChild(htmlEl("span", "arc-evidence-date", item.date));
+      stamp.appendChild(htmlEl("span", "arc-evidence-date", displayTime(item.date)));
       hasSource = true;
     }
     if (item.href) {
@@ -321,7 +325,7 @@
     if (item.author) stamp.appendChild(htmlEl("span", "arc-evidence-author", "@" + item.author));
     if (isLive) {
       stamp.appendChild(htmlEl("span", "arc-evidence-live",
-        "live · observed " + ((liveInfo && liveInfo.generated) || "?")));
+        "live · observed " + displayTime((liveInfo && liveInfo.generated) || "?")));
       hasSource = true;
     }
     // Absence renders honestly: never blank, never fabricated.
@@ -501,7 +505,7 @@
 
     var metrics = htmlEl("dl", "arc-progress-metrics");
     [
-      ["snapshot", payload.generated_at || "unknown"],
+      ["snapshot", displayTime(payload.generated_at || "unknown")],
       ["items", String(items.length)],
       ["omitted", String(omitted.length)],
       ["privacy", (payload.privacy && payload.privacy.projection_policy) || "unknown"],
@@ -637,7 +641,7 @@
 
     var metrics = htmlEl("dl", "arc-progress-metrics");
     [
-      ["generated", payload.generated_at || "unknown"],
+      ["generated", displayTime(payload.generated_at || "unknown")],
       ["freshness", payload.freshness.state || "unknown"],
       ["items", String((payload.items || []).length)],
       ["corrections", String((payload.corrections || []).length)],
@@ -768,7 +772,7 @@
           setLiveChip(el,
             degraded
               ? ("live · stale (" + errs.length + " source error" + (errs.length === 1 ? "" : "s") + ")")
-              : ("live · updated " + (merged.generated || "?")),
+              : ("live · updated " + displayTime(merged.generated || "?")),
             !degraded);
         });
       })

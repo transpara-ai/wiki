@@ -665,8 +665,12 @@ def test_ac6_href_canonicalization_domain():
     # builder-emitted pages stay live
     for href in ("repos.html", "sources.html", "ingest.html",
                  "civilization-arc.html", "civilization_arc.html",
-                 "repo-hive.html"):
+                 "repo-hive.html", "civilization/index.html",
+                 "platform/index.html", "competition/index.html",
+                 "devops/index.html", "../devops/index.html#runbooks"):
         assert target(href)[0] == "page", href
+    assert target("unknown-space/index.html")[0] == "unknown"
+    assert target("devops/missing.html")[0] == "unknown"
     assert target("repo-unknown.html")[0] == "unknown"
     # source-viewer allowlist: exactly source/<16 hex>.html
     assert target("source/29d1acbe353cb797.html")[0] == "page"

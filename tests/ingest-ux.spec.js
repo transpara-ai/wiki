@@ -2,9 +2,46 @@
 // Browser E2E for the ingest operation selector + destructive-mode scaffold
 // (fe-ux packet AC1/AC8): three modes render, destructive panels stay hidden
 // until selected, submits are disabled at birth, both themes, zero console
-// errors. Behavior (preview gate state machine) lives in the dom-smoke test
-// where fetch is stubbable; this spec covers the static render only.
-const { test, expect } = require("@playwright/test");
+// errors, plus Add/rebuild feedback across browser reloads. Destructive preview
+// gate behavior lives in the dom-smoke test where fetch is stubbable.
+const { test: base, expect } = require("@playwright/test");
+const http = require("node:http");
+
+const test = base.extend({
+  ingestReceiver: async ({}, use) => {
+    const requests = [];
+    // Read the actual HTTP body. WebKit's intercepted request metadata omits
+    // file bytes, so postDataBuffer() cannot verify a multipart upload there.
+    const server = http.createServer(async (request, response) => {
+      try {
+        const chunks = [];
+        for await (const chunk of request) chunks.push(chunk);
+        const form = await new Request("http://localhost/api/ingest", {
+          method: "POST", headers: request.headers, body: Buffer.concat(chunks),
+        }).formData();
+        const documents = await Promise.all(form.getAll("documents")
+          .filter((file) => file.size).map(async (file) => ({
+            name: file.name, type: file.type, text: await file.text(),
+          })));
+        requests.push({ documents, space: form.get("space"), section: form.get("section"),
+          steward: form.get("steward"), urls: form.get("external_urls") });
+        // A refusal keeps the form available for inspection and retry.
+        response.writeHead(422, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
+        response.end(JSON.stringify({ error: "Test refusal; source kept for retry" }));
+      } catch (error) {
+        response.writeHead(500);
+        response.end(String(error));
+      }
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    try {
+      await use({ requests, url: `http://127.0.0.1:${server.address().port}/api/ingest` });
+    } finally {
+      server.closeAllConnections();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  },
+});
 
 // The static test server has no authoring API: /api/articles 404s and the UI
 // degrades honestly, same class as inflight/deploy-status (see arc-view.spec).
@@ -24,6 +61,84 @@ const ARTICLES = [
 async function stubArticles(page) {
   await page.route("**/api/articles", (route) => route.fulfill({ json: { articles: ARTICLES } }));
 }
+
+for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+  test(`rebuild feedback stays beside the button through reload at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await stubArticles(page);
+    let pending;
+    const requests = [];
+    await page.route("**/api/rebuild", (route) => {
+      requests.push(route.request());
+      pending = route;
+    });
+    await page.goto("/ingest.html?space=competition");
+    await page.locator("#authoring-token").fill("test-authoring-token");
+    // Required ingest fields are deliberately empty: rebuild is independent.
+    const button = page.locator("#rebuild-now");
+    const feedback = page.locator("#rebuild-status");
+    await button.click();
+    await expect(button).toBeDisabled();
+    await expect(button).toHaveText("Rebuilding…");
+    await expect(feedback).toContainText("Keep this page open");
+    await expect(feedback).toBeInViewport();
+    await expect(page.getByRole("button", { name: "Ingest and rebuild", exact: true })).toBeDisabled();
+    await button.evaluate((element) => { element.click(); element.click(); });
+    await expect.poll(() => requests.length).toBe(1);
+    expect(requests[0].method()).toBe("POST");
+    expect(requests[0].headers()["x-civwiki-authoring-token"]).toBe("test-authoring-token");
+    await Promise.all([
+      page.waitForEvent("load"),
+      pending.fulfill({ json: { refresh: { ok: true } } }),
+    ]);
+    await expect(feedback).toHaveText("Rebuild completed.");
+    await expect(feedback).toBeInViewport();
+    await expect(page.locator("#ingest-status")).toContainText("Rebuild completed.");
+    await expect(button).toBeEnabled();
+    await expect(button).toHaveText("Refresh status and rebuild");
+    await expect(page.locator("#authoring-token")).toHaveValue("");
+    expect(requests).toHaveLength(1);
+  });
+}
+
+for (const response of [
+  { status: 403, json: { error: "Authoring token required" }, message: "Authoring token required" },
+  { status: 500, json: { refresh: { ok: false, error: "Refresh timed out" } }, message: "Refresh timed out" },
+  { networkFailure: true, message: "Rebuild failed:" },
+]) {
+  test(`failed rebuild shows a nearby error and allows retry (${response.status || "network"})`, async ({ page }) => {
+    await stubArticles(page);
+    await page.route("**/api/rebuild", (route) => response.networkFailure
+      ? route.abort("failed") : route.fulfill({ status: response.status, json: response.json }));
+    await page.goto("/ingest.html?space=competition");
+    await page.locator("#authoring-token").fill("test-authoring-token");
+    await page.locator("#rebuild-now").click();
+    await expect(page.locator("#rebuild-status")).toContainText(response.message);
+    await expect(page.locator("#rebuild-status")).toBeInViewport();
+    await expect(page.locator("#rebuild-now")).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Ingest and rebuild", exact: true })).toBeEnabled();
+    await expect(page.locator("#authoring-token")).toHaveValue("test-authoring-token");
+  });
+}
+
+test("rebuild keeps its result visible when browser storage is unavailable", async ({ page }) => {
+  await stubArticles(page);
+  await page.addInitScript(() => {
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "civwiki-last-ingest-result") throw new DOMException("Storage unavailable", "SecurityError");
+      return setItem.call(this, key, value);
+    };
+  });
+  await page.route("**/api/rebuild", (route) => route.fulfill({ json: { refresh: { ok: true } } }));
+  await page.goto("/ingest.html?space=competition");
+  await page.locator("#rebuild-now").click();
+  await expect(page.locator("#rebuild-status")).toHaveText("Rebuild completed.");
+  await expect(page.locator("#rebuild-status")).toBeInViewport();
+  await expect(page.locator("#ingest-status").getByRole("link", { name: "Reload page", exact: true })).toHaveAttribute(
+    "href", /\/ingest.html\?space=competition$/);
+  await expect(page.locator("#rebuild-now")).toBeEnabled();
+});
 
 test("successful ingest makes the pending article update clear after reload", async ({ page }) => {
   await stubArticles(page);
@@ -102,23 +217,10 @@ test("target selection respects shared placements and updates the steward", asyn
   await expect(page.locator("#ingest-steward")).toHaveValue("transpara");
 });
 
-test("pasted email submits intact as a document, alone or with files and URLs", async ({ page }) => {
+test("pasted email submits intact as a document, alone or with files and URLs", async ({ page, ingestReceiver }) => {
   await stubArticles(page);
-  const requests = [];
-  await page.route("**/api/ingest", async (route) => {
-    const request = route.request();
-    const form = await new Request(request.url(), {
-      method: "POST", headers: request.headers(), body: request.postDataBuffer(),
-    }).formData();
-    const documents = await Promise.all(form.getAll("documents")
-      .filter((file) => file.size).map(async (file) => ({
-        name: file.name, type: file.type, text: await file.text(),
-      })));
-    requests.push({ documents, space: form.get("space"), section: form.get("section"),
-      steward: form.get("steward"), urls: form.get("external_urls") });
-    // A refusal keeps the form available for inspection and retry.
-    await route.fulfill({ status: 422, json: { error: "Test refusal; source kept for retry" } });
-  });
+  const { requests } = ingestReceiver;
+  await page.route("**/api/ingest", (route) => route.continue({ url: ingestReceiver.url }));
   await page.goto("/ingest.html?space=competition");
   await page.locator("#target-slug").selectOption("competition-competitor-index");
   const email = "From: Research <research@example.test>\nSubject: Competitor update — café\n\n  First line\n> Quoted reply\n<script>untrusted()</script>\n";

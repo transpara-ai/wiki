@@ -10,6 +10,7 @@ checkouts and worktrees, with retained references for registered routes whose
 checkouts are unavailable on this host.
 """
 import argparse
+import datetime
 import os
 import re
 import json
@@ -45,6 +46,7 @@ ARCHIVE_BOUNDARY_PATH = RAW / "transpara" / "dark-factory" / ".civilization-arch
 SOURCE_DIST = DIST / "source"
 CSS_VER = ""
 SPACE_CONTEXT_VER = ""
+LOCAL_TIME_VER = ""
 SEARCH_VER = ""
 ARC_DATA_VER = ""
 ARC_VIEW_VER = ""
@@ -2134,7 +2136,7 @@ def build_infobox(meta, fm, prefix=""):
         meta.get("org", DEFAULT_ORG)]))
     row("Classification", html.escape(meta.get("classification", "internal")))
     row("Status", html.escape(fm_val(fm, "status")))
-    row("Last compiled", html.escape(fm_val(fm, "last_compiled")))
+    row("Last compiled", local_time_html(fm_val(fm, "last_compiled")))
     aliases = fm_list(fm, "aliases")
     if aliases:
         row("Also known as", html.escape(", ".join(aliases)))
@@ -2411,6 +2413,27 @@ def pending_edges_chip(edge_states):
             'reconciliation</span>' % (n, "" if n == 1 else "s"))
 
 
+def local_time_html(value, *, legacy_server_time=False):
+    """Keep an explicit instant for the browser and a readable UTC fallback."""
+    value = str(value or "")
+    if not re.match(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}", value):
+        return html.escape(value)  # Calendar dates keep their original meaning.
+    try:
+        stamp = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            if not legacy_server_time:
+                return html.escape(value)
+            # Old refresh files used server wall time. Resolve it on the
+            # originating server, never in the reader's browser timezone.
+            stamp = stamp.astimezone()
+        stamp = stamp.astimezone(datetime.timezone.utc)
+    except (ValueError, OverflowError):
+        return html.escape(value)
+    return '<time datetime="%s" data-local-time>%s</time>' % (
+        stamp.isoformat().replace("+00:00", "Z"),
+        stamp.strftime("%Y-%m-%d %H:%M UTC"))
+
+
 def freshness(status, active_space=""):
     synced = status.get("synced", "")
     stale = status.get("stale_articles", [])
@@ -2431,7 +2454,7 @@ def freshness(status, active_space=""):
         if changed:
             changed_text = " · %d rebuilt" % len(changed)
         return '<span class="fresh ok">%supdated %s · 0 stale%s</span>%s' % (
-            html.escape(scope), html.escape(synced), changed_text, chip)
+            html.escape(scope), local_time_html(synced, legacy_server_time=True), changed_text, chip)
     # "stale" = a deterministic rebuild failed after refresh.py identified
     # articles whose declared sources changed. Make the chip name the affected
     # articles so the retry/fix target is actionable rather than opaque.
@@ -2453,7 +2476,7 @@ def freshness(status, active_space=""):
         'list and records the affected articles in <code>changed_articles</code>; LLM prose '
         'synthesis remains a separate manual Tier 2 decision.</p>'
         '</div></details>'
-    ) % (html.escape(synced), n, n, "" if n == 1 else "s", links) + chip
+    ) % (local_time_html(synced, legacy_server_time=True), n, n, "" if n == 1 else "s", links) + chip
 
 
 def deploy_status_script(prefix=""):
@@ -2464,11 +2487,12 @@ def deploy_status_script(prefix=""):
         '<div id="deploy-foot" class="deploy-foot"></div>'
         '<script>(function(){fetch("%sdeploy-status.json",{cache:"no-store"})' % prefix +
         '.then(function(r){return r.ok?r.json():null}).then(function(s){if(!s)return;'
+        'function time(value){return window.KnowledgeTime?window.KnowledgeTime.format(value):String(value||"");}'
         'var f=document.getElementById("deploy-foot");'
-        'if(f)f.textContent="live deploy: "+String(s.deployed_sha||"").slice(0,7)+" · "+(s.checked||"");'
+        'if(f)f.textContent="live deploy: "+String(s.deployed_sha||"").slice(0,7)+" · "+time(s.checked);'
         'if(s.blocked){var b=document.getElementById("deploy-banner");'
         'b.hidden=false;b.className="deploy-blocked";'
-        'b.textContent="\\u26a0 Auto-deploy blocked: "+s.reason+" (since "+(s.since||"?")+'
+        'b.textContent="\\u26a0 Auto-deploy blocked: "+s.reason+" (since "+time(s.since||"?")+'
         '") \\u2014 the live site may be behind authorized main."}}).catch(function(){})})();</script>'
     )
 
@@ -2513,8 +2537,9 @@ def space_context_script(status, active_space="", prefix="", *,
     # A title or rendered navigation string must never close the data script.
     encoded = json.dumps(config, ensure_ascii=True).replace("<", "\\u003c")
     return ('<script type="application/json" id="space-context-data">%s</script>'
+            '<script src="%slocalTime.js?v=%s"></script>'
             '<script src="%sspaceContext.js?v=%s"></script>' %
-            (encoded, prefix, SPACE_CONTEXT_VER))
+            (encoded, prefix, LOCAL_TIME_VER, prefix, SPACE_CONTEXT_VER))
 
 
 def simple_page(title, inner_html, status, *, main_class="content source-content"):
@@ -2650,6 +2675,7 @@ def ingest_page(status):
         '<label>Note<input name="note" id="source-note" type="text" placeholder="citation update, replacement, or placement note"></label>'
         '<div class="form-actions"><button type="submit">Ingest and rebuild</button>'
         '<button type="button" id="rebuild-now">Refresh status and rebuild</button></div>'
+        '<p id="rebuild-status" role="status" aria-live="polite" hidden></p>'
         '</form></section>'
         '<section class="ingest-card ingest-destructive" data-mode-panel="replace" hidden>'
         '<h2>Replace a source</h2>'
@@ -2680,16 +2706,24 @@ def ingest_page(status):
         'target=document.getElementById("target-slug"),sup=document.getElementById("supersedes"),rebuild=document.getElementById("rebuild-now"),token=document.getElementById("authoring-token");'
         'var articles={};'
         'var resultStore="civwiki-last-ingest-result";'
+        'var rebuildStatus=document.getElementById("rebuild-status"),rebuildLabel=rebuild.textContent;'
+        'function rebuildMessage(message){rebuildStatus.hidden=false;rebuildStatus.textContent=message;}'
+        'function rebuildBusy(busy){rebuild.disabled=busy;rebuild.textContent=busy?"Rebuilding…":rebuildLabel;'
+        'form.querySelector("button[type=submit]").disabled=busy;}'
         'function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c];});}'
         'function headers(){var h={};if(token&&token.value)h["X-CivWiki-Authoring-Token"]=token.value;return h;}'
         'function renderResult(j){var parts=[];'
         'if(j&&j.__restored)parts.push("<p>Last completed action:</p>");'
+        'if(j&&j.__action==="rebuild"){var message=j.refresh&&j.refresh.ok?"Rebuild completed.":"Rebuild failed. See Status for details.";'
+        'rebuildMessage(message);parts.push("<p>"+message+"</p>");}'
         'if(j.article_sources_added)parts.push("<p>Sources saved. This action does not rewrite the article text. Newly added material is marked as awaiting an article update.</p>");'
         'if(j.article_href)parts.push("<p><a href=\\""+esc(j.article_href)+"\\">Open article</a></p>");'
         'if(j.source_hrefs&&j.source_hrefs.length){parts.push("<p>Served sources:</p><ul>"+j.source_hrefs.map(function(x){return "<li><a href=\\""+esc(x.href)+"\\">"+esc(x.source)+"</a></li>";}).join("")+"</ul>");}'
         'parts.push("<pre>"+esc(JSON.stringify(j,null,2))+"</pre>");status.innerHTML=parts.join("");}'
         'function say(x){if(typeof x==="string")status.textContent=x;else renderResult(x);}'
-        'function reloadWithResult(j){try{sessionStorage.setItem(resultStore,JSON.stringify(j));}catch(e){}'
+        'function reloadWithResult(j){try{sessionStorage.setItem(resultStore,JSON.stringify(j));}catch(e){'
+        'renderResult(j);rebuildBusy(false);var link=document.createElement("a");link.href=location.href;'
+        'link.textContent="Reload page";status.appendChild(link);return;}'
         'say("Refresh completed. Reloading generated page shell...");setTimeout(function(){location.reload();},500);}'
         'try{var prev=sessionStorage.getItem(resultStore);if(prev){sessionStorage.removeItem(resultStore);prev=JSON.parse(prev);prev.__restored=true;renderResult(prev);}}catch(e){}'
         'function loadArticles(){fetch("/api/articles",{cache:"no-store",headers:headers()}).then(function(r){return r.ok?r.json():null}).then(function(j){'
@@ -2744,8 +2778,13 @@ def ingest_page(status):
         'if(!/\\.txt$/i.test(title))title+=".txt";data.append("documents",new Blob([pasted.value],{type:"text/plain;charset=utf-8"}),title);}'
         'say("Ingesting...");fetch("/api/ingest",{method:"POST",headers:headers(),body:data})'
         '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(reloadWithResult).catch(function(e){say(e);});});'
-        'rebuild.addEventListener("click",function(){say("Refreshing status and rebuilding...");fetch("/api/rebuild",{method:"POST",headers:headers()})'
-        '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});}).then(reloadWithResult).catch(function(e){say(e);});});'
+        'rebuild.addEventListener("click",function(){if(rebuild.disabled)return;rebuildBusy(true);'
+        'rebuildMessage("Rebuilding… This may take a few minutes. Keep this page open.");'
+        'say("Refreshing status and rebuilding...");fetch("/api/rebuild",{method:"POST",headers:headers()})'
+        '.then(function(r){return r.json().then(function(j){if(!r.ok)throw j;return j;});})'
+        '.then(function(j){j.__action="rebuild";rebuildMessage("Rebuild completed. Reloading page…");reloadWithResult(j);})'
+        '.catch(function(e){rebuildBusy(false);rebuildMessage("Rebuild failed: "+'
+        '((e&&(e.error||e.message||(e.refresh&&e.refresh.error)))||"See Status for details."));say(e);});});'
         '})();</script>'
         # fe-ux packet §2.3 state machine: destructive submits are disabled at
         # birth; the ONLY arming expression is sequence-token guarded
@@ -3200,7 +3239,7 @@ def portal_page(status):
 
 def build():
     global CSS_VER, SEARCH_VER, ARC_DATA_VER, ARC_VIEW_VER, ONTO_VER, PROGRESS_VER, REPOS
-    global SPACE_CONTEXT_VER
+    global SPACE_CONTEXT_VER, LOCAL_TIME_VER
     # fail closed BEFORE any dist mutation: a malformed board must never
     # leave the served site partially updated (CFAR 2a-r6); the index
     # render below re-runs build_board on the same fm
@@ -3295,6 +3334,7 @@ def build():
 
     CSS_VER = copy_asset("style.css")
     SPACE_CONTEXT_VER = copy_asset("spaceContext.js")
+    LOCAL_TIME_VER = copy_asset("localTime.js")
     write_dist_text(DIST / "version.json", json.dumps({"version": SITE_VERSION}, indent=2) + "\n")
     write_dist_text(DIST / "VERSION", SITE_VERSION + "\n")
     # First pass populates SOURCE_INDEX for search; second pass refreshes source

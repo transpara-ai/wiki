@@ -13,6 +13,11 @@ four spaces, and enables private HTTPS. It works when the Mac can SSH to both
 servers but the source cannot connect directly to Velia. The steps below
 describe the same runtime for manual operation.
 
+While Tailscale admin access is unavailable, the
+[manual migration with SSH browser access](docs/manual-velia-migration.md)
+installs the rehearsed application with a loopback browser tunnel and defers
+private HTTPS publication until the tailnet settings are available.
+
 ## What persists
 
 The image contains Python and the runtime dependencies. The checkout is mounted
@@ -184,7 +189,8 @@ Open the printed HTTPS URL from a tailnet-connected computer. Check the version
 against `package.json`, the root portal, all four spaces (Civilization,
 Transpara Platform, Competition, and DevOps), representative article source
 links, and the Repos catalog. Confirm that Repos, Sources, Ingest, and search
-retain the selected space. Enter the editor token on Ingest and run **Rebuild now**.
+retain the selected space. Enter the editor token on Ingest and run **Refresh status and rebuild**.
+Wait for **Rebuild completed.** beside the button after the page reloads.
 Test an intended new ingestion and confirm its file appears in the host's
 `raw/inbox/` and its article is marked for a prose update.
 

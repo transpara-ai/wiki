@@ -135,7 +135,7 @@ def main():
     omitted_private_repo_count = len(repo_access) - len(repos)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        "generated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "generated": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
         "window_days": MERGED_WINDOW_DAYS,
         "repos": repos,
         "omitted_private_repo_count": omitted_private_repo_count,

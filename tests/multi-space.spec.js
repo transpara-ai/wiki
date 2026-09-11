@@ -27,7 +27,9 @@ test("portal, space homes, canonical articles, and shared placement render", asy
   await expect(page.locator(".hub-space-card")).toHaveCount(SPACE_HOMES.length);
 
   for (const [space, heading] of SPACE_HOMES) {
-    await page.goto(`/${space}/index.html`);
+    await page.goto("/index.html");
+    await page.locator(`.hub-intro a[href="${space}/index.html"]`).click();
+    await expect(page).toHaveURL(new RegExp(`/${space}/index.html$`));
     await expect(page.locator("h1.page-title")).toHaveText(heading);
     await expect(page.locator(`.space-switcher a[href="../${space}/index.html"]`))
       .toHaveClass(/current/);
