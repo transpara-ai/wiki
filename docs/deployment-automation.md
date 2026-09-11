@@ -17,9 +17,8 @@ record), and 41 cited external source viewers. Authenticated rebuild, container
 recreation, and the separate Docker ingestion/persistence suite passed. Four
 references already missing on the source were recorded in the snapshot manifest.
 
-On September 11, 2026, the manual SSH handover completed successfully. Velia's
-containers serve version `0.4.0`; authenticated rebuild and application health
-checks passed. The original RemoteRepos writer and refresh timer are stopped
+On September 11, 2026, the manual SSH handover completed successfully on version
+`0.4.0`; authenticated rebuild and application health checks passed. The original RemoteRepos writer and refresh timer are stopped
 and disabled. Controller state is `ssh-access-active`, and the target's
 installation receipt is `verified`. Private HTTPS publication remains pending
 tailnet administration. Continue with the manual guide's existing-installation
