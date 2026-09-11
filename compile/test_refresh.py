@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Stdlib-assert tests for compile/refresh.py."""
 import json
+import datetime
 import pathlib
 import sys
 import tempfile
@@ -129,6 +130,8 @@ def test_refresh_success_advances_snapshot_after_build():
             current = refresh.hash_sources()
             assert json.loads(refresh.SNAP.read_text()) == current
             status = json.loads(refresh.STATUS.read_text())
+            synced = datetime.datetime.fromisoformat(status["synced"])
+            assert synced.utcoffset() == datetime.timedelta(0), "refresh time must be explicit UTC"
             assert status["sources_changed"] == 1
             assert status["changed_articles"] == ["example"]
             assert status["stale_articles"] == []

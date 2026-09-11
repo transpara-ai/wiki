@@ -50,11 +50,8 @@ EDGE_STATES_VOCAB = ("valid", "cleanly-removed", "dangling-pending")
 EDGE_ENTRY_KEYS = {"state", "since", "reason", "queued", "enqueued_at"}
 BUILDER_PAGES = {"repos", "sources", "ingest", "civilization-arc",
                  "civilization_arc"}
-BUILDER_ROUTE_PATHS = {
-    "civilization/index.html",
-    "platform/index.html",
-    "competition/index.html",
-}
+# Space homes are generated from this same registry by build_site.py.
+BUILDER_ROUTE_PATHS = {"%s/index.html" % space.key for space in STRUCTURE.spaces}
 # wiki/*.md-backed slugs the builder ALSO regenerates as a whole page, so they
 # must never be retired as a tombstone (Remove would be reanimated on rebuild)
 PROTECTED_SLUGS = {"index", "civilization-arc"}

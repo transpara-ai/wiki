@@ -117,7 +117,7 @@ def main():
         sys.exit(1)
 
     final_status = {
-        "synced": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "synced": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
         "article_count": counts["article_count"],
         "space_counts": counts["space_counts"],
         "section_counts": counts["section_counts"],

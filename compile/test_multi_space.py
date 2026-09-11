@@ -49,11 +49,15 @@ def test_portal_and_space_routes_exist():
     portal = read("index.html")
     assert "One canonical graph. Several purposeful views." in portal
     assert "board-hero" not in portal
+    # Check the prose list separately: working navigation/cards must not mask
+    # a valid space link being replaced with a pending-reconciliation span.
+    intro = portal.split('<article class="body hub-intro">', 1)[1].split('</article>', 1)[0]
     for route, label in [("civilization/index.html", "Civilization"),
                          ("platform/index.html", "Transpara Platform"),
                          ("competition/index.html", "Competition"),
                          ("devops/index.html", "DevOps")]:
         assert 'href="%s"' % route in portal
+        assert 'href="%s"' % route in intro
         assert label in portal
     print("ok test_portal_and_space_routes_exist")
 

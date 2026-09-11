@@ -1,4 +1,4 @@
-import contextlib, importlib.util, io, json, pathlib, tempfile, unittest
+import contextlib, datetime, importlib.util, io, json, pathlib, tempfile, unittest
 
 spec = importlib.util.spec_from_file_location(
     "inflight", pathlib.Path(__file__).resolve().parents[1] / "compile" / "inflight.py")
@@ -160,6 +160,8 @@ class CollectAndShape(unittest.TestCase):
                 inflight.OUT = orig_out
         self.assertEqual(seen_repos, ["agent", "site"])
         self.assertEqual(payload["repos"], ["agent", "site"])
+        self.assertEqual(datetime.datetime.fromisoformat(payload["generated"]).utcoffset(),
+                         datetime.timedelta(0))
         self.assertEqual(payload["omitted_private_repo_count"], 1)
         self.assertNotIn("docs", json.dumps(payload))
 

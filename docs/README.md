@@ -12,7 +12,8 @@ DevOps. The current operational guides live at the repository root and in
 | [Rebuilding](../compile/REBUILD.md) | Source registration, refresh, synthesis, and local services |
 | [Authoring API](../API.md) | Evidence ingestion in all spaces and DevOps article creation |
 | [Docker hosting](../DOCKER.md) | Private hosting, source dependencies, and operational checks |
-| [Velia deployment automation](deployment-automation.md) | Mac SSH relay, prerequisite installation, verified migration, rehearsal, cutover, and recovery |
+| [Velia deployment automation](deployment-automation.md) | Mac relay or RemoteRepos tunnel, prerequisite installation, verified migration, rehearsal, cutover, and recovery |
+| [Manual Velia migration](manual-velia-migration.md) | Operator-run installation with temporary SSH browser access while Tailscale HTTPS admin setup is pending |
 | [Knowledge Hub article](../wiki/civilization-wiki.md) | The wiki's purpose, expansion, and compile history; its original slug is retained |
 
 The machine-readable [knowledge structure registry](../compile/knowledge_structure.json)
