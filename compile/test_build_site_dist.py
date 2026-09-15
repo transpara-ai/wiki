@@ -4,9 +4,132 @@ import json
 import pathlib
 import sys
 import tempfile
+import functools
+import http.server
+import threading
+import urllib.request
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import build_site as site  # noqa: E402
+import site_publication as publication  # noqa: E402
+
+
+def test_complete_directory_publication_under_concurrent_http_reads():
+    with tempfile.TemporaryDirectory() as d:
+        output = pathlib.Path(d) / "dist"
+        output.mkdir()
+        old, new = "old-complete" * 1000, "new-complete" * 2000
+        (output / "index.html").write_text(old)
+        (output / "obsolete.html").write_text("old route")
+        (output / "inflight.json").write_text('{"generation":"old"}')
+        class QuietHandler(http.server.SimpleHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0),
+            functools.partial(QuietHandler, directory=str(output)))
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        url = "http://127.0.0.1:%d/index.html" % server.server_port
+        seen, errors, stop = [], [], threading.Event()
+        def read():
+            while not stop.is_set():
+                try:
+                    with urllib.request.urlopen(url, timeout=3) as response:
+                        seen.append(response.read().decode())
+                except Exception as exc:
+                    errors.append(str(exc))
+        reader = threading.Thread(target=read)
+        reader.start()
+        try:
+            with publication.staged_publication(output, ("inflight.json",)) as stage:
+                (stage / "index.html").write_text("unfinished")
+                with urllib.request.urlopen(url, timeout=3) as response:
+                    assert response.read().decode() == old
+                (stage / "index.html").write_text(new)
+                (stage / "new.html").write_text("complete new route")
+            with urllib.request.urlopen(url, timeout=3) as response:
+                assert response.read().decode() == new
+            assert not (output / "obsolete.html").exists()
+            assert (output / "new.html").read_text() == "complete new route"
+            assert json.loads((output / "inflight.json").read_text()) == {"generation": "old"}
+        finally:
+            stop.set()
+            reader.join(timeout=5)
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+        assert seen and not errors, errors
+        assert set(seen) <= {old, new}
+        assert not list(pathlib.Path(d).glob("dist-build-*"))
+    print("ok test_complete_directory_publication_under_concurrent_http_reads")
+
+
+def test_failed_build_and_failed_exchange_preserve_complete_live_directory():
+    with tempfile.TemporaryDirectory() as d:
+        output = pathlib.Path(d) / "dist"
+        output.mkdir()
+        (output / "index.html").write_text("complete")
+        for during_render in (True, False):
+            try:
+                with mock.patch.object(publication, "exchange_directories", side_effect=OSError("exchange refused")):
+                    with publication.staged_publication(output) as stage:
+                        (stage / "index.html").write_text("partial")
+                        if during_render:
+                            raise RuntimeError("renderer failed")
+            except (RuntimeError, OSError):
+                pass
+            else:
+                raise AssertionError("failure was swallowed")
+            assert (output / "index.html").read_text() == "complete"
+            assert not list(pathlib.Path(d).glob("dist-build-*"))
+    print("ok test_failed_build_and_failed_exchange_preserve_complete_live_directory")
+
+
+def test_runtime_status_update_waits_for_publication_and_is_not_lost():
+    with tempfile.TemporaryDirectory() as d:
+        output = pathlib.Path(d) / "dist"
+        output.mkdir()
+        status = output / "deploy-status.json"
+        status.write_text("old")
+        started, done = threading.Event(), threading.Event()
+        def write():
+            started.set()
+            publication.write_runtime_status(status, "new")
+            done.set()
+        with publication.staged_publication(output, (status.name,)) as stage:
+            (stage / "index.html").write_text("complete")
+            writer = threading.Thread(target=write)
+            writer.start()
+            assert started.wait(3)
+            assert not done.wait(0.05)
+            assert status.read_text() == "old"
+        writer.join(timeout=3)
+        assert done.is_set() and status.read_text() == "new"
+    print("ok test_runtime_status_update_waits_for_publication_and_is_not_lost")
+
+
+def test_builder_stages_output_and_restores_paths_after_failure():
+    with tempfile.TemporaryDirectory() as d:
+        output = pathlib.Path(d) / "dist"
+        output.mkdir()
+        (output / "index.html").write_text("complete")
+        def fail():
+            assert site.DIST != output
+            site.write_dist_text(site.DIST / "index.html", "partial")
+            assert (output / "index.html").read_text() == "complete"
+            raise ValueError("bad build")
+        with mock.patch.object(site, "DIST", output), mock.patch.object(site, "SOURCE_DIST", output / "source"):
+            with mock.patch.object(site, "_build_site", side_effect=fail):
+                try:
+                    site.build()
+                except ValueError:
+                    pass
+                else:
+                    raise AssertionError("bad build accepted")
+            assert site.DIST == output and site.SOURCE_DIST == output / "source"
+        assert (output / "index.html").read_text() == "complete"
+    print("ok test_builder_stages_output_and_restores_paths_after_failure")
 
 
 def test_package_version_accepts_semver_and_rejects_malformed_releases():

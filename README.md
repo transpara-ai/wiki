@@ -85,6 +85,18 @@ version, so release metadata has one source of truth. Bump it with
 `npm version patch --no-git-tag-version` (or `minor` / `major` as appropriate),
 then rebuild.
 
+Builds render into a sibling staging directory and publish the completed site
+with one atomic directory exchange. The existing site remains available during
+rendering and after a failed build. Existing output directories require Linux
+`renameat2(RENAME_EXCHANGE)` or macOS `renamex_np(RENAME_SWAP)` support on the
+output filesystem; an unsupported exchange fails without replacing the live
+site. Runtime deployment/activity status writers share the publication lock.
+
+Source-viewer links resolve from the original document location to already
+published pages. Unknown destinations are shown as unavailable, and section
+links are checked against the generated headings. This changes the rendered
+navigation only; original source documents are preserved.
+
 The local authoring server sends `Cache-Control: no-cache` for pages and release
 metadata so browsers revalidate them after a rebuild. API responses use
 `no-store`. After updating the server code, restart the local service and reload

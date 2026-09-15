@@ -13,6 +13,10 @@ import datetime
 import json
 import pathlib
 import subprocess
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from site_publication import write_runtime_status
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "dist" / "inflight.json"
@@ -133,7 +137,6 @@ def main():
     items, errors = collect_items(repos)
     errors = repo_err + errors
     omitted_private_repo_count = len(repo_access) - len(repos)
-    OUT.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "generated": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
         "window_days": MERGED_WINDOW_DAYS,
@@ -142,7 +145,7 @@ def main():
         "errors": errors,
         "items": items,
     }
-    OUT.write_text(json.dumps(payload, indent=2))
+    write_runtime_status(OUT, json.dumps(payload, indent=2))
     print("inflight: %d live items across %d repos, %d errors -> %s"
           % (len(items), len(repos), len(errors), OUT))
 

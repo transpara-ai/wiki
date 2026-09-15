@@ -28,6 +28,13 @@ There is one wiki writer and one refresh worker, coordinated by the existing
 filesystem lock. Do not run native refresh timers or additional authoring
 instances against this checkout while Compose owns it.
 
+Rebuilds render in a sibling `dist-build-*` directory, then atomically exchange
+the completed directory with `dist`. Keep the whole checkout mounted as shown
+below so staging and live output share the same filesystem. The per-output
+`dist*-publish.lock` also coordinates runtime status writers. A failed build
+keeps the previous site available; completed or failed builds remove their
+temporary staging directory.
+
 The parent source-repository directory is mounted read-only, with the wiki's
 more specific mount writable. This preserves existing absolute source paths and
 the Repos catalog. Containers use the checkout owner's numeric UID/GID. Neither
