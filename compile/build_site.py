@@ -28,6 +28,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ingest_ops  # noqa: E402
 from article_catalog import CatalogError, load_catalog  # noqa: E402
 from knowledge_structure import STRUCTURE  # noqa: E402
+from site_publication import staged_publication  # noqa: E402
+from source_navigation import SourceNavigation, resolve_link  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REPOS_ROOT = pathlib.Path("/Transpara/transpara-ai/repos")
@@ -1780,6 +1782,12 @@ def build_source_pages(status):
             if p.is_file() and p.suffix.lower() in {".md", ".txt", ".json", ".yml", ".yaml", ".csv", ".toml"}:
                 refs.add(str(p.relative_to(ROOT)))
 
+    # Register forward references before rendering any document's code links.
+    paths = {ref: safe_source_path(ref) for ref in sorted(refs)
+             if not ref.startswith(("http://", "https://"))}
+    SOURCE_LINKS.update({ref: "source/%s.html" % source_id(ref)
+                         for ref, path in paths.items() if path})
+
     for ref in sorted(refs):
         if ref.startswith(("http://", "https://")):
             # Cited web sources belong in the index alongside uploaded files.
@@ -1793,7 +1801,7 @@ def build_source_pages(status):
                 "ref": ref, "text": "%s %s" % (title, ref),
             })
             continue
-        path = safe_source_path(ref)
+        path = paths.get(ref)
         if not path:
             continue
         sid = source_id(ref)
@@ -1830,6 +1838,32 @@ def build_source_pages(status):
                 "ref": ref,
                 "text": ("%s %s %s" % (ref, title, text))[:12000],
             })
+
+
+def resolve_source_navigation():
+    """Finalize source-body links after every destination and heading exists."""
+    published = {"/" + p.relative_to(DIST).as_posix(): p
+                 for p in GENERATED_DIST_PATHS if p.is_file()}
+    source_routes = {(WIKI / (slug + ".md")).resolve(): "/" + slug + ".html"
+                     for slug, meta in META.items() if not meta.get("retired_on")}
+    documents = []
+    for ref, href in SOURCE_LINKS.items():
+        path = safe_source_path(ref)
+        if path:
+            source_routes[path] = "/" + href
+            documents.append((path, "/" + href))
+    fragments = {}
+    for original, route in documents:
+        page_path = published[route]
+        page_html = page_path.read_text()
+        resolver = lambda href: resolve_link(
+            href, original, route, source_routes, published, fragments)
+        def rewrite(match):
+            return match[1] + SourceNavigation(resolver).rewrite(match[2]) + match[3]
+        page_html = re.sub(
+            r'(<article class="body source-body source-rendered-markdown">)(.*?)(</article>)',
+            rewrite, page_html, flags=re.S)
+        write_dist_text(page_path, page_html)
 
 
 def _supersedes_target(comment):
@@ -3238,6 +3272,19 @@ def portal_page(status):
 
 
 def build():
+    global DIST, SOURCE_DIST
+    output = DIST
+    original_source_dist = SOURCE_DIST
+    preserve = ("deploy-status.json", "inflight.json") if PROFILE.key == "authoring-local" else ()
+    try:
+        with staged_publication(output, preserve) as stage:
+            DIST, SOURCE_DIST = stage, stage / "source"
+            _build_site()
+    finally:
+        DIST, SOURCE_DIST = output, original_source_dist
+
+
+def _build_site():
     global CSS_VER, SEARCH_VER, ARC_DATA_VER, ARC_VIEW_VER, ONTO_VER, PROGRESS_VER, REPOS
     global SPACE_CONTEXT_VER, LOCAL_TIME_VER
     # fail closed BEFORE any dist mutation: a malformed board must never
@@ -3378,6 +3425,8 @@ def build():
         arc_html = arc_page(status)
         write_dist_text(DIST / "civilization-arc.html", arc_html)
         write_dist_text(DIST / "civilization_arc.html", arc_html)
+    if PROFILE.include_sources:
+        resolve_source_navigation()
     prune_dist()
     print("built profile %s: %d articles + %d repo pages + portal + %d spaces%s -> %s" %
           (PROFILE.key, count, len(REPOS), len(active_spaces()),

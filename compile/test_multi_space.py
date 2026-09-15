@@ -9,6 +9,7 @@ import urllib.parse
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from article_catalog import load_catalog  # noqa: E402
 import build_site  # noqa: E402
+from source_navigation import ElementIds  # noqa: E402
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -88,9 +89,9 @@ def test_all_generated_local_links_and_assets_resolve():
     failures = []
     for page in sorted(DIST.rglob("*.html")):
         rel_page = page.relative_to(DIST)
-        # Source snapshots and repository README mirrors intentionally retain
-        # upstream-relative references that are outside this static bundle.
-        if rel_page.parts[0] == "source" or rel_page.name.startswith("repo-"):
+        # Repository README routing has its own acceptance checks. Source
+        # documents must now resolve or label every unavailable destination.
+        if rel_page.name.startswith("repo-"):
             continue
         parser = Links()
         parser.feed(page.read_text(errors="replace"))
@@ -99,7 +100,7 @@ def test_all_generated_local_links_and_assets_resolve():
             parsed = urllib.parse.urlsplit(value)
             if parsed.scheme or value.startswith(("#", "//")):
                 continue
-            target = urllib.parse.urljoin(route, parsed.path).lstrip("/")
+            target = urllib.parse.unquote(urllib.parse.urljoin(route, parsed.path)).lstrip("/")
             if not target or target.startswith("api/"):
                 continue
             candidate = DIST / target
@@ -109,6 +110,27 @@ def test_all_generated_local_links_and_assets_resolve():
                 failures.append("%s -> %s" % (rel_page, value))
     assert not failures, "unresolved generated links/assets:\n" + "\n".join(failures[:50])
     print("ok test_all_generated_local_links_and_assets_resolve")
+
+
+def test_source_viewer_section_links_resolve():
+    failures, ids = [], {}
+    for page in (DIST / "source").glob("*.html"):
+        parser = Links()
+        parser.feed(page.read_text())
+        route = "/" + page.relative_to(DIST).as_posix()
+        for href in parser.values:
+            url = urllib.parse.urlsplit(urllib.parse.urljoin(route, href))
+            if url.scheme or url.netloc or not url.fragment:
+                continue
+            target = DIST / urllib.parse.unquote(url.path).lstrip("/")
+            if target.suffix != ".html" or not target.is_file():
+                continue
+            if target not in ids:
+                ids[target] = ElementIds(target.read_text()).ids
+            if urllib.parse.unquote(url.fragment) not in ids[target]:
+                failures.append("%s -> %s" % (page.name, href))
+    assert not failures, "broken source section links: " + repr(failures[:20])
+    print("ok test_source_viewer_section_links_resolve")
 
 
 def test_nested_homes_have_depth_aware_chrome():

@@ -1,6 +1,7 @@
 # generated / regenerable — not committed (rebuilt by compile/refresh.py)
 /dist/
 /dist-*/
+/dist*-publish.lock
 /raw/transpara/
 /compile/source-snapshot.json
 /compile/refresh-status.json

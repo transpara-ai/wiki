@@ -9,6 +9,62 @@ from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import build_site as site  # noqa: E402
+from source_navigation import resolve_link, SourceNavigation  # noqa: E402
+
+
+def test_source_links_resolve_original_paths_and_only_published_targets():
+    with tempfile.TemporaryDirectory() as d:
+        root = pathlib.Path(d)
+        original = root / "raw" / "notes" / "start.md"
+        other = original.parent / "other note.md"
+        original.parent.mkdir(parents=True)
+        original.write_text("[Other](other%20note.md#the--section)\n")
+        before = original.read_bytes()
+        first, second = root / "first.html", root / "second.html"
+        first.write_text('<h1 id="start">Start</h1>')
+        second.write_text('<h2 id="the-section">The section</h2>')
+        published = {"/source/first.html": first, "/source/second.html": second}
+        routes = {original: "/source/first.html", other: "/source/second.html"}
+        def resolve(href):
+            return resolve_link(href, original, "/source/first.html", routes, published, {})
+        assert resolve("other%20note.md#the--section") == "/source/second.html#the-section"
+        assert resolve("./sub/../other%20note.md?space=devops#the-section") == "/source/second.html?space=devops#the-section"
+        assert resolve(str(other) + "#the-section") == "/source/second.html#the-section"
+        assert resolve("source/second.html") == "/source/second.html"
+        assert resolve("#start") == "/source/first.html#start"
+        assert resolve("#missing") is None
+        assert resolve("other%20note.md#missing") is None
+        assert resolve("../../private.md") is None
+        assert resolve("https://example.org/docs?a=1&b=2") == "https://example.org/docs?a=1&b=2"
+        assert resolve("mailto:reader@example.org") == "mailto:reader@example.org"
+        assert resolve("javascript:alert(1)") is None
+        rendered = SourceNavigation(resolve).rewrite(
+            '<p><a href="other%20note.md#the--section"><code>Other &amp; note</code></a> '
+            '<a href="missing.md">Missing</a> <img src="missing.png" alt="Diagram"></p>')
+        assert 'href="/source/second.html#the-section"' in rendered
+        assert '<code>Other &amp; note</code>' in rendered
+        assert 'href="missing.md"' not in rendered
+        assert 'Missing <small>(unavailable)</small>' in rendered
+        assert 'Diagram (image unavailable)' in rendered
+        rendered = SourceNavigation(resolve).rewrite(
+            '<img src="other%20note.md" alt="Document">'
+            '<img src="#" data-unsafe-uri="removed" alt="Unsafe">'
+            '<a href="#" data-unsafe-uri="removed">Removed URI</a>')
+        assert '<img' not in rendered and '<a ' not in rendered
+        assert 'Document (image unavailable)' in rendered
+        assert 'Unsafe (image unavailable)' in rendered
+        assert 'Removed URI <small>(unavailable)</small>' in rendered
+        assert original.read_bytes() == before
+    print("ok test_source_links_resolve_original_paths_and_only_published_targets")
+
+
+def test_source_fragment_repair_rejects_ambiguous_heading_matches():
+    with tempfile.TemporaryDirectory() as d:
+        page = pathlib.Path(d) / "page.html"
+        page.write_text('<h2 id="a-b">One</h2><h2 id="a--b">Two</h2>')
+        assert resolve_link("#a---b", page, "/page.html", {}, {"/page.html": page}, {}) is None
+        assert resolve_link("#a--b", page, "/page.html", {}, {"/page.html": page}, {}) == "/page.html#a--b"
+    print("ok test_source_fragment_repair_rejects_ambiguous_heading_matches")
 
 
 def with_source(ref, text, fn):

@@ -14,12 +14,17 @@ import pathlib
 import datetime
 import re
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from site_publication import write_runtime_status
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 ALLOW_EXACT = {
     "index.md", "PROVENANCE.md",
     "compile/build_site.py", "compile/refresh.py",
     "compile/stats.py", "compile/inflight.py",
+    "compile/site_publication.py",
+    "compile/source_navigation.py",
     "compile/article_catalog.py", "compile/knowledge_structure.py",
     "compile/knowledge_structure.json", "compile/org_structure.py",
 }
@@ -123,8 +128,7 @@ def write_deploy_status(root, *, blocked, reason, deployed_sha, target_sha,
         "recent": recent[-RECENT_N:],
     }
     out = root / "dist" / "deploy-status.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(status, indent=2))
+    write_runtime_status(out, json.dumps(status, indent=2))
     return status
 
 
