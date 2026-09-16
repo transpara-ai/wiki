@@ -35,6 +35,8 @@ def test_company_profile_is_an_isolated_allowlist_projection():
                       "civilization-arc.html", "civilization_arc.html"):
         assert not (COMPANY_DIST / forbidden).exists(), forbidden
     assert not (COMPANY_DIST / "source").exists()
+    assert not (COMPANY_DIST / "accountMenu.js").exists()
+    assert 'id="account-menu"' not in (COMPANY_DIST / "index.html").read_text()
     assert not list(COMPANY_DIST.glob("repo-*.html"))
 
     allowed_classes = set(

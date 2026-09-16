@@ -1,0 +1,4 @@
+{
+  "settings_url": "https://borgdev.transpara.io/tauth/realms/transpara/account/",
+  "end_session_url": "https://borgdev.transpara.io/tauth/realms/transpara/protocol/openid-connect/logout"
+}

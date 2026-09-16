@@ -1,6 +1,7 @@
 const { test, expect } = require("@playwright/test");
 
-const BENIGN_404 = /\/(api\/articles|inflight\.json|deploy-status\.json|favicon\.ico)$/;
+// Static previews also lack the optional signed-in profile endpoint.
+const BENIGN_404 = /\/(oauth2\/userinfo|api\/articles|inflight\.json|deploy-status\.json|favicon\.ico)$/;
 const SPACE_HOMES = [
   ["civilization", "Transpara-AI Civilization Wiki — front page"],
   ["platform", "Transpara Platform Knowledge Base"],
@@ -13,7 +14,7 @@ function collectErrors(page) {
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
     const url = (msg.location() && msg.location().url) || "";
-    if (BENIGN_404.test(url)) return;
+    if (BENIGN_404.test(url) && /404/.test(msg.text())) return;
     errors.push(`${msg.text()} (${url})`);
   });
   page.on("pageerror", (error) => errors.push(String(error)));

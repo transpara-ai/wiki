@@ -76,6 +76,33 @@ summary.fresh::after{content:"▾";margin-left:6px;font-size:9px;opacity:.75}
 .theme-toggle{font-family:var(--mono);font-size:12px;cursor:pointer;color:var(--muted);background:var(--bg);
   border:1px solid var(--bd2);border-radius:2px;padding:3px 9px;white-space:nowrap}
 .theme-toggle:hover{border-color:var(--link);color:var(--txt)}
+.account-menu{position:relative;flex:none;z-index:45;color:var(--txt)}
+.account-menu>summary{display:flex;align-items:center;justify-content:center;list-style:none;cursor:pointer;
+  width:38px;height:38px;border:1px solid var(--bd2);border-radius:50%;background:var(--bg)}
+.account-menu>summary::-webkit-details-marker{display:none}
+.account-menu>summary:hover,.account-menu[open]>summary{border-color:var(--link)}
+.account-menu>summary:focus-visible,.account-actions a:focus-visible{outline:2px solid var(--link);outline-offset:3px}
+.account-avatar{display:inline-flex;align-items:center;justify-content:center;flex:none;width:30px;height:30px;
+  border-radius:50%;overflow:hidden;background:color-mix(in srgb,var(--link),transparent 90%);color:var(--link);font:600 12px/1 var(--sans)}
+.account-initials svg{display:block;width:22px;height:22px}
+.account-photo{display:block;width:100%;height:100%;object-fit:cover}
+.account-menu [hidden]{display:none!important}
+.account-panel{position:absolute;top:calc(100% + 9px);right:0;width:320px;max-width:calc(100vw - 24px);
+  max-height:70vh;max-height:70dvh;overflow:auto;padding:16px;border:1px solid var(--bd2);border-radius:10px;
+  background:var(--panel);box-shadow:0 12px 35px rgba(0,0,0,.35);font:13px/1.5 var(--sans);text-align:left;overflow-wrap:anywhere}
+.account-identity{display:flex;align-items:center;gap:12px;min-width:0}
+.account-identity>div{min-width:0}
+.account-identity .account-avatar{width:48px;height:48px;font-size:17px}
+.account-identity .account-initials svg{width:30px;height:30px}
+#account-name,#account-email{display:block}
+#account-name{font-size:15px}
+#account-email,.account-panel p{color:var(--muted)}
+.account-panel p{margin:8px 0}
+.account-panel h3{font-size:12px;margin:14px 0 4px;color:var(--txt)}
+#account-groups{padding-left:18px;margin:4px 0}
+.account-actions{display:grid;gap:4px;margin-top:14px;padding-top:10px;border-top:1px solid var(--bd)}
+.account-actions a{padding:8px;border-radius:5px;color:var(--link)}
+.account-actions a:hover{background:var(--bg);text-decoration:none}
 .search{grid-area:search;position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);min-width:0}
 .search-input{
   width:100%;
@@ -406,10 +433,12 @@ summary.fresh::after{content:"▾";margin-left:6px;font-size:9px;opacity:.75}
   .content{width:100%;padding:16px 24px 40px;max-width:100%}
 }
 @media(max-width:720px){
-  .topbar{grid-template-areas:"brand theme" "spaces spaces" "search search" "links links" "fresh fresh";grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:9px 12px}
+  .topbar{grid-template-areas:"brand theme profile" "spaces spaces spaces" "search search search" "links links links" "fresh fresh fresh";grid-template-columns:minmax(0,1fr) auto auto;gap:8px;padding:9px 12px}
   .brand{font-size:18px;white-space:normal;line-height:1.15}
   .top-meta{display:contents}
   .theme-toggle{grid-area:theme}
+  .account-menu{grid-area:profile;justify-self:end}
+  .space-freshness{grid-area:fresh;min-width:0}
   .top-meta>.fresh,.top-meta>.fresh-details{grid-column:1/-1;max-width:100%;justify-self:start}
   .top-meta .fresh{font-size:11px}
   .fresh-pop{left:0;right:auto}
@@ -422,6 +451,8 @@ summary.fresh::after{content:"▾";margin-left:6px;font-size:9px;opacity:.75}
   .hub-space-card{min-height:180px}
 }
 @media(pointer:coarse){
+  .account-menu>summary{width:44px;height:44px}
+  .account-actions a{min-height:44px;display:flex;align-items:center}
   .space-switcher a,.top-links a,.theme-toggle,.side-tools button,.form-actions button{min-height:44px;display:inline-flex;align-items:center}
   .side-group summary,.sidebar a,.ingest-modes label,.confirm-line{min-height:44px}
   .sidebar a{display:flex;align-items:center}

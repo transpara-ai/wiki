@@ -101,7 +101,7 @@ def test_all_generated_local_links_and_assets_resolve():
             if parsed.scheme or value.startswith(("#", "//")):
                 continue
             target = urllib.parse.unquote(urllib.parse.urljoin(route, parsed.path)).lstrip("/")
-            if not target or target.startswith("api/"):
+            if not target or target.startswith("api/") or target in {"oauth2/start", "oauth2/sign_out"}:
                 continue
             candidate = DIST / target
             if target.endswith("/"):
