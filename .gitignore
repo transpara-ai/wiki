@@ -29,3 +29,6 @@ compile/.autodeploy.lock
 compile/.wiki-write.lock
 compile/autodeploy.log
 dist/deploy-status.json
+
+# Private account grants; never publish or commit
+/.private/

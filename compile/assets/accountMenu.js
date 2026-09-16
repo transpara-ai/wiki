@@ -12,6 +12,15 @@
   var login = document.getElementById("account-login");
   var logout = document.getElementById("account-logout");
   var settings = document.getElementById("account-settings");
+  var authoring = document.getElementById("account-authoring");
+  var forget = document.getElementById("account-forget-authoring");
+  var token = document.getElementById("authoring-token");
+  var tokenLabel = document.getElementById("authoring-token-label");
+  var remember = document.getElementById("remember-authoring");
+  var authoringStatus = document.getElementById("authoring-profile-status");
+  var profileEnabled = false;
+  var saving = false;
+  var identityVersion = 0;
   var icons = Array.from(menu.querySelectorAll(".account-initials"));
   var photos = Array.from(menu.querySelectorAll(".account-photo"));
   var neutralIcon = icons[0].cloneNode(true);
@@ -19,6 +28,13 @@
 
   function text(value) { return typeof value === "string" ? value.trim() : ""; }
   function clearIdentity() {
+    identityVersion++;
+    authoring.textContent = "Wiki authoring access has not been checked.";
+    forget.hidden = true;
+    profileEnabled = false;
+    if (remember) remember.hidden = true;
+    if (tokenLabel) tokenLabel.hidden = false;
+    if (authoringStatus) authoringStatus.textContent = "Sign in to use remembered authoring access.";
     name.textContent = "Your profile";
     email.textContent = "";
     email.hidden = true;
@@ -34,6 +50,62 @@
       icon.replaceChildren(neutralIcon.firstChild.cloneNode(true));
     });
   }
+  function showAuthoring(profile) {
+    profileEnabled = profile.enabled === true && profile.signed_in === true;
+    var saved = profileEnabled && profile.authoring === true;
+    var message = saved ? "Authoring access is saved to your wiki profile." :
+      (profileEnabled ? "Enter your authoring token once to remember access for this account." :
+        "Sign in through the public wiki to remember authoring access.");
+    authoring.textContent = message;
+    if (authoringStatus) authoringStatus.textContent = message;
+    forget.hidden = !saved;
+    if (tokenLabel) tokenLabel.hidden = saved;
+    if (remember) remember.hidden = !profileEnabled || saved;
+    if (saved && token) token.value = "";
+  }
+  async function profileRequest(action) {
+    var headers = { Accept: "application/json", "X-Wiki-Profile-Action": "1" };
+    if (action === "remember" && token) headers["X-CivWiki-Authoring-Token"] = token.value;
+    var controller = new AbortController();
+    var timeout = setTimeout(function () { controller.abort(); }, 8000);
+    try {
+      var response = await fetch("/api/authoring-profile" + (action === "forget" ? "/forget" : ""), {
+        method: action ? "POST" : "GET", credentials: "same-origin", cache: "no-store",
+        redirect: "error", headers: headers, signal: controller.signal
+      });
+      var data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Authoring profile is unavailable.");
+      return data;
+    } finally { clearTimeout(timeout); }
+  }
+  async function changeAuthoring(action) {
+    if (saving || !profileEnabled || (action === "remember" && (!token || !token.value))) return;
+    saving = true;
+    forget.disabled = true;
+    if (remember) remember.disabled = true;
+    var version = identityVersion;
+    try {
+      var data = await profileRequest(action);
+      if (version !== identityVersion) return;
+      showAuthoring(data);
+      if (token) {
+        token.value = "";
+        // Refresh article/source metadata using the remembered account grant.
+        token.dispatchEvent(new Event("change"));
+      }
+    } catch (error) {
+      if (version !== identityVersion) return;
+      authoring.textContent = error.message;
+      if (authoringStatus) authoringStatus.textContent = error.message;
+    } finally {
+      saving = false;
+      forget.disabled = false;
+      if (remember) remember.disabled = false;
+    }
+  }
+  forget.addEventListener("click", function () { changeAuthoring("forget"); });
+  if (remember) remember.addEventListener("click", function () { changeAuthoring("remember"); });
+  if (token) token.addEventListener("change", function () { changeAuthoring("remember"); });
   function unavailable(signedOut) {
     clearIdentity();
     status.textContent = signedOut ? "You are signed out." : "Profile information is unavailable on this connection.";
@@ -105,6 +177,18 @@
       if (!response.ok) throw new Error("Profile request failed");
       render(await response.json());
       menu.hidden = false;
+      var version = identityVersion;
+      try {
+        var profile = await profileRequest();
+        if (version === identityVersion) {
+          showAuthoring(profile);
+          if (token && token.value) changeAuthoring("remember");
+        }
+      } catch (_) {
+        if (version === identityVersion) {
+          authoring.textContent = "Remembered authoring access is unavailable on this connection.";
+        }
+      }
     } catch (_) { unavailable(false); }
     finally { clearTimeout(timeout); pending = false; }
   }

@@ -20,8 +20,7 @@ initials today; it can display an HTTPS `picture` claim when the identity
 integration supplies one, with an initials fallback for unavailable images.
 No third-party avatar lookup is used. Group names are displayed only when
 supplied, and detailed rights are explicitly marked unavailable. Neither is
-used to grant editing authority: the existing authoring token still controls
-mutations. Connecting profile photos or additional rights claims is a separate
+used to grant editing authority: authoring requires either the token or a saved, verified account grant. Connecting profile photos or additional rights claims is a separate
 tAuth/proxy integration task.
 
 `compile/account_config.json` contains the public tAuth account-settings and
@@ -36,7 +35,7 @@ The editor-token field is cleared on logout. The wiki does not manipulate tAuth
 cookies or retrieve OAuth access/ID tokens.
 
 The implementation uses the existing session and logout contracts without
-changing proxy configuration, credentials, scopes, or authorization policy.
+changing credentials, scopes, or identity-provider policy.
 The public Velia route already supplies `/oauth2/*` through DevOps' OAuth2 Proxy
 override, ahead of the authoring server. The base Compose/Tailscale direct-server
 route does not supply these endpoints and therefore does not enable the menu.
@@ -63,3 +62,47 @@ working. Check the site's updated time before repeating an ingest operation;
 repeating it could submit material twice. The browser reports this uncertainty
 instead of displaying a JSON parsing error. Server logs distinguish a proxy
 response timeout from an authoring-token refusal or a failed refresh.
+
+
+## Remembered authoring access (v0.7.0)
+
+On Ingest, enter a valid authoring token once while signed in. Leaving the field
+or choosing **Remember authoring access** saves access to the wiki profile and
+clears the token field. Later visits and other browsers use your signed-in tAuth
+account automatically. The profile shows the saved status and offers **Forget
+authoring access**. Logout ends the login session but keeps this account setting.
+A saved grant has no expiry; forgetting it or rotating the shared token revokes it.
+This is a wiki-owned account setting, not a token stored as a tAuth attribute.
+
+The server verifies the existing session cookie directly with the configured
+OAuth2 Proxy userinfo endpoint. It never trusts forwarded username/email headers.
+The database stores only an opaque account key and keyed grant proof, not tokens,
+raw subjects, email addresses or session cookies. The original shared token is
+not stored in cookies, localStorage, sessionStorage or generated pages. Other
+accounts are not enabled by this setting. Destructive operations still require
+their existing separate authorization artifacts.
+
+Enable on the authoring service only, with these environment values and a durable
+private mount (the examples contain no credentials):
+
+```yaml
+services:
+  wiki:
+    environment:
+      KNOWLEDGE_HUB_PROFILE_USERINFO_URL: http://oauth2-proxy:4180/oauth2/userinfo
+      KNOWLEDGE_HUB_PROFILE_ORIGIN: https://wiki.transpara.io
+      KNOWLEDGE_HUB_PROFILE_STORE: /var/lib/wiki-profiles/authoring.sqlite3
+    volumes:
+      - ./.private/profiles:/var/lib/wiki-profiles
+```
+
+Precreate the host directory owned by the wiki runtime user with mode 0700. The
+database is mode 0600; preserve this private directory in host backups, exclude
+it from Git/static output, and retain it across container replacements. The
+verifier URL is trusted administrator configuration and must point directly to
+the existing proxy; it cannot come from a request. If its identity provider or
+issuer changes, clear grants before switching (or use a new verifier URL namespace).
+Cookie-authorized mutations require the exact configured HTTPS Origin and a
+custom request header. Missing configuration keeps the original token-only API;
+verification failures deny remembered access. Token-bearing automation retains
+its existing header contract.

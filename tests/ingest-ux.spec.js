@@ -13,6 +13,16 @@ const test = base.extend({
     // Read the actual HTTP body. WebKit's intercepted request metadata omits
     // file bytes, so postDataBuffer() cannot verify a multipart upload there.
     const server = http.createServer(async (request, response) => {
+      // The test rewrites a same-origin upload to this separate receiver.
+      // WebKit preflights the authoring profile's custom request header.
+      if (request.method === "OPTIONS") {
+        response.writeHead(204, {
+          "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST",
+          "Access-Control-Allow-Headers": "X-Wiki-Profile-Action, X-CivWiki-Authoring-Token",
+        });
+        response.end();
+        return;
+      }
       try {
         const chunks = [];
         for await (const chunk of request) chunks.push(chunk);
