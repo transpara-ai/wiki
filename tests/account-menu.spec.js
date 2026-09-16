@@ -81,3 +81,66 @@ test("static preview without an identity service hides the account integration",
   await expect(page.locator("#account-settings")).toBeHidden();
   await expect(page.locator("#account-logout")).toBeHidden();
 });
+
+test("authoring is remembered for the account after reload and can be forgotten", async ({ page }) => {
+  await signedIn(page);
+  let saved = false;
+  let registrations = 0;
+  await page.route("**/api/articles", route => route.fulfill({ json: { articles: [] } }));
+  await page.route("**/api/authoring-profile**", async route => {
+    const request = route.request();
+    if (request.method() === "POST") {
+      expect(request.headers()["x-wiki-profile-action"]).toBe("1");
+      if (request.url().endsWith("/forget")) saved = false;
+      else {
+        expect(request.headers()["x-civwiki-authoring-token"]).toBe("example-editor-value");
+        registrations++;
+        saved = true;
+      }
+    }
+    await route.fulfill({ json: { enabled: true, signed_in: true, authoring: saved } });
+  });
+  await page.goto("/ingest.html");
+  await expect(page.locator("#remember-authoring")).toBeVisible();
+  await page.locator("#authoring-token").fill("example-editor-value");
+  await page.locator("#remember-authoring").click();
+  await expect(page.locator("#authoring-profile-status")).toContainText("saved to your wiki profile");
+  await expect(page.locator("#authoring-token")).toHaveValue("");
+  await expect(page.locator("#authoring-token-label")).toBeHidden();
+  await page.reload();
+  await expect(page.locator("#authoring-token-label")).toBeHidden();
+  await expect(page.locator("#authoring-profile-status")).toContainText("saved to your wiki profile");
+  expect(registrations).toBe(1);
+  await page.route("**/api/rebuild", route => {
+    expect(route.request().headers()["x-civwiki-authoring-token"]).toBeUndefined();
+    expect(route.request().headers()["x-wiki-profile-action"]).toBe("1");
+    return route.fulfill({ status: 500, json: { error: "Fixture response; request used account access" } });
+  });
+  await page.locator("#rebuild-now").click();
+  await expect(page.locator("#rebuild-status")).toContainText("used account access");
+  const storage = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage }, cookie: document.cookie }));
+  expect(storage).not.toContain("example-editor-value");
+  await page.locator("#account-toggle").click();
+  await expect(page.locator("#account-forget-authoring")).toBeVisible();
+  await page.locator("#account-forget-authoring").click();
+  await expect(page.locator("#authoring-token-label")).toBeVisible();
+  await expect(page.locator("#account-forget-authoring")).toBeHidden();
+  await page.reload();
+  await expect(page.locator("#remember-authoring")).toBeVisible();
+  expect(saved).toBe(false);
+});
+
+test("invalid authoring token is not remembered and remains available for correction", async ({ page }) => {
+  await signedIn(page);
+  await page.route("**/api/articles", route => route.fulfill({ json: { articles: [] } }));
+  await page.route("**/api/authoring-profile", route => route.request().method() === "POST"
+    ? route.fulfill({ status: 401, json: { error: "A valid authoring token is required once" } })
+    : route.fulfill({ json: { enabled: true, signed_in: true, authoring: false } }));
+  await page.goto("/ingest.html");
+  await expect(page.locator("#remember-authoring")).toBeVisible();
+  await page.locator("#authoring-token").fill("wrong-example");
+  await page.locator("#remember-authoring").click();
+  await expect(page.locator("#authoring-profile-status")).toContainText("valid authoring token");
+  await expect(page.locator("#authoring-token")).toHaveValue("wrong-example");
+  await expect(page.locator("#account-forget-authoring")).toBeHidden();
+});

@@ -36,6 +36,7 @@ from urllib.parse import parse_qsl, urlsplit
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ingest_ops  # noqa: E402
+import authoring_profile  # noqa: E402
 from article_catalog import load_catalog  # noqa: E402
 from knowledge_structure import STRUCTURE, StructureError  # noqa: E402
 
@@ -1040,6 +1041,8 @@ class IngestHandler(SimpleHTTPRequestHandler):
             AUTHORING_TOKEN_ENV, LEGACY_AUTHORING_TOKEN_ENV))
         if configured and authoring_allowed(self.client_address[0], supplied):
             return True
+        if configured and not supplied and self.profile_authoring(mutation=self.command != "GET"):
+            return True
         if not configured and authoring_allowed(self.client_address[0], supplied):
             if same_origin_authoring_request(self.headers, getattr(self.server, "server_port", None)):
                 return True
@@ -1051,8 +1054,47 @@ class IngestHandler(SimpleHTTPRequestHandler):
         })
         return False
 
+    def profile_authoring(self, mutation=False):
+        try:
+            config = authoring_profile.settings()
+            if mutation and not authoring_profile.mutation_allowed(self.headers, config):
+                return False
+            key = authoring_profile.principal(self.headers, config)
+            return authoring_profile.granted(config, key, compatible_env(
+                AUTHORING_TOKEN_ENV, LEGACY_AUTHORING_TOKEN_ENV))
+        except authoring_profile.ProfileUnavailable:
+            return False
+
+    def handle_authoring_profile(self, action=None):
+        try:
+            config = authoring_profile.settings()
+            if action and not authoring_profile.mutation_allowed(self.headers, config):
+                json_response(self, 403, {"error": "Same-origin profile request required"})
+                return
+            key = authoring_profile.principal(self.headers, config)
+            configured = compatible_env(AUTHORING_TOKEN_ENV, LEGACY_AUTHORING_TOKEN_ENV)
+            if action:
+                if not key:
+                    json_response(self, 401, {"error": "Sign in to remember authoring access"})
+                    return
+                if action == "remember":
+                    supplied = self.headers.get(AUTHORING_TOKEN_HEADER, "")
+                    if not configured or not authoring_allowed(self.client_address[0], supplied):
+                        json_response(self, 401, {"error": "A valid authoring token is required once"})
+                        return
+                    authoring_profile.remember(config, key, configured)
+                else:
+                    authoring_profile.forget(config, key)
+            json_response(self, 200, {"enabled": bool(config), "signed_in": bool(key),
+                                     "authoring": authoring_profile.granted(config, key, configured)})
+        except authoring_profile.ProfileUnavailable:
+            json_response(self, 503, {"error": "Authoring profile is unavailable; access was not changed"})
+
     def do_GET(self):
         if not self.require_allowed_host():
+            return
+        if self.path == "/api/authoring-profile":
+            self.handle_authoring_profile()
             return
         if self.path == "/api/health":
             json_response(self, 200, {"ok": True})
@@ -1088,7 +1130,7 @@ class IngestHandler(SimpleHTTPRequestHandler):
             return
         if self.path == "/api/articles":
             supplied = self.headers.get(AUTHORING_TOKEN_HEADER, "")
-            include_sources = authoring_allowed(self.client_address[0], supplied)
+            include_sources = authoring_allowed(self.client_address[0], supplied) or self.profile_authoring()
             json_response(self, 200, {"articles": article_records(include_sources=include_sources)})
             return
         return super().do_GET()
@@ -1096,6 +1138,9 @@ class IngestHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         try:
             if not self.require_allowed_host():
+                return
+            if self.path in {"/api/authoring-profile", "/api/authoring-profile/forget"}:
+                self.handle_authoring_profile("forget" if self.path.endswith("/forget") else "remember")
                 return
             if not self.require_authoring():
                 return
