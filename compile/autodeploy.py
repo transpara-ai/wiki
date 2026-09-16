@@ -25,6 +25,7 @@ ALLOW_EXACT = {
     "compile/stats.py", "compile/inflight.py",
     "compile/site_publication.py",
     "compile/source_navigation.py",
+    "compile/account_config.json",
     "compile/article_catalog.py", "compile/knowledge_structure.py",
     "compile/knowledge_structure.json", "compile/org_structure.py",
 }

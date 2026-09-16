@@ -49,6 +49,7 @@ SOURCE_DIST = DIST / "source"
 CSS_VER = ""
 SPACE_CONTEXT_VER = ""
 LOCAL_TIME_VER = ""
+ACCOUNT_MENU_VER = ""
 SEARCH_VER = ""
 ARC_DATA_VER = ""
 ARC_VIEW_VER = ""
@@ -2314,9 +2315,8 @@ def repo_page(repo, status):
         '</head><body>'
         '<header class="topbar"><a class="brand" href="index.html">%s</a>%s%s%s'
         '<div class="top-meta">%s'
-        '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
         '</div></header>' % (brand_label(), space_switcher(active_space),
-                              search_box(active_space=active_space), top_links(active_space=active_space), space_freshness(status, active_space)) +
+                              search_box(active_space=active_space), top_links(active_space=active_space), header_controls(status, active_space)) +
         '<div class="layout">%s' % build_sidebar("", current_repo=repo["slug"], active_space=active_space) +
         space_context_script(status, active_space, contextual=True, sidebar=True,
                              current_repo=repo["slug"]) +
@@ -2556,6 +2556,47 @@ def space_freshness(status, active_space=""):
     return '<span class="space-freshness">%s</span>' % freshness(status, active_space)
 
 
+def header_controls(status, active_space=""):
+    return (space_freshness(status, active_space) +
+            '<button id="theme-toggle" class="theme-toggle" type="button" '
+            'aria-label="Toggle dark or light theme">☾ dark</button>' + account_menu())
+
+
+def account_menu():
+    if PROFILE.key != "authoring-local":
+        return ""
+    config = json.loads((ROOT / "compile" / "account_config.json").read_text())
+    for key in ("settings_url", "end_session_url"):
+        url = urllib.parse.urlsplit(config[key])
+        if (url.scheme != "https" or not url.hostname or url.username or url.password
+                or url.query or url.fragment):
+            raise ValueError("Account links must be HTTPS URLs without credentials, queries or fragments")
+    logout = "/oauth2/sign_out?" + urllib.parse.urlencode({"rd": config["end_session_url"]})
+    avatar = ('<span class="account-avatar" aria-hidden="true">'
+              '<span class="account-initials">'
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">'
+              '<circle cx="12" cy="8" r="4"/><path d="M4 22v-2a8 8 0 0 1 16 0v2"/>'
+              '</svg></span><img class="account-photo" alt="" referrerpolicy="no-referrer" hidden></span>')
+    return (
+        '<details id="account-menu" class="account-menu">'
+        '<summary id="account-toggle" aria-label="Your profile">%s<span class="sr-only">Profile</span></summary>'
+        '<section class="account-panel" aria-label="Your profile">'
+        '<div class="account-identity">%s<div><strong id="account-name">Your profile</strong>'
+        '<span id="account-email" hidden></span></div></div>'
+        '<p id="account-status" role="status">Loading profile…</p>'
+        '<div id="account-membership" hidden><h3>Groups</h3>'
+        '<ul id="account-groups" hidden></ul><p id="account-groups-empty">Group membership is not provided by tAuth yet.</p>'
+        '<h3>Rights</h3><p>Detailed rights are not available here yet. Wiki editing requires an authoring token.</p></div>'
+        '<nav class="account-actions" aria-label="Account">'
+        '<a id="account-settings" href="%s">Account settings in tAuth</a>'
+        '<a id="account-login" href="/oauth2/start" hidden>Sign in</a>'
+        '<a id="account-logout" href="%s">Log out</a>'
+        '</nav><noscript><p>Enable JavaScript to display your account details.</p></noscript>'
+        '</section></details>'
+    ) % (avatar, avatar, html.escape(config["settings_url"], quote=True),
+         html.escape(logout, quote=True))
+
+
 def space_context_script(status, active_space="", prefix="", *,
                          contextual=False, sidebar=False, current_repo="", current_article=""):
     """Mount context before page scripts initialize; emit only this profile's spaces."""
@@ -2573,7 +2614,9 @@ def space_context_script(status, active_space="", prefix="", *,
     return ('<script type="application/json" id="space-context-data">%s</script>'
             '<script src="%slocalTime.js?v=%s"></script>'
             '<script src="%sspaceContext.js?v=%s"></script>' %
-            (encoded, prefix, LOCAL_TIME_VER, prefix, SPACE_CONTEXT_VER))
+            (encoded, prefix, LOCAL_TIME_VER, prefix, SPACE_CONTEXT_VER) +
+            ('<script defer src="%saccountMenu.js?v=%s"></script>' %
+             (prefix, ACCOUNT_MENU_VER) if PROFILE.key == "authoring-local" else ""))
 
 
 def simple_page(title, inner_html, status, *, main_class="content source-content"):
@@ -2588,10 +2631,9 @@ def simple_page(title, inner_html, status, *, main_class="content source-content
         '</head><body>'
         '<header class="topbar"><a class="brand" href="../index.html">%s</a>%s%s%s'
         '<div class="top-meta">%s'
-        '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
         '</div></header>' % (brand_label(), space_switcher("civilization", "../"),
                               search_box(prefix="../", active_space="civilization"),
-                              top_links("../", active_space="civilization"), space_freshness(status, "civilization")) +
+                              top_links("../", active_space="civilization"), header_controls(status, "civilization")) +
         space_context_script(status, "civilization", "../", contextual=True) +
         '<main class="%s">%s'
         '%s</main><script src="../search-index.js?v=%s"></script>' % (
@@ -2615,9 +2657,8 @@ def tool_page(title, inner_html, status, active_space="civilization", *, current
         '</head><body>'
         '<header class="topbar"><a class="brand" href="index.html">%s</a>%s%s%s'
         '<div class="top-meta">%s'
-        '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
         '</div></header>' % (brand_label(), space_switcher(active_space),
-                              search_box(active_space=active_space), top_links(active_space=active_space), space_freshness(status, active_space)) +
+                              search_box(active_space=active_space), top_links(active_space=active_space), header_controls(status, active_space)) +
         '<div class="layout">%s%s<main class="content">%s'
         '%s</main></div><script src="search-index.js?v=%s"></script>' %
         (build_sidebar("", active_space=active_space, current_repo=current_repo),
@@ -3102,13 +3143,12 @@ def page(slug, title, meta, fm, body_html, toc_tokens, links, status, *,
         '</head><body>' +
         '<header class="topbar"><a class="brand" href="%sindex.html">%s</a>%s%s%s'
         '<div class="top-meta">%s'
-        '<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button>'
         '</div></header>' % (prefix, brand_label(),
                               space_switcher(active_space, prefix),
                               search_box(prefix=prefix, active_space=active_space),
                               top_links(prefix, active_space=active_space,
                                         active_section=primary_section(meta) if meta else ""),
-                              space_freshness(status, active_space)) +
+                              header_controls(status, active_space)) +
         '<div class="layout">%s' % sidebar +
         space_context_script(status, active_space, prefix, sidebar=True,
                              current_article=slug if not is_home else "") +
@@ -3258,8 +3298,8 @@ def portal_page(status):
         (html.escape(title), CSS_VER) +
         '<script>(function(){try{var t=localStorage.getItem("civwiki-theme");if(t==="dark")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>'
         '</head><body><header class="topbar"><a class="brand" href="index.html">%s</a>%s%s%s'
-        '<div class="top-meta">%s<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark or light theme">☾ dark</button></div></header>' %
-        (brand_label(), space_switcher(), search_box(), top_links(), space_freshness(status)) +
+        '<div class="top-meta">%s</div></header>' %
+        (brand_label(), space_switcher(), search_box(), top_links(), header_controls(status)) +
         space_context_script(status) +
         '<main class="hub-portal"><header class="hub-hero"><span>Governed knowledge</span>'
         '<h1>%s</h1><p>One canonical graph. Several purposeful views.</p></header>' % html.escape(title) +
@@ -3286,7 +3326,7 @@ def build():
 
 def _build_site():
     global CSS_VER, SEARCH_VER, ARC_DATA_VER, ARC_VIEW_VER, ONTO_VER, PROGRESS_VER, REPOS
-    global SPACE_CONTEXT_VER, LOCAL_TIME_VER
+    global SPACE_CONTEXT_VER, LOCAL_TIME_VER, ACCOUNT_MENU_VER
     # fail closed BEFORE any dist mutation: a malformed board must never
     # leave the served site partially updated (CFAR 2a-r6); the index
     # render below re-runs build_board on the same fm
@@ -3382,6 +3422,8 @@ def _build_site():
     CSS_VER = copy_asset("style.css")
     SPACE_CONTEXT_VER = copy_asset("spaceContext.js")
     LOCAL_TIME_VER = copy_asset("localTime.js")
+    if PROFILE.key == "authoring-local":
+        ACCOUNT_MENU_VER = copy_asset("accountMenu.js")
     write_dist_text(DIST / "version.json", json.dumps({"version": SITE_VERSION}, indent=2) + "\n")
     write_dist_text(DIST / "VERSION", SITE_VERSION + "\n")
     # First pass populates SOURCE_INDEX for search; second pass refreshes source

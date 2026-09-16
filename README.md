@@ -97,6 +97,10 @@ published pages. Unknown destinations are shown as unavailable, and section
 links are checked against the generated headings. This changes the rendered
 navigation only; original source documents are preserved.
 
+The top-right [profile menu](docs/profile-menu.md) uses the existing tAuth
+session for account details, account settings, and logout. Initials appear when
+the identity integration does not supply a profile picture.
+
 The local authoring server sends `Cache-Control: no-cache` for pages and release
 metadata so browsers revalidate them after a rebuild. API responses use
 `no-store`. After updating the server code, restart the local service and reload
