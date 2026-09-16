@@ -70,12 +70,14 @@ test("expired session offers sign-in and removes account actions", async ({ page
   await expect(page.locator("#account-logout")).toBeHidden();
 });
 
-test("static preview explains missing profile without claiming an identity", async ({ page }) => {
+test("static preview without an identity service hides the account integration", async ({ page }) => {
   await page.route("**/oauth2/userinfo", route => route.fulfill({ status: 404, body: "Not found" }));
   await page.goto("/index.html");
-  await page.locator("#account-toggle").click();
+  await expect(page.locator("#account-menu")).toBeHidden();
   await expect(page.locator("#account-name")).toHaveText("Your profile");
   await expect(page.locator("#account-status")).toHaveText("Profile information is unavailable on this connection.");
   await expect(page.locator("#account-membership")).toBeHidden();
   await expect(page.locator("#account-login")).toBeHidden();
+  await expect(page.locator("#account-settings")).toBeHidden();
+  await expect(page.locator("#account-logout")).toBeHidden();
 });

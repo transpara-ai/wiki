@@ -9,8 +9,10 @@ closes when clicking outside.
 The browser reads `/oauth2/userinfo` from the existing authenticated proxy with
 same-origin credentials and no caching. Identity is never included in generated
 HTML, search indexes, local storage, or session storage. A signed-out response
-clears displayed identity and offers sign-in. Local previews without the proxy
-show that profile information is unavailable.
+clears displayed identity and offers sign-in. The menu starts hidden and is
+enabled only after the profile service returns an identity or an explicit
+signed-out response. A missing endpoint keeps the entire menu hidden, so direct
+SSH access and static previews do not offer account actions that cannot work.
 
 The deployed OAuth2 Proxy 7.7.1 returns `user`, `email`, `preferredUsername`, and
 any configured `groups`. It does not return a picture. The menu therefore uses
@@ -35,6 +37,9 @@ cookies or retrieve OAuth access/ID tokens.
 
 The implementation uses the existing session and logout contracts without
 changing proxy configuration, credentials, scopes, or authorization policy.
+The public Velia route already supplies `/oauth2/*` through DevOps' OAuth2 Proxy
+override, ahead of the authoring server. The base Compose/Tailscale direct-server
+route does not supply these endpoints and therefore does not enable the menu.
 See the [OAuth2 Proxy 7.7 endpoint documentation](https://oauth2-proxy.github.io/oauth2-proxy/7.7.x/features/endpoints/)
 and [Keycloak's OIDC endpoints](https://www.keycloak.org/securing-apps/oidc-layers).
 

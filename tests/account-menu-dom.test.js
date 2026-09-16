@@ -42,6 +42,7 @@ test("profile uses session identity, renders claims as text, and never stores th
     assert.equal(requests[0].options.cache, "no-store");
     assert.equal(requests[0].options.redirect, "error");
     assert.equal(doc.querySelector("#account-logout").hidden, false);
+    assert.equal(doc.querySelector("#account-menu").hidden, false);
     const url = new URL(doc.querySelector("#account-logout").href);
     assert.equal(url.pathname, "/oauth2/sign_out");
     assert.match(url.searchParams.get("rd"), /\/protocol\/openid-connect\/logout$/);
@@ -78,6 +79,7 @@ for (const [label, response, signedOut] of [
       assert.equal(doc.querySelector("#account-login").hidden, !signedOut);
       assert.equal(doc.querySelector("#account-logout").hidden, signedOut);
       assert.match(doc.querySelector("#account-status").textContent, signedOut ? /signed out/ : /unavailable/);
+      assert.equal(doc.querySelector("#account-menu").hidden, !signedOut);
     } finally { dom.window.close(); }
   });
 }

@@ -2578,7 +2578,7 @@ def account_menu():
               '<circle cx="12" cy="8" r="4"/><path d="M4 22v-2a8 8 0 0 1 16 0v2"/>'
               '</svg></span><img class="account-photo" alt="" referrerpolicy="no-referrer" hidden></span>')
     return (
-        '<details id="account-menu" class="account-menu">'
+        '<details id="account-menu" class="account-menu" hidden>'
         '<summary id="account-toggle" aria-label="Your profile">%s<span class="sr-only">Profile</span></summary>'
         '<section class="account-panel" aria-label="Your profile">'
         '<div class="account-identity">%s<div><strong id="account-name">Your profile</strong>'
@@ -2591,8 +2591,7 @@ def account_menu():
         '<a id="account-settings" href="%s">Account settings in tAuth</a>'
         '<a id="account-login" href="/oauth2/start" hidden>Sign in</a>'
         '<a id="account-logout" href="%s">Log out</a>'
-        '</nav><noscript><p>Enable JavaScript to display your account details.</p></noscript>'
-        '</section></details>'
+        '</nav></section></details>'
     ) % (avatar, avatar, html.escape(config["settings_url"], quote=True),
          html.escape(logout, quote=True))
 

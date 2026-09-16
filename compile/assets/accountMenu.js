@@ -91,9 +91,20 @@
         credentials: "same-origin", cache: "no-store", redirect: "error",
         headers: { Accept: "application/json" }, signal: controller.signal
       });
-      if (response.status === 401 || response.status === 403) { unavailable(true); return; }
+      if (response.status === 401 || response.status === 403) {
+        menu.hidden = false;
+        unavailable(true);
+        return;
+      }
+      if (response.status === 404) {
+        menu.hidden = true;
+        menu.open = false;
+        unavailable(false);
+        return;
+      }
       if (!response.ok) throw new Error("Profile request failed");
       render(await response.json());
+      menu.hidden = false;
     } catch (_) { unavailable(false); }
     finally { clearTimeout(timeout); pending = false; }
   }
