@@ -48,3 +48,18 @@ keyboard/touch access, small screens, nested page routes, and logout navigation
 in Chromium and WebKit. Browser fixtures test signed-in claims without requiring
 or recording a user's credentials. A live signed-in user must verify their own
 displayed identity and complete tAuth's logout confirmation.
+
+## Proxy timeout for authoring
+
+Rebuild and ingest requests remain open while the wiki refreshes its output.
+The deployed corpus takes about 50 seconds to rebuild, exceeding OAuth2 Proxy's
+30-second default. Set `--upstream-timeout=300s` in the existing OAuth2 Proxy
+service command. Configure the outer reverse proxy's response/read timeout to
+at least 300 seconds too. Keep existing authentication and routing settings.
+See [OAuth2 Proxy upstream configuration](https://oauth2-proxy.github.io/oauth2-proxy/7.7.x/configuration/overview/).
+
+An HTML 502/504 error can mean the proxy stopped waiting while the wiki continued
+working. Check the site's updated time before repeating an ingest operation;
+repeating it could submit material twice. The browser reports this uncertainty
+instead of displaying a JSON parsing error. Server logs distinguish a proxy
+response timeout from an authoring-token refusal or a failed refresh.
