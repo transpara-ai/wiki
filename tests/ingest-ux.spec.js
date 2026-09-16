@@ -45,7 +45,8 @@ const test = base.extend({
 
 // The static test server has no authoring API: /api/articles 404s and the UI
 // degrades honestly, same class as inflight/deploy-status (see arc-view.spec).
-const BENIGN_404 = /\/(api\/articles|inflight\.json|deploy-status\.json|favicon\.ico)$/;
+// Static previews also lack the optional signed-in profile endpoint.
+const BENIGN_404 = /\/(oauth2\/userinfo|api\/articles|inflight\.json|deploy-status\.json|favicon\.ico)$/;
 
 const ARTICLES = [
   { slug: "competition-competitor-index", org: "transpara", sources: [],
@@ -260,7 +261,7 @@ async function collectErrors(page) {
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
     const url = (msg.location() && msg.location().url) || "";
-    if (BENIGN_404.test(url)) return;
+    if (BENIGN_404.test(url) && /404/.test(msg.text())) return;
     errors.push(`${msg.text()} (${url})`);
   });
   page.on("pageerror", (err) => errors.push(String(err)));

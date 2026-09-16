@@ -9,14 +9,15 @@ const { test, expect } = require("@playwright/test");
 // serving host generates and a fresh local dist lacks (the UI degrades
 // honestly); Chromium probes favicon.ico on its own. Everything else —
 // script errors, other failed resources — stays fatal.
-const BENIGN_404 = /\/(inflight\.json|deploy-status\.json|favicon\.ico)$/;
+// Static previews also lack the optional signed-in profile endpoint.
+const BENIGN_404 = /\/(oauth2\/userinfo|inflight\.json|deploy-status\.json|favicon\.ico)$/;
 
 async function collectErrors(page) {
   const errors = [];
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
     const url = (msg.location() && msg.location().url) || "";
-    if (BENIGN_404.test(url)) return;
+    if (BENIGN_404.test(url) && /404/.test(msg.text())) return;
     errors.push(`${msg.text()} (${url})`);
   });
   page.on("pageerror", (err) => errors.push(String(err)));
