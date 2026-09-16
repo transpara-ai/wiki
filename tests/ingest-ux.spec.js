@@ -105,12 +105,17 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
 for (const response of [
   { status: 403, json: { error: "Authoring token required" }, message: "Authoring token required" },
   { status: 500, json: { refresh: { ok: false, error: "Refresh timed out" } }, message: "Refresh timed out" },
+  { status: 502, body: "<html>Bad Gateway</html>", message: "The proxy stopped waiting for the wiki (HTTP 502)" },
+  { status: 504, body: "<html>Gateway Timeout</html>", message: "The proxy stopped waiting for the wiki (HTTP 504)" },
+  { status: 200, body: "<html>Sign in</html>", message: "Reload this page and sign in again if prompted" },
   { networkFailure: true, message: "Rebuild failed:" },
 ]) {
   test(`failed rebuild shows a nearby error and allows retry (${response.status || "network"})`, async ({ page }) => {
     await stubArticles(page);
     await page.route("**/api/rebuild", (route) => response.networkFailure
-      ? route.abort("failed") : route.fulfill({ status: response.status, json: response.json }));
+      ? route.abort("failed") : route.fulfill(response.body
+        ? { status: response.status, contentType: "text/html", body: response.body }
+        : { status: response.status, json: response.json }));
     await page.goto("/ingest.html?space=competition");
     await page.locator("#authoring-token").fill("test-authoring-token");
     await page.locator("#rebuild-now").click();
@@ -119,6 +124,12 @@ for (const response of [
     await expect(page.locator("#rebuild-now")).toBeEnabled();
     await expect(page.getByRole("button", { name: "Ingest and rebuild", exact: true })).toBeEnabled();
     await expect(page.locator("#authoring-token")).toHaveValue("test-authoring-token");
+    if (response.body) {
+      await expect(page.locator("#ingest-status")).not.toContainText(response.body);
+      if (response.status !== 200) {
+        await expect(page.locator("#rebuild-status")).toContainText("may still finish");
+      }
+    }
   });
 }
 
