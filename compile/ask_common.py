@@ -13,6 +13,14 @@ class AskError(Exception):
         self.status = status
 
 
+def resolve_effort(model, effort=None):
+    if effort is None:
+        effort = model['default_effort']
+    if not isinstance(effort, str) or effort not in model['effort_levels']:
+        raise AskError('This effort level is not supported for the selected model.', 400)
+    return effort
+
+
 SCHEMAS = {
     'select': {
         'type': 'object', 'additionalProperties': False,

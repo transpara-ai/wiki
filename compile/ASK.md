@@ -1,4 +1,21 @@
-# Subscription answers — v0.8.0
+# Subscription answers — v0.8.1
+
+Readers submit with Enter in the question field. The Effort dropdown remembers
+the selection per provider/model and each answer identifies the configured level.
+The same explicit level is used for selection and answering. Missing effort in an
+older client's request resolves to the catalog default: Low for GPT-5.6 Sol,
+Medium for the other OpenAI models, and High for Claude models with effort control.
+Haiku shows Not supported and receives no effort flag.
+
+`llm-models.json` carries the supported levels and their provenance, adapted from
+Civilization's catalog and checked against Velia's native Codex model metadata and
+[Claude effort documentation](https://platform.claude.com/docs/en/build-with-claude/effort).
+Codex receives the explicit
+[`model_reasoning_effort`](https://learn.chatgpt.com/docs/config-file/config-reference)
+setting; Claude Code receives `--effort`. The bounded wiki runner does not offer
+Codex Ultra, whose metadata describes automatic delegation. Unsupported levels
+are rejected before execution; no level is silently downgraded. The displayed
+effort is the configured control, not a measurement of hidden reasoning tokens.
 
 ## Factory Order and trust boundary
 
@@ -137,11 +154,11 @@ are not proof of the full browser-to-provider path.
 - `GET /api/ask/models`: verified SSO required. Returns models, defaults,
   provenance, enabled status. No credentials.
 - `POST /api/ask`: JSON `question`, `space` (`all` or a published key), `provider`
-  (`codex` or `claude`), and `model`. Requires signed-in cookie, configured Origin,
+  (`codex` or `claude`), `model`, and optional `effort`. Requires signed-in cookie, configured Origin,
   and `X-Wiki-Profile-Action: 1`.
 - Success: `answer`, `paragraphs` (plain `text` and `article_ids`), `citations`
   (`id`, `title`, canonical `href`), `insufficient_evidence`, `provider`, `model`,
-  and SHA-256 `corpus_revision`.
+  `effort`, and SHA-256 `corpus_revision`.
 - Failures: 400 invalid input, 401 sign-in required, 403 wrong origin,
   422 excessive selected context, 429 busy/subscription limit, 502 invalid model
   output, 503 unavailable/unverified/connection/login failure, 504 timeout.

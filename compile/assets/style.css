@@ -104,9 +104,9 @@ summary.fresh::after{content:"▾";margin-left:6px;font-size:9px;opacity:.75}
 .account-actions a,.account-actions button{padding:8px;border-radius:5px;color:var(--link)}
 .account-actions a:hover,.account-actions button:hover{background:var(--bg);text-decoration:none}
 .search{grid-area:search;position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,auto);min-width:0}
-.search select,.ask-controls button{background:var(--panel2);color:var(--txt);border:1px solid var(--bd2);font:12px var(--mono);min-width:0}
+.search select{background:var(--panel2);color:var(--txt);border:1px solid var(--bd2);font:12px var(--mono);min-width:0}
 .ask-controls{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.ask-controls select{max-width:100%;padding:6px}.ask-controls button{padding:6px 12px;cursor:pointer}
+.ask-controls select{max-width:100%;padding:6px}.ask-hint{align-self:center;color:var(--muted);font-size:12px}
 .ask-answer{grid-column:1/-1;max-height:60vh;overflow:auto;overflow-wrap:anywhere;border:1px solid var(--bd2);padding:16px;margin-top:8px;background:var(--panel2);font:15px/1.6 var(--sans)}
 .ask-answer p{white-space:pre-wrap;margin:10px 0}.ask-answer a{color:var(--link)}
 .ask-controls[hidden],.ask-answer[hidden]{display:none}

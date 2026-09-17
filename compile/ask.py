@@ -10,7 +10,7 @@ import threading
 import subprocess
 import time
 
-from ask_common import AskError, MAX_ARTICLES, MAX_CONTEXT, MAX_WIRE, DEADLINE_SECONDS, validate_result
+from ask_common import AskError, MAX_ARTICLES, MAX_CONTEXT, MAX_WIRE, DEADLINE_SECONDS, validate_result, resolve_effort
 
 _lock = threading.Lock()
 _readers = set()
@@ -84,8 +84,9 @@ def models():
 
 def answer(payload, reader, dist):
     started = time.monotonic()
-    if not isinstance(payload, dict) or set(payload) != {'question', 'space', 'provider', 'model'}:
-        raise AskError('Provide question, space, provider, and model.', 400)
+    fields = {'question', 'space', 'provider', 'model'}
+    if not isinstance(payload, dict) or set(payload) not in (fields, fields | {'effort'}):
+        raise AskError('Provide question, space, provider, model, and optional effort.', 400)
     if not all(isinstance(v, str) for v in payload.values()):
         raise AskError('Question and selections must be text.', 400)
     question = payload['question'].strip()
@@ -93,9 +94,12 @@ def answer(payload, reader, dist):
         raise AskError('Enter a question between 2 and 4,000 characters.', 400)
     available = models()
     provider, model, space = (payload[k] for k in ('provider', 'model', 'space'))
-    if not any(m['provider'] == provider and m['id'] == model and m['enabled']
-               for m in available['models']):
+    selected_model = next((m for m in available['models']
+                           if m['provider'] == provider and m['id'] == model and m['enabled']), None)
+    if selected_model is None:
         raise AskError('This model is not enabled on wiki. Select an available model.', 503)
+    effort = resolve_effort(selected_model, payload.get('effort'))
+    payload = {**payload, 'effort': effort}
     with admission(reader, provider):
         try:
             corpus = json.loads((Path(dist) / 'ask-index.json').read_text())
@@ -109,7 +113,7 @@ def answer(payload, reader, dist):
         if not records:
             return {'answer': 'There are no published articles in this space.', 'paragraphs': [],
                     'citations': [], 'insufficient_evidence': True,
-                    'provider': provider, 'model': model, 'corpus_revision': revision}
+                    'provider': provider, 'model': model, 'effort': effort, 'corpus_revision': revision}
 
         def complete(stage, context):
             remaining = DEADLINE_SECONDS - (time.monotonic() - started)
@@ -130,7 +134,7 @@ def answer(payload, reader, dist):
         if not chosen:
             return {'answer': 'The published articles do not provide enough evidence to answer this question.',
                     'paragraphs': [], 'citations': [], 'insufficient_evidence': True,
-                    'provider': provider, 'model': model, 'corpus_revision': revision}
+                    'provider': provider, 'model': model, 'effort': effort, 'corpus_revision': revision}
         result = complete('answer', [{'id': a['id'], 'title': a['title'], 'text': a['text']} for a in chosen])
         cited = []
         for paragraph in result['paragraphs']:
@@ -143,7 +147,7 @@ def answer(payload, reader, dist):
         return {**result, 'answer': '\n\n'.join(p['text'] for p in result['paragraphs']),
                 'citations': [{'id': slug, 'title': records[slug]['title'],
                                'href': records[slug]['href']} for slug in cited],
-                'provider': provider, 'model': model, 'corpus_revision': revision}
+                'provider': provider, 'model': model, 'effort': effort, 'corpus_revision': revision}
 
 
 def build_index(articles, spaces):

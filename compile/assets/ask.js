@@ -5,13 +5,28 @@
   if (!input) return;
   var form = input.closest('form'), mode = document.getElementById('wiki-query-mode');
   var provider = document.getElementById('wiki-ask-provider'), model = document.getElementById('wiki-ask-model');
+  var effort = document.getElementById('wiki-ask-effort');
   var controls = document.getElementById('wiki-ask-controls'), output = document.getElementById('wiki-ask-answer');
-  var submit = document.getElementById('wiki-ask-submit'), scope = document.getElementById('wiki-search-scope');
+  var scope = document.getElementById('wiki-search-scope');
   var catalog = null, busy = false, loaded = false, generation = 0;
   function saved(key, fallback) { try { return localStorage.getItem('wiki-ask-' + key) || fallback; } catch (_) { return fallback; } }
   function save(key, value) { try { localStorage.setItem('wiki-ask-' + key, value); } catch (_) {} }
   function status(message) { output.replaceChildren(); output.textContent = message; output.hidden = false; }
-  function available() { return !!model.value && !!model.selectedOptions[0] && !model.selectedOptions[0].disabled; }
+  function modelAvailable() { return !!model.value && !!model.selectedOptions[0] && !model.selectedOptions[0].disabled; }
+  function available() { return modelAvailable() && !!effort.value; }
+  function effortLabel(value) { return {low: 'Low', medium: 'Medium', high: 'High', xhigh: 'Extra high', max: 'Maximum', 'not-supported': 'Not supported'}[value] || value; }
+  function effortKey() { return 'effort-' + provider.value + '-' + model.value; }
+  function effortOptions() {
+    effort.replaceChildren();
+    var spec = catalog && catalog.models.find(function (m) { return m.provider === provider.value && m.id === model.value; });
+    if (!spec) return;
+    spec.effort_levels.forEach(function (level) {
+      var option = document.createElement('option'); option.value = level; option.textContent = effortLabel(level); effort.appendChild(option);
+    });
+    effort.value = saved(effortKey(), spec.default_effort);
+    effort.disabled = spec.effort_levels.length === 1 && spec.default_effort === 'not-supported';
+    if (!effort.value) status('Your saved effort level is unavailable. Choose a supported effort level.');
+  }
   function options() {
     model.replaceChildren();
     if (!catalog) return;
@@ -22,7 +37,7 @@
     });
     var wanted = saved('model-' + provider.value, catalog.defaults[provider.value]);
     model.value = wanted;
-    submit.disabled = busy || !available();
+    effortOptions();
   }
   async function fetchJSON(url, settings) {
     var response = await fetch(url, Object.assign({credentials: 'same-origin', headers: {Accept: 'application/json'}}, settings));
@@ -36,9 +51,9 @@
     loaded = true;
     try {
       catalog = await fetchJSON('/api/ask/models'); options();
-      if (!available() && mode.value === 'ask') status('Your selected model is unavailable. Choose an enabled model or use Search.');
+      if (!modelAvailable() && mode.value === 'ask') status('Your selected model is unavailable. Choose an enabled model or use Search.');
     } catch (error) {
-      loaded = false; model.replaceChildren(); submit.disabled = true;
+      loaded = false; model.replaceChildren(); effort.replaceChildren();
       if (mode.value === 'ask') status(error.message);
     }
   }
@@ -49,14 +64,18 @@
     input.setAttribute('aria-expanded', 'false');
     input.placeholder = mode.value === 'ask' ? 'Ask Transpara Knowledge Hub' : 'Search Transpara Knowledge Hub';
     input.setAttribute('aria-label', input.placeholder);
+    input.setAttribute('enterkeyhint', mode.value === 'ask' ? 'send' : 'search');
+    if (mode.value === 'ask') input.setAttribute('aria-describedby', 'wiki-ask-hint');
+    else input.removeAttribute('aria-describedby');
     save('mode', mode.value);
     if (mode.value === 'ask') load(); else input.dispatchEvent(new Event('input'));
   }
   provider.value = saved('provider', 'codex'); if (!provider.value) provider.value = 'codex';
   mode.value = saved('mode', 'ask'); if (!mode.value) mode.value = 'ask';
   mode.addEventListener('change', changeMode);
-  provider.addEventListener('change', function () { invalidate(); save('provider', provider.value); options(); if (!available()) status('Your selected model is unavailable. Choose an enabled model or use Search.'); });
-  model.addEventListener('change', function () { invalidate(); save('model-' + provider.value, model.value); submit.disabled = busy || !available(); });
+  provider.addEventListener('change', function () { invalidate(); save('provider', provider.value); options(); if (!modelAvailable()) status('Your selected model is unavailable. Choose an enabled model or use Search.'); });
+  model.addEventListener('change', function () { invalidate(); save('model-' + provider.value, model.value); effortOptions(); });
+  effort.addEventListener('change', function () { invalidate(); save(effortKey(), effort.value); });
   function invalidate() { generation++; output.hidden = true; }
   input.addEventListener('input', invalidate); scope.addEventListener('change', invalidate);
   form.addEventListener('submit', async function (event) {
@@ -64,17 +83,17 @@
     if (mode.value !== 'ask' || busy || !available()) return;
     var question = input.value.trim();
     if (question.length < 2) { status('Enter a question first.'); return; }
-    busy = true; submit.disabled = true;
+    busy = true;
     var current = ++generation;
     status('Reading the selected space and preparing a cited answer…'); output.setAttribute('aria-busy', 'true');
     var controller = new AbortController(), timer = setTimeout(function () { controller.abort(); }, 250000);
     try {
       var data = await fetchJSON('/api/ask', {method: 'POST', signal: controller.signal,
         headers: {'Content-Type': 'application/json', Accept: 'application/json', 'X-Wiki-Profile-Action': '1'},
-        body: JSON.stringify({question: question, space: scope.value, provider: provider.value, model: model.value})});
+        body: JSON.stringify({question: question, space: scope.value, provider: provider.value, model: model.value, effort: effort.value})});
       if (current !== generation || mode.value !== 'ask') return;
       output.replaceChildren(); output.hidden = false;
-      var heading = document.createElement('strong'); heading.textContent = 'Answer · ' + data.model; output.appendChild(heading);
+      var heading = document.createElement('strong'); heading.textContent = 'Answer · ' + data.model + ' · Effort: ' + effortLabel(data.effort); output.appendChild(heading);
       var citations = new Map((data.citations || []).map(function (c) { return [c.id, c]; }));
       var paragraphs = data.paragraphs.length ? data.paragraphs : [{text: data.answer, article_ids: []}];
       paragraphs.forEach(function (p) {
@@ -90,7 +109,7 @@
       if (data.insufficient_evidence) { var note = document.createElement('p'); note.textContent = 'The available wiki evidence is incomplete for this question.'; output.appendChild(note); }
     } catch (error) {
       if (current === generation && mode.value === 'ask') status(error.name === 'AbortError' ? 'The question timed out. Please retry.' : error.message);
-    } finally { clearTimeout(timer); busy = false; submit.disabled = !available(); output.removeAttribute('aria-busy'); }
+    } finally { clearTimeout(timer); busy = false; output.removeAttribute('aria-busy'); }
   });
   changeMode();
 }());

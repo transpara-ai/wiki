@@ -10,79 +10,189 @@
       "id": "claude-fable-5",
       "provider": "claude",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "high",
+      "effort_basis": "Civilization catalog and https://platform.claude.com/docs/en/build-with-claude/effort; Claude Code 2.1.263 --effort"
     },
     {
       "id": "claude-fable-5-1",
       "provider": "claude",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "high",
+      "effort_basis": "Civilization catalog and https://platform.claude.com/docs/en/build-with-claude/effort; Claude Code 2.1.263 --effort"
     },
     {
       "id": "claude-haiku-4-5-20251001",
       "provider": "claude",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "not-supported"
+      ],
+      "default_effort": "not-supported",
+      "effort_basis": "Civilization catalog and https://platform.claude.com/docs/en/build-with-claude/effort; Claude Code 2.1.263 --effort"
     },
     {
       "id": "claude-opus-4-6",
       "provider": "claude",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "max"
+      ],
+      "default_effort": "high",
+      "effort_basis": "Civilization catalog and https://platform.claude.com/docs/en/build-with-claude/effort; Claude Code 2.1.263 --effort"
     },
     {
       "id": "claude-opus-4-8",
       "provider": "claude",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "high",
+      "effort_basis": "Civilization catalog and https://platform.claude.com/docs/en/build-with-claude/effort; Claude Code 2.1.263 --effort"
     },
     {
       "id": "claude-opus-5",
       "provider": "claude",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "high",
+      "effort_basis": "Civilization catalog and https://platform.claude.com/docs/en/build-with-claude/effort; Claude Code 2.1.263 --effort"
     },
     {
       "id": "claude-sonnet-4-6",
       "provider": "claude",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "max"
+      ],
+      "default_effort": "high",
+      "effort_basis": "Civilization catalog and https://platform.claude.com/docs/en/build-with-claude/effort; Claude Code 2.1.263 --effort"
     },
     {
       "id": "claude-sonnet-5",
       "provider": "claude",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "high",
+      "effort_basis": "Civilization catalog and https://platform.claude.com/docs/en/build-with-claude/effort; Claude Code 2.1.263 --effort"
     },
     {
       "id": "gpt-5.5",
       "provider": "codex",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ],
+      "default_effort": "medium",
+      "effort_basis": "Velia Codex 0.153.4 model metadata, 2026-09-17; bounded single-agent levels from Civilization catalog"
     },
     {
       "id": "gpt-5.6-luna",
       "provider": "codex",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "medium",
+      "effort_basis": "Velia Codex 0.153.4 model metadata, 2026-09-17; bounded single-agent levels from Civilization catalog"
     },
     {
       "id": "gpt-5.6-sol",
       "provider": "codex",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "low",
+      "effort_basis": "Velia Codex 0.153.4 model metadata, 2026-09-17; bounded single-agent levels from Civilization catalog"
     },
     {
       "id": "gpt-5.6-terra",
       "provider": "codex",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "medium",
+      "effort_basis": "Velia Codex 0.153.4 model metadata, 2026-09-17; bounded single-agent levels from Civilization catalog"
     },
     {
       "id": "gpt-6-astra",
       "provider": "codex",
       "verified_at": "2026-09-17",
-      "verification_basis": "live CLI probe from the deployed provider identity"
+      "verification_basis": "live CLI probe from the deployed provider identity",
+      "effort_levels": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default_effort": "medium",
+      "effort_basis": "Velia Codex 0.153.4 model metadata, 2026-09-17; bounded single-agent levels from Civilization catalog"
     }
   ]
 }

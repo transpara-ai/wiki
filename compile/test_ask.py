@@ -22,7 +22,8 @@ import ingest_server
 
 MODEL = 'gpt-5.6-sol'
 MODELS = {'defaults': {'provider': 'codex', 'codex': MODEL},
-          'models': [{'id': MODEL, 'provider': 'codex', 'enabled': True}]}
+          'models': [{'id': MODEL, 'provider': 'codex', 'enabled': True,
+                      'effort_levels': ['low', 'medium', 'high', 'xhigh', 'max'], 'default_effort': 'low'}]}
 QUESTION = {'question': 'Who is our closest competitor?', 'space': 'competition', 'provider': 'codex', 'model': MODEL}
 
 
@@ -37,11 +38,11 @@ class AnswerTests(unittest.TestCase):
                     'href': '/secret-space.html', 'text': 'Other space article.'}]
         (self.root / 'ask-index.json').write_text(json.dumps(ask.build_index(records, ['competition', 'civilization'])))
 
-    def call(self, selection=None, result=None):
+    def call(self, selection=None, result=None, payload=None):
         selection = {'article_ids': ['pi']} if selection is None else selection
         result = result or {'paragraphs': [{'text': 'The closest match depends on context.', 'article_ids': ['pi']}], 'insufficient_evidence': True}
         with patch.object(ask, 'models', return_value=MODELS), patch.object(ask, 'service', side_effect=[selection, result]) as service:
-            output = ask.answer(QUESTION, 'reader', self.root)
+            output = ask.answer(payload or QUESTION, 'reader', self.root)
             return output, service.call_args_list
 
     def test_two_calls_scoped_evidence_and_canonical_citations(self):
@@ -51,6 +52,16 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(result['citations'][0]['href'], '/pi.html')
         self.assertEqual(len(result['corpus_revision']), 64)
         self.assertLessEqual(calls[1].args[1]['timeout'], calls[0].args[1]['timeout'])
+        self.assertEqual(result['effort'], 'low')
+
+    def test_effort_is_validated_and_sent_to_both_stages(self):
+        result, calls = self.call(payload={**QUESTION, 'effort': 'high'})
+        self.assertEqual(result['effort'], 'high')
+        self.assertEqual([c.args[1]['effort'] for c in calls], ['high', 'high'])
+        for value in ['ultra', 'not-supported', '--tools=all', '', None]:
+            with self.subTest(value=value), self.assertRaises(AskError) as exc:
+                self.call(payload={**QUESTION, 'effort': value})
+            self.assertEqual(exc.exception.status, 400)
 
     def test_out_of_scope_and_invented_ids_fail(self):
         for slug in ['secret-space', '../.env', 'invented']:
@@ -172,6 +183,24 @@ class AdapterTests(unittest.TestCase):
             self.assertNotIn('--dangerously-bypass-approvals-and-sandbox', codex)
             self.assertEqual(claude[claude.index('--tools') + 1], '')
             self.assertIn('--strict-mcp-config', claude)
+
+    def test_native_effort_flags_and_unsupported_models(self):
+        directory = Path('/tmp/test')
+        codex = llm.command('codex', MODEL, 'select', directory, 'max')
+        self.assertIn('model_reasoning_effort="max"', codex)
+        claude = llm.command('claude', 'claude-sonnet-5', 'answer', directory, 'medium')
+        self.assertEqual(claude[claude.index('--effort') + 1], 'medium')
+        haiku = llm.command('claude', 'claude-haiku-4-5-20251001', 'answer', directory, 'not-supported')
+        self.assertNotIn('--effort', haiku)
+        for provider, model, effort in [('codex', 'gpt-5.5', 'max'), ('claude', 'claude-opus-4-6', 'xhigh'), ('claude', 'claude-haiku-4-5-20251001', 'high')]:
+            with self.subTest(model=model), self.assertRaises(AskError):
+                llm.command(provider, model, 'answer', directory, effort)
+
+    def test_dispatcher_rejects_invalid_effort_before_launch(self):
+        with patch.object(llm, 'enabled_models', return_value={MODEL}), patch.object(llm, 'run_cli') as run:
+            with self.assertRaises(AskError):
+                llm.complete({**QUESTION, 'stage': 'select', 'context': [], 'timeout': 5, 'effort': 'invented'})
+            run.assert_not_called()
 
     def test_unverified_models_refused_without_launch(self):
         with patch.object(llm, 'enabled_models', return_value=set()), patch.object(llm, 'run_cli') as run:

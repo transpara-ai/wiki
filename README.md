@@ -46,6 +46,8 @@ delivery corpus; additional runbooks need their own operational sources.
 
 The Knowledge Hub is advisory. Running code, versioned configuration, accepted decisions, release systems, customer systems, and EventGraph retain their respective authority.
 
+Version 0.8.1 adds an explicit per-model Effort selector and Enter-to-ask submission.
+
 Version 0.8.0 adds **Ask** alongside article Search. Signed-in readers can choose
 OpenAI or Anthropic subscription models and receive answers grounded in the
 selected space with article citations. Provider logins are configured once on
