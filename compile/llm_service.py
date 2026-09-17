@@ -126,7 +126,7 @@ def run_cli(provider, model, stage, prompt, timeout):
                 if provider == 'codex':
                     events = [json.loads(line) for line in output.splitlines() if line.strip()]
                     if any(e.get('type') in ('item.started', 'item.completed')
-                           and e.get('item', {}).get('type') not in ('agent_message', 'reasoning')
+                           and e.get('item', {}).get('type') not in ('agent_message', 'reasoning', 'error')
                            for e in events):
                         raise AskError('The model attempted an unexpected tool operation. No answer was accepted.', 502)
                     if any(e.get('type') in ('error', 'turn.failed') for e in events):
