@@ -46,6 +46,13 @@ delivery corpus; additional runbooks need their own operational sources.
 
 The Knowledge Hub is advisory. Running code, versioned configuration, accepted decisions, release systems, customer systems, and EventGraph retain their respective authority.
 
+Version 0.8.0 adds **Ask** alongside article Search. Signed-in readers can choose
+OpenAI or Anthropic subscription models and receive answers grounded in the
+selected space with article citations. Provider logins are configured once on
+the host; readers do not enter provider or authoring tokens to ask questions.
+See [subscription answers setup and API](compile/ASK.md) for deployment,
+qualification, limitations, and recovery.
+
 Repository pages discover both ordinary clones and Git worktrees under the
 local repository directory, including worktrees reached through symlinks.
 The versioned repository route catalog preserves published URLs independently

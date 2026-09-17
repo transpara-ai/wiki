@@ -1,0 +1,14 @@
+[Unit]
+Description=Check shared Velia provider subscription identities
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /Transpara/transpara-ai/deployments/shared-provider-velia/config/check-provider-auth.py
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/Transpara/transpara-ai/deployments/shared-provider-velia/state

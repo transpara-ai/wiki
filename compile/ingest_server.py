@@ -37,6 +37,8 @@ from urllib.parse import parse_qsl, urlsplit
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ingest_ops  # noqa: E402
 import authoring_profile  # noqa: E402
+import ask  # noqa: E402
+from ask_common import AskError, read_json  # noqa: E402
 from article_catalog import load_catalog  # noqa: E402
 from knowledge_structure import STRUCTURE, StructureError  # noqa: E402
 
@@ -1093,6 +1095,9 @@ class IngestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if not self.require_allowed_host():
             return
+        if self.path == "/api/ask/models":
+            self.handle_ask()
+            return
         if self.path == "/api/authoring-profile":
             self.handle_authoring_profile()
             return
@@ -1139,6 +1144,9 @@ class IngestHandler(SimpleHTTPRequestHandler):
         try:
             if not self.require_allowed_host():
                 return
+            if self.path == "/api/ask":
+                self.handle_ask(mutation=True)
+                return
             if self.path in {"/api/authoring-profile", "/api/authoring-profile/forget"}:
                 self.handle_authoring_profile("forget" if self.path.endswith("/forget") else "remember")
                 return
@@ -1167,6 +1175,26 @@ class IngestHandler(SimpleHTTPRequestHandler):
             json_response(self, 422, {"error": str(e)})
         except Exception as e:
             json_response(self, 400, {"error": str(e)})
+
+    def handle_ask(self, mutation=False):
+        try:
+            config = authoring_profile.settings()
+            if mutation and not authoring_profile.mutation_allowed(self.headers, config):
+                raise AskError('A same-origin signed-in request is required.', 403)
+            reader = authoring_profile.principal(self.headers, config)
+            if not reader:
+                raise AskError('Sign in to ask the wiki a question.', 401)
+            if mutation:
+                self.connection.settimeout(10)
+                payload = read_json(self, limit=20000)
+                result = ask.answer(payload, reader, DIST)
+            else:
+                result = ask.models()
+            json_response(self, 200, result)
+        except AskError as exc:
+            json_response(self, exc.status, {'error': str(exc)})
+        except Exception:
+            json_response(self, 503, {'error': 'Wiki answers are temporarily unavailable. Search is still available.'})
 
     def handle_ingest(self):
         form = parse_post_form(self)

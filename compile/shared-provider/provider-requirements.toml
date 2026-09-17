@@ -1,0 +1,13 @@
+# Managed constraints for model-generated commands. The Codex parent may load
+# its own authentication before entering the tool sandbox; repository code and
+# model-invoked tools may not read any credential or service-secret location.
+[permissions.filesystem]
+deny_read = [
+  "/run/secrets/**",
+  "/var/lib/civilization/codex/auth.json",
+  "/var/lib/shared-provider/codex/auth.json",
+  "/var/lib/shared-provider/claude/.credentials.json",
+  "/var/lib/shared-provider/claude/.claude.json",
+  "/var/lib/civilization/gh/**",
+  "/var/lib/civilization/receipts/**",
+]

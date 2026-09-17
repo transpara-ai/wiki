@@ -10,7 +10,7 @@ const { test, expect } = require("@playwright/test");
 // honestly); Chromium probes favicon.ico on its own. Everything else —
 // script errors, other failed resources — stays fatal.
 // Static previews also lack the optional signed-in profile endpoint.
-const BENIGN_404 = /\/(oauth2\/userinfo|inflight\.json|deploy-status\.json|favicon\.ico)$/;
+const BENIGN_404 = /\/(api\/ask\/models|oauth2\/userinfo|inflight\.json|deploy-status\.json|favicon\.ico)$/;
 
 async function collectErrors(page) {
   const errors = [];

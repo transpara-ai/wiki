@@ -179,6 +179,7 @@ test("wide tables and code scroll locally with keyboard access", async ({ page }
 test("search stays in a short viewport and keeps the keyboard selection visible", async ({ page }) => {
   await page.setViewportSize({ width: 568, height: 320 });
   await page.goto("/index.html");
+  await page.locator("#wiki-query-mode").selectOption("search");
   await page.locator("#wiki-search").fill("graph");
   const results = page.locator("#search-results");
   await expect(results).toBeVisible();

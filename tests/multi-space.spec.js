@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 
 // Static previews also lack the optional signed-in profile endpoint.
-const BENIGN_404 = /\/(oauth2\/userinfo|api\/articles|inflight\.json|deploy-status\.json|favicon\.ico)$/;
+const BENIGN_404 = /\/(api\/ask\/models|oauth2\/userinfo|api\/articles|inflight\.json|deploy-status\.json|favicon\.ico)$/;
 const SPACE_HOMES = [
   ["civilization", "Transpara-AI Civilization Wiki — front page"],
   ["platform", "Transpara Platform Knowledge Base"],
@@ -49,6 +49,7 @@ test("portal, space homes, canonical articles, and shared placement render", asy
 
 test("search enforces active-space scope and supports explicit all-space scope", async ({ page }) => {
   await page.goto("/platform/index.html");
+  await page.locator("#wiki-query-mode").selectOption("search");
   const input = page.locator("#wiki-search");
   const scope = page.locator("#wiki-search-scope");
   await expect(scope).toHaveValue("platform");
@@ -60,6 +61,7 @@ test("search enforces active-space scope and supports explicit all-space scope",
 
   await page.goto("/competition/index.html");
   await expect(page.locator("#wiki-search-scope")).toHaveValue("competition");
+  await page.locator("#wiki-query-mode").selectOption("search");
   await page.locator("#wiki-search").fill("Cognite");
   await expect(page.locator("#search-results a.search-result").first())
     .toContainText("Cognite Data Fusion Competitive Profile");
@@ -90,6 +92,7 @@ for (const question of ["Who is our closest competitor", "Who is our closest com
   test(`question wording retrieves relevant Competition pages: ${question}`, async ({ page }) => {
     const errors = collectErrors(page);
     await page.goto("/competition/index.html");
+  await page.locator("#wiki-query-mode").selectOption("search");
     await page.locator("#wiki-search").fill(question);
     const results = page.locator("#search-results a.search-result");
     await expect(results.first()).toBeVisible();
@@ -106,6 +109,7 @@ for (const question of ["Who is our closest competitor", "Who is our closest com
 
 test("search keeps exact multiword matches ahead of partial fallback and handles empty punctuation", async ({ page }) => {
   await page.goto("/competition/index.html");
+  await page.locator("#wiki-query-mode").selectOption("search");
   const input = page.locator("#wiki-search");
   await input.fill("Cognite Data Fusion");
   await expect(page.locator("#search-results a.search-result").first()).toContainText("Cognite Data Fusion Competitive Profile");

@@ -1,8 +1,9 @@
 FROM python:3.12-slim-bookworm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git rsync util-linux \
+    && apt-get install -y --no-install-recommends git rsync util-linux openssh-client \
     && rm -rf /var/lib/apt/lists/*
+RUN groupadd -g 1000 wiki && useradd -u 1000 -g wiki -M -d /nonexistent -s /usr/sbin/nologin wiki
 COPY requirements.txt /tmp/wiki-requirements.txt
 RUN pip install --no-cache-dir -r /tmp/wiki-requirements.txt
 
