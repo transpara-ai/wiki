@@ -185,3 +185,18 @@ python3 -m http.server 8798 --bind 127.0.0.1 --directory dist
 ```
 
 Do not expose the authoring endpoints as a public or LAN read route. A broader read-only publication must use an appropriate restricted profile and must not include raw sources, mutation controls, repository mirrors, or full-text indexes outside their authorized boundary.
+
+## Search and questions
+
+The browser search finds pages within the selected space. It ignores common
+question words and trailing punctuation, prefers matches for every meaningful
+term, and falls back to related pages when the exact wording has no matches.
+For example, “Who is our closest competitor?” finds the Competition index and
+related material. Results are document links and excerpts, not synthesized
+answers or a ranking of competitors.
+
+The deployed wiki currently has no LLM question-answering service. Karpathy's
+[LLM Wiki query workflow](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
+requires an agent to read relevant compiled pages and synthesize a cited answer.
+Adding that browser workflow requires an approved model connection for the
+internal corpus. Search and deterministic rebuilds alone do not provide it.

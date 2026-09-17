@@ -85,3 +85,34 @@ test("static error states are honest", async ({ page }) => {
   expect(response.status()).toBe(404);
   await expect(page.locator("body")).toContainText("File not found");
 });
+
+for (const question of ["Who is our closest competitor", "Who is our closest competitor?"]) {
+  test(`question wording retrieves relevant Competition pages: ${question}`, async ({ page }) => {
+    const errors = collectErrors(page);
+    await page.goto("/competition/index.html");
+    await page.locator("#wiki-search").fill(question);
+    const results = page.locator("#search-results a.search-result");
+    await expect(results.first()).toBeVisible();
+    await expect(results.filter({ hasText: "Competitor Index" })).toHaveCount(1);
+    for (const text of await results.locator(".search-result-meta").allTextContents()) {
+      expect(text).toContain("Competition");
+    }
+    const destination = await results.first().getAttribute("href");
+    await page.locator("#wiki-search").press("Enter");
+    await expect(page).toHaveURL(new URL(destination, page.url()).href);
+    expect(errors).toEqual([]);
+  });
+}
+
+test("search keeps exact multiword matches ahead of partial fallback and handles empty punctuation", async ({ page }) => {
+  await page.goto("/competition/index.html");
+  const input = page.locator("#wiki-search");
+  await input.fill("Cognite Data Fusion");
+  await expect(page.locator("#search-results a.search-result").first()).toContainText("Cognite Data Fusion Competitive Profile");
+  await input.fill("zzznothingmatcheszzz");
+  await expect(page.locator("#search-results .search-empty")).toHaveText("No matches in this scope");
+  await input.fill("???");
+  await expect(page.locator("#search-results .search-empty")).toHaveText("No matches in this scope");
+  await input.fill("");
+  await expect(page.locator("#search-results")).toBeHidden();
+});
