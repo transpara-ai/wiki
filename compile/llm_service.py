@@ -17,7 +17,7 @@ import fcntl
 import sys
 import time
 
-from ask_common import AskError, MAX_CONTEXT, MAX_WIRE, SCHEMAS, read_json, validate_result
+from ask_common import AskError, MAX_CONTEXT, MAX_WIRE, SCHEMAS, read_json, validate_result, resolve_effort
 
 HERE = Path(__file__).resolve().parent
 CATALOG = json.loads((HERE / 'llm-models.json').read_text())
@@ -44,19 +44,22 @@ def model_catalog():
         {**m, 'enabled': m['id'] in enabled} for m in CATALOG['models']]}
 
 
-def command(provider, model, stage, directory):
+def command(provider, model, stage, directory, effort=None):
+    spec = next(m for m in CATALOG['models'] if m['provider'] == provider and m['id'] == model)
+    effort = resolve_effort(spec, effort)
     if provider == 'claude':
         return ['/usr/local/bin/civilization-provider', 'claude', '--print', '--output-format', 'json',
                 '--json-schema', json.dumps(SCHEMAS[stage]), '--model', model,
                 '--no-session-persistence', '--safe-mode', '--restricted',
                 '--setting-sources', '', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}',
                 '--permission-mode', 'dontAsk', '--tools', '', '--max-turns', '3',
-                '--system-prompt', SYSTEM]
+                '--system-prompt', SYSTEM] + (['--effort', effort] if effort != 'not-supported' else [])
     args = ['/usr/local/bin/civilization-provider', 'codex', 'exec', '--json', '--ephemeral', '--ignore-user-config',
             '--ignore-rules', '--strict-config', '--color', 'never', '--sandbox', 'read-only',
             '--skip-git-repo-check', '--cd', '.', '--model', model,
             '-c', 'web_search="disabled"', '-c', 'approval_policy="never"',
             '-c', 'forced_login_method="chatgpt"',
+            '-c', 'model_reasoning_effort=' + json.dumps(effort),
             '-c', 'developer_instructions=' + json.dumps(SYSTEM)]
     for feature in ('shell_tool', 'unified_exec', 'multi_agent', 'apps', 'plugins',
                     'hooks', 'browser_use', 'browser_use_external', 'computer_use',
@@ -83,10 +86,10 @@ def failure_message(output):
     return AskError('The selected model could not answer. Retry or choose another enabled model.', 502)
 
 
-def run_cli(provider, model, stage, prompt, timeout):
+def run_cli(provider, model, stage, prompt, timeout, effort=None):
     with tempfile.TemporaryDirectory(prefix='wiki-answer-') as name:
         directory = Path(name)
-        args = command(provider, model, stage, directory)
+        args = command(provider, model, stage, directory, effort)
         (directory / 'input').write_text(prompt)
         with (directory / 'input').open('rb') as stdin, (directory / 'stdout').open('w+b') as stdout, (directory / 'stderr').open('w+b') as stderr:
             try:
@@ -150,7 +153,8 @@ def run_cli(provider, model, stage, prompt, timeout):
 
 
 def complete(data, qualify=False):
-    if not isinstance(data, dict) or set(data) != {'question', 'space', 'provider', 'model', 'stage', 'context', 'timeout'}:
+    fields = {'question', 'space', 'provider', 'model', 'stage', 'context', 'timeout'}
+    if not isinstance(data, dict) or set(data) not in (fields, fields | {'effort'}):
         raise AskError('Invalid model request.', 400)
     provider, model, stage = (data[k] for k in ('provider', 'model', 'stage'))
     if (not all(isinstance(v, str) for v in (provider, model, stage))
@@ -159,6 +163,7 @@ def complete(data, qualify=False):
         raise AskError('Unknown provider, model, or operation.', 400)
     if not qualify and model not in enabled_models():
         raise AskError('This model has not been verified on wiki yet.', 503)
+    effort = resolve_effort(next(m for m in CATALOG['models'] if m['id'] == model), data.get('effort'))
     if (not isinstance(data['question'], str) or not 2 <= len(data['question']) <= 4000
             or not isinstance(data['context'], list)
             or type(data['timeout']) not in (int, float) or not 0 < data['timeout'] <= 240):
@@ -180,7 +185,7 @@ def complete(data, qualify=False):
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise AskError('This provider is answering another question. Retry shortly.', 429) from None
-        return run_cli(provider, model, stage, prompt, data['timeout'])
+        return run_cli(provider, model, stage, prompt, data['timeout'], effort=effort)
 
 
 def dispatch():
