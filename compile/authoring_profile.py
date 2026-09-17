@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 import hashlib
 import hmac
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -20,6 +21,13 @@ class NoRedirect(request.HTTPRedirectHandler):
         return None
 
 
+def loopback_host(host):
+    try:
+        return host == 'localhost' or ipaddress.ip_address(host).is_loopback
+    except (TypeError, ValueError):
+        return False
+
+
 def settings():
     url = os.environ.get('KNOWLEDGE_HUB_PROFILE_USERINFO_URL', '')
     origin = os.environ.get('KNOWLEDGE_HUB_PROFILE_ORIGIN', '')
@@ -27,18 +35,33 @@ def settings():
     if not any((url, origin, store)):
         return None
     u, o = urlsplit(url), urlsplit(origin)
+    origin_is_loopback = loopback_host(o.hostname)
+    origin_scheme_allowed = o.scheme == 'https' or (o.scheme == 'http' and origin_is_loopback)
     if (not all((url, origin, store)) or u.scheme not in {'http', 'https'}
             or not u.hostname or u.username or u.password or u.query or u.fragment
-            or o.scheme != 'https' or not o.hostname or o.path or o.query
+            or not origin_scheme_allowed or not o.hostname or o.path or o.query
             or o.fragment or o.username or o.password or not Path(store).is_absolute()):
         raise ProfileUnavailable('Profile configuration is unavailable')
     return url, origin, Path(store)
 
 
 def mutation_allowed(headers, config):
-    return bool(config and headers.get('Origin') == config[1]
-                and headers.get('X-Wiki-Profile-Action') == '1'
-                and headers.get('Sec-Fetch-Site', 'same-origin') == 'same-origin')
+    if not config or headers.get('X-Wiki-Profile-Action') != '1' \
+            or headers.get('Sec-Fetch-Site', 'same-origin') != 'same-origin':
+        return False
+    supplied, configured = urlsplit(headers.get('Origin', '')), urlsplit(config[1])
+    if supplied == configured:
+        return True
+    # SSH and desktop port bridges assign a new local port on each session.
+    # A portless loopback configuration therefore names one loopback hostname,
+    # while still rejecting every other hostname, scheme, path, and credential.
+    return bool(configured.scheme == 'http' and configured.port is None
+                and loopback_host(configured.hostname)
+                and supplied.scheme == configured.scheme
+                and supplied.hostname == configured.hostname
+                and supplied.path == configured.path == ''
+                and not supplied.username and not supplied.password
+                and not supplied.query and not supplied.fragment)
 
 
 def principal(headers, config):
