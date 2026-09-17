@@ -46,6 +46,10 @@ delivery corpus; additional runbooks need their own operational sources.
 
 The Knowledge Hub is advisory. Running code, versioned configuration, accepted decisions, release systems, customer systems, and EventGraph retain their respective authority.
 
+Version 0.8.2 makes the subscription-provider host boundary reproducible with a
+root-owned configuration and exact Docker endpoint selection, and corrects
+shadow verification for the two authentication proxy routes.
+
 Version 0.8.1 adds an explicit per-model Effort selector and Enter-to-ask submission.
 
 Version 0.8.0 adds **Ask** alongside article Search. Signed-in readers can choose
@@ -205,7 +209,7 @@ related material. Results are document links and excerpts, not synthesized
 answers or a ranking of competitors.
 
 Ask is the default mode in v0.8.0. It uses the shared Codex or Claude subscription
-on Velia to select relevant published articles and synthesize an answer with
+on the provider host to select relevant published articles and synthesize an answer with
 validated citations. Signed-in readers can select a provider and model without
 an authoring token. Search retains instant article lookup. See
 [subscription answers](compile/ASK.md) for deployment, authentication, model

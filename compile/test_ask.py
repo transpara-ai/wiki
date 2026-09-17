@@ -116,8 +116,12 @@ class AnswerTests(unittest.TestCase):
 class AdapterTests(unittest.TestCase):
     def test_provider_working_directory_is_private_and_removed(self):
         wrapper = runpy.run_path(str(Path(__file__).parent / 'shared-provider/civilization-provider'))
+        configuration = {'docker_host': 'unix:///run/test-docker.sock',
+                         'observation_path': '/tmp/provider-auth.json',
+                         'auth_policy_path': '/tmp/provider-policy.json'}
         for script, status in [('pwd', 0), ('pwd; exit 7', 7), ('pwd; sleep 10', 124)]:
             with patch.dict(os.environ, {'CIVILIZATION_PROVIDER_TIMEOUT_SECONDS': '1'}), \
+                 patch.object(wrapper['provider_config'], 'load', return_value=configuration), \
                  patch.object(subprocess, 'run', return_value=subprocess.CompletedProcess([], 0)) as launch:
                 wrapper['run'](['exec', '-i', 'provider', 'sh', '-c', script])
                 args = launch.call_args.args[0]

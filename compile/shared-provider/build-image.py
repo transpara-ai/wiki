@@ -2,6 +2,7 @@
 """Build the shared provider using qualified standalone binaries; no credentials."""
 import argparse
 import hashlib
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -15,6 +16,10 @@ def main():
     parser.add_argument('--codex-code-mode-host', type=Path, required=True)
     args = parser.parse_args()
     here = Path(__file__).resolve().parent
+    version = json.loads((here.parents[1] / 'package.json').read_text())['version']
+    revision = subprocess.check_output(
+        ['git', '-C', str(here.parents[1]), 'rev-parse', 'HEAD'], text=True
+    ).strip()
     with tempfile.TemporaryDirectory(prefix='shared-provider-build-') as name:
         context = Path(name)
         for source, target, version in ((args.codex, 'codex', 'codex-cli 0.153.4'),
@@ -28,7 +33,12 @@ def main():
             shutil.copyfile(here / filename, context / filename)
         shutil.copyfile(args.codex_code_mode_host.resolve(), context / 'codex-code-mode-host')
         (context / 'codex-code-mode-host').chmod(0o755)
-        subprocess.run(['docker', 'build', '-t', 'transpara-provider:0.8.0', str(context)], check=True)
+        subprocess.run([
+            'docker', 'build', '-t', f'transpara-provider:{version}',
+            '--label', f'org.opencontainers.image.version={version}',
+            '--label', f'org.opencontainers.image.revision={revision}',
+            str(context),
+        ], check=True)
 
 
 if __name__ == '__main__':

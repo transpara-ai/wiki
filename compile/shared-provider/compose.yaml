@@ -1,7 +1,7 @@
 name: transpara-provider
 services:
   provider:
-    image: transpara-provider:0.8.0
+    image: transpara-provider:0.8.2
     container_name: transpara-shared-provider
     user: "1000:1000"
     restart: unless-stopped

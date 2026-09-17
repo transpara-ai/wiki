@@ -1,4 +1,4 @@
-# Providers run on the Velia host behind civilization-provider. This file adds
+# Providers run on the wiki host behind civilization-provider. This file adds
 # only a restricted SSH transport identity to the wiki web service.
 services:
   wiki:

@@ -10,17 +10,21 @@ from pathlib import Path
 import subprocess
 import sys
 
+LOCAL_LIBRARY = Path(__file__).resolve().parent
+INSTALLED_LIBRARY = Path("/usr/local/lib/civilization-provider")
+sys.path.insert(0, str(LOCAL_LIBRARY if (LOCAL_LIBRARY / "provider_config.py").is_file()
+                       else INSTALLED_LIBRARY))
+import provider_config  # noqa: E402
 
 CONTAINER = "transpara-shared-provider"
-OUTPUT = Path('/Transpara/transpara-ai/deployments/shared-provider-velia/state/provider-auth.json')
-AUTH_POLICY = Path('/Transpara/transpara-ai/deployments/shared-provider-velia/config/provider-auth-policy.json')
 
 
-def docker_exec(*command: str) -> subprocess.CompletedProcess[str]:
+def docker_exec(configuration: dict[str, str], *command: str) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
-    env.setdefault("DOCKER_HOST", "unix:///var/run/docker.sock")
+    env.pop("DOCKER_HOST", None)
     return subprocess.run(
-        ["/usr/bin/docker", "exec", CONTAINER, *command],
+        ["/usr/bin/docker", "--host", configuration["docker_host"],
+         "exec", CONTAINER, *command],
         check=False,
         capture_output=True,
         text=True,
@@ -29,12 +33,12 @@ def docker_exec(*command: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def codex_status() -> dict[str, object]:
-    result = docker_exec("codex", "login", "status")
+def codex_status(configuration: dict[str, str], policy: dict[str, object]) -> dict[str, object]:
+    result = docker_exec(configuration, "codex", "login", "status")
     message = (result.stdout or result.stderr).strip()
     logged_in = result.returncode == 0 and "Logged in using" in message
     method = "chatgpt-subscription" if "ChatGPT" in message else "unknown"
-    policy = json.loads(AUTH_POLICY.read_text()).get("codex", {})
+    policy = policy.get("codex", {})
     status_line = next(
         (line.strip() for line in message.splitlines() if "Logged in using" in line),
         "login unavailable",
@@ -48,8 +52,9 @@ def codex_status() -> dict[str, object]:
     }
 
 
-def claude_status() -> dict[str, object]:
+def claude_status(configuration: dict[str, str], policy: dict[str, object]) -> dict[str, object]:
     result = docker_exec(
+        configuration,
         "sh",
         "-ec",
         'export CLAUDE_CODE_OAUTH_TOKEN="$(cat /run/secrets/claude_oauth_token)"; '
@@ -62,6 +67,7 @@ def claude_status() -> dict[str, object]:
     except json.JSONDecodeError:
         status = {}
     token_check = docker_exec(
+        configuration,
         "python3",
         "-c",
         "from pathlib import Path; "
@@ -70,7 +76,7 @@ def claude_status() -> dict[str, object]:
         "print('yes' if e.get(b'CLAUDE_CODE_OAUTH_TOKEN') == s and bool(s) else 'no')",
     )
     token_loaded = token_check.returncode == 0 and token_check.stdout.strip() == "yes"
-    policy = json.loads(AUTH_POLICY.read_text()).get("claude", {})
+    policy = policy.get("claude", {})
     logged_in = result.returncode == 0 and status.get("loggedIn") is True and token_loaded
     return {
         "healthy": logged_in,
@@ -86,18 +92,23 @@ def claude_status() -> dict[str, object]:
 
 
 def main() -> int:
-    providers = {"codex": codex_status(), "claude": claude_status()}
+    configuration = provider_config.load()
+    policy = json.loads(Path(configuration["auth_policy_path"]).read_text())
+    providers = {
+        "codex": codex_status(configuration, policy),
+        "claude": claude_status(configuration, policy),
+    }
     document = {
         "checked_at": dt.datetime.now(dt.UTC).isoformat().replace("+00:00", "Z"),
         "healthy": all(bool(item["healthy"]) for item in providers.values()),
         "providers": providers,
     }
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    temporary = OUTPUT.with_suffix(".json.tmp")
+    output = Path(configuration["observation_path"])
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output.with_suffix(".json.tmp")
     temporary.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n")
     os.chmod(temporary, 0o600)
-    os.chown(temporary, 1000, 1000)
-    temporary.replace(OUTPUT)
+    temporary.replace(output)
     print(json.dumps(document, sort_keys=True))
     return 0 if document["healthy"] else 1
 
