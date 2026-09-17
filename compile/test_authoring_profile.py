@@ -210,6 +210,26 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(self.call()[0], 503)
             self.assertEqual(self.call('POST', '/api/rebuild')[0], 401)
 
+    def test_http_profile_origin_is_limited_to_loopback(self):
+        for origin in ('http://localhost:8087', 'http://127.0.0.1:8087', 'http://[::1]:8087'):
+            with self.subTest(origin=origin), mock.patch.dict(
+                    os.environ, {'KNOWLEDGE_HUB_PROFILE_ORIGIN': origin}):
+                self.assertEqual(profile.settings()[1], origin)
+        for origin in ('http://wiki.example', 'http://192.168.20.180:8087'):
+            with self.subTest(origin=origin), mock.patch.dict(
+                    os.environ, {'KNOWLEDGE_HUB_PROFILE_ORIGIN': origin}):
+                with self.assertRaises(profile.ProfileUnavailable):
+                    profile.settings()
+        with mock.patch.dict(os.environ, {'KNOWLEDGE_HUB_PROFILE_ORIGIN': 'http://localhost'}):
+            config = profile.settings()
+            headers = {'Origin': 'http://localhost:57318', 'X-Wiki-Profile-Action': '1',
+                       'Sec-Fetch-Site': 'same-origin'}
+            self.assertTrue(profile.mutation_allowed(headers, config))
+            for origin in ('http://127.0.0.1:57318', 'https://localhost:57318',
+                           'http://localhost.evil:57318'):
+                headers['Origin'] = origin
+                self.assertFalse(profile.mutation_allowed(headers, config), origin)
+
     def test_profile_grant_keeps_destructive_artifact_checks(self):
         self.enroll()
         with mock.patch.object(srv.IngestHandler, 'handle_remove') as remove:
