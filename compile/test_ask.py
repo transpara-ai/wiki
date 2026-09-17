@@ -3,6 +3,7 @@
 import io
 import json
 import os
+import runpy
 from pathlib import Path
 import subprocess
 import sys
@@ -88,6 +89,19 @@ class AnswerTests(unittest.TestCase):
 
 
 class AdapterTests(unittest.TestCase):
+    def test_provider_working_directory_is_private_and_removed(self):
+        wrapper = runpy.run_path(str(Path(__file__).parent / 'shared-provider/civilization-provider'))
+        for script, status in [('pwd', 0), ('pwd; exit 7', 7), ('pwd; sleep 10', 124)]:
+            with patch.dict(os.environ, {'CIVILIZATION_PROVIDER_TIMEOUT_SECONDS': '1'}), \
+                 patch.object(subprocess, 'run', return_value=subprocess.CompletedProcess([], 0)) as launch:
+                wrapper['run'](['exec', '-i', 'provider', 'sh', '-c', script])
+                args = launch.call_args.args[0]
+            result = subprocess.run(args[args.index('provider') + 1:], capture_output=True, text=True)
+            self.assertEqual(result.returncode, status)
+            directory = Path(result.stdout.strip())
+            self.assertTrue(str(directory).startswith('/tmp/provider-request.'))
+            self.assertFalse(directory.exists())
+
     def fake(self, provider, script, timeout=2):
         with tempfile.TemporaryDirectory() as name:
             program = Path(name) / 'fake.py'

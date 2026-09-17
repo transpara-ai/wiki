@@ -54,7 +54,7 @@ def command(provider, model, stage, directory):
                 '--system-prompt', SYSTEM]
     args = ['/usr/local/bin/civilization-provider', 'codex', 'exec', '--json', '--ephemeral', '--ignore-user-config',
             '--ignore-rules', '--strict-config', '--color', 'never', '--sandbox', 'read-only',
-            '--skip-git-repo-check', '--cd', '/tmp', '--model', model,
+            '--skip-git-repo-check', '--cd', '.', '--model', model,
             '-c', 'web_search="disabled"', '-c', 'approval_policy="never"',
             '-c', 'forced_login_method="chatgpt"',
             '-c', 'developer_instructions=' + json.dumps(SYSTEM)]

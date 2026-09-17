@@ -25,8 +25,14 @@ def run(arguments: list[str]) -> int:
         seconds = int(deadline)
         if not 1 <= seconds <= 240:
             raise ValueError("provider deadline must be between 1 and 240 seconds")
-        arguments = [*arguments[:3], "timeout", "--signal=TERM",
-                     "--kill-after=5s", str(seconds), *arguments[3:]]
+        # Keep native login/status calls unchanged. Bounded inference gets a
+        # private working directory inside the container, removed on exit.
+        isolated = ('umask 077; request_dir=$(mktemp -d /tmp/provider-request.XXXXXX) || exit 1; '
+                    'trap \'rm -rf "$request_dir"\' EXIT; '
+                    'cd "$request_dir" || exit 1; limit=$1; shift; '
+                    'timeout --signal=TERM --kill-after=5s "$limit" "$@"')
+        arguments = [*arguments[:3], "sh", "-c", isolated,
+                     "provider-request", str(seconds), *arguments[3:]]
     prefix = [] if os.geteuid() == 0 else ['sudo', '-n']
     return subprocess.run([*prefix, DOCKER, *arguments], env=environment).returncode
 
