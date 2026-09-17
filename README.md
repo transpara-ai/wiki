@@ -202,8 +202,9 @@ For example, “Who is our closest competitor?” finds the Competition index an
 related material. Results are document links and excerpts, not synthesized
 answers or a ranking of competitors.
 
-The deployed wiki currently has no LLM question-answering service. Karpathy's
-[LLM Wiki query workflow](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
-requires an agent to read relevant compiled pages and synthesize a cited answer.
-Adding that browser workflow requires an approved model connection for the
-internal corpus. Search and deterministic rebuilds alone do not provide it.
+Ask is the default mode in v0.8.0. It uses the shared Codex or Claude subscription
+on Velia to select relevant published articles and synthesize an answer with
+validated citations. Signed-in readers can select a provider and model without
+an authoring token. Search retains instant article lookup. See
+[subscription answers](compile/ASK.md) for deployment, authentication, model
+qualification, and recovery.

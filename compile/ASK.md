@@ -72,6 +72,19 @@ civilization-provider codex login status
 civilization-provider claude auth status
 ```
 
+For a fresh Codex host session or an expired login, run
+`civilization-provider codex login --device-auth` on wiki and complete the native
+browser approval. The mounted Codex home persists refreshable credentials across
+restarts. Never copy its session from another host.
+
+Claude uses the existing long-lived subscription token in
+`/Transpara/transpara-ai/credentials/shared-provider/claude-oauth-token` (mode
+0600). For renewal, use Claude Code's native `claude setup-token` as the operator,
+store the resulting token securely at that path, and recreate only the shared
+provider service so its parent process reloads the token. Keep tokens out of shell
+history, repository files, browser storage, and diagnostic output. Re-run the
+authentication monitor and both provider canaries after renewing either login.
+
 Authentication monitoring remains owned by the existing
 `transpara-provider-auth-check.timer`; do not duplicate its login/refresh logic.
 The copied `llm-models.json` records catalog provenance, not current authentication.
