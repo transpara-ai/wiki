@@ -73,6 +73,40 @@ class ProviderConfigurationTests(unittest.TestCase):
                                       "unix:///run/civilization-docker.sock", "exec"])
         self.assertNotIn("DOCKER_HOST", launch.call_args.kwargs["env"])
 
+    def test_image_build_keeps_release_version_after_cli_validation(self):
+        with tempfile.TemporaryDirectory() as name:
+            root = Path(name)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            argument_log = root / "docker-arguments"
+
+            def executable(path, body):
+                path.write_text("#!/bin/sh\nset -eu\n" + body)
+                path.chmod(0o755)
+
+            codex = root / "codex"
+            claude = root / "claude"
+            host = root / "codex-code-mode-host"
+            executable(codex, "printf '%s\\n' 'codex-cli 0.153.4'\n")
+            executable(claude, "printf '%s\\n' '2.1.263 (Claude Code)'\n")
+            executable(host, "exit 0\n")
+            executable(bin_dir / "git", "printf '%s\\n' '0123456789abcdef'\n")
+            executable(bin_dir / "docker", "printf '%s\\n' \"$@\" > \"$DOCKER_ARGUMENT_LOG\"\n")
+
+            environment = dict(os.environ)
+            environment["PATH"] = str(bin_dir) + os.pathsep + environment["PATH"]
+            environment["DOCKER_ARGUMENT_LOG"] = str(argument_log)
+            subprocess.run([
+                sys.executable, str(HERE / "build-image.py"),
+                "--codex", str(codex), "--claude", str(claude),
+                "--codex-code-mode-host", str(host),
+            ], check=True, env=environment, capture_output=True, text=True)
+
+            arguments = argument_log.read_text().splitlines()
+            self.assertIn("transpara-provider:0.8.2", arguments)
+            self.assertIn("org.opencontainers.image.version=0.8.2", arguments)
+            self.assertIn("org.opencontainers.image.revision=0123456789abcdef", arguments)
+
 
 if __name__ == "__main__":
     unittest.main()
