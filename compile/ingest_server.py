@@ -549,8 +549,14 @@ def host_header_allowed(host_header, server_port=None):
         if allowed_port:
             if (host, port) == (allowed_host, allowed_port):
                 return True
-        elif host == allowed_host and (not port or not server_port or port == server_port):
-            return True
+        elif host == allowed_host:
+            if not port or not server_port or port == server_port:
+                return True
+            # A portless, explicitly configured loopback host represents the
+            # browser-facing side of an SSH or desktop port bridge. Its numeric
+            # port may differ from this server's private listening port.
+            if authoring_profile.loopback_host(host):
+                return True
     return False
 
 

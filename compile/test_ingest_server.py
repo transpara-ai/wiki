@@ -223,6 +223,12 @@ def test_host_header_policy_blocks_rebinding_hosts():
         os.environ[srv.ALLOWED_HOSTS_ENV] = "wiki.internal:8787"
         assert srv.host_header_allowed("wiki.internal:8787", 8787) is True
         assert srv.host_header_allowed("wiki.internal:9999", 8787) is False
+        os.environ[srv.ALLOWED_HOSTS_ENV] = "localhost"
+        assert srv.host_header_allowed("localhost:57318", 8787) is True
+        assert srv.host_header_allowed("127.0.0.1:57318", 8787) is False
+        os.environ[srv.ALLOWED_HOSTS_ENV] = "127.0.0.1"
+        assert srv.host_header_allowed("127.0.0.1:57318", 8787) is True
+        assert srv.host_header_allowed("127.0.0.2:57318", 8787) is False
     finally:
         if old_allowed is None:
             os.environ.pop(srv.ALLOWED_HOSTS_ENV, None)

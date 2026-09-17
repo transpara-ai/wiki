@@ -230,6 +230,16 @@ class ProfileTests(unittest.TestCase):
                 headers['Origin'] = origin
                 self.assertFalse(profile.mutation_allowed(headers, config), origin)
 
+    def test_portless_loopback_profile_accepts_bridged_host_and_origin(self):
+        with mock.patch.dict(os.environ, {
+                srv.ALLOWED_HOSTS_ENV: 'localhost',
+                'KNOWLEDGE_HUB_PROFILE_ORIGIN': 'http://localhost',
+        }):
+            code, data = self.call('POST', token=self.env[srv.AUTHORING_TOKEN_ENV],
+                                   Host='localhost:57318', Origin='http://localhost:57318')
+        self.assertEqual(code, 200)
+        self.assertTrue(data['authoring'])
+
     def test_profile_grant_keeps_destructive_artifact_checks(self):
         self.enroll()
         with mock.patch.object(srv.IngestHandler, 'handle_remove') as remove:
