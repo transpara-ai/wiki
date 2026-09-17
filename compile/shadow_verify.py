@@ -21,6 +21,7 @@ BASELINE_ROUTES = (
     "2026-09-05-multi-space-wiki-baseline-routes.txt"
 )
 OPERATIONAL_STATE = {"deploy-status.json", "inflight.json"}
+RUNTIME_ROUTES = {"oauth2/start", "oauth2/sign_out"}
 
 
 class Links(HTMLParser):
@@ -76,7 +77,11 @@ def assert_links_resolve(candidate):
             if parsed.scheme or value.startswith(("#", "//")):
                 continue
             target = urllib.parse.urljoin(route, parsed.path).lstrip("/")
-            if not target or target.startswith("api/"):
+            # These exact paths are served by the authentication proxy in the
+            # deployed profile. They intentionally have no static artifact.
+            # Keep this allowlist path-only and exact so a misspelled or newly
+            # generated runtime link still fails shadow verification.
+            if not target or target.startswith("api/") or target in RUNTIME_ROUTES:
                 continue
             path = candidate / target
             if target.endswith("/"):

@@ -1,4 +1,10 @@
-# Subscription answers — v0.8.1
+# Subscription answers — v0.8.2
+
+Version 0.8.2 makes the host provider boundary reproducible. A root-owned
+configuration selects the Unix Docker socket, authentication policy and
+non-secret observation paths. The wrapper and monitor pass that socket with an
+explicit Docker `--host` argument and remove an ambient `DOCKER_HOST`, so neither
+the wiki dispatcher nor an invoking shell can redirect provider authority.
 
 Readers submit with Enter in the question field. The Effort dropdown remembers
 the selection per provider/model and each answer identifies the configured level.
@@ -30,7 +36,7 @@ are explicitly authorized. The shared provider uses host-owned stores, the copie
 and the same `civilization-provider` wrapper. Claude is provisioned securely into
 a host secret; Codex has a fresh native login so RemoteRepos can continue running.
 
-The wiki retrieves published article context on Velia. A restricted SSH key
+The wiki retrieves published article context on its deployment host. A restricted SSH key
 submits one JSON operation to a root-owned dispatcher on that same host. That
 trusted host dispatcher calls `civilization-provider codex ...` or
 `civilization-provider claude ...`. The wrapper injects Claude's Docker secret
@@ -62,7 +68,7 @@ Threats and controls:
   belong to the supplied evidence.
 - Capacity: one active question per reader and provider. File locks in the
   shared wiki volume's `.private/ask-locks` reserve both across the complete
-  two-stage question, including across wiki processes/containers on Velia.
+  two-stage question, including across wiki processes/containers on that host.
   The dispatcher also locks individual provider calls. This release does not
   support replicas with independent wiki volumes. There is a 240-second question
   deadline and bounded context and output.
@@ -77,14 +83,13 @@ acceptance contract. Self-review is not independent review.
 
 ## Deployment
 
-Velia is the canonical shared-provider host, independent of Civilization.
-`compile/shared-provider` contains the copied wrapper and monitor, a standalone
-CLI container, and the six-hour systemd timer. Persistent state is under
-`/Transpara/transpara-ai/deployments/shared-provider-velia`; credentials are under
-`/Transpara/transpara-ai/credentials/shared-provider`, outside all repositories.
+The shared-provider host is independent of the wiki container.
+`compile/shared-provider` contains the wrapper, monitor, root installer, a
+standalone CLI container, and the six-hour systemd timer. Provider credentials
+and observations stay outside all repositories.
 The image includes the qualified standalone CLI binaries, Codex code-mode helper,
 bubblewrap, and ripgrep; client upgrades require qualification.
-The separate Velia service is available as `civilization-provider` (also
+The separate host service is available as `civilization-provider` (also
 `transpara-provider`) to trusted host-side tasks. It has no public port. Verify the existing boundary without reading secrets:
 
 ```bash
@@ -92,6 +97,20 @@ civilization-provider status
 civilization-provider codex login status
 civilization-provider claude auth status
 ```
+
+Install or update the host boundary with the repository-owned installer. The
+three paths below are deployment inputs; the caller cannot override them later:
+
+```bash
+sudo python3 compile/shared-provider/configure.py \
+  --docker-host unix:///run/civilization-docker.sock \
+  --observation /absolute/deployment/state/provider-auth.json \
+  --auth-policy /absolute/deployment/config/provider-auth-policy.json
+```
+
+This installs root-owned code under `/usr/local`, and writes
+`/etc/civilization-provider/config.json` as root-owned mode 0644. The checker
+must run as the service account that owns the observation directory.
 
 For a fresh Codex host session or an expired login, run
 `civilization-provider codex login --device-auth` on wiki and complete the native
@@ -111,7 +130,7 @@ Authentication monitoring remains owned by the existing
 The copied `llm-models.json` records catalog provenance, not current authentication.
 
 Install `llm_service.py`, `ask_common.py`, and `llm-models.json` into root-owned
-`/opt/wiki-llm` on Velia. `/var/lib/wiki-llm` is private, owned by the trusted
+`/opt/wiki-llm` on the provider host. `/var/lib/wiki-llm` is private, owned by the trusted
 launcher user, and contains provider lock files plus `enabled.json` (initially
 `{"models":[]}`). No prompts or answers are retained there. The forced command is:
 
@@ -119,13 +138,13 @@ launcher user, and contains provider lock files plus `enabled.json` (initially
 /usr/bin/timeout --kill-after=5s 255s /usr/bin/python3 /opt/wiki-llm/llm_service.py
 ```
 
-Create a transport-only SSH key on Velia outside the checkout. Authorize its
-public key on Velia using `restrict,command="..."` with exactly the forced
-command above. Pin Velia's verified host key; do not use accept-new or
+Create a transport-only SSH key on the provider host outside the checkout. Authorize its
+public key using `restrict,command="..."` with exactly the forced
+command above. Pin the provider host's verified host key; do not use accept-new or
 StrictHostKeyChecking=no. This key grants only the wiki JSON interface.
 
 Add `compose.llm.yaml` after existing Compose files. Set `WIKI_LLM_TRANSPORT` to the private key/known-hosts directory. The
-container reaches its own Velia host via `host.docker.internal:host-gateway`. Only the wiki service receives these transport files.
+container reaches its own host via `host.docker.internal:host-gateway`. Only the wiki service receives these transport files.
 The wiki has no provider credentials, public provider port, or Docker socket.
 The shared provider container is managed independently of the wiki.
 The wiki retains its existing `KNOWLEDGE_HUB_PROFILE_*` SSO settings.
@@ -136,7 +155,7 @@ at least 270 seconds for `/api/ask`; browser timeout is 250 seconds.
 
 ## Model qualification
 
-Run on Velia using the shared wrapper through the installed dispatcher:
+Run on the provider host using the shared wrapper through the installed dispatcher:
 
 ```bash
 python3 /opt/wiki-llm/llm_service.py --qualify gpt-5.6-sol
@@ -146,7 +165,7 @@ python3 /opt/wiki-llm/llm_service.py --qualify claude-sonnet-5
 Only successful models may be added to `/var/lib/wiki-llm/enabled.json`'s `models`
 array. Update atomically. Repeat for additional catalog models. Defaults are
 GPT-5.6 Sol and Claude Sonnet 5. Unverified models remain visibly unavailable.
-Then test both providers through the actual Velia website; host canaries alone
+Then test both providers through the actual website; host canaries alone
 are not proof of the full browser-to-provider path.
 
 ## HTTP interface
