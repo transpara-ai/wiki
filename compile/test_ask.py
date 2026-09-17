@@ -87,6 +87,20 @@ class AnswerTests(unittest.TestCase):
         with ask.admission('reader', 'codex'):
             pass
 
+    def test_admission_spans_processes_and_releases(self):
+        script = ('import ask; from ask_common import AskError; import sys\n'
+                  'try:\n'
+                  ' with ask.admission(sys.argv[1],sys.argv[2]): pass\n'
+                  'except AskError as e: sys.exit(29 if e.status == 429 else 1)\n')
+        def probe(reader, provider):
+            return subprocess.run([sys.executable, '-c', script, reader, provider],
+                                  cwd=Path(ask.__file__).parent, capture_output=True).returncode
+        with ask.admission('reader', 'codex'):
+            self.assertEqual(probe('other-reader', 'codex'), 29)
+            self.assertEqual(probe('reader', 'claude'), 29)
+            self.assertEqual(probe('other-reader', 'claude'), 0)
+        self.assertEqual(probe('other-reader', 'codex'), 0)
+
 
 class AdapterTests(unittest.TestCase):
     def test_provider_working_directory_is_private_and_removed(self):

@@ -43,8 +43,12 @@ Threats and controls:
   gates. Selection and answering receive only the requested space's canonical
   articles. Raw sources and repository pages are excluded. Citation IDs must
   belong to the supplied evidence.
-- Capacity: one active question per reader and provider, cross-process provider
-  locks on Velia, 240-second question deadline, bounded context and output.
+- Capacity: one active question per reader and provider. File locks in the
+  shared wiki volume's `.private/ask-locks` reserve both across the complete
+  two-stage question, including across wiki processes/containers on Velia.
+  The dispatcher also locks individual provider calls. This release does not
+  support replicas with independent wiki volumes. There is a 240-second question
+  deadline and bounded context and output.
   No automatic provider/model/billing fallback. Native errors are sanitized.
 - Rendering: plain text and server-resolved article links only. Answers remain
   advisory: checking citation membership does not prove semantic correctness.

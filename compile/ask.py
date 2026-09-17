@@ -1,5 +1,6 @@
 """Authenticated, space-scoped question answering over the published corpus."""
 from contextlib import contextmanager
+import fcntl
 import hashlib
 import json
 import os
@@ -23,9 +24,25 @@ def admission(reader, provider):
             raise AskError('A question is already running for you or this provider. Try again shortly.', 429)
         _readers.add(reader)
         _providers.add(provider)
+    handles = []
     try:
+        # All wiki processes/containers on Velia share the checkout volume.
+        # Hold both reservations across selection AND answering; the private
+        # dispatcher additionally serializes individual native CLI calls.
+        directory = Path(__file__).resolve().parent.parent / '.private/ask-locks'
+        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        for identity in ('reader:' + reader, 'provider:' + provider):
+            name = hashlib.sha256(identity.encode()).hexdigest() + '.lock'
+            handle = (directory / name).open('a')
+            handles.append(handle)
+            try:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                raise AskError('A question is already running for you or this provider. Try again shortly.', 429) from None
         yield
     finally:
+        for handle in reversed(handles):
+            handle.close()
         with _lock:
             _readers.discard(reader)
             _providers.discard(provider)
