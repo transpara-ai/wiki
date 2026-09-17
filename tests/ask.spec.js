@@ -68,3 +68,16 @@ test('busy, authentication, provider failures and changed scope do not show a st
   await page.locator('#wiki-search').fill('Cognite');
   await expect(page.locator('#search-results .search-result').first()).toBeVisible();
 });
+
+test('an unavailable saved model requires an explicit choice without fallback', async ({page}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('wiki-ask-provider', 'claude');
+    localStorage.setItem('wiki-ask-model-claude', 'claude-opus-5');
+  });
+  await page.goto('/');
+  await expect(page.locator('#wiki-ask-answer')).toContainText('selected model is unavailable');
+  await expect(page.locator('#wiki-ask-model')).toHaveValue('claude-opus-5');
+  await expect(page.locator('#wiki-ask-submit')).toBeDisabled();
+  await page.locator('#wiki-ask-model').selectOption('claude-sonnet-5');
+  await expect(page.locator('#wiki-ask-submit')).toBeEnabled();
+});

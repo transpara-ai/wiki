@@ -11,6 +11,7 @@
   function saved(key, fallback) { try { return localStorage.getItem('wiki-ask-' + key) || fallback; } catch (_) { return fallback; } }
   function save(key, value) { try { localStorage.setItem('wiki-ask-' + key, value); } catch (_) {} }
   function status(message) { output.replaceChildren(); output.textContent = message; output.hidden = false; }
+  function available() { return !!model.value && !!model.selectedOptions[0] && !model.selectedOptions[0].disabled; }
   function options() {
     model.replaceChildren();
     if (!catalog) return;
@@ -20,9 +21,8 @@
       option.disabled = !m.enabled; model.appendChild(option);
     });
     var wanted = saved('model-' + provider.value, catalog.defaults[provider.value]);
-    var enabled = Array.from(model.options).filter(function (o) { return !o.disabled; });
-    model.value = enabled.some(function (o) { return o.value === wanted; }) ? wanted : (enabled[0] ? enabled[0].value : '');
-    submit.disabled = busy || !model.value;
+    model.value = wanted;
+    submit.disabled = busy || !available();
   }
   async function fetchJSON(url, settings) {
     var response = await fetch(url, Object.assign({credentials: 'same-origin', headers: {Accept: 'application/json'}}, settings));
@@ -36,7 +36,7 @@
     loaded = true;
     try {
       catalog = await fetchJSON('/api/ask/models'); options();
-      if (!model.value && mode.value === 'ask') status('No verified model is available for this provider. Select another provider or use Search.');
+      if (!available() && mode.value === 'ask') status('Your selected model is unavailable. Choose an enabled model or use Search.');
     } catch (error) {
       loaded = false; model.replaceChildren(); submit.disabled = true;
       if (mode.value === 'ask') status(error.message);
@@ -55,13 +55,13 @@
   provider.value = saved('provider', 'codex'); if (!provider.value) provider.value = 'codex';
   mode.value = saved('mode', 'ask'); if (!mode.value) mode.value = 'ask';
   mode.addEventListener('change', changeMode);
-  provider.addEventListener('change', function () { invalidate(); save('provider', provider.value); options(); if (!model.value) status('This provider has no verified model available yet.'); });
-  model.addEventListener('change', function () { invalidate(); save('model-' + provider.value, model.value); });
+  provider.addEventListener('change', function () { invalidate(); save('provider', provider.value); options(); if (!available()) status('Your selected model is unavailable. Choose an enabled model or use Search.'); });
+  model.addEventListener('change', function () { invalidate(); save('model-' + provider.value, model.value); submit.disabled = busy || !available(); });
   function invalidate() { generation++; output.hidden = true; }
   input.addEventListener('input', invalidate); scope.addEventListener('change', invalidate);
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
-    if (mode.value !== 'ask' || busy || !model.value) return;
+    if (mode.value !== 'ask' || busy || !available()) return;
     var question = input.value.trim();
     if (question.length < 2) { status('Enter a question first.'); return; }
     busy = true; submit.disabled = true;
@@ -90,7 +90,7 @@
       if (data.insufficient_evidence) { var note = document.createElement('p'); note.textContent = 'The available wiki evidence is incomplete for this question.'; output.appendChild(note); }
     } catch (error) {
       if (current === generation && mode.value === 'ask') status(error.name === 'AbortError' ? 'The question timed out. Please retry.' : error.message);
-    } finally { clearTimeout(timer); busy = false; submit.disabled = !model.value; output.removeAttribute('aria-busy'); }
+    } finally { clearTimeout(timer); busy = false; submit.disabled = !available(); output.removeAttribute('aria-busy'); }
   });
   changeMode();
 }());
