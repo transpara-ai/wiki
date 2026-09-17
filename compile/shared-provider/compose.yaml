@@ -1,0 +1,30 @@
+name: transpara-provider
+services:
+  provider:
+    image: transpara-provider:0.8.0
+    container_name: transpara-shared-provider
+    user: "1000:1000"
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    # Match the qualified Civilization provider profile: Codex's inner Linux
+    # sandbox needs user namespaces. Keep read-only root, UID 1000, and no caps.
+    security_opt: [no-new-privileges:true, seccomp:unconfined, apparmor:unconfined]
+    pids_limit: 256
+    mem_limit: 4g
+    cpus: 2
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    volumes:
+      - /Transpara/transpara-ai/credentials/shared-provider/codex:/var/lib/shared-provider/codex
+      - /Transpara/transpara-ai/credentials/shared-provider/claude:/var/lib/shared-provider/claude
+    secrets:
+      - claude_oauth_token
+    healthcheck:
+      test: [CMD, python3, -c, "from pathlib import Path; assert Path('/run/secrets/claude_oauth_token').is_file(); assert Path('/usr/local/bin/codex').is_file()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+secrets:
+  claude_oauth_token:
+    file: /Transpara/transpara-ai/credentials/shared-provider/claude-oauth-token

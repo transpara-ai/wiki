@@ -1,0 +1,17 @@
+# Providers run on the Velia host behind civilization-provider. This file adds
+# only a restricted SSH transport identity to the wiki web service.
+services:
+  wiki:
+    environment:
+      KNOWLEDGE_HUB_LLM_SSH_HOST: host.docker.internal
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - type: bind
+        source: ${WIKI_LLM_TRANSPORT:?Set the private transport directory}/id_ed25519
+        target: /run/secrets/wiki-llm-ssh-key
+        read_only: true
+      - type: bind
+        source: ${WIKI_LLM_TRANSPORT:?Set the private transport directory}/known_hosts
+        target: /run/secrets/wiki-llm-known-hosts
+        read_only: true

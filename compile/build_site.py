@@ -188,7 +188,7 @@ SEARCH_JS = (
     'var top=selected.offsetTop,bottom=top+selected.offsetHeight;'
     'if(top<box.scrollTop)box.scrollTop=top;else if(bottom>box.scrollTop+box.clientHeight)box.scrollTop=bottom-box.clientHeight;}}'
     'function hide(){box.hidden=true;box.innerHTML="";input.setAttribute("aria-expanded","false");active=-1;hits=[];}'
-    'function render(){var q=norm(input.value);if(q.length<2){hide();return;}'
+    'function render(){if(form&&form.dataset.mode==="ask"){hide();return;}var q=norm(input.value);if(q.length<2){hide();return;}'
     'var words=q.replace(/[?.,!;:\u201c\u201d]/g," ").split(" ").filter(Boolean);'
     'var stop=new Set("a an the who what when where why how is are was were do does did can could would should i we our us you your me my to of for in on with about please".split(" "));'
     'var terms=Array.from(new Set(words.filter(function(word){return !stop.has(word);})));'
@@ -2405,11 +2405,20 @@ def search_box(prefix="", active_space=""):
         ))
     return (
         '<form class="search" role="search" autocomplete="off" data-prefix="%s">'
+        '<label class="sr-only" for="wiki-query-mode">Ask or Search</label>'
+        '<select id="wiki-query-mode" aria-label="Ask or Search"><option value="ask">Ask</option><option value="search">Search</option></select>'
         '<label class="sr-only" for="wiki-search">Search %s</label>'
         '<input id="wiki-search" class="search-input" type="search" '
         'placeholder="Search %s" aria-controls="search-results" aria-expanded="false">'
         '<label class="sr-only" for="wiki-search-scope">Search scope</label>'
         '<select id="wiki-search-scope" class="search-scope" aria-label="Search scope">%s</select>'
+        '<div id="wiki-ask-controls" class="ask-controls">'
+        '<label class="sr-only" for="wiki-ask-provider">Provider</label>'
+        '<select id="wiki-ask-provider" aria-label="Provider"><option value="codex">OpenAI</option><option value="claude">Anthropic</option></select>'
+        '<label class="sr-only" for="wiki-ask-model">Model</label>'
+        '<select id="wiki-ask-model" aria-label="Model"><option value="">Loading models…</option></select>'
+        '<button id="wiki-ask-submit" type="submit">Ask wiki</button></div>'
+        '<section id="wiki-ask-answer" class="ask-answer" aria-live="polite" aria-label="Wiki answer" hidden></section>'
         '<div id="search-results" class="search-results" role="listbox" hidden></div>'
         '</form>'
     ) % (html.escape(prefix), html.escape(SITE_NAME), html.escape(SITE_NAME), "".join(options))
@@ -2620,6 +2629,7 @@ def space_context_script(status, active_space="", prefix="", *,
             '<script src="%slocalTime.js?v=%s"></script>'
             '<script src="%sspaceContext.js?v=%s"></script>' %
             (encoded, prefix, LOCAL_TIME_VER, prefix, SPACE_CONTEXT_VER) +
+            '<script defer src="%sask.js?v=%s"></script>' % (prefix, SITE_VERSION) +
             ('<script defer src="%saccountMenu.js?v=%s"></script>' %
              (prefix, ACCOUNT_MENU_VER) if PROFILE.key == "authoring-local" else ""))
 
@@ -3361,6 +3371,8 @@ def _build_site():
         return hashlib.md5(asset.encode()).hexdigest()[:8]
 
     def build_search_index():
+        from ask import build_index
+        answer_articles = []
         docs = []
         fm, body = split_fm(PORTAL_INDEX.read_text())
         if PROFILE.key != "authoring-local":
@@ -3399,6 +3411,9 @@ def _build_site():
                 # UI turns index rows into live links; a retired topic is
                 # reachable by direct link only, never discoverable (CFAR r11)
             fm, body = split_fm(p.read_text())
+            answer_articles.append({'id': p.stem, 'title': meta['title'],
+                                    'spaces': [placement_parts(value)[0] for value in resolved_placements(meta)],
+                                    'href': '/' + p.stem + '.html', 'text': body})
             docs.append({
                 "slug": p.stem,
                 "title": meta["title"],
@@ -3429,6 +3444,8 @@ def _build_site():
                 ))[:12000],
             })
         docs.extend(SOURCE_INDEX)
+        write_dist_text(DIST / 'ask-index.json', json.dumps(
+            build_index(answer_articles, [s.key for s in active_spaces()]), ensure_ascii=False))
         asset = "window.CIVWIKI_SEARCH_INDEX=" + json.dumps(docs, ensure_ascii=False, separators=(",", ":")) + ";\n"
         write_dist_text(DIST / "search-index.js", asset)
         return hashlib.md5(asset.encode()).hexdigest()[:8]
@@ -3436,6 +3453,7 @@ def _build_site():
     CSS_VER = copy_asset("style.css")
     SPACE_CONTEXT_VER = copy_asset("spaceContext.js")
     LOCAL_TIME_VER = copy_asset("localTime.js")
+    copy_asset("ask.js")
     if PROFILE.key == "authoring-local":
         ACCOUNT_MENU_VER = copy_asset("accountMenu.js")
     write_dist_text(DIST / "version.json", json.dumps({"version": SITE_VERSION}, indent=2) + "\n")

@@ -46,6 +46,13 @@ delivery corpus; additional runbooks need their own operational sources.
 
 The Knowledge Hub is advisory. Running code, versioned configuration, accepted decisions, release systems, customer systems, and EventGraph retain their respective authority.
 
+Version 0.8.0 adds **Ask** alongside article Search. Signed-in readers can choose
+OpenAI or Anthropic subscription models and receive answers grounded in the
+selected space with article citations. Provider logins are configured once on
+the host; readers do not enter provider or authoring tokens to ask questions.
+See [subscription answers setup and API](compile/ASK.md) for deployment,
+qualification, limitations, and recovery.
+
 Repository pages discover both ordinary clones and Git worktrees under the
 local repository directory, including worktrees reached through symlinks.
 The versioned repository route catalog preserves published URLs independently
@@ -195,8 +202,9 @@ For example, “Who is our closest competitor?” finds the Competition index an
 related material. Results are document links and excerpts, not synthesized
 answers or a ranking of competitors.
 
-The deployed wiki currently has no LLM question-answering service. Karpathy's
-[LLM Wiki query workflow](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
-requires an agent to read relevant compiled pages and synthesize a cited answer.
-Adding that browser workflow requires an approved model connection for the
-internal corpus. Search and deterministic rebuilds alone do not provide it.
+Ask is the default mode in v0.8.0. It uses the shared Codex or Claude subscription
+on Velia to select relevant published articles and synthesize an answer with
+validated citations. Signed-in readers can select a provider and model without
+an authoring token. Search retains instant article lookup. See
+[subscription answers](compile/ASK.md) for deployment, authentication, model
+qualification, and recovery.
