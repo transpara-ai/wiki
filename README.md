@@ -1,5 +1,11 @@
 # Transpara Knowledge Hub
 
+[![Latest stable GitHub release](https://img.shields.io/github/v/release/transpara-ai/wiki)](https://github.com/transpara-ai/wiki/releases/latest)
+
+**[Latest release and notes](https://github.com/transpara-ai/wiki/releases/latest)** ·
+[Release history](https://github.com/transpara-ai/wiki/releases) ·
+[Release workflow](docs/releases/README.md)
+
 A compiled, interlinked knowledge system for Transpara. It has grown from the Civilization wiki into four spaces sharing one canonical article graph:
 
 | Space | Coverage | Steward |
@@ -29,6 +35,7 @@ delivery corpus; additional runbooks need their own operational sources.
 - [Docker hosting](DOCKER.md) — private hosting and persistent state.
 - [Velia migration automation](docs/deployment-automation.md) — Mac SSH relay, prerequisites, rehearsal, installation, and recovery.
 - [Documentation index](docs/README.md) — current guides and historical design records.
+- [Karpathy pattern audit](docs/karpathy-pattern-audit.md) — verified alignment, ingestion/maintenance gaps, and offline limits.
 
 ## Architecture
 
@@ -45,6 +52,9 @@ delivery corpus; additional runbooks need their own operational sources.
 - `DESIGN.md` and `PROVENANCE.md` — pipeline design and source manifest.
 
 The Knowledge Hub is advisory. Running code, versioned configuration, accepted decisions, release systems, customer systems, and EventGraph retain their respective authority.
+
+Version 0.8.3 adds the top-right GitHub link and automated stable GitHub Releases.
+See the [release notes](docs/releases/v0.8.3.md).
 
 Version 0.8.2 makes the subscription-provider host boundary reproducible with a
 root-owned configuration and exact Docker endpoint selection, and corrects
@@ -96,7 +106,10 @@ shows it beneath the site name in the top banner, and links to it from each page
 footer. These files are generated from the package
 version, so release metadata has one source of truth. Bump it with
 `npm version patch --no-git-tag-version` (or `minor` / `major` as appropriate),
-then rebuild.
+add matching release notes, then rebuild and merge after checks pass. Main CI
+publishes a stable GitHub Release at the checked commit with those notes; no
+draft or prerelease. Follow the [release workflow](docs/releases/README.md).
+Release publication and deployment verification are separate steps.
 
 Builds render into a sibling staging directory and publish the completed site
 with one atomic directory exchange. The existing site remains available during

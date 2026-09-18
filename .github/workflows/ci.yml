@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   build-test:
     name: Build & Test
@@ -52,6 +55,10 @@ jobs:
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: Install Node deps (jsdom for the DOM smoke test)
         run: npm ci
+      - name: Stable SemVer and release notes
+        run: |
+          python3 compile/release.py check
+          python3 compile/test_release.py
       - name: Stats unit tests (deterministic, stdlib only)
         run: python3 compile/test_stats.py
       - name: Build static wiki
@@ -67,3 +74,26 @@ jobs:
       - name: Arc DOM smoke test (jsdom)
         run: npm run test:dom
       # Browser E2E (npm run test:browser) stays local-only — it needs a chromium download.
+
+  release:
+    name: Publish GitHub Release
+    needs: build-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: stable-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Publish checked version with committed release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 compile/release.py publish --commit "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"

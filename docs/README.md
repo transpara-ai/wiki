@@ -9,6 +9,8 @@ DevOps. The current operational guides live at the repository root and in
 | [README](../README.md) | Space overview, navigation, setup, and verification |
 | [Design](../DESIGN.md) | Current source scope, shared article model, and publication profiles |
 | [Provenance](../PROVENANCE.md) | Evidence origins, dated source coverage, and known gaps |
+| [Releases](releases/README.md) | Stable SemVer, GitHub publication, notes and recovery |
+| [Karpathy pattern audit](karpathy-pattern-audit.md) | Implementation alignment, remaining synthesis/maintenance work, and offline capabilities |
 | [Rebuilding](../compile/REBUILD.md) | Source registration, refresh, synthesis, and local services |
 | [Authoring API](../API.md) | Evidence ingestion in all spaces and DevOps article creation |
 | [Docker hosting](../DOCKER.md) | Private hosting, source dependencies, and operational checks |
