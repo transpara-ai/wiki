@@ -26,8 +26,10 @@ GitHub releases still use ordinary `MAJOR.MINOR.PATCH`, without prerelease suffi
    Deploy the merged revision through the existing host procedure; verify the
    site's `/version.json` and health. Publishing a release does not deploy it.
 
-Documentation-only changes may retain the current application version; the
-release job leaves an existing stable release unchanged. Never edit previously
+Documentation and corpus-only changes may retain the current application version;
+the release job verifies the existing tag's ancestry and package version, and
+rejects application-code differences before leaving a stable release unchanged.
+Never edit previously
 published code by moving a release tag. A new application change needs a new version.
 
 If publication fails, fix credentials/connectivity or the reported metadata
