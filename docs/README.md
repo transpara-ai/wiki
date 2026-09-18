@@ -36,3 +36,6 @@ records the initial expansion into Civilization, Transpara Platform, and
 Competition. DevOps was added afterward and is included in the current guides
 and registry. Use the dated plan and verification records to understand that
 migration; use the guides above to operate and author the current Hub.
+
+- [Continuous discovery implementation and trust boundaries](continuous-discovery/implementation.md)
+- [Discovery operator and API guide](../compile/DISCOVERY.md)

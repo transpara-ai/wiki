@@ -107,3 +107,18 @@ test('models without effort control show Not supported', async ({page}) => {
   await expect(page.locator('#wiki-ask-effort')).toBeEnabled();
   await expect(page.locator('#wiki-ask-effort')).toHaveValue('high');
 });
+
+test('explicit follow-ups are transient and saved answers require an explicit action', async ({page}) => {
+  let calls=[];
+  await page.route('**/api/ask/models',route=>route.fulfill({json:{defaults:{provider:'codex',codex:'gpt-5.6-sol'},models:[{id:'gpt-5.6-sol',provider:'codex',enabled:true,effort_levels:['low'],default_effort:'low'}]}}));
+  await page.route('**/api/ask',route=>{calls.push(route.request().postDataJSON());return route.fulfill({json:{answer:'Retained publication says this.',paragraphs:[{text:'Retained publication says this.',article_ids:[]}],citations:[],model:'gpt-5.6-sol',effort:'low',insufficient_evidence:true}});});
+  let saves=0;
+  await page.route('**/api/knowledge/reader/save',route=>{saves++;return route.fulfill({json:{id:'saved'}});});
+  await page.goto('/index.html');
+  await page.locator('#wiki-search').fill('Explain the source');await page.locator('#wiki-search').press('Enter');
+  await expect(page.getByRole('button',{name:'Ask a follow-up'})).toBeVisible();expect(saves).toBe(0);
+  await page.getByRole('button',{name:'Ask a follow-up'}).click();await page.locator('#wiki-search').fill('What remains unknown?');await page.locator('#wiki-search').press('Enter');
+  await expect(page.getByRole('button',{name:'Save answer'})).toBeVisible();expect(calls[1].history).toHaveLength(1);
+  await page.getByRole('button',{name:'Save answer'}).click();await expect(page.locator('#wiki-ask-answer')).toContainText('saved to your account');expect(saves).toBe(1);
+  const stored=await page.evaluate(()=>JSON.stringify(localStorage));expect(stored).not.toContain('Retained publication');
+});

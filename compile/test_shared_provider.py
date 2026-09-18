@@ -103,8 +103,9 @@ class ProviderConfigurationTests(unittest.TestCase):
             ], check=True, env=environment, capture_output=True, text=True)
 
             arguments = argument_log.read_text().splitlines()
-            self.assertIn("transpara-provider:0.8.2", arguments)
-            self.assertIn("org.opencontainers.image.version=0.8.2", arguments)
+            version = __import__("json").loads((HERE.parent.parent / "package.json").read_text())["version"]
+            self.assertIn("transpara-provider:" + version, arguments)
+            self.assertIn("org.opencontainers.image.version=" + version, arguments)
             self.assertIn("org.opencontainers.image.revision=0123456789abcdef", arguments)
 
 

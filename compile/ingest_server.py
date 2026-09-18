@@ -38,6 +38,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ingest_ops  # noqa: E402
 import authoring_profile  # noqa: E402
 import ask  # noqa: E402
+import knowledge_api  # noqa: E402
 from ask_common import AskError, read_json  # noqa: E402
 from article_catalog import load_catalog  # noqa: E402
 from knowledge_structure import STRUCTURE, StructureError  # noqa: E402
@@ -988,10 +989,10 @@ def validate_devops_article(name, markdown, space, steward, source_authority):
     return slug if slug.startswith("devops-") else "devops-" + slug
 
 
-def check_new_article_absent(slug, name):
+def check_new_article_absent(slug, name, *, wiki=None):
     """Keep corpus imports create-only, including retired identities and aliases."""
     keys = {collision_key(slug), collision_key(name)}
-    for path in WIKI.glob("*.md"):
+    for path in pathlib.Path(wiki or WIKI).glob("*.md"):
         fm, _, _ = split_fm(path.read_text())
         identities = [path.stem, fm_scalar(fm, "entity"),
                       fm_scalar(fm, "investigation_topic")] + fm_list(fm, "aliases")
@@ -1101,6 +1102,9 @@ class IngestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if not self.require_allowed_host():
             return
+        if self.path.startswith("/api/knowledge/"):
+            knowledge_api.handle(self, ROOT)
+            return
         if self.path == "/api/ask/models":
             self.handle_ask()
             return
@@ -1149,6 +1153,9 @@ class IngestHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         try:
             if not self.require_allowed_host():
+                return
+            if self.path.startswith("/api/knowledge/"):
+                knowledge_api.handle(self, ROOT)
                 return
             if self.path == "/api/ask":
                 self.handle_ask(mutation=True)

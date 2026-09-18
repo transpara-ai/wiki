@@ -129,7 +129,7 @@ Authentication monitoring remains owned by the existing
 `transpara-provider-auth-check.timer`; do not duplicate its login/refresh logic.
 The copied `llm-models.json` records catalog provenance, not current authentication.
 
-Install `llm_service.py`, `ask_common.py`, and `llm-models.json` into root-owned
+Install `llm_service.py`, `ask_common.py`, `knowledge_review.py`, `knowledge_store.py`, and `llm-models.json` into root-owned
 `/opt/wiki-llm` on the provider host. `/var/lib/wiki-llm` is private, owned by the trusted
 launcher user, and contains provider lock files plus `enabled.json` (initially
 `{"models":[]}`). No prompts or answers are retained there. The forced command is:

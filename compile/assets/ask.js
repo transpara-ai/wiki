@@ -8,7 +8,7 @@
   var effort = document.getElementById('wiki-ask-effort');
   var controls = document.getElementById('wiki-ask-controls'), output = document.getElementById('wiki-ask-answer');
   var scope = document.getElementById('wiki-search-scope');
-  var catalog = null, busy = false, loaded = false, generation = 0;
+  var catalog = null, busy = false, loaded = false, generation = 0, history = [];
   function saved(key, fallback) { try { return localStorage.getItem('wiki-ask-' + key) || fallback; } catch (_) { return fallback; } }
   function save(key, value) { try { localStorage.setItem('wiki-ask-' + key, value); } catch (_) {} }
   function status(message) { output.replaceChildren(); output.textContent = message; output.hidden = false; }
@@ -68,7 +68,7 @@
     if (mode.value === 'ask') input.setAttribute('aria-describedby', 'wiki-ask-hint');
     else input.removeAttribute('aria-describedby');
     save('mode', mode.value);
-    if (mode.value === 'ask') load(); else input.dispatchEvent(new Event('input'));
+    if (mode.value === 'ask') load(); input.dispatchEvent(new Event('input'));
   }
   provider.value = saved('provider', 'codex'); if (!provider.value) provider.value = 'codex';
   mode.value = saved('mode', 'ask'); if (!mode.value) mode.value = 'ask';
@@ -77,7 +77,7 @@
   model.addEventListener('change', function () { invalidate(); save('model-' + provider.value, model.value); effortOptions(); });
   effort.addEventListener('change', function () { invalidate(); save(effortKey(), effort.value); });
   function invalidate() { generation++; output.hidden = true; }
-  input.addEventListener('input', invalidate); scope.addEventListener('change', invalidate);
+  input.addEventListener('input', invalidate); scope.addEventListener('change', function () { history = []; invalidate(); });
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
     if (mode.value !== 'ask' || busy || !available()) return;
@@ -90,7 +90,7 @@
     try {
       var data = await fetchJSON('/api/ask', {method: 'POST', signal: controller.signal,
         headers: {'Content-Type': 'application/json', Accept: 'application/json', 'X-Wiki-Profile-Action': '1'},
-        body: JSON.stringify({question: question, space: scope.value, provider: provider.value, model: model.value, effort: effort.value})});
+        body: JSON.stringify(Object.assign({question: question, space: scope.value, provider: provider.value, model: model.value, effort: effort.value}, history.length ? {history:history} : {}))});
       if (current !== generation || mode.value !== 'ask') return;
       output.replaceChildren(); output.hidden = false;
       var heading = document.createElement('strong'); heading.textContent = 'Answer · ' + data.model + ' · Effort: ' + effortLabel(data.effort); output.appendChild(heading);
@@ -104,8 +104,23 @@
           if (!/^\/[a-zA-Z0-9_-]+\.html$/.test(citation.href)) return;
           var link = document.createElement('a'); link.href = citation.href; link.textContent = ' [' + citation.title + ']';
           paragraph.appendChild(link);
+          if (citation.passage) {
+            var detail = document.createElement('details'), summary = document.createElement('summary'), quote = document.createElement('blockquote');
+            summary.textContent = 'Published passage · revision ' + (citation.revision || '').slice(0, 12);
+            quote.textContent = citation.passage; detail.append(summary, quote); paragraph.appendChild(detail);
+          }
         }); output.appendChild(paragraph);
       });
+      var actions = document.createElement('div'); output.appendChild(actions);
+      function action(label, fn) { var b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = fn; actions.appendChild(b); }
+      action('Ask a follow-up', function () { history.push({question:question.slice(0,1000),answer:data.answer.slice(0,1000)}); history=history.slice(-3); input.value=''; input.focus(); });
+      async function retain(route) {
+        try { await fetchJSON('/api/knowledge/reader/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Wiki-Profile-Action':'1'},body:JSON.stringify({question:question,space:scope.value,answer:data})}); var savedNote=document.createElement('p'); savedNote.textContent=route==='save'?'Answer saved to your account.':'Feedback queued for a curator.'; output.appendChild(savedNote); }
+        catch(error) { var errorNote=document.createElement('p'); errorNote.textContent=error.message; output.appendChild(errorNote); }
+      }
+      action('Save answer',function(){retain('save');});
+      action('Request evidence review',function(){retain('feedback');});
+      if(document.querySelector('.top-links a[href$="knowledge.html"]')) action('Research / propose',function(){window.location.href='/knowledge.html';});
       if (data.insufficient_evidence) { var note = document.createElement('p'); note.textContent = 'The available wiki evidence is incomplete for this question.'; output.appendChild(note); }
     } catch (error) {
       if (current === generation && mode.value === 'ask') status(error.name === 'AbortError' ? 'The question timed out. Please retry.' : error.message);

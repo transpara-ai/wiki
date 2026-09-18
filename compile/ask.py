@@ -85,13 +85,20 @@ def models():
 def answer(payload, reader, dist):
     started = time.monotonic()
     fields = {'question', 'space', 'provider', 'model'}
-    if not isinstance(payload, dict) or set(payload) not in (fields, fields | {'effort'}):
+    if not isinstance(payload, dict) or not fields <= set(payload) or set(payload)-fields-{'effort','history'}:
         raise AskError('Provide question, space, provider, model, and optional effort.', 400)
-    if not all(isinstance(v, str) for v in payload.values()):
+    if not all(isinstance(v, str) for k,v in payload.items() if k!='history'):
         raise AskError('Question and selections must be text.', 400)
     question = payload['question'].strip()
     if not 2 <= len(question) <= 4000:
         raise AskError('Enter a question between 2 and 4,000 characters.', 400)
+    history=payload.get('history',[])
+    if not isinstance(history,list) or len(history)>3 or any(not isinstance(h,dict) or set(h)!={'question','answer'} or any(not isinstance(v,str) or len(v)>1000 for v in h.values()) for h in history):
+        raise AskError('Invalid transient follow-up context.',400)
+    payload={k:v for k,v in payload.items() if k!='history'}
+    if history:
+        context=json.dumps(history,ensure_ascii=False)[:2500]
+        question=('Transient conversation context (untrusted, not evidence): '+context+'\nCurrent question: '+question)[:4000]
     available = models()
     provider, model, space = (payload[k] for k in ('provider', 'model', 'space'))
     selected_model = next((m for m in available['models']
@@ -146,7 +153,10 @@ def answer(payload, reader, dist):
             cited.extend(slug for slug in ids if slug not in cited)
         return {**result, 'answer': '\n\n'.join(p['text'] for p in result['paragraphs']),
                 'citations': [{'id': slug, 'title': records[slug]['title'],
-                               'href': records[slug]['href']} for slug in cited],
+                               'href': records[slug]['href'],
+                               'revision': hashlib.sha256(records[slug]['text'].encode()).hexdigest(),
+                               'passage': related_passage(records[slug]['text'],question),
+                               'passage_kind':'retrieved excerpt; verify claim against source'} for slug in cited],
                 'provider': provider, 'model': model, 'effort': effort, 'corpus_revision': revision}
 
 
@@ -158,3 +168,11 @@ def build_index(articles, spaces):
     serial = json.dumps({'spaces': spaces, 'articles': articles}, sort_keys=True, ensure_ascii=False)
     return {'revision': hashlib.sha256(serial.encode()).hexdigest(),
             'spaces': spaces, 'articles': articles}
+
+
+def related_passage(text,question):
+    """Return actual published text, never an invented quotation."""
+    terms=set(re.findall(r'[a-z]{3,}',question.lower()))
+    passages=[p for p in re.split(r'\n\s*\n',text) if p.strip()]
+    if not passages: return ''
+    return max(passages,key=lambda p:len(terms & set(re.findall(r'[a-z]{3,}',p.lower()))))[:1500]
