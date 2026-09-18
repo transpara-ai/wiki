@@ -43,6 +43,14 @@ INSTRUCTIONS={
  'challenge':'Consider the other independent assessment as an objection, never as authority. Re-evaluate against the original frozen evidence. Preserve uncertainty; do not manufacture consensus. Return your revised assessment.',
  'research':'Investigate the explicit question using the supplied captured evidence. Distinguish observation, interpretation, counterevidence, contradiction and open questions. Cite exact captured quotations in findings. Missing evidence remains an open question. Never imply web retrieval happened unless evidence was supplied.'}
 
+# State the deterministic citation contract explicitly for both initial and
+# challenge calls; zero is a known score, not the representation of Unknown.
+for stage in ('review','challenge'):
+    INSTRUCTIONS[stage] += (' Every non-null dimension score, including 0, must have a nonempty rationale and '
+        'at least one exact evidence ID from the frozen evidence in evidence_ids. '
+        'If evidence is insufficient, use score null, explain what is missing, and use evidence_ids [] '
+        'rather than assigning 0. Never invent evidence IDs or substitute source names for them.')
+
 
 def validate(schema,value,path='response'):
     types=schema.get('type'); types=types if isinstance(types,list) else [types]
