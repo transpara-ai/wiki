@@ -15,6 +15,7 @@ from knowledge_store import Store, Conflict, canonical, digest, identity, host_j
 from knowledge_sources import Collector, Deferred, validate_config, extract
 from knowledge_review import (SCHEMAS, PROFILES, WEIGHTS, Reviewer, validate, check_citations)
 from knowledge_structure import STRUCTURE
+from document_control import controlled, version_after, set_field, utc_date
 
 
 class Workflow:
@@ -226,6 +227,9 @@ class Workflow:
                     monitor=self.store.get('monitor',origin_id)
                     if monitor.get('audience_review_required'): raise Conflict('Source access changed; an audience review is required before publication')
         if len({c['slug'] for c in p['changes']})!=len(p['changes']): raise ValueError('Duplicate article changes')
+        bumps=p.get('version_bumps',{})
+        if not isinstance(bumps,dict) or set(bumps)-{c['slug'] for c in p['changes']} or any(v not in ('major','minor','patch') for v in bumps.values()):
+            raise ValueError('Invalid document version changes')
         lookup={a.slug:a for a in self.articles(p['space'])}
         from ingest_server import check_new_article_absent,collision_key
         new_identities=set()
@@ -258,6 +262,29 @@ class Workflow:
                 if not self.article_path(target).exists() and target not in {x['slug'] for x in p['changes']}:
                     raise ValueError('Article link does not resolve')
 
+    def article_document(self,p,c,original,date):
+        """Render the same controlled bytes for review and publication."""
+        from ingest_server import split_fm, fm_list
+        space=STRUCTURE.space_map[p['space']]
+        if original:
+            fm,_,_=split_fm(original)
+        else:
+            placement=p.get('placements',{}).get(c['slug'],space.key+'/'+('concept' if 'concept' in space.section_keys else space.sections[0].key))
+            fm='\n'.join(['entity: '+json.dumps(c['title']),'org: '+space.steward,'primary_placement: '+placement,
+                         'placements: ['+placement+']','classification: internal','tier: concept',
+                         'status: reviewed','source_authority: [mixed-provenance]'])
+        version=version_after(fm,p.get('version_bumps',{}).get(c['slug'],'minor'))
+        fm=controlled(fm,identifier='TAI-WIKI-'+c['slug'].upper(),title=c['title'],kind='article',
+                      date=date,owner=space.steward,version=version,existing=bool(original))
+        for field,value in (('status','reviewed'),('reviewed_on',date),('last_compiled',date)):
+            fm=set_field(fm,field,value)
+        refs=fm_list(fm,'raw_documents')
+        refs+=['raw/inbox/discovery/'+k+'.md' for k in c['evidence_ids'] if 'raw/inbox/discovery/'+k+'.md' not in refs]
+        fm=re.sub(r'^raw_documents:[^\n]*(?:\n[ \t]+-[^\n]*)*\n?', '',fm,flags=re.M).rstrip()
+        fm+='\nraw_documents:\n'+''.join('  - '+r+'\n' for r in refs)
+        body=re.sub(r'\[evidence:([a-f0-9]{64})\]',r'[captured evidence](../raw/inbox/discovery/\1.md)',c['body'])
+        return '---\n'+fm+'---\n\n'+body+'\n'
+
     def frozen(self,p):
         evidence=[self.store.evidence(k) for k in p['evidence_ids']]
         for item in evidence: item.pop('origins',None)
@@ -267,10 +294,12 @@ class Workflow:
             path=self.root/profile['reference']; text=path.read_text() if path.exists() else profile['purpose']
             profiles[org]={**profile,'text':text,'revision':digest(text),'weights':WEIGHTS[org]}
         articles=[]
+        date=utc_date(p.get('document_date',p.get('created',max(e['captured'] for e in evidence))))
         for c in p['changes']:
             path=self.article_path(c['slug']); original=path.read_text() if path.exists() else ''
+            document=self.article_document(p,c,original,date)
             articles.append({'slug':c['slug'],'revision':p['article_revisions'][c['slug']], 'original':original,
-                             'proposed':c,'placement':p.get('placements',{}).get(c['slug']),'diff':'\n'.join(difflib.unified_diff(original.splitlines(),c['body'].splitlines(),fromfile=c['slug'],tofile=c['slug']))})
+                             'proposed':c,'document':document,'placement':p.get('placements',{}).get(c['slug']),'diff':'\n'.join(difflib.unified_diff(original.splitlines(),document.splitlines(),fromfile=c['slug'],tofile=c['slug']))})
         return {'evidence':evidence,'findings':p['findings'],'articles':articles,'profiles':profiles,'rubric_version':1,
                 'coverage_limitations':p['coverage_limitations']}
 
@@ -309,6 +338,8 @@ class Workflow:
             p.update({k:payload[k] for k in ('findings','changes','coverage_limitations')})
             p.update(state='draft',review=None,repair_count=0)
             if 'placements' in payload: p['placements']=payload['placements']
+            if 'version_bumps' in payload: p['version_bumps']=payload['version_bumps']
+            p['document_date']=time.time()
             for c in p['changes']:
                 path=self.article_path(c['slug'])
                 p['article_revisions'].setdefault(c['slug'],digest(path.read_bytes()) if path.exists() else None)
@@ -345,27 +376,16 @@ class Workflow:
             for e in frozen['evidence']:
                 rel='raw/inbox/discovery/'+e['id']+'.md'; path=self.root/rel
                 originals[rel]=path.read_text() if path.exists() else None
-                replacements[rel]='# Captured evidence\n\n'+canonical({k:e[k] for k in ('id','source','hash','captured','last_captured','observed_revision','metadata')})+'\n\n'+e['text']
-            from ingest_server import split_fm, fm_list
+                # Published snapshots are immutable; later observation times stay in private state.
+                fm=controlled('status: retained\nclassification: '+e['metadata'].get('classification','internal'),
+                              identifier='TAI-EVIDENCE-'+e['id'],title='Captured evidence',kind='evidence',
+                              date=utc_date(e['captured']),owner=STRUCTURE.space_map[p['space']].steward,version='1.0.0')
+                replacements[rel]=originals[rel] if originals[rel] is not None else '---\n'+fm+'\n---\n\n# Captured evidence\n\n'+canonical({k:e[k] for k in ('id','source','hash','captured','metadata')})+'\n\n'+e['text']
+            documents={a['slug']:a['document'] for a in frozen['articles']}
             for c in p['changes']:
                 rel='wiki/'+c['slug']+'.md'; path=self.root/rel
                 original=path.read_text() if path.exists() else None; originals[rel]=original
-                if original:
-                    fm,_,_=split_fm(original)
-                else:
-                    space=STRUCTURE.space_map[p['space']]
-                    placement=p.get('placements',{}).get(c['slug'],space.key+'/'+('concept' if 'concept' in space.section_keys else space.sections[0].key))
-                    fm='\n'.join(['entity: '+json.dumps(c['title']),'org: '+space.steward,'primary_placement: '+placement,
-                                   'placements: ['+placement+']','classification: internal','tier: concept','status: reviewed','source_authority: [mixed-provenance]'])
-                reviewed=dt.datetime.fromtimestamp(approval['at'],dt.timezone.utc).date().isoformat()
-                for field,value in (('status','reviewed'),('reviewed_on',reviewed),('last_compiled',reviewed)):
-                    fm=re.sub(r'^'+field+r':[^\n]*\n?', '',fm,flags=re.M).rstrip()+'\n'+field+': '+value
-                refs=fm_list(fm,'raw_documents')
-                refs+=['raw/inbox/discovery/'+k+'.md' for k in c['evidence_ids'] if 'raw/inbox/discovery/'+k+'.md' not in refs]
-                fm=re.sub(r'^raw_documents:[^\n]*(?:\n[ \t]+-[^\n]*)*\n?', '',fm,flags=re.M).rstrip()
-                fm+='\nraw_documents:\n'+''.join('  - '+r+'\n' for r in refs)
-                body=re.sub(r'\[evidence:([a-f0-9]{64})\]',r'[captured evidence](../raw/inbox/discovery/\1.md)',c['body'])
-                replacements[rel]='---\n'+fm+'---\n\n'+body+'\n'
+                replacements[rel]=documents[c['slug']]
                 for evidence_id in c['evidence_ids']:
                     source_ref='raw/inbox/discovery/'+evidence_id+'.md'
                     manifests.append({'ingested_at':timestamp,'mode':'reviewed-discovery','target_slug':c['slug'],'source_path':source_ref,

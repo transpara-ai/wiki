@@ -40,7 +40,7 @@ class Server:
         method=request.get('method'); params=request.get('params',{})
         if method=='initialize':
             self.initialized=True
-            return {'protocolVersion':VERSION,'capabilities':{'tools':{'listChanged':False}},'serverInfo':{'name':'transpara-knowledge-hub','version':'1.0.0'}}
+            return {'protocolVersion':VERSION,'capabilities':{'tools':{'listChanged':False}},'serverInfo':{'name':'transpara-knowledge-hub','version':json.loads((self.root/'package.json').read_text())['version']}}
         if method in ('notifications/initialized','notifications/cancelled'): return None
         if not self.initialized: raise ValueError('Initialize before using scoped tools')
         if method=='ping': return {}

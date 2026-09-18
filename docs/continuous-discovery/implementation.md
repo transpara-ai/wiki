@@ -1,3 +1,23 @@
+---
+doc_id: "TAI-WIKI-DISCOVERY-IMPLEMENTATION"
+title: "Continuous discovery implementation"
+doc_type: "implementation-record"
+version: "0.2.0"
+status: "draft"
+created: "2026-09-18"
+updated: "2026-09-18"
+owner: "Transpara"
+steward: "Codex"
+author: "Codex"
+reviewer: "Pending human review"
+project: "wiki"
+repo: "transpara-ai/wiki"
+classification: "company-internal"
+supersedes: []
+canonical: false
+version_history: "First controlled revision; prior unversioned content remains in Git history"
+---
+
 # Continuous discovery implementation
 
 Factory Order: implement the user-approved continuous discovery, research and reviewed publication plan on `codex/wiki-architecture-comparison`. Critical triggers: new outbound source collection using host credentials; retained private source evidence supplied to host models; reviewed changes entering canonical publication. This order authorizes local implementation and tests, not production credentials, service installation, monitor enrollment or production activation. Those effects require maintainer acceptance and explicit authority immediately before activation.
@@ -16,6 +36,24 @@ Threat review must exercise SSRF/redirects, credential leakage, source instructi
 
 See [operator guide](../../compile/DISCOVERY.md) for configuration, API contracts, worker startup, backups and rollout. No monitor is created or enabled by installation. Workplace adapters are an explicit future extension; automatic publication, OCR, transcription and unrestricted crawling are excluded.
 
+## Document control correction
+
+TLC route: Designed. The correction binds Transpara document-control frontmatter
+and document SemVer to the full reviewed article diff, preserves existing metadata,
+and synchronizes application release metadata at v0.9.0. See the operator guide's
+[document-control contract](../../compile/DISCOVERY.md#document-control-and-semantic-versions)
+and [CFAR ingestion/research swim lanes and timing](../../compile/DISCOVERY.md#cfar-ingestion-and-research-swim-lanes).
+The reviewers are independent, initially blind model-family assessments; they do
+not currently run tool-using investigations. Existing comparison scores describe
+the original v0.8.3 baseline.
+
+Validation: 33 workflow tests, 12 release tests, five provider integration tests,
+real isolated publication with exact reviewed Markdown and generated version
+checks, and five browser workspace journeys passed. Required frontmatter and
+unique document identities were checked across nine documents. Ordinary review
+covered preservation, honest legacy version baselines, immutable exported
+snapshots, review invalidation on SemVer changes and application-version parity.
+
 ## Local review record
 
 The implementation review covers audience enforcement, SSRF/DNS/redirect restrictions, model-family independence, evidence and article revision checks, capture/checkpoint transactions, restart leases and journal recovery. Relevant adversarial cases are executable in `compile/test_knowledge.py`; browser journeys are in `tests/knowledge.spec.js`. No production acceptance, live cross-provider qualification or human pilot outcome is asserted. Named production activation effects remain unperformed pending maintainer acceptance.
@@ -27,3 +65,10 @@ The implementation review covers audience enforcement, SSRF/DNS/redirect restric
 - JavaScript syntax, unit and DOM suites passed. The full browser run passed 68 cases and identified one Ask compatibility regression; after the fix, all ten focused Ask/workspace journeys passed, including transient follow-ups and explicit audience review after access loss.
 - Publication profiles and generated links were checked. No live source enrollment or provider invocation was used for these tests.
 - Human calibration labels, the five-user usability pilot and the 30% review-time target remain operational acceptance work.
+
+## Document revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.2.0 | 2026-09-18 | Record enforced document control, SemVer, CFAR timing and focused correction validation. |
+| 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |

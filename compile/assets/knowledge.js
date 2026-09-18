@@ -124,11 +124,12 @@
     }
     if(p.frozen) for(const article of p.frozen.articles) details(parent,'Diff: '+article.slug,article.diff);
     if(p.state==='published') { el('p','Published '+date(p.approval.at)+'. This accepted bundle is immutable.',parent); return; }
-    const editors=[], placements={...(p.placements||{})};
+    const editors=[], placements={...(p.placements||{})}, version_bumps={...(p.version_bumps||{})};
     for(const change of p.changes) { const label=el('label',change.title+' ('+change.slug+')',parent); const text=el('textarea',undefined,label); text.rows=12; text.value=change.body; editors.push({change,text});
       if(p.article_revisions && p.article_revisions[change.slug]===null) { const placeLabel=el('label','Article placement',parent); const select=el('select',undefined,placeLabel); for(const section of state.sections[p.space]) { const option=el('option',section,select);option.value=p.space+'/'+section; } select.value=placements[change.slug]||select.options[0].value; select.onchange=()=>{placements[change.slug]=select.value;}; }
+      else { const versionLabel=el('label','Document version change',parent); const select=el('select',undefined,versionLabel); for(const [value,label] of [['minor','Minor — added knowledge or workflow detail'],['major','Major — changed architecture or obligations'],['patch','Patch — correction or clarification']]) { const option=el('option',label,select); option.value=value; } select.value=version_bumps[change.slug]||'minor'; select.onchange=()=>{version_bumps[change.slug]=select.value;}; }
     }
-    button(parent,'Save edits and invalidate review',async () => { await api('proposals/edit',{id:p.id,revision:p.revision,changes:editors.map(({change,text})=>({...change,body:text.value})),findings:p.findings,coverage_limitations:p.coverage_limitations,placements}); await refresh(); await openProposal(id); });
+    button(parent,'Save edits and invalidate review',async () => { await api('proposals/edit',{id:p.id,revision:p.revision,changes:editors.map(({change,text})=>({...change,body:text.value})),findings:p.findings,coverage_limitations:p.coverage_limitations,placements,version_bumps}); await refresh(); await openProposal(id); });
     const reasonLabel=el('label','Decision or revision-request rationale',parent); const reason=el('textarea',undefined,reasonLabel);
     for(const [action,label] of [['review','Run fresh review'],['request-revision','Request revision'],['defer','Defer'],['reject','Reject']]) button(parent,label,async () => { await api('proposals/'+action,{id:p.id,revision:p.revision,reason:reason.value}); await refresh(); await openProposal(id); });
     const manualLabel=el('label','Manual review: explain your publication decision if automated review is incomplete or unresolved',parent); const manual=el('textarea',undefined,manualLabel);

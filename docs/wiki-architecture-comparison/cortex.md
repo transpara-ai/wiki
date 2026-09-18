@@ -1,3 +1,23 @@
+---
+doc_id: "TAI-WIKI-CORTEX"
+title: "Cortex: Git-backed agent memory with bounded, verifiable retrieval"
+doc_type: "analysis"
+version: "0.1.0"
+status: "draft"
+created: "2026-09-18"
+updated: "2026-09-18"
+owner: "Transpara"
+steward: "Codex"
+author: "Codex"
+reviewer: "Pending human review"
+project: "wiki"
+repo: "transpara-ai/wiki"
+classification: "company-internal"
+supersedes: []
+canonical: false
+version_history: "First controlled revision; prior unversioned content remains in Git history"
+---
+
 # Cortex: Git-backed agent memory with bounded, verifiable retrieval
 
 Reviewed **2026-09-18**. System dossier 3 of 3. Return to the
@@ -290,3 +310,9 @@ All external implementation links use the inspected commit’s unambiguous
 [C11]: https://github.com/Obelyth/cortex/blob/ec57124a90ba/lib/ask.ts
 [C12]: https://github.com/Obelyth/cortex/blob/ec57124a90ba/lib/sweep.ts
 [C13]: https://github.com/Obelyth/cortex/blob/ec57124a90ba/lib/lexical.ts
+
+## Document revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |

@@ -1,3 +1,23 @@
+---
+doc_id: "TAI-WIKI-TRANSPARA"
+title: "Transpara Knowledge Hub: curated knowledge with governed publication"
+doc_type: "analysis"
+version: "0.1.1"
+status: "draft"
+created: "2026-09-18"
+updated: "2026-09-18"
+owner: "Transpara"
+steward: "Codex"
+author: "Codex"
+reviewer: "Pending human review"
+project: "wiki"
+repo: "transpara-ai/wiki"
+classification: "company-internal"
+supersedes: []
+canonical: false
+version_history: "First controlled revision; prior unversioned content remains in Git history"
+---
+
 # Transpara Knowledge Hub: curated knowledge with governed publication
 
 Reviewed **2026-09-18**. System dossier 2 of 3. Return to the
@@ -8,8 +28,11 @@ Reviewed **2026-09-18**. System dossier 2 of 3. Return to the
 
 Inspected local repository revision
 `d059acc3575850e51b58b4b2f95a3a5fc428fa40`, reporting version **0.8.3**.
-This is a source-code assessment, not a live deployment audit. The comparison
-branch adds documentation; it does not change the runtime. The existing
+This is a source-code assessment, not a live deployment audit. This dossier records the original comparison baseline. Subsequent branch work
+adds the v0.9.0 discovery/review workflow; its [CFAR swim lanes and timing model](../../compile/DISCOVERY.md#cfar-ingestion-and-research-swim-lanes)
+cover human submissions, research, monitoring, both reviewers, challenge, repair
+and human publication. Those additions are not retroactive evidence for the
+baseline scores below. The existing
 [Karpathy-pattern audit](../karpathy-pattern-audit.md) supplies a useful earlier
 assessment, and the code paths below were checked directly.
 
@@ -101,6 +124,9 @@ host's credentials or configuration were requalified for this comparison.
    establishes universal immutable evidence retention. [T3]
 
 ## Ingest swim lanes and timing model
+
+This is the **v0.8.3 baseline**. For ingestion/research vetting through CFAR,
+use the [v0.9.0 workflow and timing](../../compile/DISCOVERY.md#cfar-ingestion-and-research-swim-lanes).
 
 **Illustrative schedule, not measurement.** Assume one already-extracted
 2,000-word source, a 100-page corpus, no lock contention, and an eight-second
@@ -255,3 +281,10 @@ use the [baseline tree][T0] at the exact revision above, not a later branch tip.
 [T7]: ../../compile/build_site.py
 [T8]: ../../compile/ingest_ops.py
 [T9]: ../../compile/ask_common.py
+
+## Document revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.1.1 | 2026-09-18 | Distinguish historical registration timing from the linked v0.9.0 CFAR ingestion/research workflow. |
+| 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |

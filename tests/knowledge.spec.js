@@ -81,3 +81,21 @@ test('changed source access requires an explicit audience decision before resumi
   await page.getByRole('button',{name:'Enable',exact:true}).click();
   await expect(page.getByText('transpara/example · enabled · shared')).toBeVisible();
 });
+
+test('curator selects a document SemVer increment and invalidates review',async({page})=>{
+  const p={id:'proposal-version',revision:2,space:'civilization',state:'Ready for approval',article_revisions:{finding:'existing-revision'},findings:[],evidence_ids:[],coverage_limitations:'Fixture',changes:[{slug:'finding',title:'Existing finding',body:'Updated knowledge',evidence_ids:[]}],frozen:{articles:[{slug:'finding',diff:'- version: 1.0.0\n+ version: 1.1.0'}]}};
+  let edited;
+  await page.route('**/api/knowledge/**',async route=>{
+    const request=route.request();const path=new URL(request.url()).pathname;
+    if(path.endsWith('/proposals/edit')) { edited=request.postDataJSON();p.version_bumps=edited.version_bumps;p.state='draft';p.review=null;p.revision++; }
+    await route.fulfill({json:path.endsWith('/proposal')?p:state({proposals:[p]})});
+  });
+  await page.goto('/knowledge.html');
+  await page.getByRole('button',{name:'Review queue',exact:true}).click();
+  await page.getByRole('button',{name:'Inspect evidence, objections and diff'}).click();
+  await expect(page.getByLabel('Document version change')).toHaveValue('minor');
+  await page.getByLabel('Document version change').selectOption('major');
+  await page.getByRole('button',{name:'Save edits and invalidate review'}).click();
+  await expect.poll(()=>edited?.version_bumps).toEqual({finding:'major'});
+  expect(p.state).toBe('draft');
+});

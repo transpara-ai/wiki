@@ -160,7 +160,95 @@ class KnowledgeTests(unittest.TestCase):
         def build(stage): (stage/'index.html').write_text('new served')
         with patch('ingest_server.LOCK_PATH',self.root/'compile/.wiki-write.lock'): result=self.workflow.publish(p,'curator',builder=build)
         self.assertEqual(result['state'],'published'); self.assertIn('raw_documents:',(self.root/'wiki/new-finding.md').read_text())
+        self.assertEqual((self.root/'wiki/new-finding.md').read_text(),p['frozen']['articles'][0]['document'])
         self.assertTrue((self.root/'raw/inbox/discovery'/ (p['evidence_ids'][0]+'.md')).is_file())
+        from article_catalog import split_frontmatter, scalar
+        fm,_=split_frontmatter((self.root/'wiki/new-finding.md').read_text())
+        self.assertEqual(scalar(fm,'version'),'1.0.0')
+        self.assertEqual(scalar(fm,'doc_id'),'TAI-WIKI-NEW-FINDING')
+        evidence=(self.root/'raw/inbox/discovery'/ (p['evidence_ids'][0]+'.md')).read_text()
+        efm,_=split_frontmatter(evidence)
+        self.assertEqual(scalar(efm,'doc_type'),'evidence')
+        self.assertEqual(scalar(efm,'version'),'1.0.0')
+
+    def test_document_control_preserves_frontmatter_and_advances_semver(self):
+        from article_catalog import split_frontmatter, scalar
+        p=self.proposal(); c=p['changes'][0]
+        original='''---
+document_id: TAI-EXISTING
+version: "2.3.4"
+entity: Existing finding
+owner: Human curator
+author: Original author
+created: 2025-03-01
+classification: company-internal
+placements:
+  - civilization/concept
+supersedes:
+  - OLDER-DOCUMENT
+custom_policy:
+  unchanged: true
+sources:
+  - https://example.org/original
+---
+Old content
+'''
+        for bump,expected in [('major','3.0.0'),('minor','2.4.0'),('patch','2.3.5')]:
+            p['version_bumps']={c['slug']:bump}
+            document=self.workflow.article_document(p,c,original,'2026-09-18')
+            fm,_=split_frontmatter(document)
+            self.assertEqual(scalar(fm,'version'),expected)
+            for key,value in [('document_id','TAI-EXISTING'),('owner','Human curator'),('author','Original author'),
+                              ('created','2025-03-01'),('classification','company-internal')]:
+                self.assertEqual(scalar(fm,key),value)
+            self.assertNotIn('doc_id:',fm)
+            for block in ['custom_policy:\n  unchanged: true','sources:\n  - https://example.org/original',
+                          'supersedes:\n  - OLDER-DOCUMENT','placements:\n  - civilization/concept']:
+                self.assertIn(block,fm)
+        for invalid in [original.replace('2.3.4','not-semver'),original.replace('version: "2.3.4"','version: "2.3.4"\nversion: 2.3.5')]:
+            with self.assertRaises(ValueError):
+                self.workflow.article_document(p,c,invalid,'2026-09-18')
+        legacy=original.replace('version: "2.3.4"\n','').replace('created: 2025-03-01\n','')
+        fm,_=split_frontmatter(self.workflow.article_document(p,c,legacy,'2026-09-18'))
+        self.assertEqual(scalar(fm,'version'),'1.0.0')
+        self.assertEqual(scalar(fm,'created'),'unknown')
+        self.assertIn('Prior document versions unknown',fm)
+
+    def test_document_version_choice_invalidates_review(self):
+        p=self.proposal()
+        path=self.root/'wiki/new-finding.md'
+        path.write_text(p['frozen']['articles'][0]['document'])
+        p['article_revisions']['new-finding']=digest(path.read_bytes())
+        frozen=self.workflow.frozen(p)
+        p.update(frozen=frozen,review={'state':'Ready for approval','frozen_hash':digest(frozen)})
+        p=self.store.put('proposal',p,p['revision'])
+        changed=self.workflow.proposal_action('edit',{'id':p['id'],'revision':p['revision'],
+            'changes':p['changes'],'findings':p['findings'],'coverage_limitations':p['coverage_limitations'],
+            'version_bumps':{'new-finding':'major'}},'curator')
+        self.assertIsNone(changed['review'])
+        self.assertNotEqual(digest(self.workflow.frozen(changed)),digest(frozen))
+        self.assertIn('version: "2.0.0"',self.workflow.frozen(changed)['articles'][0]['diff'])
+        with patch('ingest_server.LOCK_PATH',self.root/'compile/.wiki-write.lock'),self.assertRaises(Conflict):
+            self.workflow.publish(changed,'curator',builder=lambda stage:None)
+
+    def test_reused_export_does_not_rewrite_source_document(self):
+        p=self.proposal()
+        def build(stage): (stage/'index.html').write_text('served')
+        with patch('ingest_server.LOCK_PATH',self.root/'compile/.wiki-write.lock'):
+            self.workflow.publish(p,'curator',builder=build)
+            article=self.root/'wiki/new-finding.md'
+            source=self.root/'raw/inbox/discovery'/(p['evidence_ids'][0]+'.md')
+            original=source.read_bytes()
+            self.capture()  # another observation of unchanged source bytes
+            p.pop('id'); p.pop('revision')
+            p['article_revisions']['new-finding']=digest(article.read_bytes())
+            p['changes'][0]['body']+=' More context.'
+            frozen=self.workflow.frozen(p)
+            p.update(frozen=frozen,review={'state':'Ready for approval','frozen_hash':digest(frozen)})
+            p=self.store.put('proposal',p)
+            self.workflow.publish(p,'curator',builder=build)
+            self.assertEqual(source.read_bytes(),original)
+            self.assertIn('version: "1.1.0"',article.read_text())
     def test_research_capture_retained_before_model_and_saves_private(self):
         i=self.workflow.investigate('start',{'question':'What changed?','space':'civilization'},'alice')
         e=self.workflow.submission({'text':'Observed result','space':'civilization','investigation':i['id'],'propose':False},'alice')
@@ -237,9 +325,10 @@ class KnowledgeTests(unittest.TestCase):
 
     def test_mcp_read_scope_cannot_publish_or_read_private_material(self):
         from knowledge_mcp import Server
+        (self.root/'package.json').write_text('{"version":"0.9.0"}')
         (self.root/'dist').mkdir(); (self.root/'dist/ask-index.json').write_text(json.dumps({'articles':[{'id':'allowed','title':'Allowed','spaces':['platform'],'href':'/allowed.html','text':'Published text'}, {'id':'other','title':'Other','spaces':['civilization'],'href':'/other.html','text':'Other scope'}]}))
         server=Server(self.root,self.root/'dist',['platform'])
-        server.dispatch({'method':'initialize'})
+        self.assertEqual(server.dispatch({'method':'initialize'})['serverInfo']['version'],'0.9.0')
         names=[t['name'] for t in server.dispatch({'method':'tools/list'})['tools']]
         self.assertNotIn('publish',names);self.assertNotIn('propose',names)
         with self.assertRaises(ValueError): server.dispatch({'method':'tools/call','params':{'name':'read','arguments':{'id':'other'}}})

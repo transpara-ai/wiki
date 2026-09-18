@@ -1,3 +1,23 @@
+---
+doc_id: "TAI-WIKI-DOCUMENTATION"
+title: "Transpara Knowledge Hub documentation"
+doc_type: "index"
+version: "0.1.0"
+status: "draft"
+created: "unknown"
+updated: "2026-09-18"
+owner: "Transpara"
+steward: "Codex"
+author: "Codex"
+reviewer: "Pending human review"
+project: "wiki"
+repo: "transpara-ai/wiki"
+classification: "company-internal"
+supersedes: []
+canonical: false
+version_history: "First controlled revision; prior unversioned content remains in Git history"
+---
+
 # Transpara Knowledge Hub documentation
 
 The Knowledge Hub contains Civilization, Transpara Platform, Competition, and
@@ -39,3 +59,9 @@ migration; use the guides above to operate and author the current Hub.
 
 - [Continuous discovery implementation and trust boundaries](continuous-discovery/implementation.md)
 - [Discovery operator and API guide](../compile/DISCOVERY.md)
+
+## Document revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |

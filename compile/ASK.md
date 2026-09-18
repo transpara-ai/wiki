@@ -1,3 +1,23 @@
+---
+doc_id: "TAI-WIKI-ASK-OPERATIONS"
+title: "Subscription answers — v0.8.2"
+doc_type: "operations"
+version: "0.1.0"
+status: "draft"
+created: "unknown"
+updated: "2026-09-18"
+owner: "Transpara"
+steward: "Codex"
+author: "Codex"
+reviewer: "Pending human review"
+project: "wiki"
+repo: "transpara-ai/wiki"
+classification: "company-internal"
+supersedes: []
+canonical: false
+version_history: "First controlled revision; prior unversioned content remains in Git history"
+---
+
 # Subscription answers — v0.8.2
 
 Version 0.8.2 makes the host provider boundary reproducible. A root-owned
@@ -195,3 +215,9 @@ For rollback, restore the prior wiki revision/image and rebuild, remove the Ask
 transport mount, and revoke its dedicated SSH public key if retiring the feature.
 Preserve all source material, profile grants, DevOps configuration, and shared
 provider identity stores. Drain questions before replacing dispatcher files.
+
+## Document revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |

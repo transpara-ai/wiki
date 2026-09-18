@@ -1,3 +1,23 @@
+---
+doc_id: "TAI-WIKI-DISCOVERY-OPERATIONS"
+title: "Continuous discovery, research and reviewed publication"
+doc_type: "operations"
+version: "0.2.0"
+status: "draft"
+created: "2026-09-18"
+updated: "2026-09-18"
+owner: "Transpara"
+steward: "Codex"
+author: "Codex"
+reviewer: "Pending human review"
+project: "wiki"
+repo: "transpara-ai/wiki"
+classification: "company-internal"
+supersedes: []
+canonical: false
+version_history: "First controlled revision; prior unversioned content remains in Git history"
+---
+
 # Continuous discovery, research and reviewed publication
 
 The Knowledge workspace connects human submissions, durable investigations and allowlisted source monitors to versioned evidence, grouped article proposals, independent model-family reviews and explicit human publication. Canonical articles remain Markdown. All source/workflow state is private and separate from static publication.
@@ -68,27 +88,125 @@ Deterministic checks enforce schema, known evidence IDs, exact source quotations
 
 Approving a bundle checks its revision and frozen hash again under the existing wiki write lock. A manual review is permitted only with a recorded substantive rationale; it does not bypass deterministic checks. The complete candidate static artifact is built privately; the previous served artifact remains available until successful atomic directory exchange. Article originals and approvals are journaled for crash recovery. Accepted captures reuse immutable manifest shards and the existing append-last ingestion ledger; replay completes these audit records idempotently. The accepted extracted evidence and provenance are copied to portable Markdown source files. Failed validation restores original files. Worker startup recovers interrupted publication before processing jobs. Publication never happens from a model, scheduler or MCP call.
 
+### CFAR ingestion and research swim lanes
+
+CFAR here is **Cross-Family Adversarial Review of the publication bundle**.
+Reviewer A and Reviewer B are separately configured model-family roles. The
+current implementation issues independent, initially blind **model assessments**;
+it does not give either reviewer a tool-using investigation loop, browsing,
+repository access, or authority to modify evidence. The worker calls A and then
+B sequentially, without passing A's response to B. Separate families and blind
+inputs are required; concurrency is not implemented. This is content review,
+not a claim of independent agentic verification or software-review certification.
+
+Evidence is retained before CFAR so rejected claims, contradictions and unresolved
+questions are not lost. Retention is not endorsement. CFAR vets captured evidence
+quality, findings and proposed claims together before they enter canonical
+articles. Research kept only in the private workspace remains provisional; the
+explicit **Propose** action starts drafting and review. Monitoring and human
+submissions can queue that same path automatically. Ordinary Ask stays transient.
+
 ```mermaid
 sequenceDiagram
-    participant C as Curator / scheduler
-    participant W as Worker
-    participant E as Private evidence store
-    participant A as Reviewer A
-    participant B as Reviewer B
-    participant P as Publisher
-    C->>W: Capture explicit submission or enabled source
-    W->>E: Commit evidence and checkpoint together
-    W->>E: Group latest findings and article proposals
-    W->>A: Frozen bundle (blind)
-    W->>B: Same frozen bundle (blind)
-    A-->>W: Assessment and organization scores
-    B-->>W: Independent assessment
-    W->>E: Store judgments, challenge once if needed
-    C->>P: Approve exact reviewed revision
-    P->>E: Revalidate evidence heads and record approval
-    P->>P: Build privately, validate, atomic exchange
-    P->>E: Published / recoverable journal
+    participant H as Human curator
+    participant R as Authorized research
+    participant M as Enabled monitor
+    participant W as Worker and drafter
+    participant E as Private evidence and findings
+    participant A as Family A - blind reviewer
+    participant B as Family B - blind reviewer
+    participant P as Validated publisher
+    alt Human offers material
+        H->>W: Submit document and request proposal
+        W->>E: Capture original and extracted version
+    else Explicit investigation
+        H->>R: Start question, capture URLs or request search
+        R->>E: Retain sources, observations and open questions
+        H->>W: Explicitly propose research findings
+    else Allowlisted source changes
+        M->>W: Fetch within scope and budget
+        W->>E: Commit captured changes and checkpoint
+    end
+    W->>E: Read latest evidence and affected article revisions
+    W->>W: Draft grouped changes
+    W->>W: Check citations, links, audience, frontmatter and SemVer
+    Note over W,B: Freeze identical evidence, findings, full diff, rubric and organization profiles
+    W->>A: Independent initial assessment - no B judgment
+    A-->>W: Evidence objections, scores and readiness
+    W->>B: Same initial bundle - no A judgment
+    B-->>W: Evidence objections, scores and readiness
+    alt Reviewer unavailable or invalid output
+        W->>E: Review incomplete - no family substitution
+        W-->>H: Retry or explicitly record manual review
+    else Both initial assessments complete
+        W->>W: Compare facts, readiness and dimension scores
+        opt Material disagreement - one challenge exchange
+            W->>A: Frozen bundle plus both judgments
+            A-->>W: Revised assessment or maintained objection
+            W->>B: Frozen bundle plus both initial judgments
+            B-->>W: Revised assessment or maintained objection
+        end
+        W->>E: Preserve both judgments and organization rankings
+        opt Needs decision or evidence - one automatic repair maximum
+            W->>W: Repair draft and repeat deterministic checks
+            W->>E: Store new bundle revision - old review invalid
+            Note over W,B: Fresh blind A then B review of changed bundle - bounded challenge if needed
+            W->>A: Fresh frozen bundle
+            A-->>W: Fresh assessment
+            W->>B: Same fresh bundle
+            B-->>W: Fresh assessment
+        end
+        W-->>H: Ready for approval or focused unresolved decision
+    end
+    Note over E,H: Evidence remains provisional - scores never authorize publication
+    H->>P: Approve exact revision or recorded manual decision
+    P->>E: Recheck frozen evidence and article revisions
+    alt Changed evidence or article revision
+        P-->>H: Refuse approval - refresh draft and review
+    else Valid approval and candidate build
+        P->>P: Build privately, validate links, atomically exchange
+        P->>E: Record human approval and portable provenance
+        P-->>H: Canonical articles published
+    end
 ```
+
+### CFAR timing model
+
+The following is an **illustrative budget, not a measured latency or service
+promise**. It assumes extracted text, one grouped bundle, immediately available
+providers, and no retry. It includes both cross-family reviews. Authorized
+research adds capture/investigation time and the wait for explicit Propose.
+
+| Lane / stage | Example elapsed window | Work completed |
+| --- | --- | --- |
+| Capture / private evidence | 0–2 s | Retain source version; no endorsement. |
+| Worker / grouped drafting | 2–22 s | Findings and proposed article changes. |
+| Deterministic validation | 22–23 s | Citation, revision, audience, frontmatter and SemVer checks. |
+| Family A | 23–48 s | Initial blind assessment. |
+| Family B | 48–78 s | Independent initial blind assessment. |
+| Worker / comparison | 78–79 s | Separate organization rankings and readiness; no objections assumed here. |
+| Curator | 79 s + H | Human inspection and approval; H is unbounded waiting plus work. |
+| Publisher | 79 s + H to 87 s + H | Revision recheck, candidate build, validation and atomic exchange. |
+
+For the current sequential reviewer implementation:
+
+`T_ready = Q + T_capture + T_research + T_draft + T_checks + T_A + T_B + T_compare + T_optional_challenge + T_optional_repair_and_fresh_review`
+
+`T_published = T_ready + H + T_build_and_validate`
+
+Here Q includes scheduling, provider admission and retry waits; H includes the
+curator decision and, for investigations, any wait to propose findings. One
+challenge costs both follow-up calls (`T_A_challenge + T_B_challenge`). A repair
+adds synthesis, deterministic checks and an entirely fresh pair of assessments,
+with one bounded challenge if that pair disagrees. Remaining uncertainty returns
+to the curator; it is not resolved by further automatic loops. An unavailable
+reviewer has no automatic completion deadline. Human manual review is recorded
+explicitly and never labeled a completed two-family review.
+
+The example is **79 seconds to a reviewable bundle, 87 seconds + H to publication**
+before queue/research/exception costs. These are planning numbers only. The older
+10-second ingestion diagram in the [baseline dossier](../docs/wiki-architecture-comparison/transpara.md#ingest-swim-lanes-and-timing-model)
+measures the v0.8.3 registration path, which did not include this workflow.
 
 ## API and wider integration
 
@@ -127,3 +245,43 @@ python3 compile/knowledge_mcp.py --dist dist-company --space platform
 6. Require four of five representative users to complete the core keyboard/narrow-screen workflows unaided. Compare median review time against baseline with a target reduction of 30%, without increasing material corrections. These are deployment acceptance targets, not claims established by automated tests.
 
 Existing raw sources are not silently assigned review status. The additive `knowledge_backfill.py` utility retains supported existing referenced files with `historical_review: unknown`; it creates no monitor and invokes no model. Review/publication history starts only with explicit new bundles. Source freshness, pending semantic review and publication health remain separate workspace indicators.
+
+## Document control and semantic versions
+
+Transpara frontmatter is part of the reviewed document, never LLM-generated
+authority. Each article receives a stable `doc_id` (or retains its existing
+`document_id`), title, type, SemVer, creation/update dates, owner, steward, project,
+supersession list and canonical marker alongside the existing Hub fields.
+Existing identity, ownership, classification, placement, source references and
+custom frontmatter survive. The frozen diff contains the complete proposed
+Markdown, including metadata; publication writes those exact article bytes.
+
+New published articles start at `1.0.0`. Existing controlled articles default to
+a minor increment for added knowledge. The curator can select major for changed
+architecture/obligations or patch for corrections using **Document version change**.
+Saving this selection invalidates review. The API equivalent is the proposal's
+`version_bumps` map from article slug to `major`, `minor` or `patch`.
+Invalid existing versions and duplicate frontmatter keys require correction
+before review. Existing unversioned articles receive their first controlled
+baseline on their next approved edit; historical versions and creation dates are
+marked unknown, not reconstructed. Document update dates are frozen for review;
+the publication ledger records the actual human approval time and actor.
+
+Captured source bytes and their original frontmatter remain untouched in private
+evidence. An accepted extracted snapshot gets its own immutable, controlled
+evidence document at `1.0.0`; this is the snapshot wrapper's version, never an
+invented upstream version. New source revisions have distinct evidence identities.
+Previously exported snapshots retain their bytes on reuse.
+
+Application SemVer is independent of article and source versions. `package.json`
+and both root lockfile versions are `0.9.0`; MCP reads that same application
+version. The [release procedure](../docs/releases/README.md) governs release notes,
+tags and deployment. This guide and the comparison documents begin at `0.1.0`,
+with human review pending and earlier unversioned content preserved in Git.
+
+## Document revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.2.0 | 2026-09-18 | Specify document SemVer controls, CFAR intake/research swim lanes, sequential timing and reviewer capability boundaries. |
+| 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |

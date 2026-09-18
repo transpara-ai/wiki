@@ -1,3 +1,23 @@
+---
+doc_id: "TAI-WIKI-COMPARISON"
+title: "Which wiki design wins? Karpathy vs Transpara vs Cortex"
+doc_type: "analysis"
+version: "0.1.1"
+status: "draft"
+created: "2026-09-18"
+updated: "2026-09-18"
+owner: "Transpara"
+steward: "Codex"
+author: "Codex"
+reviewer: "Pending human review"
+project: "wiki"
+repo: "transpara-ai/wiki"
+classification: "company-internal"
+supersedes: []
+canonical: false
+version_history: "First controlled revision; prior unversioned content remains in Git history"
+---
+
 # Which wiki design wins? Karpathy vs Transpara vs Cortex
 
 **Decision date: 2026-09-18. Overall winner: Cortex, narrowly, at 6.80/10.**
@@ -18,6 +38,11 @@ and timing swim lanes belong to the three standalone dossiers:
 | Original Karpathy LLM Wiki | [Karpathy](karpathy.md) | [Explainer](karpathy.md#architecture) | [Swim lanes](karpathy.md#ingest-swim-lanes-and-timing-model) | [Swim lanes](karpathy.md#query-swim-lanes-and-timing-model) |
 | Transpara Knowledge Hub | [Transpara](transpara.md) | [Explainer](transpara.md#architecture) | [Swim lanes](transpara.md#ingest-swim-lanes-and-timing-model) | [Swim lanes](transpara.md#query-swim-lanes-and-timing-model) |
 | Obelyth Cortex | [Cortex](cortex.md) | [Explainer](cortex.md#architecture) | [Swim lanes](cortex.md#ingest-swim-lanes-and-timing-model) | [Swim lanes](cortex.md#query-swim-lanes-and-timing-model) |
+
+The subsequent Hub implementation has a separate [CFAR ingestion/research timing model](../../compile/DISCOVERY.md#cfar-ingestion-and-research-swim-lanes),
+including reviewer capabilities, challenge/repair and human publication. The KT
+scores here remain the pinned baseline comparison; they do not claim validation
+of the new workflow or its pilot targets.
 
 Each dossier pins its primary sources and separates specified, implemented,
 optional, and inferred behavior. The assessment compares an original pattern
@@ -267,3 +292,10 @@ For recovery, test source deletion, interrupted multi-page updates, stale caches
 provider outages, and separate note/database restoration. Re-score only the
 criteria supported by those results. Until then, the winner is an explicit,
 auditable architectural judgment with a very narrow margin.
+
+## Document revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.1.1 | 2026-09-18 | Link subsequent CFAR timing without changing the historical KT assessment. |
+| 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |

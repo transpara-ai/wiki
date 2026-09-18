@@ -1,3 +1,23 @@
+---
+doc_id: "TAI-WIKI-KARPATHY"
+title: "Karpathy LLM Wiki: knowledge compiled into a maintained artifact"
+doc_type: "analysis"
+version: "0.1.0"
+status: "draft"
+created: "2026-09-18"
+updated: "2026-09-18"
+owner: "Transpara"
+steward: "Codex"
+author: "Codex"
+reviewer: "Pending human review"
+project: "wiki"
+repo: "transpara-ai/wiki"
+classification: "company-internal"
+supersedes: []
+canonical: false
+version_history: "First controlled revision; prior unversioned content remains in Git history"
+---
+
 # Karpathy LLM Wiki: knowledge compiled into a maintained artifact
 
 Reviewed **2026-09-18**. System dossier 1 of 3. Return to the
@@ -222,3 +242,9 @@ charges that distinction explicitly in other criteria.
   and decision judgments are original analysis rather than reported results.
 
 [K1]: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f/ac46de1ad27f92b28ac95459c782c07f6b8c964a
+
+## Document revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |

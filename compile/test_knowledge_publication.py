@@ -24,6 +24,8 @@ with tempfile.TemporaryDirectory(prefix='wiki-publication-integration-') as dire
     assert published['state']=='published'
     assert (project/'dist/discovery-integration-fixture.html').exists()
     assert (project/'wiki/discovery-integration-fixture.md').exists()
+    assert (project/'wiki/discovery-integration-fixture.md').read_text()==frozen['articles'][0]['document']
+    assert json.loads((project/'dist/version.json').read_text())['version']==json.loads((project/'package.json').read_text())['version']
     assert not (project/'dist/.private').exists()
     index=json.loads((project/'dist/ask-index.json').read_text())
     assert any(a['id']=='discovery-integration-fixture' for a in index['articles'])
