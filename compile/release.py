@@ -44,6 +44,34 @@ def api(endpoint):
         raise
 
 
+def tag_commit(repo, tag):
+    ref = api(f'repos/{repo}/git/ref/tags/{tag}')
+    if not ref:
+        return None
+    target = ref['object']
+    while target['type'] == 'tag':
+        target = api(f'repos/{repo}/git/tags/' + target['sha'])['object']
+    if target['type'] != 'commit':
+        raise ValueError('Release tag must resolve to a commit')
+    return target['sha']
+
+
+def verify_existing_source(target, commit, version):
+    if not target:
+        raise ValueError('Published release has no source tag')
+    if target == commit:
+        return
+    # Later documentation/content updates may reuse a release, but application
+    # changes and unrelated source histories must never pass without a new version.
+    run('git', 'merge-base', '--is-ancestor', target, commit)
+    if json.loads(run('git', 'show', target + ':package.json'))['version'] != version:
+        raise ValueError('Published tag has a different package version')
+    changed = run('git', 'diff', '--name-only', target, commit).splitlines()
+    if any(not (path.endswith('.md') or path.startswith(('docs/', 'raw/', 'wiki/', 'spaces/'))
+                or path == 'compile/.secretsallow') for path in changed):
+        raise ValueError('Application changed since this release; bump SemVer and add notes')
+
+
 def publish(commit, repo, root=ROOT):
     version, notes = metadata(root)
     if not re.fullmatch(r'[0-9a-f]{40}', commit):
@@ -55,6 +83,7 @@ def publish(commit, repo, root=ROOT):
     if existing:
         if existing['draft'] or existing['prerelease']:
             raise ValueError('Existing release is not published and stable; correct it explicitly')
+        verify_existing_source(tag_commit(repo, tag), commit, version)
         print('Already published: ' + existing['html_url'])
         return
     latest = api(f'repos/{repo}/releases/latest')
@@ -63,18 +92,16 @@ def publish(commit, repo, root=ROOT):
         if not STABLE.fullmatch(prior) or tuple(map(int, version.split('.'))) <= tuple(map(int, prior.split('.'))):
             raise ValueError('A new release must advance the latest stable version')
     # A failed publication can leave a tag; never silently release another commit.
-    ref = api(f'repos/{repo}/git/ref/tags/{tag}')
-    if ref:
-        target = ref['object']
-        while target['type'] == 'tag':
-            target = api(f'repos/{repo}/git/tags/' + target['sha'])['object']
-        if target['type'] != 'commit' or target['sha'] != commit:
-            raise ValueError('Existing tag points to another commit; do not move it')
+    target = tag_commit(repo, tag)
+    if target and target != commit:
+        raise ValueError('Existing tag points to another commit; do not move it')
     print(run('gh', 'release', 'create', tag, '--repo', repo, '--target', commit,
               '--title', tag, '--notes-file', str(notes), '--latest'))
     published = api(f'repos/{repo}/releases/tags/{tag}')
     if not published or published['draft'] or published['prerelease']:
         raise ValueError('Stable release publication could not be verified')
+    if tag_commit(repo, tag) != commit:
+        raise ValueError('Published release tag does not match the checked commit')
 
 
 if __name__ == '__main__':

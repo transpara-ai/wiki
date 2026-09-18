@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the reusable host-side provider boundary."""
 
+import json
 import os
 from pathlib import Path
 import runpy
@@ -103,7 +104,7 @@ class ProviderConfigurationTests(unittest.TestCase):
             ], check=True, env=environment, capture_output=True, text=True)
 
             arguments = argument_log.read_text().splitlines()
-            version = __import__("json").loads((HERE.parent.parent / "package.json").read_text())["version"]
+            version = json.loads((HERE.parents[1] / "package.json").read_text())["version"]
             self.assertIn("transpara-provider:" + version, arguments)
             self.assertIn("org.opencontainers.image.version=" + version, arguments)
             self.assertIn("org.opencontainers.image.revision=0123456789abcdef", arguments)

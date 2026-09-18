@@ -58,7 +58,8 @@ class ReleaseTests(unittest.TestCase):
 
     def test_publishes_exact_commit_and_committed_notes(self):
         stable = {'draft': False, 'prerelease': False}
-        with patch.object(release, 'api', side_effect=[None, {'tag_name': 'v0.8.1'}, None, stable]), \
+        with patch.object(release, 'api', side_effect=[None, {'tag_name': 'v0.8.1'}, None, stable,
+                {'object': {'type': 'commit', 'sha': self.sha}}]), \
                 patch.object(release, 'run', side_effect=[self.sha, 'release URL']) as run:
             release.publish(self.sha, 'example/wiki', self.root)
         args = run.call_args.args
@@ -70,7 +71,7 @@ class ReleaseTests(unittest.TestCase):
 
     def test_existing_stable_release_is_unchanged(self):
         stable = {'draft': False, 'prerelease': False, 'html_url': 'release URL'}
-        with patch.object(release, 'api', return_value=stable), \
+        with patch.object(release, 'api', side_effect=[stable, {'object': {'type': 'commit', 'sha': self.sha}}]), \
                 patch.object(release, 'run', return_value=self.sha) as run:
             release.publish(self.sha, 'example/wiki', self.root)
         self.assertEqual(run.call_count, 1)
@@ -100,9 +101,37 @@ class ReleaseTests(unittest.TestCase):
         with patch.object(release, 'api', side_effect=[None, None,
                 {'object': {'type': 'tag', 'sha': 'b' * 40}},
                 {'object': {'type': 'commit', 'sha': self.sha}},
-                {'draft': False, 'prerelease': False}]), \
+                {'draft': False, 'prerelease': False},
+                {'object': {'type': 'commit', 'sha': self.sha}}]), \
                 patch.object(release, 'run', side_effect=[self.sha, 'release URL']):
             release.publish(self.sha, 'example/wiki', self.root)
+
+    def test_existing_release_checks_its_source_before_accepting(self):
+        stable = {'draft': False, 'prerelease': False, 'html_url': 'release URL'}
+        with patch.object(release, 'api', side_effect=[stable, {'object': {'type': 'commit', 'sha': 'b' * 40}}]), \
+                patch.object(release, 'run', side_effect=[self.sha, '', '{"version":"0.8.2"}', 'compile/ask.py']):
+            with self.assertRaisesRegex(ValueError, 'Application changed'):
+                release.publish(self.sha, 'example/wiki', self.root)
+
+    def test_documentation_only_followup_can_reuse_ancestor_release(self):
+        with patch.object(release, 'run', side_effect=['', '{"version":"0.8.2"}', 'README.md\ndocs/review.md']):
+            release.verify_existing_source('b' * 40, self.sha, '0.8.2')
+
+    def test_unrelated_history_or_wrong_tag_version_is_rejected(self):
+        with patch.object(release, 'run', side_effect=subprocess.CalledProcessError(1, 'git')):
+            with self.assertRaises(subprocess.CalledProcessError):
+                release.verify_existing_source('b' * 40, self.sha, '0.8.2')
+        with patch.object(release, 'run', side_effect=['', '{"version":"0.8.1"}']):
+            with self.assertRaisesRegex(ValueError, 'different package version'):
+                release.verify_existing_source('b' * 40, self.sha, '0.8.2')
+
+    def test_concurrent_wrong_tag_creation_is_detected(self):
+        with patch.object(release, 'api', side_effect=[None, None, None,
+                {'draft': False, 'prerelease': False},
+                {'object': {'type': 'commit', 'sha': 'b' * 40}}]), \
+                patch.object(release, 'run', side_effect=[self.sha, 'release URL']):
+            with self.assertRaisesRegex(ValueError, 'does not match'):
+                release.publish(self.sha, 'example/wiki', self.root)
 
     def test_wrong_checkout_fails_before_github(self):
         with patch.object(release, 'run', return_value='b' * 40), patch.object(release, 'api') as api:
