@@ -2,7 +2,7 @@
 doc_id: "TAI-WIKI-DISCOVERY-OPERATIONS"
 title: "Continuous discovery, research and reviewed publication"
 doc_type: "operations"
-version: "0.2.0"
+version: "0.3.0"
 status: "draft"
 created: "2026-09-18"
 updated: "2026-09-18"
@@ -33,6 +33,22 @@ python3 compile/knowledge_worker.py
 ```
 
 Use `--once` for a single scheduler/job pass. No worker starts automatically with the web server, refresh timer or deployment poller. Stop the worker to stop new jobs; all persisted checkpoints, evidence, accepted articles and research remain recoverable. An already running operation finishes at its next boundary. Pausing a source is checked before each request and before committing captures.
+
+For Docker hosting, place the reviewed host configuration at
+`.private/discovery/review.json` (owner matching the runtime UID, mode `0600`).
+Append `compose.discovery.yaml` after the existing Compose files and
+`compose.llm.yaml` in the host's `COMPOSE_FILE`. The optional `discovery` service
+inherits the refresh container's persistence and hardening, adds the same
+restricted provider transport, and exposes no ports or Docker socket. Start it
+with `docker compose up -d discovery` after deploying the dispatcher modules
+and qualifying both reviewer families. The wiki service also receives the
+review-configuration path for manual review requests.
+
+Stop new background work with `docker compose stop discovery`; private state
+remains in the mounted checkout. Back up the prior served artifact, configuration,
+dispatcher modules and SQLite databases before upgrades. Restore the previous
+Compose file set and application revision for rollback; preserve captured state.
+No monitor is enrolled by enabling this worker.
 
 Host configuration:
 
@@ -283,5 +299,6 @@ with human review pending and earlier unversioned content preserved in Git.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.3.0 | 2026-09-18 | Add opt-in hardened Compose worker deployment and rollback instructions. |
 | 0.2.0 | 2026-09-18 | Specify document SemVer controls, CFAR intake/research swim lanes, sequential timing and reviewer capability boundaries. |
 | 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |
