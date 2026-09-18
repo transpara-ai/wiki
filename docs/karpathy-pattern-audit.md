@@ -9,6 +9,11 @@ The central idea is persistent, interlinked Markdown synthesized from sources.
 His workflows include ingestion, model-assisted questions, and semantic maintenance.
 Embeddings are optional; they do not replace answer generation.
 
+Human-supervised LLM authoring is consistent with this pattern; unattended
+automation is not a requirement. The ingestion finding below concerns the
+ordinary browser workflow and the absence of evidence that a complete manual
+synthesis/maintenance pass follows every ingest.
+
 ## Findings and evidence
 
 | Area | Observed implementation | Assessment |
@@ -58,8 +63,9 @@ different capabilities.
 2. Preserve immutable source snapshots, including mirrored replacements and
    deletions; distinguish build freshness from pending semantic review.
 3. Add a deliberate semantic lint/review workflow and a concise agent runbook.
-4. Offer reviewed promotion of useful Ask answers into persistent articles and
-   record maintenance activity. This can remain an explicit author decision.
+An optional extension is reviewed promotion of useful Ask answers into
+persistent articles. Its absence alone is not a failure to follow the pattern.
+Maintenance activity should still have a durable record.
 
 These are follow-up implementation requirements, not features delivered by
 v0.8.3. This audit verifies code paths and documented behavior; it does not
