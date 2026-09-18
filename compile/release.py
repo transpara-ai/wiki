@@ -20,6 +20,12 @@ def metadata(root=ROOT):
         raise ValueError('Package and lockfile versions must match')
     notes = root / 'docs' / 'releases' / ('v' + version + '.md')
     text = notes.read_text().strip()
+    if text.startswith('---\n'):
+        from article_catalog import split_frontmatter, scalar
+        frontmatter, text = split_frontmatter(text)
+        if scalar(frontmatter, 'version') != version:
+            raise ValueError('Release notes frontmatter version must match the application')
+        text = text.strip()
     if not text.startswith('# v' + version + '\n') or len(text.splitlines()) < 3:
         raise ValueError('Commit release notes headed # v' + version)
     return version, notes

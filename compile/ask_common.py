@@ -43,6 +43,10 @@ SCHEMAS = {
 }
 
 
+from knowledge_review import SCHEMAS as WORKFLOW_SCHEMAS, validate as validate_workflow
+SCHEMAS.update(WORKFLOW_SCHEMAS)
+
+
 def read_json(handler, limit=MAX_WIRE):
     try:
         if handler.headers.get('Transfer-Encoding'):
@@ -58,6 +62,11 @@ def read_json(handler, limit=MAX_WIRE):
 
 
 def validate_result(stage, result):
+    if stage in WORKFLOW_SCHEMAS:
+        try:
+            return validate_workflow(WORKFLOW_SCHEMAS[stage], result)
+        except ValueError:
+            raise AskError('The model returned an invalid workflow response.', 502) from None
     if not isinstance(result, dict) or set(result) != set(SCHEMAS[stage]['required']):
         raise AskError('The model returned an invalid response. Please retry.', 502)
     def ids(value):

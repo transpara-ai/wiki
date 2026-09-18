@@ -1,3 +1,23 @@
+---
+doc_id: "TAI-WIKI-DOCUMENTATION"
+title: "Transpara Knowledge Hub documentation"
+doc_type: "index"
+version: "0.1.0"
+status: "draft"
+created: "unknown"
+updated: "2026-09-18"
+owner: "Transpara"
+steward: "Codex"
+author: "Codex"
+reviewer: "Pending human review"
+project: "wiki"
+repo: "transpara-ai/wiki"
+classification: "company-internal"
+supersedes: []
+canonical: false
+version_history: "First controlled revision; prior unversioned content remains in Git history"
+---
+
 # Transpara Knowledge Hub documentation
 
 The Knowledge Hub contains Civilization, Transpara Platform, Competition, and
@@ -11,6 +31,7 @@ DevOps. The current operational guides live at the repository root and in
 | [Provenance](../PROVENANCE.md) | Evidence origins, dated source coverage, and known gaps |
 | [Releases](releases/README.md) | Stable SemVer, GitHub publication, notes and recovery |
 | [Karpathy pattern audit](karpathy-pattern-audit.md) | Implementation alignment, remaining synthesis/maintenance work, and offline capabilities |
+| [Wiki architecture comparison](wiki-architecture-comparison/README.md) | Karpathy, Transpara and Cortex dossiers, Mermaid timing swim lanes, adversarial rankings and weighted KT decision |
 | [Rebuilding](../compile/REBUILD.md) | Source registration, refresh, synthesis, and local services |
 | [Authoring API](../API.md) | Evidence ingestion in all spaces and DevOps article creation |
 | [Docker hosting](../DOCKER.md) | Private hosting, source dependencies, and operational checks |
@@ -35,3 +56,12 @@ records the initial expansion into Civilization, Transpara Platform, and
 Competition. DevOps was added afterward and is included in the current guides
 and registry. Use the dated plan and verification records to understand that
 migration; use the guides above to operate and author the current Hub.
+
+- [Continuous discovery implementation and trust boundaries](continuous-discovery/implementation.md)
+- [Discovery operator and API guide](../compile/DISCOVERY.md)
+
+## Document revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |

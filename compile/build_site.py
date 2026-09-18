@@ -188,7 +188,7 @@ SEARCH_JS = (
     'var top=selected.offsetTop,bottom=top+selected.offsetHeight;'
     'if(top<box.scrollTop)box.scrollTop=top;else if(bottom>box.scrollTop+box.clientHeight)box.scrollTop=bottom-box.clientHeight;}}'
     'function hide(){box.hidden=true;box.innerHTML="";input.setAttribute("aria-expanded","false");active=-1;hits=[];}'
-    'function render(){if(form&&form.dataset.mode==="ask"){hide();return;}var q=norm(input.value);if(q.length<2){hide();return;}'
+    'function render(){var q=norm(input.value);if(q.length<2){hide();return;}'
     'var words=q.replace(/[?.,!;:\u201c\u201d]/g," ").split(" ").filter(Boolean);'
     'var stop=new Set("a an the who what when where why how is are was were do does did can could would should i we our us you your me my to of for in on with about please".split(" "));'
     'var terms=Array.from(new Set(words.filter(function(word){return !stop.has(word);})));'
@@ -204,7 +204,7 @@ SEARCH_JS = (
     'var meta=document.createElement("span");meta.className="search-result-meta";meta.textContent=(row.space_labels||[]).join(" · ")+(row.section?" / "+row.section:(row.tier||"article"));'
     'var ex=document.createElement("span");ex.className="search-result-excerpt";ex.textContent=excerpt(row,terms);'
     'a.appendChild(title);a.appendChild(meta);a.appendChild(ex);box.appendChild(a);});'
-    'box.hidden=false;input.setAttribute("aria-expanded","true");fitResults();setActive(0);}'
+    'box.hidden=false;input.setAttribute("aria-expanded","true");fitResults();setActive(form&&form.dataset.mode==="ask"?-1:0);}'
     'input.addEventListener("input",render);if(scope)scope.addEventListener("change",render);'
     'input.addEventListener("keydown",function(e){if(box.hidden)return;'
     'if(e.key==="Escape"){hide();input.blur();}'
@@ -914,6 +914,7 @@ def to_html(body, link_acc=None, source_refs=None, source_slug="", href_prefix="
         return '<a class="wl tbd" title="not yet written (TBD)">%s</a>' % label
 
     out = RUNTOK.sub(emit, renderer.convert(WL.sub(grab, body)))
+    out = link_captured_source_refs(out, href_prefix)
     out = link_source_code_refs(out)
     out = link_source_code_alias_refs(out, source_refs or [])
     out = link_source_alias_refs(out, source_refs or [])
@@ -1532,6 +1533,19 @@ def source_rel_href(ref):
     if href and not href.startswith(("http://", "https://")):
         return href
     return ""
+
+
+def link_captured_source_refs(body_html, prefix=""):
+    """Keep accepted Markdown citations portable; resolve only published source routes."""
+    def replace(match):
+        ref = "raw/inbox/discovery/" + match.group(1) + ".md"
+        href = SOURCE_LINKS.get(ref) if PROFILE.include_sources else None
+        if not href:
+            return match.group(2)
+        return '<a class="captured-evidence" href="%s">%s</a>' % (
+            html.escape(prefix + href, quote=True), match.group(2))
+    return re.sub(r'<a href="(?:\.\./)?raw/inbox/discovery/([a-f0-9]{64})\.md">(.*?)</a>',
+                  replace, body_html, flags=re.S)
 
 
 def link_source_code_refs(body_html):
@@ -2559,6 +2573,7 @@ def top_links(prefix="", active_space="", active_section=""):
         if context and active_section in STRUCTURE.space_map[active_space].section_keys:
             context["section"] = active_section
         query = "?" + urllib.parse.urlencode(context) if context else ""
+        links.append('<a href="%sknowledge.html">Workspace</a>' % prefix)
         links.append('<a href="%singest.html%s">Ingest</a>' %
                      (prefix, html.escape(query, quote=True)))
     return (
@@ -3505,6 +3520,8 @@ def _build_site():
         write_dist_text(DIST / "sources.html", sources_page(status))
     if PROFILE.include_ingest:
         write_dist_text(DIST / "ingest.html", ingest_page(status))
+        for asset in ("knowledge.html", "knowledge.js", "knowledge.css"):
+            copy_asset(asset)
     build_repository_pages(status)
     if build_arc:
         arc_html = arc_page(status)

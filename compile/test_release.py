@@ -47,6 +47,15 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             release.metadata(self.root)
 
+    def test_controlled_notes_must_match_release_version(self):
+        notes=release.metadata(self.root)[1]
+        body=notes.read_text()
+        notes.write_text('---\ndoc_id: RELEASE\nversion: 0.8.2\n---\n\n'+body)
+        self.assertEqual(release.metadata(self.root)[0],'0.8.2')
+        notes.write_text(notes.read_text().replace('version: 0.8.2','version: 0.8.1'))
+        with self.assertRaises(ValueError):
+            release.metadata(self.root)
+
     def test_publishes_exact_commit_and_committed_notes(self):
         stable = {'draft': False, 'prerelease': False}
         with patch.object(release, 'api', side_effect=[None, {'tag_name': 'v0.8.1'}, None, stable,

@@ -1,0 +1,25 @@
+# Optional continuous-discovery worker. Add after compose.llm.yaml and the
+# host's SSO override. The deployment host owns .private/discovery/review.json.
+services:
+  wiki:
+    environment:
+      KNOWLEDGE_HUB_REVIEW_CONFIG: /Transpara/transpara-ai/repos/wiki/.private/discovery/review.json
+  discovery:
+    extends:
+      file: compose.yaml
+      service: refresh
+    command: [python3, compile/knowledge_worker.py]
+    environment:
+      KNOWLEDGE_HUB_REVIEW_CONFIG: /Transpara/transpara-ai/repos/wiki/.private/discovery/review.json
+      KNOWLEDGE_HUB_LLM_SSH_HOST: host.docker.internal
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - type: bind
+        source: ${WIKI_LLM_TRANSPORT:?Set the private transport directory}/id_ed25519
+        target: /run/secrets/wiki-llm-ssh-key
+        read_only: true
+      - type: bind
+        source: ${WIKI_LLM_TRANSPORT:?Set the private transport directory}/known_hosts
+        target: /run/secrets/wiki-llm-known-hosts
+        read_only: true

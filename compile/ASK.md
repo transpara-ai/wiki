@@ -1,3 +1,23 @@
+---
+doc_id: "TAI-WIKI-ASK-OPERATIONS"
+title: "Subscription answers — v0.8.2"
+doc_type: "operations"
+version: "0.1.0"
+status: "draft"
+created: "unknown"
+updated: "2026-09-18"
+owner: "Transpara"
+steward: "Codex"
+author: "Codex"
+reviewer: "Pending human review"
+project: "wiki"
+repo: "transpara-ai/wiki"
+classification: "company-internal"
+supersedes: []
+canonical: false
+version_history: "First controlled revision; prior unversioned content remains in Git history"
+---
+
 # Subscription answers — v0.8.2
 
 Version 0.8.2 makes the host provider boundary reproducible. A root-owned
@@ -129,7 +149,7 @@ Authentication monitoring remains owned by the existing
 `transpara-provider-auth-check.timer`; do not duplicate its login/refresh logic.
 The copied `llm-models.json` records catalog provenance, not current authentication.
 
-Install `llm_service.py`, `ask_common.py`, and `llm-models.json` into root-owned
+Install `llm_service.py`, `ask_common.py`, `knowledge_review.py`, `knowledge_store.py`, and `llm-models.json` into root-owned
 `/opt/wiki-llm` on the provider host. `/var/lib/wiki-llm` is private, owned by the trusted
 launcher user, and contains provider lock files plus `enabled.json` (initially
 `{"models":[]}`). No prompts or answers are retained there. The forced command is:
@@ -195,3 +215,9 @@ For rollback, restore the prior wiki revision/image and rebuild, remove the Ask
 transport mount, and revoke its dedicated SSH public key if retiring the feature.
 Preserve all source material, profile grants, DevOps configuration, and shared
 provider identity stores. Drain questions before replacing dispatcher files.
+
+## Document revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |
