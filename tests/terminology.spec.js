@@ -106,7 +106,8 @@ test("current occurrence snapshots export the exact displayed hashes", async ({p
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", {name:"Download draft proposal"}).click();
   const proposal = JSON.parse(await fs.readFile(await (await downloadPromise).path(), "utf8"));
-  expect(proposal.context_digests).toEqual(candidate.observations.slice(0,10).map(item => item.context_digest));
+  expect(proposal.context_digests).toEqual(candidate.observations.slice(0,10)
+    .filter(item => item.term === candidate.term).map(item => item.context_digest));
   expect(proposal.term).toBe(candidate.term);
   expect(errors).toEqual([]);
   await page.screenshot({path:test.info().outputPath("terminology-occurrence-desktop.png"),fullPage:true});
@@ -119,6 +120,29 @@ test("malformed current source spans cannot export a decision", async ({page}) =
   await page.goto("/terminology.html");
   await page.getByRole("button", {name:"flux adapter",exact:false}).click();
   await page.getByLabel("Classification", {exact:true}).selectOption("regular_english");
+  await expect(page.getByRole("button", {name:"Download draft proposal"})).toBeDisabled();
+});
+
+test("mixed-case source contexts remain visible but regular-English drafts include only exact spelling", async ({page}) => {
+  const data = snapshot();
+  data.candidates[0].observations.push({...data.candidates[0].observations[0],
+    sentence:"Use the Flux adapter.", term:"Flux adapter", context_digest:"c".repeat(64)});
+  await page.route("**/api/terminology/**", route => route.fulfill({json:data}));
+  await page.goto("/terminology.html");
+  await page.getByRole("button", {name:"flux adapter",exact:false}).click();
+  await expect(page.locator(".term-evidence")).toHaveCount(2);
+  await page.getByLabel("Classification", {exact:true}).selectOption("regular_english");
+  await expect(page.locator("#term-context-help")).toContainText('1 of 2 shown occurrences that match "flux adapter" exactly');
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", {name:"Download draft proposal"}).click();
+  const proposal = JSON.parse(await fs.readFile(await (await downloadPromise).path(), "utf8"));
+  expect(proposal.term).toBe("flux adapter");
+  expect(proposal.context_digests).toEqual(["b".repeat(64)]);
+  data.candidates[0].observations.shift();
+  await page.getByRole("button", {name:"Refresh",exact:true}).click();
+  await page.getByRole("button", {name:"flux adapter",exact:false}).click();
+  await page.getByLabel("Classification", {exact:true}).selectOption("regular_english");
+  await expect(page.locator("#term-context-help")).toContainText("0 of 1 shown occurrences");
   await expect(page.getByRole("button", {name:"Download draft proposal"})).toBeDisabled();
 });
 

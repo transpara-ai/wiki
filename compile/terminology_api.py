@@ -11,8 +11,10 @@ import pathlib
 import re
 import stat
 
+import ingest_ops
+
 SNAPSHOT_ENV = "TRANSPARA_TERMINOLOGY_SNAPSHOT"
-MAX_BYTES = 2 * 1024 * 1024
+MAX_BYTES = ingest_ops.MAX_QUARANTINE_BYTES
 
 
 class SnapshotUnavailable(ValueError):
@@ -35,8 +37,15 @@ def load_snapshot():
                 raise SnapshotUnavailable("The terminology snapshot is not a regular file.")
             raw = stream.read(MAX_BYTES + 1)
         if len(raw) > MAX_BYTES:
-            raise SnapshotUnavailable("The terminology snapshot exceeds the 2 MiB limit.")
+            raise SnapshotUnavailable("The terminology snapshot exceeds the 1 MiB limit.")
+        # Keep the private evidence workspace's whole-payload quarantine.
+        # Scan decoded JSON too, so escaped characters cannot hide a token.
+        ingest_ops.quarantine_payload(raw)
         data = json.loads(raw.decode("utf-8"))
+        ingest_ops.quarantine_payload(json.dumps(data, ensure_ascii=False,
+                                                separators=(",", ":")).encode("utf-8"))
+    except ingest_ops.OpRefused:
+        raise SnapshotUnavailable("The terminology snapshot failed the private evidence content check.") from None
     except (OSError, UnicodeError, json.JSONDecodeError, RecursionError) as exc:
         # Do not expose a private host path or source bytes in an HTTP error.
         raise SnapshotUnavailable("The terminology snapshot cannot be read.") from exc

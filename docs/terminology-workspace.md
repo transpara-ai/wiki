@@ -3,7 +3,7 @@ doc_id: WIKI-TERMINOLOGY-WORKSPACE
 title: Terminology workspace manual and integration reference
 doc_type: implementation_reference
 status: draft
-version: 0.1.2
+version: 0.1.3
 created: 2026-11-04
 updated: 2026-11-04
 owner: Transpara
@@ -28,6 +28,15 @@ snapshot and never changes that document. The existing Wiki article-publication
 endpoint is not used for dictionary decisions. This Designed implementation
 adds no publication authority, new role, or approval capability.
 
+The snapshot belongs to the same single internal curator cohort as the existing
+private evidence workspace. Before configuring its path, the operator must
+confirm that all of its contents are authorized for every existing internal
+curator. Keep the export within its source material's confidentiality boundary.
+It grants no source-repository access and admits no broader audience. The
+default is unconfigured and returns 503; company/public profiles return 404
+and omit the assets. Widening access outside this cohort or changing its
+permission policy needs separate Human-authorized Critical work.
+
 The two draft classifications are immutable Transpara terminology and regular
 English. Immutable proposals include an exact term, meaning boundaries,
 technical noun or technical verb class, scope, and permitted forms. A
@@ -44,7 +53,12 @@ Human approval.
 
 A regular-English entry applies only to its exact spelling and the reviewed
 source occurrences. Other case variants in a normalized candidate group remain
-unclassified. Each occurrence hash binds the unchanged extracted line, path,
+unclassified. Regular-English drafts include hashes only for shown observations
+whose exact spelling matches the candidate term. The form shows included and
+total counts; other variants remain visible as context and are omitted from the
+draft. With no exact match, download is disabled. Immutable proposals retain
+shown contexts for Human review of their explicitly proposed approved forms.
+Each occurrence hash binds the unchanged extracted line, path,
 line number, and term span. The page preserves supplied hashes; it cannot
 recompute them from sentences whose protected literals were masked.
 
@@ -74,9 +88,15 @@ python -m tenglish snapshot --dictionary dictionary/TRANSPARA-DICTIONARY.md --qu
 Configure TRANSPARA_TERMINOLOGY_SNAPSHOT in the existing authoring service
 environment to the absolute path of that JSON export. The service reads it for
 each GET /api/terminology/snapshot request. It must be a regular UTF-8 file no
-larger than 2 MiB. The host controls the path; a request cannot select another
+larger than 1 MiB, matching the existing evidence quarantine limit. The host
+controls the path; a request cannot select another
 file or remote URL. Missing, malformed, and unsupported snapshots produce an
 explicit unavailable response, never an empty dictionary presented as current.
+The adapter applies the existing whole-payload evidence quarantine before
+display, including a scan of decoded JSON so escaped token characters cannot
+bypass it. Recognized secrets are refused with a generic error. This detector
+does not replace operator classification or prove that content has no private
+or personal data.
 
 The shared schema has schema_version 1, dictionary_version, dictionary_digest,
 reference_status, terms, decisions, and candidates. Candidates include id,
@@ -98,6 +118,11 @@ automatically migrate canonical dictionary decisions. See the core
 for hash construction. Wiki always reports conformance as not_assessed.
 
 The API uses the existing authoring-access guard and no-store responses.
+It also reuses the evidence workspace's principal check before reading the
+snapshot: a remote caller needs a verified signed-in principal as well as
+authoring access. A shared token or client-supplied identity header alone does
+not suffice. Existing loopback curator behavior is retained. An unavailable
+profile fails closed with a generic error and no snapshot read.
 POST requests receive 405 and cannot approve or publish. Assets are omitted
 from company-internal output, and the API returns 404 when the runtime
 KNOWLEDGE_HUB_PROFILE is not authoring-local. Snapshot contents are never
@@ -116,13 +141,19 @@ scanning, and check configuration belong to the independent technical-English
 tool. Any future browser approval or publication service needs verified Human
 approval controls and a separate review of that authority boundary.
 
-One request reads and parses at most 2 MiB. The UI displays at most 100 matching
+One request reads and parses at most 1 MiB. Whole raw and decoded JSON content
+each pass through the existing evidence scanner; no chunking or runtime waiver
+is used. The UI displays at most 100 matching
 candidates, ten observations per selected candidate, and 100 terms or ledger
 entries. Candidate search can narrow a larger queue. These are bounded resource
 limits, not measured performance guarantees.
 Occurrence validation is linear in the displayed source text and uses temporary
 Unicode character arrays within the same snapshot size bound. It adds no model
-or network call; no separate latency measurement is claimed.
+or network call. Server access verification can use the existing userinfo
+request with a five-second timeout; remembered-grant access can invoke it once
+for the grant check and once for the principal check, as in the evidence
+workspace. No new authentication service is added, and no separate latency
+measurement is claimed.
 
 ## Verification
 
@@ -140,6 +171,7 @@ the same current format without depending on another checkout.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.1.3 | 2026-11-04 | Limit regular-English draft hashes to the exact classified spelling and state the existing curator cohort's export-content boundary. |
 | 0.1.2 | 2026-11-04 | Use a verified short immutable core commit reference so the documentation passes the repository's entropy scan. |
 | 0.1.1 | 2026-11-04 | Require current occurrence bindings and exact Unicode source spans for draft export; retain legacy evidence with an explicit re-scan path. |
 | 0.1.0 | 2026-11-04 | Add the private read-only terminology workspace and draft-proposal contract. |

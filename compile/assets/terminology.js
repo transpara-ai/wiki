@@ -23,6 +23,13 @@
   function shownObservations(candidate) {
     return candidate.observations.slice(0, 10);
   }
+  function proposalObservations(candidate) {
+    const shown = shownObservations(candidate);
+    // A normalized group can contain several spellings. Regular-English
+    // drafts cover only the exact spelling named by this candidate.
+    return byId("term-decision").value === "regular_english"
+      ? shown.filter(item => item.term === candidate.term) : shown;
+  }
   function hasCurrentContexts(candidate) {
     const shown = shownObservations(candidate);
     return shown.length > 0 && shown.every(item => {
@@ -41,6 +48,7 @@
   }
   function classify() {
     const immutable = byId("term-decision").value === "immutable";
+    const included = selected ? proposalObservations(selected) : [];
     byId("term-immutable-fields").hidden = !immutable;
     ["term-canonical", "term-definition", "term-forms"].forEach(id => byId(id).required = immutable);
     byId("term-decision-help").textContent = immutable
@@ -48,7 +56,12 @@
       : byId("term-decision").value === "regular_english"
         ? "Propose regular English. This does not add a writing-rule exemption."
         : "Select a classification to see its effect.";
-    byId("term-download").disabled = !snapshot || !selected || !hasCurrentContexts(selected) || !byId("term-decision").value;
+    byId("term-context-help").textContent = selected && byId("term-decision").value === "regular_english"
+      ? "The draft includes " + included.length + " of " + shownObservations(selected).length
+        + " shown occurrences that match \"" + selected.term + "\" exactly. Other spellings remain pending."
+      : immutable ? "Shown contexts remain evidence for Human review of the proposed approved forms." : "";
+    byId("term-download").disabled = !snapshot || !selected || !hasCurrentContexts(selected)
+      || !included.length || !byId("term-decision").value;
   }
   function selectCandidate(candidate) {
     selected = candidate;
@@ -158,6 +171,10 @@
   byId("term-proposal-form").addEventListener("submit", event => {
     event.preventDefault();
     if (!snapshot || !selected || !hasCurrentContexts(selected) || !event.currentTarget.reportValidity()) return;
+    const included = proposalObservations(selected);
+    if (!included.length) {
+      notice("No shown occurrence matches the exact spelling for this draft.", true); return;
+    }
     const immutable = byId("term-decision").value === "immutable";
     const term = immutable ? byId("term-canonical").value.trim() : selected.term;
     const definition = immutable ? byId("term-definition").value.trim() : "";
@@ -170,7 +187,7 @@
       decision: byId("term-decision").value, expected_dictionary_digest: snapshot.dictionary_digest,
       term, definition, term_class: immutable ? byId("term-class").value : "",
       scope: selected.scope, approved_forms: forms,
-      context_digests: [...new Set(shownObservations(selected).map(item => item.context_digest))]};
+      context_digests: [...new Set(included.map(item => item.context_digest))]};
     const url = URL.createObjectURL(new Blob([JSON.stringify(proposal, null, 2) + "\n"], {type: "application/json"}));
     const anchor = node("a"); anchor.href = url; anchor.download = "terminology-decision-draft.json";
     document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);

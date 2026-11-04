@@ -88,6 +88,19 @@ class SnapshotTests(unittest.TestCase):
                 api.load_snapshot()
         self.assertNotIn(self.temp.name, str(caught.exception))
 
+    def test_recognized_secrets_are_refused_in_raw_and_escaped_json(self):
+        secret = "ghp_" + "A" * 36
+        data = snapshot()
+        data["candidates"][0]["observations"][0]["sentence"] = "Use " + secret
+        raw = json.dumps(data)
+        for payload in (raw, raw.replace("ghp_", "\\u0067hp_")):
+            with self.subTest(escaped=payload != raw):
+                self.path.write_text(payload)
+                with self.assertRaisesRegex(api.SnapshotUnavailable, "content check") as caught:
+                    api.load_snapshot()
+                self.assertNotIn(secret, str(caught.exception))
+                self.assertNotIn(self.temp.name, str(caught.exception))
+
     def test_http_authoring_guard_profiles_and_no_mutation(self):
         with patch.object(server.IngestHandler, "log_message"):
             instance = server.ThreadingHTTPServer(("127.0.0.1", 0), server.IngestHandler)
@@ -119,6 +132,58 @@ class SnapshotTests(unittest.TestCase):
                     with patch.dict(os.environ, {"KNOWLEDGE_HUB_PROFILE": "company-internal"}):
                         response, _ = request("GET", headers=headers)
                         self.assertEqual(response.status, 404)
+                    data = snapshot()
+                    secret = "ghp_" + "A" * 36
+                    data["candidates"][0]["observations"][0]["sentence"] = secret
+                    self.path.write_text(json.dumps(data))
+                    response, data = request("GET", headers=headers)
+                    self.assertEqual(response.status, 503)
+                    self.assertNotIn(secret, data["error"])
+                    self.assertNotIn(self.temp.name, data["error"])
+            finally:
+                connection.close()
+                instance.shutdown()
+                instance.server_close()
+                thread.join(timeout=3)
+
+    def test_remote_readers_match_existing_evidence_principal_and_grant_checks(self):
+        class RemoteHandler(server.IngestHandler):
+            def setup(self):
+                super().setup()
+                # Keep real HTTP handling while modeling a non-loopback peer.
+                self.client_address = ("198.51.100.24", self.client_address[1])
+
+        with patch.object(RemoteHandler, "log_message"):
+            instance = server.ThreadingHTTPServer(("127.0.0.1", 0), RemoteHandler)
+            thread = threading.Thread(target=instance.serve_forever, daemon=True)
+            thread.start()
+            connection = http.client.HTTPConnection("127.0.0.1", instance.server_port, timeout=3)
+            def request(headers):
+                connection.request("GET", "/api/terminology/snapshot", headers=headers)
+                response = connection.getresponse()
+                return response.status, json.loads(response.read())
+            headers = {server.AUTHORING_TOKEN_HEADER: "fixture-token", "X-Forwarded-User": "claimed-user"}
+            try:
+                with patch.dict(os.environ, {"KNOWLEDGE_HUB_PROFILE": "authoring-local",
+                                             server.AUTHORING_TOKEN_ENV: "fixture-token"}), \
+                     patch.object(server.terminology_api, "load_snapshot", wraps=api.load_snapshot) as load:
+                    with patch.object(server.authoring_profile, "settings", return_value=None):
+                        self.assertEqual(request(headers)[0], 401)
+                        load.assert_not_called()
+                    # The existing principal verifier remains the identity source.
+                    config = ("http://127.0.0.1/userinfo", "http://127.0.0.1", self.path)
+                    with patch.object(server.authoring_profile, "settings", return_value=config), \
+                         patch.object(server.authoring_profile, "principal", return_value="verified-principal"), \
+                         patch.object(server.authoring_profile, "granted", return_value=True):
+                        self.assertEqual(request(headers)[0], 200)
+                        self.assertEqual(request({})[0], 200)
+                        self.assertEqual(load.call_count, 2)
+                    load.reset_mock()
+                    with patch.object(server.authoring_profile, "settings", side_effect=server.authoring_profile.ProfileUnavailable("private configuration detail")):
+                        status, data = request(headers)
+                        self.assertEqual(status, 503)
+                        self.assertNotIn("private configuration detail", data["error"])
+                        load.assert_not_called()
             finally:
                 connection.close()
                 instance.shutdown()

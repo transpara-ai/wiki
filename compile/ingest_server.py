@@ -1101,7 +1101,11 @@ class IngestHandler(SimpleHTTPRequestHandler):
             json_response(self, 503, {"error": "Authoring profile is unavailable; access was not changed"})
 
     def handle_terminology(self):
-        """Expose one private read-only export, never an approval operation."""
+        """Read an operator-selected export for the existing internal curators.
+
+        The operator must authorize its contents for every existing curator.
+        This adds no principal grant, source-repository access, or approval.
+        """
         if os.environ.get("KNOWLEDGE_HUB_PROFILE", "authoring-local") != "authoring-local":
             json_response(self, 404, {"error": "Terminology is unavailable in this publication profile."})
             return
@@ -1112,6 +1116,16 @@ class IngestHandler(SimpleHTTPRequestHandler):
             return
         if urlsplit(self.path).path != "/api/terminology/snapshot" or urlsplit(self.path).query:
             json_response(self, 404, {"error": "Unknown terminology endpoint."})
+            return
+        try:
+            # Match the evidence workspace's reader prerequisite as well as
+            # its grant check. A remote shared token alone is not a principal.
+            knowledge_api.actor(self)
+        except AskError as exc:
+            json_response(self, exc.status, {"error": "Sign in to review terminology."})
+            return
+        except Exception:
+            json_response(self, 503, {"error": "Authoring profile is unavailable; no snapshot was read."})
             return
         try:
             json_response(self, 200, terminology_api.load_snapshot())
