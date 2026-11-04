@@ -1,0 +1,23 @@
+.term-header,#terminology{max-width:1180px;margin:0 auto;padding:1.25rem;box-sizing:border-box}
+.term-header h1{margin:.65rem 0}.term-header p{margin-bottom:0}
+.term-boundary{border-left:4px solid #358092;background:color-mix(in srgb,var(--bg,#fff) 94%,#358092);padding:1rem 1.25rem;border-radius:0 8px 8px 0}
+.term-boundary p{margin:.4rem 0 0}.term-access{margin:1rem 0}
+#terminology label{display:block;margin:.7rem 0 .3rem}
+#terminology input,#terminology textarea,#terminology select{width:100%;max-width:100%;box-sizing:border-box;border:1px solid #8888;border-radius:5px;padding:.6rem;font:inherit;background:var(--bg,#fff);color:inherit}
+#term-token{max-width:32rem!important}#terminology button{font:inherit;padding:.55rem .8rem;cursor:pointer;border:1px solid #8888;border-radius:5px;background:var(--bg,#fff);color:inherit}
+#terminology button:disabled{opacity:.5;cursor:default}
+.term-tabs,.term-status-row{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}.term-tabs{border-bottom:1px solid #8885;padding-bottom:.8rem;margin:1rem 0}
+.term-tabs button[aria-pressed=true]{border-bottom:3px solid #358092!important;font-weight:700}
+.term-status-row p{flex:1;min-width:12rem}.term-reference,.term-draft-note{font-size:.9rem;opacity:.8}
+.term-review-grid{display:grid;grid-template-columns:minmax(200px,1fr) minmax(0,2fr);gap:1rem;margin-top:1rem;align-items:start}
+.term-card{border:1px solid #8886;border-radius:8px;padding:1rem;margin-bottom:.7rem;overflow-wrap:anywhere;min-width:0}
+.term-card h3{margin:.1rem 0 .6rem}.term-card p{margin:.4rem 0}
+.term-candidate{width:100%;text-align:left!important;overflow-wrap:anywhere}.term-candidate span{display:block;font-size:.85rem;opacity:.8;margin-top:.3rem}
+.term-candidate[aria-pressed=true]{border-color:#358092!important;border-left:4px solid #358092!important}
+.term-evidence{white-space:pre-wrap;overflow-wrap:anywhere;background:color-mix(in srgb,var(--bg,#fff) 94%,#888);padding:.75rem;border-radius:5px}
+#term-proposal-form fieldset{border:0;padding:0;margin-top:1rem}#term-proposal-form legend{font-weight:bold;margin-bottom:.3rem}
+#term-download{margin-top:.9rem}.term-empty{padding:1rem;border:1px dashed #8888;border-radius:6px}
+#term-digest{font-family:monospace;overflow-wrap:anywhere}#term-notice[data-error=true]{color:#a94220}
+#terminology :focus-visible{outline:3px solid #358092;outline-offset:3px}
+[hidden]{display:none!important}
+@media(max-width:680px){.term-header,#terminology{padding:.8rem}.term-review-grid{grid-template-columns:minmax(0,1fr)}.term-card{padding:.8rem}.term-tabs button{flex:1 1 42%}.term-tabs{align-items:stretch}}
