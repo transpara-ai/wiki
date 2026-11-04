@@ -39,6 +39,7 @@ import ingest_ops  # noqa: E402
 import authoring_profile  # noqa: E402
 import ask  # noqa: E402
 import knowledge_api  # noqa: E402
+import terminology_api  # noqa: E402
 from ask_common import AskError, read_json  # noqa: E402
 from article_catalog import load_catalog  # noqa: E402
 from knowledge_structure import STRUCTURE, StructureError  # noqa: E402
@@ -1099,8 +1100,43 @@ class IngestHandler(SimpleHTTPRequestHandler):
         except authoring_profile.ProfileUnavailable:
             json_response(self, 503, {"error": "Authoring profile is unavailable; access was not changed"})
 
+    def handle_terminology(self):
+        """Read an operator-selected export for the existing internal curators.
+
+        The operator must authorize its contents for every existing curator.
+        This adds no principal grant, source-repository access, or approval.
+        """
+        if os.environ.get("KNOWLEDGE_HUB_PROFILE", "authoring-local") != "authoring-local":
+            json_response(self, 404, {"error": "Terminology is unavailable in this publication profile."})
+            return
+        if not self.require_authoring():
+            return
+        if self.command != "GET":
+            json_response(self, 405, {"error": "Terminology is read-only. Prepare a draft in the browser; dictionary publication requires Human review."})
+            return
+        if urlsplit(self.path).path != "/api/terminology/snapshot" or urlsplit(self.path).query:
+            json_response(self, 404, {"error": "Unknown terminology endpoint."})
+            return
+        try:
+            # Match the evidence workspace's reader prerequisite as well as
+            # its grant check. A remote shared token alone is not a principal.
+            knowledge_api.actor(self)
+        except AskError as exc:
+            json_response(self, exc.status, {"error": "Sign in to review terminology."})
+            return
+        except Exception:
+            json_response(self, 503, {"error": "Authoring profile is unavailable; no snapshot was read."})
+            return
+        try:
+            json_response(self, 200, terminology_api.load_snapshot())
+        except terminology_api.SnapshotUnavailable as exc:
+            json_response(self, 503, {"error": str(exc)})
+
     def do_GET(self):
         if not self.require_allowed_host():
+            return
+        if self.path.startswith("/api/terminology/"):
+            self.handle_terminology()
             return
         if self.path.startswith("/api/knowledge/"):
             knowledge_api.handle(self, ROOT)
@@ -1153,6 +1189,9 @@ class IngestHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         try:
             if not self.require_allowed_host():
+                return
+            if self.path.startswith("/api/terminology/"):
+                self.handle_terminology()
                 return
             if self.path.startswith("/api/knowledge/"):
                 knowledge_api.handle(self, ROOT)

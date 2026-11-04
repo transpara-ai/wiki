@@ -2574,6 +2574,7 @@ def top_links(prefix="", active_space="", active_section=""):
             context["section"] = active_section
         query = "?" + urllib.parse.urlencode(context) if context else ""
         links.append('<a href="%sknowledge.html">Workspace</a>' % prefix)
+        links.append('<a href="%sterminology.html">Terminology</a>' % prefix)
         links.append('<a href="%singest.html%s">Ingest</a>' %
                      (prefix, html.escape(query, quote=True)))
     return (
@@ -3520,7 +3521,8 @@ def _build_site():
         write_dist_text(DIST / "sources.html", sources_page(status))
     if PROFILE.include_ingest:
         write_dist_text(DIST / "ingest.html", ingest_page(status))
-        for asset in ("knowledge.html", "knowledge.js", "knowledge.css"):
+        for asset in ("knowledge.html", "knowledge.js", "knowledge.css",
+                      "terminology.html", "terminology.js", "terminology.css"):
             copy_asset(asset)
     build_repository_pages(status)
     if build_arc:

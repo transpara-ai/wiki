@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Terminology · Transpara</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="terminology.css"></head>
+<body>
+<header class="term-header"><a href="index.html">Transpara Knowledge Hub</a><span> / </span><a href="knowledge.html">Workspace</a>
+<h1>Terminology</h1><p>Review questionable words and phrases before an agent changes their meaning.</p></header>
+<main id="terminology">
+<aside class="term-boundary"><strong>The Transpara Dictionary is Human-owned.</strong>
+<p>This workspace prepares decision proposals. A download does not approve, publish, or change a term. A Human maintainer must review the canonical dictionary change.</p></aside>
+<details class="term-access"><summary>Authoring access</summary><label for="term-token">Authoring token, if a remembered grant is unavailable</label>
+<input id="term-token" type="password" autocomplete="off"><button id="term-connect" type="button">Connect</button></details>
+<div class="term-status-row"><p id="term-notice" role="status" aria-live="polite">Loading terminology snapshot…</p><button id="term-refresh" type="button">Refresh</button></div>
+<p id="term-reference" class="term-reference">ASD-STE100 remains an external reference. Conformance is not assessed here.</p>
+<nav class="term-tabs" aria-label="Terminology views">
+<button type="button" data-term-tab="inbox" aria-pressed="true">Candidate inbox</button>
+<button type="button" data-term-tab="dictionary" aria-pressed="false">Transpara Dictionary</button>
+<button type="button" data-term-tab="english" aria-pressed="false">Regular-English decisions</button>
+<button type="button" data-term-tab="publication" aria-pressed="false">Source revision</button>
+</nav>
+<section id="term-inbox" aria-labelledby="inbox-title"><h2 id="inbox-title">Candidate inbox</h2>
+<p>Evidence comes from the independent scanner. Unknown vocabulary may be ordinary English or a Transpara term; the agent does not decide.</p>
+<label for="term-filter">Find a candidate</label><input id="term-filter" type="search" placeholder="Term, repository, or product">
+<div class="term-review-grid"><div id="term-candidates"></div><article id="term-detail" class="term-card" hidden aria-labelledby="term-detail-title">
+<h3 id="term-detail-title"></h3><p id="term-detail-scope"></p><div id="term-evidence"></div>
+<form id="term-proposal-form"><fieldset><legend>Prepare a Human decision proposal</legend>
+<label for="term-decision">Classification</label><select id="term-decision" required>
+<option value="">Select a classification</option><option value="immutable">Immutable Transpara terminology</option><option value="regular_english">Regular English</option></select>
+<p id="term-decision-help">Select a classification to see its effect.</p>
+<p id="term-context-help"></p>
+<div id="term-immutable-fields" hidden><label for="term-canonical">Canonical term</label><input id="term-canonical" maxlength="300">
+<label for="term-definition">Definition and meaning boundaries</label><textarea id="term-definition" rows="3" maxlength="4000"></textarea>
+<label for="term-class">Technical class</label><select id="term-class"><option value="technical_noun">Technical noun</option><option value="technical_verb">Technical verb</option></select>
+<label for="term-forms">Approved forms, one per line</label><textarea id="term-forms" rows="3" maxlength="4000"></textarea></div>
+<button id="term-download" type="submit" disabled>Download draft proposal</button>
+<p class="term-draft-note">Candidates remain pending. No publication endpoint is called.</p></fieldset></form></article></div></section>
+<section id="term-dictionary" hidden aria-labelledby="dictionary-title"><h2 id="dictionary-title">Transpara Dictionary</h2>
+<p>Human-maintained terms from the configured canonical-document export. Export provenance is shown in Source revision.</p><div id="term-entries"></div></section>
+<section id="term-english" hidden aria-labelledby="english-title"><h2 id="english-title">Regular-English decisions</h2>
+<p>A regular-English decision covers only its exact spelling and reviewed source occurrences in its scope. New occurrences need review. It does not exempt the word from the applicable writing rules.</p><div id="term-decisions"></div></section>
+<section id="term-publication" hidden aria-labelledby="publication-title"><h2 id="publication-title">Source revision</h2>
+<p id="term-version">No snapshot loaded.</p><p id="term-digest"></p>
+<p>This is a configured export, not a signed publication or proof of Human approval. Publication history and verified Human approval will be connected by the terminology authority service.</p>
+<p><a href="https://www.asd-ste100.org/STE_downloads.html" target="_blank" rel="noopener noreferrer">Official ASD-STE100 reference and usage terms</a>. The standard and its vocabulary are not bundled with this workspace.</p></section>
+</main><script src="terminology.js"></script></body></html>

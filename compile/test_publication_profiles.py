@@ -32,7 +32,8 @@ def test_company_profile_is_an_isolated_allowlist_projection():
     assert proc.returncode == 0, proc.stderr
     assert (COMPANY_DIST / "index.html").exists()
     for forbidden in ("sources.html", "ingest.html", "repos.html",
-                      "civilization-arc.html", "civilization_arc.html"):
+                      "civilization-arc.html", "civilization_arc.html",
+                      "terminology.html", "terminology.js", "terminology.css"):
         assert not (COMPANY_DIST / forbidden).exists(), forbidden
     assert not (COMPANY_DIST / "source").exists()
     assert not (COMPANY_DIST / "accountMenu.js").exists()
