@@ -71,3 +71,4 @@ These are follow-up implementation requirements, not features delivered by
 v0.8.3. This audit verifies code paths and documented behavior; it does not
 revalidate every factual assertion in the corpus or certify the current host's
 health. Deployment checks and article evidence review remain separate.
+<!-- PVQ176 follow-up sample 03: inert documentation-route evidence. -->
