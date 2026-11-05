@@ -477,9 +477,30 @@ class WorkflowContractTests(unittest.TestCase):
     def test_required_name_bootstrap_and_full_shadow_are_preserved(self) -> None:
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()
         self.assertIn("name: Build & Test", workflow)
+        self.assertIn(
+            "  pull_request:\n"
+            "    types: [opened, synchronize, reopened, edited]\n"
+            "  push:",
+            workflow,
+        )
         self.assertIn("trusted_base_adapter_unavailable", workflow)
         self.assertIn("full-shadow", workflow)
         self.assertIn("npm run test:py", workflow)
+
+    def test_concurrency_preserves_main_verification_and_release(self) -> None:
+        """Bind PR cancellation and push isolation in the workflow contract."""
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+        self.assertIn(
+            "group: ${{ github.workflow }}-${{ "
+            "github.event.pull_request.number || github.run_id }}",
+            workflow,
+        )
+        self.assertIn(
+            "cancel-in-progress: ${{ github.event_name == 'pull_request' }}",
+            workflow,
+        )
+        self.assertNotIn("group: ${{ github.workflow }}-${{ github.ref }}", workflow)
+        self.assertIn("group: stable-release\n      cancel-in-progress: false", workflow)
 
     def test_trusted_changed_range_scan_precedes_every_install(self) -> None:
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()

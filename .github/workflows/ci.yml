@@ -5,7 +5,11 @@
 name: CI
 
 on:
+  # A base-branch edit must reclassify the unchanged head against its new base.
+  # GitHub also reports title and body changes as `edited`; those events run the
+  # protected job rather than returning a skipped success.
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main]
 
@@ -13,8 +17,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Supersede obsolete runs only within one pull request. Pushes use their
+  # unique run ID, so a later main event cannot cancel or evict verification
+  # or the dependent release. The release job keeps its stable queue below.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:

@@ -3,7 +3,7 @@ doc_id: WIKI-PROPORTIONAL-VERIFICATION
 title: Wiki proportional verification adapter
 doc_type: verification_design
 status: draft
-version: 0.3.0
+version: 0.4.0
 created: 2026-11-05
 updated: 2026-11-05
 owner: Transpara
@@ -23,6 +23,14 @@ documentation domains under `docs/`. Published `wiki/` articles, space homes,
 root publication files, release notes, raw inputs, source, tests, dependencies,
 workflows, and unknown or unowned paths run the complete existing suite.
 Default-branch pushes and the first adoption pull request also run full.
+Pull-request base edits trigger fresh classification, so a focused result
+cannot transfer unchanged from one base to another. GitHub uses the same
+`edited` activity for title and body changes, so those metadata edits also
+start the protected workflow. This extra CI cost is expected but not measured.
+Freeze the source pull request title and body before its funded push, and place
+later qualification evidence in comments. The workflow intentionally does not
+skip non-base edits because a skipped required job reports success without
+reclassification.
 
 The adapter vendors the unchanged selector and schema from
 `transpara-ai/dev-ops` commit
@@ -72,6 +80,11 @@ browser, and shadow suites. Those consumers apply to published or runtime
 surfaces that the focused rule does not own. Full required and full-shadow
 routes preserve every prior `Build & Test` command and add the adapter and
 whole-tree contracts; the push-only release job remains separate.
+
+Workflow concurrency supersedes obsolete attempts only within one pull
+request. Every push has a unique workflow group, so a later main push cannot
+cancel or evict an earlier verification or its dependent release. The release
+job retains its existing stable queue with in-progress cancellation disabled.
 
 The ownership audit searched the full suite and configuration for filesystem
 reads, Markdown globs, embedded Markdown, seed files, terminology inputs,
@@ -123,6 +136,7 @@ caches affect download cost only and never route selection.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.4.0 | 2026-11-05 | Reclassify edited pull-request bases, record the metadata-edit CI cost, and isolate push concurrency so later main events cannot cancel or evict verification or release publication. |
 | 0.3.0 | 2026-11-05 | Isolate both trusted scanners and every trusted routing process from candidate imports, with an executable negative control. |
 | 0.2.0 | 2026-11-05 | Raise the cold documentation p95 limit from 90 to 100 seconds while preserving every other qualification gate and resource bound. |
 | 0.1.0 | 2026-11-05 | Define the base-trusted Wiki documentation adapter, dual credential scans, complete-route boundary, evidence, costs, and failure behavior. |
