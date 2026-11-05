@@ -227,3 +227,4 @@ if articles were created or retired while using SSH, its inventory check no
 longer describes the current corpus. Keep the newer Velia content when assessing
 that difference. The old source writer and refresh timer stay disabled after
 the move.
+<!-- PVQ176 follow-up sample 04: inert documentation-route evidence. -->
