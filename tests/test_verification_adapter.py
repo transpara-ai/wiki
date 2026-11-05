@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -308,6 +309,167 @@ class AdapterTrustTests(unittest.TestCase):
         with self.assertRaisesRegex(RUNNER.PlanError, "focused plan"):
             RUNNER.confirmed_bundles(selected, dict(selected), RUNNER.bundle_commands(ROOT))
 
+    def test_candidate_python_startup_files_cannot_enter_trusted_routing(self) -> None:
+        """Keep candidate imports outside the base scanner and plan pipeline."""
+        subject = self.make_repo()
+        subject.copy_adoption()
+        subject.write(
+            "tools/verification_adapter.py",
+            (ROOT / "tools/verification_adapter.py").read_bytes(),
+        )
+        subject.write(
+            "tools/run_verification_bundles.py",
+            (ROOT / "tools/run_verification_bundles.py").read_bytes(),
+        )
+        subject.write(
+            "compile/secret_scan.py",
+            (ROOT / "compile/secret_scan.py").read_bytes(),
+        )
+        base = subject.commit("adopted base")
+        attack = b"""\
+import os
+from pathlib import Path
+
+Path(os.environ["ATTACK_MARKER"]).write_text("executed\\n", encoding="utf-8")
+target = os.environ.get("ATTACK_TARGET")
+if target:
+    Path(target).write_text("candidate code replaced trusted bytes\\n", encoding="utf-8")
+"""
+        subject.write("json.py", attack)
+        subject.write("sitecustomize.py", attack)
+        head = subject.commit("add candidate import sentinels")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            scratch = Path(temporary)
+            adapter = scratch / "verification_adapter.py"
+            dispatcher = scratch / "run_verification_bundles.py"
+            scanner = scratch / "secret_scan_trusted.py"
+            adapter.write_bytes(
+                subprocess.check_output(
+                    ["git", "-C", str(subject.root), "show", f"{base}:tools/verification_adapter.py"]
+                )
+            )
+            dispatcher.write_bytes(
+                subprocess.check_output(
+                    ["git", "-C", str(subject.root), "show", f"{base}:tools/run_verification_bundles.py"]
+                )
+            )
+            scanner.write_bytes(
+                subprocess.check_output(
+                    ["git", "-C", str(subject.root), "show", f"{base}:compile/secret_scan.py"]
+                )
+            )
+            marker = scratch / "candidate-python-executed"
+            environment = dict(os.environ)
+            environment.update(
+                {
+                    "ATTACK_MARKER": str(marker),
+                    "ATTACK_TARGET": str(scanner),
+                }
+            )
+            # Prove the fixture can replace a trusted file when Python keeps
+            # candidate startup paths. This negative control prevents a broken
+            # attack fixture from making the isolated-path assertions vacuous.
+            environment["PYTHONPATH"] = str(subject.root)
+            control_target = scratch / "unisolated-target"
+            control_target.write_text("trusted bytes\n", encoding="utf-8")
+            environment["ATTACK_TARGET"] = str(control_target)
+            subprocess.run(
+                [sys.executable, "-c", "import json"],
+                cwd=subject.root,
+                env=environment,
+                check=True,
+            )
+            self.assertEqual(
+                control_target.read_text(encoding="utf-8"),
+                "candidate code replaced trusted bytes\n",
+            )
+            self.assertTrue(marker.exists())
+            marker.unlink()
+
+            environment["ATTACK_TARGET"] = str(scanner)
+            scanner_digest = hashlib.sha256(scanner.read_bytes()).hexdigest()
+            subprocess.run(
+                [sys.executable, "-I", str(scanner), "--changed-against", base],
+                cwd=subject.root,
+                env=environment,
+                check=True,
+            )
+            self.assertEqual(hashlib.sha256(scanner.read_bytes()).hexdigest(), scanner_digest)
+            self.assertFalse(marker.exists())
+
+            environment["ATTACK_TARGET"] = str(dispatcher)
+            dispatcher_digest = hashlib.sha256(dispatcher.read_bytes()).hexdigest()
+            subprocess.run(
+                [sys.executable, "-I", str(dispatcher), "--help"],
+                cwd=subject.root,
+                env=environment,
+                check=True,
+                capture_output=True,
+            )
+            self.assertEqual(hashlib.sha256(dispatcher.read_bytes()).hexdigest(), dispatcher_digest)
+            self.assertFalse(marker.exists())
+
+            trusted = scratch / "trusted"
+            plan = scratch / "plan.json"
+            environment["ATTACK_TARGET"] = str(adapter)
+            adapter_digest = hashlib.sha256(adapter.read_bytes()).hexdigest()
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-I",
+                    str(adapter),
+                    "--repo",
+                    str(subject.root),
+                    "--event",
+                    "pull_request",
+                    "--base",
+                    base,
+                    "--head",
+                    head,
+                    "--repository",
+                    "x/wiki",
+                    "--trusted-root",
+                    str(trusted),
+                    "--output",
+                    str(plan),
+                ],
+                cwd=subject.root,
+                env=environment,
+                check=True,
+            )
+            self.assertEqual(hashlib.sha256(adapter.read_bytes()).hexdigest(), adapter_digest)
+            self.assertFalse(marker.exists())
+
+            plan_digest = hashlib.sha256(plan.read_bytes()).hexdigest()
+            environment["ATTACK_TARGET"] = str(plan)
+            parser = """\
+import json
+import re
+import sys
+
+value = json.load(open(sys.argv[1], encoding="utf-8"))
+route = value.get("route")
+reason = value.get("reason")
+if route not in {"focused", "full"}:
+    raise SystemExit("invalid route")
+if not isinstance(reason, str) or re.fullmatch(r"[a-z0-9_-]+", reason) is None:
+    raise SystemExit("invalid reason")
+print(f"{route}\\t{reason}")
+"""
+            selected = subprocess.run(
+                [sys.executable, "-I", "-", str(plan)],
+                cwd=subject.root,
+                env=environment,
+                input=parser,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            self.assertEqual(selected.stdout, "full\tunmatched_path\n")
+            self.assertEqual(hashlib.sha256(plan.read_bytes()).hexdigest(), plan_digest)
+            self.assertFalse(marker.exists())
+
 
 class WorkflowContractTests(unittest.TestCase):
     """Keep the required identity and both credential scans explicit."""
@@ -332,6 +494,19 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertGreaterEqual(workflow.count("tools/check_repository_contracts.py"), 2)
         runner = (ROOT / "tools/run_verification_bundles.py").read_text()
         self.assertIn("tools/check_repository_contracts.py", runner)
+
+    def test_trusted_python_entry_points_are_isolated(self) -> None:
+        """Prevent candidate root modules from entering trusted workflow code."""
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+        self.assertEqual(workflow.count('python3 -I "$adapter"'), 2)
+        self.assertIn('selection=$(python3 -I - "$plan"', workflow)
+        self.assertEqual(workflow.count("secret_scan_trusted.py\" --changed-against"), 2)
+        self.assertNotIn('python3 "$RUNNER_TEMP/secret_scan_trusted.py"', workflow)
+        self.assertNotIn('python3 "${RUNNER_TEMP}/secret_scan_trusted.py"', workflow)
+        self.assertIn('python3 -I "$RUNNER_TEMP/run_verification_bundles.py"', workflow)
+        self.assertEqual(workflow.count("python3 -I - <<'PY'"), 2)
+        self.assertNotIn('python3 "$adapter"', workflow)
+        self.assertNotIn('selection=$(python3 - "$plan"', workflow)
 
 
 if __name__ == "__main__":

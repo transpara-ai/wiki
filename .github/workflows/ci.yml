@@ -38,7 +38,8 @@ jobs:
 
       # This is the pre-existing security boundary: run stdlib-only base code
       # before any candidate dependency install. It scans every blob introduced
-      # anywhere in the PR/push range, including content later removed.
+      # anywhere in the PR/push range, including content later removed. Python
+      # isolated mode excludes candidate startup and import modules.
       - name: Secret scan every introduced blob from trusted base
         timeout-minutes: 10
         env:
@@ -58,7 +59,7 @@ jobs:
             # Bootstrap only: the trusted base predates the scanner.
             cp compile/secret_scan.py "${RUNNER_TEMP}/secret_scan_trusted.py"
           fi
-          python3 "${RUNNER_TEMP}/secret_scan_trusted.py" --changed-against "$BASE"
+          python3 -I "${RUNNER_TEMP}/secret_scan_trusted.py" --changed-against "$BASE"
 
       - name: Record required-job start
         run: echo "VERIFY_JOB_STARTED=$(date +%s)" >> "$GITHUB_ENV"
@@ -89,7 +90,9 @@ jobs:
             if ! extract_regular tools/verification_adapter.py "$adapter" ||
               ! extract_regular tools/run_verification_bundles.py "$dispatcher"; then
               reason=trusted_base_adapter_unavailable
-            elif python3 "$adapter" \
+            # Isolated Python keeps candidate startup and import modules out of
+            # the base-owned adapter, selector, parser, and dispatcher chain.
+            elif python3 -I "$adapter" \
               --repo . \
               --event pull_request \
               --base "$BASE_SHA" \
@@ -98,7 +101,7 @@ jobs:
               --trusted-root "$trusted" \
               --output "$plan"; then
               planned=true
-              if selection=$(python3 - "$plan" <<'PY'
+              if selection=$(python3 -I - "$plan" <<'PY'
           import json
           import re
           import sys
@@ -231,7 +234,7 @@ jobs:
           adapter="$RUNNER_TEMP/verification_adapter.py"
           confirmation="$RUNNER_TEMP/proportional-verification-confirmation.json"
           trusted_confirmation="$RUNNER_TEMP/proportional-verification-confirmation-engine"
-          python3 "$adapter" \
+          python3 -I "$adapter" \
             --repo . \
             --event pull_request \
             --base "$BASE_SHA" \
@@ -239,7 +242,7 @@ jobs:
             --repository "$GITHUB_REPOSITORY" \
             --trusted-root "$trusted_confirmation" \
             --output "$confirmation"
-          python3 "$RUNNER_TEMP/run_verification_bundles.py" \
+          python3 -I "$RUNNER_TEMP/run_verification_bundles.py" \
             --repo-root . \
             --plan "$RUNNER_TEMP/proportional-verification-plan.json" \
             --confirmation "$confirmation" \
@@ -253,7 +256,7 @@ jobs:
           OUTCOME: ${{ steps.required_full.outcome }}
           REASON: ${{ steps.scope.outputs.reason }}
         run: |
-          python3 - <<'PY'
+          python3 -I - <<'PY'
           import json
           import os
           import time
@@ -325,7 +328,7 @@ jobs:
         run: |
           set -euo pipefail
           git show "$BASE_SHA:compile/secret_scan.py" > "$RUNNER_TEMP/secret_scan_trusted.py"
-          python3 "$RUNNER_TEMP/secret_scan_trusted.py" --changed-against "$BASE_SHA"
+          python3 -I "$RUNNER_TEMP/secret_scan_trusted.py" --changed-against "$BASE_SHA"
           python3 compile/secret_scan.py --tree HEAD --max-seconds 300
 
       - name: Set up Node
@@ -396,7 +399,7 @@ jobs:
           STATUS: ${{ steps.shadow.outputs.status }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          python3 - <<'PY'
+          python3 -I - <<'PY'
           import json
           import os
           from pathlib import Path

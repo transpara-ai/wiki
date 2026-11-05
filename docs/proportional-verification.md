@@ -3,7 +3,7 @@ doc_id: WIKI-PROPORTIONAL-VERIFICATION
 title: Wiki proportional verification adapter
 doc_type: verification_design
 status: draft
-version: 0.2.0
+version: 0.3.0
 created: 2026-11-05
 updated: 2026-11-05
 owner: Transpara
@@ -30,6 +30,16 @@ The adapter vendors the unchanged selector and schema from
 base-extracted adapter and dispatcher for classification and focused command
 selection. It verifies engine provenance, recomputes the exact plan, and
 accepts no plan-supplied command or directory.
+
+Every base-owned Python process in that route runs in isolated mode, including
+both early scanner invocations, the adapter and selector child, plan parser,
+dispatcher, and evidence writers. Candidate working-directory modules,
+`PYTHONPATH`, user-site modules, and Python startup hooks therefore cannot enter
+trusted routing. The hostile regression first proves that an unisolated process
+can replace a target file; it then proves the isolated scanner and routing chain
+leave trusted files and the plan unchanged and select full. Isolated mode is
+not a filesystem sandbox, so provenance, exact-plan, dual credential scans, and
+fixed-command checks remain required.
 
 ## Credential scans
 
@@ -113,5 +123,6 @@ caches affect download cost only and never route selection.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.3.0 | 2026-11-05 | Isolate both trusted scanners and every trusted routing process from candidate imports, with an executable negative control. |
 | 0.2.0 | 2026-11-05 | Raise the cold documentation p95 limit from 90 to 100 seconds while preserving every other qualification gate and resource bound. |
 | 0.1.0 | 2026-11-05 | Define the base-trusted Wiki documentation adapter, dual credential scans, complete-route boundary, evidence, costs, and failure behavior. |

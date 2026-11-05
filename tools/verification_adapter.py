@@ -3,10 +3,12 @@
 After adoption, the workflow extracts this repository-owned adapter from the
 base commit and points it at the exact-head checkout. The adapter reads only
 three fixed regular blobs from the base commit, proves the vendored engine
-provenance, and executes that trusted base selector. Missing, malformed, or
-crashing trusted material produces a full-route attestation. It never turns a
-selector failure into a focused pass. The bootstrap does not execute candidate
-adapter code because its base has no trusted adapter; it runs full verification.
+provenance, and executes that trusted base selector in Python isolated mode.
+Candidate working-directory and environment paths therefore cannot supply its
+imports. Missing, malformed, or crashing trusted material produces a full-route
+attestation. It never turns a selector failure into a focused pass. The
+bootstrap does not execute candidate adapter code because its base has no
+trusted adapter; it runs full verification.
 
 The adapter writes only below the caller-supplied temporary directory and to
 the requested attestation file. It does not run the Civilization collector or
@@ -346,6 +348,7 @@ def build_plan(
     selector = trusted_root / "verification" / "select_verify.py"
     command = (
         sys.executable,
+        "-I",
         os.fspath(selector),
         "--repo",
         os.fspath(root),
