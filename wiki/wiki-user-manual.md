@@ -4,7 +4,7 @@ title: Wiki user manual
 entity: Wiki user manual
 doc_type: user_manual
 status: draft
-version: 0.1.0
+version: 0.1.1
 created: "2026-11-05"
 updated: "2026-11-05"
 owner: Transpara
@@ -80,13 +80,23 @@ authoring token or a previously saved authoring grant. The wiki currently uses
 **one shared authoring token per deployment**, rather than individual tokens.
 There is no self-service token issuance or token-retrieval page or API.
 
+This token grants the instance's existing authoring access across all spaces,
+including source and monitor changes and approval and publication of article
+bundles. A saved authoring grant carries the same access. Remote Workspace
+operations also require a verified signed-in account. The implementation has
+no separate curator or publisher role check: token access is not limited to
+drafting. Confirm that the recipient is already authorized for this full
+scope before sharing the token.
+
 ### Request access
 
 1. Ask the **wiki deployment operator** for authoring access. Identify the wiki
-   address, your signed-in account, and the work you need to do. If you do not
-   know the operator, ask the responsible space steward to route the request.
-2. The operator confirms that you may author on that instance and shares its
-   existing token through an approved password manager's secure sharing
+   address, your signed-in account, and the work you need to do. State that the
+   request includes the full authoring and publication access described above.
+   If you do not know the operator, ask the responsible space steward to route
+   the request.
+2. The operator confirms your existing authorization for that full scope and
+   shares the existing token through an approved password manager's secure sharing
    mechanism. This is the documented access-request procedure; the wiki does
    not automate the request or approval.
 3. Open **Ingest**, enter the token in **Authoring token**, and choose
@@ -216,8 +226,9 @@ appropriate. Changed article or evidence revisions can make an earlier review
 stale. An unavailable required reviewer is incomplete review.
 
 An authorized curator explicitly chooses **Approve reviewed bundle and
-publish** for the current revision. A manual review decision requires a
-substantive recorded rationale and still passes deterministic validation. A
+publish** for the current revision. The service uses the same authoring grant
+for this action; it does not enforce a separate publisher role. A manual review
+decision requires a substantive recorded rationale and still passes deterministic validation. A
 successful publication builds and exchanges the served artifact; failed
 validation or rebuilding preserves the previous served site. Models and
 scheduled monitors do not approve publication.
@@ -283,4 +294,5 @@ the same corpus before accepting a larger structure or another generator.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.1.1 | 2026-11-05 | Clarify the existing token's full authoring and publication scope and the absence of a separate publisher role before sharing access. |
 | 0.1.0 | 2026-11-05 | First manual: reading, authoring-token requests and lifecycle, source ingestion, Workspace, terminology, troubleshooting, and native publishing recommendation. |
