@@ -4,10 +4,10 @@
 <title>Terminology · Transpara</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="terminology.css"></head>
 <body>
 <header class="term-header"><a href="index.html">Transpara Knowledge Hub</a><span> / </span><a href="knowledge.html">Workspace</a>
-<h1>Terminology</h1><p>Review questionable words and phrases before an agent changes their meaning.</p></header>
+<h1>Terminology</h1><p><a href="terminology-authoring.html">Terminology user guide</a></p><p>Review questionable words and phrases before an agent changes their meaning.</p></header>
 <main id="terminology">
 <aside class="term-boundary"><strong>The Transpara Dictionary is Human-owned.</strong>
-<p>This workspace prepares decision proposals. A download does not approve, publish, or change a term. A Human maintainer must review the canonical dictionary change.</p></aside>
+<p>Submit a proposal for review. A Human maintainer reviews the complete dictionary change and uses an enrolled passkey to publish it. Publication records both Human and independent workload signatures.</p></aside>
 <details class="term-access"><summary>Authoring access</summary><label for="term-token">Authoring token, if a remembered grant is unavailable</label>
 <input id="term-token" type="password" autocomplete="off"><button id="term-connect" type="button">Connect</button></details>
 <div class="term-status-row"><p id="term-notice" role="status" aria-live="polite">Loading terminology snapshot…</p><button id="term-refresh" type="button">Refresh</button></div>
@@ -16,10 +16,13 @@
 <button type="button" data-term-tab="inbox" aria-pressed="true">Candidate inbox</button>
 <button type="button" data-term-tab="dictionary" aria-pressed="false">Transpara Dictionary</button>
 <button type="button" data-term-tab="english" aria-pressed="false">Regular-English decisions</button>
+<button type="button" data-term-tab="contributions" aria-pressed="false">Contributions</button>
+<button type="button" data-term-tab="scan" aria-pressed="false">Scan and rewrite</button>
 <button type="button" data-term-tab="publication" aria-pressed="false">Source revision</button>
 </nav>
 <section id="term-inbox" aria-labelledby="inbox-title"><h2 id="inbox-title">Candidate inbox</h2>
 <p>Evidence comes from the independent scanner. Unknown vocabulary may be ordinary English or a Transpara term; the agent does not decide.</p>
+<button id="term-new" type="button" hidden>Propose a new technical term</button>
 <label for="term-filter">Find a candidate</label><input id="term-filter" type="search" placeholder="Term, repository, or product">
 <div class="term-review-grid"><div id="term-candidates"></div><article id="term-detail" class="term-card" hidden aria-labelledby="term-detail-title">
 <h3 id="term-detail-title"></h3><p id="term-detail-scope"></p><div id="term-evidence"></div>
@@ -28,18 +31,44 @@
 <option value="">Select a classification</option><option value="immutable">Immutable Transpara terminology</option><option value="regular_english">Regular English</option></select>
 <p id="term-decision-help">Select a classification to see its effect.</p>
 <p id="term-context-help"></p>
+<div id="term-new-scope" hidden><label for="term-repo">Repository scope</label><input id="term-repo" maxlength="256" placeholder="transpara-ai/example">
+<label for="term-product">Product scope</label><input id="term-product" maxlength="256" placeholder="example"></div>
+<div id="term-reason-fields" hidden><label for="term-reason">Reason for the regular-English decision</label><textarea id="term-reason" rows="3" maxlength="4000"></textarea></div>
 <div id="term-immutable-fields" hidden><label for="term-canonical">Canonical term</label><input id="term-canonical" maxlength="300">
 <label for="term-definition">Definition and meaning boundaries</label><textarea id="term-definition" rows="3" maxlength="4000"></textarea>
 <label for="term-class">Technical class</label><select id="term-class"><option value="technical_noun">Technical noun</option><option value="technical_verb">Technical verb</option></select>
 <label for="term-forms">Approved forms, one per line</label><textarea id="term-forms" rows="3" maxlength="4000"></textarea></div>
+<button id="term-submit" type="submit" disabled hidden>Submit proposal</button>
 <button id="term-download" type="submit" disabled>Download draft proposal</button>
-<p class="term-draft-note">Candidates remain pending. No publication endpoint is called.</p></fieldset></form></article></div></section>
+<p id="term-draft-note" class="term-draft-note">A draft remains pending until a Human maintainer approves publication.</p></fieldset></form></article></div></section>
 <section id="term-dictionary" hidden aria-labelledby="dictionary-title"><h2 id="dictionary-title">Transpara Dictionary</h2>
 <p>Human-maintained terms from the configured canonical-document export. Export provenance is shown in Source revision.</p><div id="term-entries"></div></section>
 <section id="term-english" hidden aria-labelledby="english-title"><h2 id="english-title">Regular-English decisions</h2>
 <p>A regular-English decision covers only its exact spelling and reviewed source occurrences in its scope. New occurrences need review. It does not exempt the word from the applicable writing rules.</p><div id="term-decisions"></div></section>
+<section id="term-contributions" hidden aria-labelledby="contributions-title"><h2 id="contributions-title">Contributions</h2>
+<p id="term-service-status">Browser submission and publication require the terminology authority service.</p>
+<div id="term-proposals"></div><button id="term-prepare" type="button" disabled>Review selected proposals for publication</button>
+<section id="term-stage" class="term-card" hidden aria-labelledby="stage-title"><h3 id="stage-title">Review the exact dictionary change</h3>
+<p id="term-stage-identity"></p><h4>Changes</h4><pre id="term-stage-diff" class="term-document"></pre>
+<details><summary>Complete document to approve</summary><pre id="term-stage-source" class="term-document"></pre></details>
+<label class="term-check"><input id="term-reviewed" type="checkbox"> I reviewed the complete document and authorize this publication.</label>
+<button id="term-publish" type="button" disabled>Approve with passkey and publish</button></section>
+<button id="term-enroll" type="button" hidden>Set up a publication passkey</button><p id="term-enrollment-status"></p>
+</section>
+<section id="term-scan" hidden aria-labelledby="scan-title"><h2 id="scan-title">Scan and rewrite</h2>
+<p>Check one public HTTPS page or a public or operator-approved GitHub repository at one recorded commit. Repository scans include supported prose and Python comments; skipped files and limits appear in the report.</p>
+<form id="term-scan-form"><label for="term-scan-type">Source</label><select id="term-scan-type"><option value="url">HTTPS URL</option><option value="repo">GitHub repository</option></select>
+<label for="term-scan-url">URL</label><input id="term-scan-url" type="url" required maxlength="2048" placeholder="https://example.com/guide">
+<div id="term-scan-repo-options" hidden><label for="term-scan-ref">Branch, tag or commit (optional)</label><input id="term-scan-ref" maxlength="200" placeholder="Repository default branch">
+<label for="term-scan-paths">Paths to include, one pattern per line (optional)</label><textarea id="term-scan-paths" rows="3" maxlength="4000" placeholder="docs/**
+README.md"></textarea></div>
+<label for="term-scan-mode">Result</label><select id="term-scan-mode"><option value="report">Deviation report</option><option value="rewrite">STE rewrite draft and report</option></select>
+<p class="term-draft-note">A rewrite preserves the original. It requires Human review and does not certify ASD-STE100 conformance.</p>
+<button id="term-scan-start" type="submit" disabled>Run scanner</button><button id="term-scan-cancel" type="button" hidden>Cancel scan</button></form>
+<p id="term-scan-status" aria-live="polite"></p><div id="term-scan-report"></div><button id="term-report-download" type="button" hidden>Download report</button>
+</section>
 <section id="term-publication" hidden aria-labelledby="publication-title"><h2 id="publication-title">Source revision</h2>
 <p id="term-version">No snapshot loaded.</p><p id="term-digest"></p>
-<p>This is a configured export, not a signed publication or proof of Human approval. Publication history and verified Human approval will be connected by the terminology authority service.</p>
+<p id="term-publication-description">This is a configured export. The authority service supplies verified Human approval and publication history when connected.</p><div id="term-release-history"></div>
 <p><a href="https://www.asd-ste100.org/STE_downloads.html" target="_blank" rel="noopener noreferrer">Official ASD-STE100 reference and usage terms</a>. The standard and its vocabulary are not bundled with this workspace.</p></section>
 </main><script src="terminology.js"></script></body></html>

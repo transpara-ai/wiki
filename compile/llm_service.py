@@ -178,7 +178,7 @@ def complete(data, qualify=False):
                    'State explicitly when making an inference. If evidence is missing or contradictory, explain it '
                    'and set insufficient_evidence=true. Do not include Markdown links or HTML. '
                    'No universal closest competitor may be asserted unless the evidence establishes one.')
-    if stage in ('draft', 'review', 'challenge', 'research'):
+    if stage in ('draft', 'review', 'challenge', 'research', 'terminology-rewrite'):
         from knowledge_review import INSTRUCTIONS
         instruction = INSTRUCTIONS[stage]
     prompt = SYSTEM + '\n' + instruction + '\nRequired JSON schema:\n' + json.dumps(SCHEMAS[stage])

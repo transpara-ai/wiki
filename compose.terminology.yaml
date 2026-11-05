@@ -1,0 +1,20 @@
+# Optional addition to the deployment's existing Compose file list. Activate
+# only after the private worker/publisher and Human trust are accepted. The Wiki
+# receives the worker socket only; never mount publisher state, trust or keys.
+services:
+  wiki:
+    group_add:
+      - "${TERMINOLOGY_SOCKET_GID:?Set the approved worker socket client group ID}"
+    environment:
+      TRANSPARA_TERMINOLOGY_SOCKET: /run/transpara-terminology-worker/service.sock
+      TRANSPARA_TERMINOLOGY_JOBS: /Transpara/transpara-ai/repos/wiki/.private/terminology-jobs.sqlite3
+      # Optional protected host config for an approved GitHub credential ref.
+      # Its path must also be available through the deployment's existing mounts.
+      TRANSPARA_TERMINOLOGY_GITHUB_CONFIG: "${TRANSPARA_TERMINOLOGY_GITHUB_CONFIG:-}"
+    volumes:
+      - type: bind
+        source: "${TERMINOLOGY_WORKER_RUNTIME:?Set the existing worker runtime directory}"
+        target: /run/transpara-terminology-worker
+        read_only: true
+        bind:
+          create_host_path: false

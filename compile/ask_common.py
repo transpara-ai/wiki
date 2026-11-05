@@ -64,7 +64,10 @@ def read_json(handler, limit=MAX_WIRE):
 def validate_result(stage, result):
     if stage in WORKFLOW_SCHEMAS:
         try:
-            return validate_workflow(WORKFLOW_SCHEMAS[stage], result)
+            validated = validate_workflow(WORKFLOW_SCHEMAS[stage], result)
+            if stage == 'terminology-rewrite' and len(json.dumps(validated, ensure_ascii=False).encode('utf-8')) > 131072:
+                raise ValueError('Rewrite response exceeds its aggregate byte budget')
+            return validated
         except ValueError:
             raise AskError('The model returned an invalid workflow response.', 502) from None
     if not isinstance(result, dict) or set(result) != set(SCHEMAS[stage]['required']):
