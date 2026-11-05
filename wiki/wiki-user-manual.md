@@ -4,7 +4,7 @@ title: Wiki user manual
 entity: Wiki user manual
 doc_type: user_manual
 status: draft
-version: 0.1.1
+version: 0.2.0
 created: "2026-11-05"
 updated: "2026-11-05"
 owner: Transpara
@@ -25,6 +25,11 @@ sources:
   - https://github.com/transpara-ai/wiki/blob/v0.10.0/docs/profile-menu.md
   - https://github.com/transpara-ai/wiki/blob/v0.10.0/compile/DISCOVERY.md
   - https://github.com/transpara-ai/wiki/blob/v0.10.0/docs/terminology-workspace.md
+  - https://github.com/apple-oss-distributions/shell_cmds/blob/main/hexdump/od.1
+  - https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.randomnumbergenerator.getbytes?view=netframework-4.8
+  - https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-clipboard?view=powershell-5.1
+  - https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse
+  - https://docs.docker.com/reference/cli/docker/compose/up/
 ---
 
 # Wiki user manual
@@ -119,23 +124,354 @@ separate authorization required for destructive operations.
 
 ### Operator: provide or initialize the token
 
-For an existing instance, use its configured token; generating a different
-value for each author will not work. Docker hosting configures
-`KNOWLEDGE_HUB_AUTHORING_TOKEN` in the deployment's private `.env`. A native
-systemd installation loads `~/.config/transpara-knowledge-hub.env`. Confirm
-which service and environment file actually serve the requested wiki.
+**An ordinary author needs the token already configured on the wiki. Generating
+another value on your computer does not register it with the server.** Reuse the
+existing token unless this is first setup or an explicitly planned rotation.
+Changing an existing token also invalidates every saved authoring grant.
 
-If an instance has no token yet, an authorized operator can generate a random
-32-byte value locally with `openssl rand -hex 32`, put it in that environment
-setting, and retain it in the approved password manager. Protect the private
-environment file with mode `0600` and keep it outside Git and published output.
-Apply configuration through the existing hosting procedure, restarting the
-native service or recreating the Docker service so it receives the setting.
-This manual does not perform that operational change.
+For an existing deployment, the operator opens its private configuration file,
+finds `KNOWLEDGE_HUB_AUTHORING_TOKEN=`, and shares **only the value after `=`**
+through the approved password manager. The Docker and native file locations are
+listed below. Do not create a new token for each author.
 
-`CIVWIKI_AUTHORING_TOKEN` is a compatibility fallback; the
-`KNOWLEDGE_HUB_AUTHORING_TOKEN` setting takes precedence. API clients still use
-the `X-CivWiki-Authoring-Token` request header. Never send tokens in URLs.
+For first setup or an authorized rotation, follow **one** generation method
+below, save the result in the password manager, install that same value on the
+wiki server, and verify it in Ingest. Each method generates **32 random bytes
+(256 bits), represented as 64 lowercase hexadecimal characters**. Generation
+alone does not change the running wiki.
+
+The earlier `openssl rand -hex 32` command requires the `openssl` program;
+`rand` is its subcommand, not a separate executable. The methods below need
+**neither OpenSSL nor Python**, and do not require Homebrew or WSL.
+
+#### Ubuntu: check the terminal and required tools
+
+Open Terminal on the Ubuntu computer where you will generate the token. Run:
+
+```sh
+ps -p $$ -o comm=
+```
+
+Continue in Bash or zsh. If the output names another shell, run `/bin/bash`
+first and keep using that terminal. Check the required system tools and the
+operating system's random device:
+
+```sh
+command -v od && command -v tr && command -v grep && test -r /dev/urandom && printf 'Required tools are ready.\n'
+```
+
+Expect three executable paths followed by `Required tools are ready.` If a
+command is missing, install its standard Ubuntu packages, then repeat the check:
+
+```sh
+sudo apt update
+sudo apt install --yes coreutils grep
+```
+
+The `sudo` password is your Ubuntu account password. It is not a wiki token.
+Continue with **Generate on Ubuntu or macOS** below.
+
+#### macOS: check the terminal and required tools
+
+Open **Applications → Utilities → Terminal**. Run:
+
+```sh
+ps -p $$ -o comm=
+```
+
+The normal default is zsh. The following commands also work in Bash. If another
+shell is running, enter `/bin/zsh` first and keep using that terminal.
+
+```sh
+command -v od && command -v tr && command -v grep && command -v pbcopy && test -r /dev/urandom && printf 'Required tools are ready.\n'
+```
+
+Expect four executable paths followed by `Required tools are ready.` These are
+macOS system tools. This procedure does not install a package manager. If the
+check fails, stop and generate on the Ubuntu server using the Ubuntu steps;
+do not paste a guessed or empty value into the wiki configuration.
+
+#### Generate on Ubuntu or macOS
+
+Paste this whole block into the checked Bash or zsh terminal:
+
+```sh
+if wiki_authoring_token="$(set -o pipefail; od -An -v -N32 -tx1 /dev/urandom | LC_ALL=C tr -d '[:space:]')" &&
+    printf '%s\n' "$wiki_authoring_token" | LC_ALL=C grep -Eq '^[0-9a-f]{64}$'; then
+    printf 'Created a token with 64 hexadecimal characters.\n'
+else
+    unset wiki_authoring_token
+    printf 'Token generation failed. Stop here.\n' >&2
+fi
+```
+
+Expect `Created a token with 64 hexadecimal characters.` Stop if that message
+does not appear or any command reports an error. `od` reads 32 bytes from the
+OS random device and formats each byte as two hexadecimal digits; `-v` keeps
+repeated bytes from being abbreviated. `tr` removes formatting whitespace.
+The pipeline check and validation refuse command failures and empty, short, or
+malformed results. `pipefail` is set only inside the generation command; it
+does not change your interactive shell settings.
+
+On **macOS**, copy the value to the clipboard without printing it:
+
+```sh
+printf '%s' "$wiki_authoring_token" | pbcopy
+```
+
+On **Ubuntu**, display it in your private terminal, select the one line of 64
+characters, and copy it with **Ctrl+Shift+C**:
+
+```sh
+printf '%s\n' "$wiki_authoring_token"
+```
+
+Paste the value into a new password-manager entry named for the wiki instance,
+including its browser address so you can find the right token later. Copy only
+the 64 characters, without quotes, spaces, the variable name, or a command.
+Keep that entry available for the server configuration step. After saving it,
+remove the temporary shell variable:
+
+```sh
+unset wiki_authoring_token
+```
+
+#### Windows: generate with Windows PowerShell or PowerShell 7
+
+Open **Start**, search for **Windows PowerShell**, and open it. PowerShell 7 is
+also supported. Use a PowerShell window, not Command Prompt. Check the version:
+
+```powershell
+$PSVersionTable.PSVersion
+```
+
+Expect version **5.1** or **7.x**. No administrator window or additional software
+is needed for generation. Paste this whole block:
+
+```powershell
+& {
+    $ErrorActionPreference = 'Stop'
+    $wikiBytes = New-Object -TypeName 'System.Byte[]' -ArgumentList 32
+    $wikiRng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        # This instance API works in both Windows PowerShell 5.1 and PowerShell 7.
+        $wikiRng.GetBytes($wikiBytes)
+        $wikiToken = [System.BitConverter]::ToString($wikiBytes).Replace('-', '').ToLowerInvariant()
+        if ($wikiToken -cnotmatch '\A[0-9a-f]{64}\z') {
+            throw 'Token generation failed. Stop here.'
+        }
+        Set-Clipboard -Value $wikiToken
+        Write-Output 'Created a 64-character token and copied it to the clipboard.'
+    }
+    finally {
+        $wikiRng.Dispose()
+    }
+}
+```
+
+Expect `Created a 64-character token and copied it to the clipboard.` The token
+itself is not printed. If PowerShell reports an error, stop; do not use whatever
+was previously on the clipboard. The block uses Windows' cryptographic random
+generator, converts the 32 bytes into 64 lowercase hexadecimal characters,
+validates that format, and copies the result.
+
+Paste the clipboard value into a new password-manager entry named for the wiki
+instance, including its browser address. That saved value is what you install on
+the server. After it is saved and installed, you can replace the current
+clipboard entry with non-secret text:
+
+```powershell
+Set-Clipboard -Value 'Wiki token configured'
+```
+
+This replaces the current clipboard entry; it does not erase clipboard history.
+
+#### Install the value on the wiki server
+
+The steps above run on your operator computer. **A token generated on a Mac or
+Windows computer still has to be configured on the Ubuntu server that runs the
+wiki.** Copy it from the password manager when the server's editor is open.
+
+Use your existing SSH access to that server. From any of the three systems,
+check the SSH client with `ssh -V`. If it is missing on Ubuntu, install it with
+`sudo apt install --yes openssh-client`. If it is missing on Windows, open
+**Windows PowerShell as Administrator**, run the following, then reopen your
+ordinary PowerShell window and repeat `ssh -V`:
+
+```powershell
+Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
+```
+
+This installs the client used to connect to the wiki; no Windows SSH server is
+needed. macOS includes the SSH client. Connect through the existing approved
+host or SSH alias. On the Velia administration network, the documented command is:
+
+```sh
+ssh transpara@192.168.30.192
+```
+
+That address is private; use your existing VPN or SSH route to reach it. An SSH
+password prompt asks for the server account's password, not the wiki token.
+Once connected, the following file-edit and service commands run **on Ubuntu**,
+not in your local Windows PowerShell session.
+
+For the current **Docker deployment on Velia**, the private file is
+`/Transpara/transpara-ai/repos/wiki/.env`. On another Docker host, use that
+instance's project directory. To inspect the current Velia container's project
+directory and ordered Compose files without printing its environment:
+
+```sh
+sudo docker inspect --format 'directory={{index .Config.Labels "com.docker.compose.project.working_dir"}} files={{index .Config.Labels "com.docker.compose.project.config_files"}}' transpara-wiki-wiki-1
+```
+
+On a first installation where `.env` does not exist, create it from the
+project's `.env.example`. For the documented Velia directory, run:
+
+```sh
+(umask 077; set -C; cat /Transpara/transpara-ai/repos/wiki/.env.example > /Transpara/transpara-ai/repos/wiki/.env)
+```
+
+`set -C` refuses to overwrite an existing file. On another host, substitute its
+actual project directory in both paths. Complete the other hosting settings in
+the Docker hosting guide before starting services.
+
+On Velia, open the existing file in its actual project directory:
+
+```sh
+cd /Transpara/transpara-ai/repos/wiki
+chmod 600 .env
+nano .env
+```
+
+If `nano` is missing, install it on the Ubuntu server with
+`sudo apt install --yes nano`, then reopen the file.
+
+Find the line beginning exactly `KNOWLEDGE_HUB_AUTHORING_TOKEN=`. Replace only
+its value with the 64 characters copied from the password manager. Add the line
+if it is absent, and keep one active assignment for this key. The result is
+this **file-content template**, not a terminal command:
+
+```dotenv
+KNOWLEDGE_HUB_AUTHORING_TOKEN=<paste-token-here>
+```
+
+Replace all of `<paste-token-here>`, including the angle brackets, with your
+generated value. Use no surrounding quotes or spaces. Preserve every unrelated setting, especially `COMPOSE_FILE`,
+allowed hosts, port, and user/group IDs. In nano, press **Ctrl+O**, **Enter**, then
+**Ctrl+X** to save and exit. Reapply private file permissions:
+
+```sh
+chmod 600 .env
+```
+
+For the **native systemd deployment**, edit
+`~/.config/transpara-knowledge-hub.env` as the same Ubuntu user who owns the wiki
+service, using the same key/value format and nano save steps:
+
+```sh
+mkdir -p "$HOME/.config"
+(umask 077; touch "$HOME/.config/transpara-knowledge-hub.env")
+chmod 600 "$HOME/.config/transpara-knowledge-hub.env"
+nano "$HOME/.config/transpara-knowledge-hub.env"
+```
+
+The editor creates that file if absent; preserve any other existing settings.
+Confirm the service's file locations without displaying their contents:
+
+```sh
+systemctl --user show transpara-knowledge-hub.service -p WorkingDirectory -p EnvironmentFiles
+```
+
+The native unit loads the legacy environment file first and the current file
+second. `CIVWIKI_AUTHORING_TOKEN` is a lower-priority compatibility alias; use
+`KNOWLEDGE_HUB_AUTHORING_TOKEN` in the current file.
+
+#### Apply the setting and confirm authoring works
+
+Choose the deployment type you actually use. This step changes the running
+service; perform it in the deployment's authorized maintenance procedure after
+active authoring work finishes. A deliberate rotation invalidates old tokens
+and saved grants for all authors.
+
+For the **existing Velia Docker deployment**, preserve the full stack, including
+authentication and other overrides. In a Bash or zsh terminal on that Ubuntu
+server, read its project, directory, context, and ordered Compose files from
+the running wiki container. These setup commands inspect labels, not secrets:
+
+```sh
+wiki_container=transpara-wiki-wiki-1
+wiki_context=$(sudo docker context show)
+wiki_project=$(sudo docker --context "$wiki_context" inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$wiki_container")
+wiki_directory=$(sudo docker --context "$wiki_context" inspect --format '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' "$wiki_container")
+wiki_files=$(sudo docker --context "$wiki_context" inspect --format '{{index .Config.Labels "com.docker.compose.project.config_files"}}' "$wiki_container")
+wiki_compose=(sudo docker --context "$wiki_context" compose --project-name "$wiki_project" --project-directory "$wiki_directory" --env-file "$wiki_directory/.env")
+while IFS= read -r wiki_file; do
+    wiki_compose+=(-f "$wiki_file")
+done < <(printf '%s\n' "$wiki_files" | tr ',' '\n')
+"${wiki_compose[@]}" config --quiet
+"${wiki_compose[@]}" config --services
+```
+
+Stop if any command fails, a label is empty, or the named container does not
+exist. On another Docker deployment, obtain its wiki container name with
+`sudo docker ps --filter label=com.docker.compose.service=wiki --format '{{.Names}}'`
+and use that name rather than Velia's name. On a first installation without
+running containers, use the Docker hosting guide's initial start procedure
+after completing `.env`; these label-based update commands require an existing
+instance.
+
+`config --quiet` succeeds without output. On current Velia,
+`config --services` includes `wiki`, `refresh`, and `discovery`. Keep this
+terminal open so the `wiki_compose` array remains available. It pins the same
+project, directory, context, and ordered files even if `COMPOSE_FILE` is exported
+elsewhere. Recreate only those three token-consuming services:
+
+```sh
+unset KNOWLEDGE_HUB_AUTHORING_TOKEN CIVWIKI_AUTHORING_TOKEN
+"${wiki_compose[@]}" up -d --force-recreate --wait --wait-timeout 300 wiki refresh discovery
+```
+
+Do not replace the complete ordered file selection with `-f compose.yaml`
+alone. For a different deployment, retain its actual service list rather than
+assuming it has Velia's discovery worker. A plain `docker restart` does not load changed container
+environment values. Recreation runs the existing startup wiki build and can
+interrupt service until it becomes healthy; it does not just reload a string.
+The command waits up to 300 seconds and reports a startup failure.
+
+For an **already installed native deployment**, restart its authoring service
+as the service-owning Ubuntu user:
+
+```sh
+systemctl --user restart transpara-knowledge-hub.service
+systemctl --user is-active transpara-knowledge-hub.service
+```
+
+Expect `active`. Do not start the native service alongside the Docker writer.
+If the installation still uses the legacy service name, operate that existing
+unit instead; the two service families must not run together.
+
+Finally, open the real wiki authoring address in a browser and select **Ingest**.
+Copy the configured value from the password manager into **Authoring token**.
+Use the verification path supported by that instance:
+
+- **Signed-in profile available:** sign in and choose **Remember authoring
+  access**. Expect **Authoring access is saved to your wiki profile** and an
+  empty token field. This verifies the token and saves the account grant.
+- **Token-only instance without profiles:** leave the token entered, choose
+  **Remove**, and select the existing **The Event Graph** article. Wait for its
+  consequence preview. The preview is a read-only request; it changes no content
+  and consumes no operation authorization. Leave the confirmation box unchecked,
+  do not select **Retire after preview**, and return to **Add** after checking.
+  A refused token shows **Preview unavailable**; an accepted token displays the
+  hypothetical retirement consequences. This does not save an account grant.
+
+A healthy server response alone does not verify token acceptance, and a static
+preview cannot perform either check. If the expected result does not appear,
+stop and have the operator check the selected instance, loaded environment file,
+service recreation, and any required profile configuration before submitting
+content.
+
+API clients use the same configured value in `X-CivWiki-Authoring-Token`.
 Without a configured token, authoring is limited to local loopback clients and
 the existing same-origin checks; this is not a remote access-request mechanism.
 
@@ -294,5 +630,6 @@ the same corpus before accepting a larger structure or another generator.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.2.0 | 2026-11-05 | Add complete Ubuntu, macOS, and Windows token-generation, copying, installation, activation, and verification steps with explicit prerequisites. |
 | 0.1.1 | 2026-11-05 | Clarify the existing token's full authoring and publication scope and the absence of a separate publisher role before sharing access. |
 | 0.1.0 | 2026-11-05 | First manual: reading, authoring-token requests and lifecycle, source ingestion, Workspace, terminology, troubleshooting, and native publishing recommendation. |
