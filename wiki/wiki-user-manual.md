@@ -13,6 +13,7 @@ project: wiki
 supersedes: []
 canonical: false
 org: transpara
+tier: meta
 primary_placement: devops/runbooks
 placements: [devops/runbooks, civilization/meta, platform/deployment-operations, competition/research-methods]
 classification: internal
