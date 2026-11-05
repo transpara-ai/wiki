@@ -309,3 +309,4 @@ writer automatically. Stop authoring, inspect the private route and target
 receipt, and preserve any new Velia edits before choosing which copy to resume.
 If only the controller HTTPS check failed after publication, correct connectivity and
 rerun `verify`; do not transfer the old snapshot again.
+<!-- PVQ176 follow-up sample 02: inert documentation-route evidence. -->
