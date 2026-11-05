@@ -14,10 +14,18 @@
 .term-card h3{margin:.1rem 0 .6rem}.term-card p{margin:.4rem 0}
 .term-candidate{width:100%;text-align:left!important;overflow-wrap:anywhere}.term-candidate span{display:block;font-size:.85rem;opacity:.8;margin-top:.3rem}
 .term-candidate[aria-pressed=true]{border-color:#358092!important;border-left:4px solid #358092!important}
-.term-evidence{white-space:pre-wrap;overflow-wrap:anywhere;background:color-mix(in srgb,var(--bg,#fff) 94%,#888);padding:.75rem;border-radius:5px}
+.term-evidence,.term-document{white-space:pre-wrap;overflow-wrap:anywhere;background:color-mix(in srgb,var(--bg,#fff) 94%,#888);padding:.75rem;border-radius:5px}
 #term-proposal-form fieldset{border:0;padding:0;margin-top:1rem}#term-proposal-form legend{font-weight:bold;margin-bottom:.3rem}
 #term-download{margin-top:.9rem}.term-empty{padding:1rem;border:1px dashed #8888;border-radius:6px}
 #term-digest{font-family:monospace;overflow-wrap:anywhere}#term-notice[data-error=true]{color:#a94220}
 #terminology :focus-visible{outline:3px solid #358092;outline-offset:3px}
 [hidden]{display:none!important}
 @media(max-width:680px){.term-header,#terminology{padding:.8rem}.term-review-grid{grid-template-columns:minmax(0,1fr)}.term-card{padding:.8rem}.term-tabs button{flex:1 1 42%}.term-tabs{align-items:stretch}}
+
+#term-submit,#term-prepare,#term-new,#term-enroll,#term-scan-form button{margin-top:.8rem}
+#terminology .term-check{display:flex;gap:.6rem;align-items:flex-start;margin:.8rem 0}
+#terminology .term-check input{width:auto;flex:0 0 auto;margin-top:.25rem}
+#term-stage-identity{font-family:monospace;overflow-wrap:anywhere}
+#term-stage-source,#term-stage-diff{max-height:32rem;overflow:auto}
+#term-scan-form{max-width:52rem}#term-scan-report details{margin:.8rem 0}
+#term-scan-report pre{max-height:36rem;overflow:auto}

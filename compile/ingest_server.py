@@ -1101,36 +1101,44 @@ class IngestHandler(SimpleHTTPRequestHandler):
             json_response(self, 503, {"error": "Authoring profile is unavailable; access was not changed"})
 
     def handle_terminology(self):
-        """Read an operator-selected export for the existing internal curators.
+        """Apply curator identity and CSRF guards before private service access.
 
-        The operator must authorize its contents for every existing curator.
-        This adds no principal grant, source-repository access, or approval.
+        The authority service independently verifies a Human-held publication
+        key. A Wiki grant permits submission; it is never a publication proof.
+        Snapshot-only deployments keep the existing read-only export behavior.
         """
         if os.environ.get("KNOWLEDGE_HUB_PROFILE", "authoring-local") != "authoring-local":
             json_response(self, 404, {"error": "Terminology is unavailable in this publication profile."})
             return
         if not self.require_authoring():
             return
-        if self.command != "GET":
-            json_response(self, 405, {"error": "Terminology is read-only. Prepare a draft in the browser; dictionary publication requires Human review."})
-            return
-        if urlsplit(self.path).path != "/api/terminology/snapshot" or urlsplit(self.path).query:
-            json_response(self, 404, {"error": "Unknown terminology endpoint."})
+        import terminology_client
+        enabled = terminology_client.configured()
+        if not enabled and self.command != "GET":
+            json_response(self, 405, {"error": "Terminology is read-only until the authority service is configured."})
             return
         try:
-            # Match the evidence workspace's reader prerequisite as well as
-            # its grant check. A remote shared token alone is not a principal.
-            knowledge_api.actor(self)
+            principal = knowledge_api.actor(self)
+            if self.command != "GET":
+                config = authoring_profile.settings()
+                # Shared-token requests must pass this check too. A token is
+                # authoring access, not permission to cross an Origin boundary.
+                if not authoring_profile.mutation_allowed(self.headers, config):
+                    raise AskError("A same-origin authoring request is required.", 403)
+            if enabled:
+                self.connection.settimeout(10)
+                status, data = terminology_client.handle(self, ROOT, principal)
+                json_response(self, status, data)
+            elif urlsplit(self.path).path == "/api/terminology/snapshot" and not urlsplit(self.path).query:
+                json_response(self, 200, terminology_api.load_snapshot())
+            else:
+                json_response(self, 404, {"error": "Unknown terminology endpoint."})
         except AskError as exc:
-            json_response(self, exc.status, {"error": "Sign in to review terminology."})
-            return
-        except Exception:
-            json_response(self, 503, {"error": "Authoring profile is unavailable; no snapshot was read."})
-            return
-        try:
-            json_response(self, 200, terminology_api.load_snapshot())
+            json_response(self, exc.status, {"error": str(exc)})
         except terminology_api.SnapshotUnavailable as exc:
             json_response(self, 503, {"error": str(exc)})
+        except Exception:
+            json_response(self, 503, {"error": "Terminology is unavailable; prior proposals and publications are retained."})
 
     def do_GET(self):
         if not self.require_allowed_host():
