@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "mode": "focused",
+  "default": "full",
+  "bundles": [
+    "mandatory-baseline",
+    "repository-contracts"
+  ],
+  "mandatory_bundles": [
+    "mandatory-baseline"
+  ],
+  "rules": [
+    {
+      "id": "verification-and-repository-controls",
+      "patterns": [
+        ".github/**",
+        ".transpara/**",
+        ".dockerignore",
+        ".env.example",
+        ".gitattributes",
+        ".githooks/**",
+        ".gitignore",
+        "AGENTS.md",
+        "API.md",
+        "CLAUDE.md",
+        "DESIGN.md",
+        "DOCKER.md",
+        "Dockerfile",
+        "PROVENANCE.md",
+        "README.md",
+        "compose*.yaml",
+        "docs/proportional-verification.md",
+        "index.md",
+        "package-lock.json",
+        "package.json",
+        "playwright.config.js",
+        "requirements.txt",
+        "tests/**",
+        "tools/**",
+        "verification/**"
+      ],
+      "full": true
+    },
+    {
+      "id": "runtime-release-and-ingestion-surfaces",
+      "patterns": [
+        "compile/**",
+        "docs/releases/**",
+        "docs/superpowers/plans/2026-09-05-multi-space-wiki-baseline-routes.txt",
+        "raw/**",
+        "spaces/**",
+        "wiki/**"
+      ],
+      "full": true
+    },
+    {
+      "id": "documentation-contracts",
+      "patterns": [
+        "docs/*.md",
+        "docs/continuous-discovery/*.md",
+        "docs/dark-factory/*.md",
+        "docs/superpowers/plans/*.md",
+        "docs/superpowers/research/*.md",
+        "docs/superpowers/specs/*.md",
+        "docs/wiki-architecture-comparison/*.md"
+      ],
+      "bundles": [
+        "repository-contracts"
+      ]
+    }
+  ]
+}

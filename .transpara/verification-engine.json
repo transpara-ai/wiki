@@ -1,0 +1,21 @@
+{
+  "files": [
+    {
+      "destination": "verification/policy.schema.json",
+      "git_blob": "881136d79cdfa5a7aa13869473570ff73806e28d",
+      "sha256": "f5f3073067a1828277e6a2966e4b6ec180451cceeb676ab36e9425273ff7c5fd",
+      "source": "verification/policy.schema.json"
+    },
+    {
+      "destination": "verification/select_verify.py",
+      "git_blob": "627331546556d3f9706e205b7c25a3ea3975e61b",
+      "sha256": "943475d54f003392d29778ec2abcb368c2f61724acf3c469cf2b8b80cea0343e",
+      "source": "verification/select_verify.py"
+    }
+  ],
+  "schema_version": 1,
+  "source_commit": "b02303a9a9250d7b2404806afa3e2ff7aa241c08",
+  "source_object_format": "sha1",
+  "source_repository": "transpara-ai/dev-ops"
+}
+
