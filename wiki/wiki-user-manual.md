@@ -4,7 +4,7 @@ title: Wiki user manual
 entity: Wiki user manual
 doc_type: user_manual
 status: draft
-version: 0.2.0
+version: 0.2.1
 created: "2026-11-05"
 updated: "2026-11-05"
 owner: Transpara
@@ -451,19 +451,24 @@ If the installation still uses the legacy service name, operate that existing
 unit instead; the two service families must not run together.
 
 Finally, open the real wiki authoring address in a browser and select **Ingest**.
-Copy the configured value from the password manager into **Authoring token**.
 Use the verification path supported by that instance:
 
-- **Signed-in profile available:** sign in and choose **Remember authoring
+- **Signed-in profile available:** sign in, copy the configured value from the
+  password manager into **Authoring token**, and choose **Remember authoring
   access**. Expect **Authoring access is saved to your wiki profile** and an
   empty token field. This verifies the token and saves the account grant.
-- **Token-only instance without profiles:** leave the token entered, choose
-  **Remove**, and select the existing **The Event Graph** article. Wait for its
-  consequence preview. The preview is a read-only request; it changes no content
-  and consumes no operation authorization. Leave the confirmation box unchecked,
-  do not select **Retire after preview**, and return to **Add** after checking.
-  A refused token shows **Preview unavailable**; an accepted token displays the
-  hypothetical retirement consequences. This does not save an account grant.
+- **Token-only instance without profiles:** first leave **Authoring token**
+  empty, choose **Remove**, and select the existing **The Event Graph** article.
+  Expect **Preview unavailable**. Stop if consequences already appear: local
+  loopback authoring is permitted when no token is configured, so that result
+  does not prove that your new setting loaded. Then return to **Add**, enter the
+  configured value from the password manager, reopen **Remove**, and select
+  **The Event Graph** again. Expect its hypothetical retirement consequences.
+  Both previews are read-only requests: they change no content and consume no
+  operation authorization. Leave confirmation unchecked throughout, do not
+  select **Retire after preview**, and return to **Add** after checking. This
+  verifies refusal without the token and acceptance with it; it does not save
+  an account grant.
 
 A healthy server response alone does not verify token acceptance, and a static
 preview cannot perform either check. If the expected result does not appear,
@@ -630,6 +635,7 @@ the same corpus before accepting a larger structure or another generator.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.2.1 | 2026-11-05 | Add the negative token-only verification check so unconfigured loopback access cannot be mistaken for a loaded token. |
 | 0.2.0 | 2026-11-05 | Add complete Ubuntu, macOS, and Windows token-generation, copying, installation, activation, and verification steps with explicit prerequisites. |
 | 0.1.1 | 2026-11-05 | Clarify the existing token's full authoring and publication scope and the absence of a separate publisher role before sharing access. |
 | 0.1.0 | 2026-11-05 | First manual: reading, authoring-token requests and lifecycle, source ingestion, Workspace, terminology, troubleshooting, and native publishing recommendation. |
