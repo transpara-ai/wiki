@@ -152,7 +152,7 @@ jobs:
         with:
           path: ~/.cache/pip
           key: >-
-            pvq176-wiki-${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}-${{
+            pvq176-wave2-wiki-controlled-${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}-${{
             github.event.pull_request.head.sha || github.sha }}-${{ github.job }}
 
       - name: Cache exact-head Node downloads for full verification
@@ -161,7 +161,7 @@ jobs:
         with:
           path: ~/.npm
           key: >-
-            pvq176-wiki-${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}-${{
+            pvq176-wave2-wiki-controlled-${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}-${{
             github.event.pull_request.head.sha || github.sha }}-${{ github.job }}
 
       - name: Install Python dependencies for full verification
@@ -338,7 +338,7 @@ jobs:
         with:
           path: ~/.cache/pip
           key: >-
-            pvq176-wiki-${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}-${{
+            pvq176-wave2-wiki-controlled-${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}-${{
             github.event.pull_request.head.sha }}-${{ github.job }}
 
       - name: Cache exact-head Node downloads
@@ -346,7 +346,7 @@ jobs:
         with:
           path: ~/.npm
           key: >-
-            pvq176-wiki-${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}-${{
+            pvq176-wave2-wiki-controlled-${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}-${{
             github.event.pull_request.head.sha }}-${{ github.job }}
 
       - name: Install Python dependencies
