@@ -63,3 +63,5 @@ Negative checks cover missing public-safe metadata, globally stale/missing/
 unavailable payloads, missing correction references, and absence of active
 private fetch, deploy, runtime, EventGraph-write, protected-setting, protected
 action, or production-readiness paths.
+
+<!-- PVQ176 controlled documentation subject 05; no runtime input changes. -->
