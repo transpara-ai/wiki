@@ -154,15 +154,27 @@ class PolicyOwnershipTests(unittest.TestCase):
         self.assertEqual(set(selected.bundles), set(registry))
         self.assertEqual(selected.mandatory_bundles, RUNNER.MANDATORY_BUNDLES)
 
-    def test_every_current_path_maps_or_explicitly_selects_full(self) -> None:
+    def test_every_current_path_maps_or_fails_closed_to_full(self) -> None:
         selected = policy()
         paths = git(ROOT, "ls-files", "--cached", "--others", "--exclude-standard").splitlines()
         self.assertTrue(paths)
         for path in paths:
             with self.subTest(path=path):
                 reason, bundles = SELECTOR.select_bundles(selected, [change("M", path)])
-                self.assertIn(reason, {"mapped", "full_rule"})
+                self.assertIn(reason, {"mapped", "full_rule", "unmatched_path"})
                 self.assertTrue(bundles)
+                if reason == "unmatched_path":
+                    self.assertEqual(bundles, selected.bundles)
+
+    def test_new_unmatched_path_selects_every_bundle(self) -> None:
+        """Accept a new public path only through the selector's full fallback."""
+        selected = policy()
+        reason, bundles = SELECTOR.select_bundles(
+            selected,
+            [change("A", "new-public-surface.md")],
+        )
+        self.assertEqual(reason, "unmatched_path")
+        self.assertEqual(bundles, selected.bundles)
 
     def test_unknown_future_domains_and_controls_fail_closed(self) -> None:
         selected = policy()

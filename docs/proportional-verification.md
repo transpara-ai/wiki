@@ -3,7 +3,7 @@ doc_id: WIKI-PROPORTIONAL-VERIFICATION
 title: Wiki proportional verification adapter
 doc_type: verification_design
 status: draft
-version: 0.4.0
+version: 0.5.0
 created: 2026-11-05
 updated: 2026-11-05
 owner: Transpara
@@ -70,7 +70,10 @@ The focused mandatory baseline runs diff hygiene, the complete-tree credential
 scan, and policy, provenance, replay, and dispatcher contracts. The
 `repository-contracts` bundle validates every tracked file in the explicit
 documentation domains for UTF-8, a heading or frontmatter, no NUL byte, and a
-final newline. The checker and policy list the same domains. A future
+final newline. Tests select mutation subjects from the current tracked owned
+inventory rather than naming one historical document, so a legitimate deletion
+or rename validates the remaining or renamed files. The checker and policy
+list the same domains. A future
 `docs/tooling/`, service, deployment, or other new domain remains full until
 its consumers and fixed commands are proved.
 
@@ -86,6 +89,12 @@ request. Every push has a unique workflow group, so a later main push cannot
 cancel or evict an earlier verification or its dependent release. The release
 job retains its existing stable queue with in-progress cancellation disabled.
 
+Pull-request verification checks out the exact head instead of GitHub's
+synthetic merge ref. The repository's classic `Build & Test` protection is
+strict, so a head must include current `main` before it can merge. This
+protection is an assumption of the exact-head design; removing strict
+up-to-date enforcement would require a new merge-result verification decision.
+
 The ownership audit searched the full suite and configuration for filesystem
 reads, Markdown globs, embedded Markdown, seed files, terminology inputs,
 navigation and route inputs, and release metadata. Every current content
@@ -100,8 +109,11 @@ focus them.
 
 The policy tests own every tracked path, replay 30 exact first-parent main
 subjects, label synthetic cases separately, and exercise each enabled bundle
-at least five times. Mutation tests prove that malformed owned Markdown fails
-the same checker invoked by focused and full routes. Workflow tests prove that
+at least five times. A tracked path may be explicitly mapped, explicitly full,
+or unmatched; unmatched paths pass the ownership audit only when the selector
+returns every bundle through its full fallback. Mutation tests prove that
+malformed owned Markdown fails the same checker invoked by focused and full
+routes, while a tracked rename follows the new path. Workflow tests prove that
 the trusted changed-range scan precedes `pip install` and `npm ci` and that a
 separate whole-tree scan remains present.
 
@@ -117,6 +129,12 @@ pip or npm cache dependency. Full and shadow routes use exact-head and
 job-specific pip and npm keys with no restore prefix; an unchanged-head rerun
 can prove the exact hit while another head or job cannot supply it. These
 caches affect download cost only and never route selection.
+
+Changing the focused and full test inputs invalidates an earlier event-only
+runtime transfer. The acceptance contract is one exact-head source run, five
+fresh Wiki cold/warm pairs with full shadows (10 controlled attempts), and one
+configured Critical Gate. Resource reservations and effect authority must be
+recorded before those events run.
 
 ## Failure boundaries
 
@@ -136,6 +154,7 @@ caches affect download cost only and never route selection.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.5.0 | 2026-11-05 | Follow tracked document renames, accept unmatched paths only through full fallback, and record the strict exact-head assumption. |
 | 0.4.0 | 2026-11-05 | Reclassify edited pull-request bases, record the metadata-edit CI cost, and isolate push concurrency so later main events cannot cancel or evict verification or release publication. |
 | 0.3.0 | 2026-11-05 | Isolate both trusted scanners and every trusted routing process from candidate imports, with an executable negative control. |
 | 0.2.0 | 2026-11-05 | Raise the cold documentation p95 limit from 90 to 100 seconds while preserving every other qualification gate and resource bound. |
