@@ -68,3 +68,4 @@ migration; use the guides above to operate and author the current Hub.
 
 <!-- Qualification subject 01: inert marker for the documentation-only route. -->
 <!-- Qualification subject 02: inert marker for the documentation-only route. -->
+<!-- Qualification subject 03: inert marker for the documentation-only route. -->
