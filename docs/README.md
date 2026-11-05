@@ -65,3 +65,5 @@ migration; use the guides above to operate and author the current Hub.
 | Version | Date | Change |
 | --- | --- | --- |
 | 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |
+
+<!-- Qualification subject 01: inert marker for the documentation-only route. -->
