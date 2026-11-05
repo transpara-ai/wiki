@@ -106,3 +106,4 @@ Cookie-authorized mutations require the exact configured HTTPS Origin and a
 custom request header. Missing configuration keeps the original token-only API;
 verification failures deny remembered access. Token-bearing automation retains
 its existing header contract.
+<!-- PVQ176 follow-up sample 05: inert documentation-route evidence. -->

@@ -72,3 +72,4 @@ The implementation review covers audience enforcement, SSRF/DNS/redirect restric
 | --- | --- | --- |
 | 0.2.0 | 2026-09-18 | Record enforced document control, SemVer, CFAR timing and focused correction validation. |
 | 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |
+<!-- PVQ176 follow-up sample 01: inert documentation-route evidence. -->
