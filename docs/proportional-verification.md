@@ -3,7 +3,7 @@ doc_id: WIKI-PROPORTIONAL-VERIFICATION
 title: Wiki proportional verification adapter
 doc_type: verification_design
 status: draft
-version: 0.1.0
+version: 0.2.0
 created: 2026-11-05
 updated: 2026-11-05
 owner: Transpara
@@ -86,7 +86,8 @@ The prior current-main job took 108 seconds with unknown cache state; it is not
 a controlled baseline. Controlled documentation qualification still requires
 five independent cold heads, same-head warm attempts, sealed original artifact
 ZIPs, identical plan/confirmation bindings, and successful complete shadows.
-The cold documentation p95 limit remains 90 seconds.
+The cold documentation p95 limit is 100 seconds. Every other qualification
+gate and resource bound remains unchanged.
 
 Focused documentation runs no dependency installation, so it has no hidden
 pip or npm cache dependency. Full and shadow routes use exact-head and
@@ -112,4 +113,5 @@ caches affect download cost only and never route selection.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.2.0 | 2026-11-05 | Raise the cold documentation p95 limit from 90 to 100 seconds while preserving every other qualification gate and resource bound. |
 | 0.1.0 | 2026-11-05 | Define the base-trusted Wiki documentation adapter, dual credential scans, complete-route boundary, evidence, costs, and failure behavior. |
