@@ -1,5 +1,7 @@
 # Automated migration to the Velia wiki node
 
+<!-- PVQ176 controlled documentation subject 02; no runtime input changes. -->
+
 Target: **192.168.30.192**, using the existing SSH key and deployment account.
 This implements the [Docker hosting guide](../DOCKER.md). Civilization, Transpara
 Platform, Competition, and DevOps move together as one application and corpus.
