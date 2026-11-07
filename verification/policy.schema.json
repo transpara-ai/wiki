@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/transpara-ai/dev-ops/verification/policy.schema.json",
+  "title": "Transpara proportional verification policy",
+  "description": "Maps repository paths to fixed verification bundle identifiers. The policy cannot contain commands.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "default",
+    "bundles",
+    "mandatory_bundles",
+    "rules"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "mode": {
+      "enum": [
+        "shadow",
+        "focused",
+        "force-full"
+      ]
+    },
+    "default": {
+      "const": "full"
+    },
+    "bundles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/bundle_id"
+      }
+    },
+    "mandatory_bundles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/bundle_id"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    }
+  },
+  "$defs": {
+    "bundle_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "patterns"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/bundle_id"
+        },
+        "patterns": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "bundles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/bundle_id"
+          }
+        },
+        "full": {
+          "const": true
+        },
+        "allowed_modes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "100644",
+              "100755",
+              "120000",
+              "160000"
+            ]
+          }
+        },
+        "statuses": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "A",
+              "D",
+              "M",
+              "T"
+            ]
+          }
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "bundles"
+          ],
+          "not": {
+            "required": [
+              "full"
+            ]
+          }
+        },
+        {
+          "required": [
+            "full"
+          ],
+          "not": {
+            "required": [
+              "bundles"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
