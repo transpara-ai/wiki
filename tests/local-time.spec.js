@@ -1,4 +1,5 @@
 const { test, expect } = require("@playwright/test");
+const { JSDOM } = require("jsdom");
 
 const WINTER = "2026-01-15T23:45:00Z";
 const SUMMER = "2026-07-15T23:45:00Z";
@@ -6,11 +7,39 @@ const SUMMER = "2026-07-15T23:45:00Z";
 async function stampPages(page, timestamp) {
   await page.route(/\.html(?:\?.*)?$/, async (route) => {
     const response = await route.fetch();
-    let body = await response.text();
-    // Use the real generated markup and context data, with a fixed instant so
-    // expected dates/offsets do not depend on the machine running the build.
-    const match = body.match(/<time datetime="([^"]+)" data-local-time>/);
-    if (match) body = body.split(match[1]).join(timestamp());
+    const dom = new JSDOM(await response.text());
+    const document = dom.window.document;
+    // A clean checkout intentionally has no private refresh-status.json. Seed
+    // known refresh metadata into the generated display slots, including the
+    // data used by space changes. The real localTime.js must still format each
+    // <time>; expected zone names and daylight offsets stay independent below.
+    const synced = timestamp();
+    function stamp(container, label) {
+      const record = container.querySelector(".fresh");
+      if (!record) throw new Error("Generated freshness display is missing");
+      const time = document.createElement("time");
+      time.setAttribute("datetime", synced);
+      time.setAttribute("data-local-time", "");
+      time.textContent = synced;
+      record.className = "fresh ok";
+      record.replaceChildren(document.createTextNode((label ? label + " · " : "") + "updated "),
+        time, document.createTextNode(" · 0 stale"));
+    }
+    const display = document.querySelector(".space-freshness");
+    if (display) stamp(display, "");
+    const embedded = document.querySelector("#space-context-data");
+    if (embedded) {
+      const context = JSON.parse(embedded.textContent);
+      for (const space of Object.values(context.spaces)) {
+        const template = document.createElement("template");
+        template.innerHTML = space.freshness;
+        stamp(template.content, space.label);
+        space.freshness = template.innerHTML;
+      }
+      embedded.textContent = JSON.stringify(context).replace(/</g, "\\u003c");
+    }
+    const body = dom.serialize();
+    dom.window.close();
     await route.fulfill({ response, body });
   });
   await page.route("**/api/articles", (route) => route.fulfill({ json: { articles: [] } }));
