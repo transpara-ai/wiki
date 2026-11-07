@@ -1,6 +1,8 @@
 # Optional addition to the deployment's existing Compose file list. Activate
-# only after the private worker/publisher and Human trust are accepted. The Wiki
-# receives the worker socket only; never mount publisher state, trust or keys.
+# only after the selected worker mode and live deployment are authorized.
+# Analysis-only schema 3 needs no publisher or signing trust; publication mode
+# requires separately accepted publisher/Human trust. Wiki receives only the
+# worker socket. Never mount publisher state, trust or keys into Wiki.
 services:
   wiki:
     group_add:
