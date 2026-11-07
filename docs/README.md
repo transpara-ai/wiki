@@ -2,10 +2,10 @@
 doc_id: "TAI-WIKI-DOCUMENTATION"
 title: "Transpara Knowledge Hub documentation"
 doc_type: "index"
-version: "0.1.0"
+version: "0.1.1"
 status: "draft"
 created: "unknown"
-updated: "2026-09-18"
+updated: "2026-11-05"
 owner: "Transpara"
 steward: "Codex"
 author: "Codex"
@@ -26,6 +26,7 @@ DevOps. The current operational guides live at the repository root and in
 
 | Guide | Purpose |
 | --- | --- |
+| [Wiki user manual](../wiki/wiki-user-manual.md) | Self-hosted reader and author guide, including requesting an authoring token; served at `/wiki-user-manual.html` under DevOps → Runbooks |
 | [README](../README.md) | Space overview, navigation, setup, and verification |
 | [Design](../DESIGN.md) | Current source scope, shared article model, and publication profiles |
 | [Provenance](../PROVENANCE.md) | Evidence origins, dated source coverage, and known gaps |
@@ -64,4 +65,5 @@ migration; use the guides above to operate and author the current Hub.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.1.1 | 2026-11-05 | Link the self-hosted user manual and its authoring-token request procedure. |
 | 0.1.0 | 2026-09-18 | Establish Transpara document control and a SemVer baseline for previously unversioned content. |
