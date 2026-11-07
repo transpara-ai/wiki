@@ -1,8 +1,20 @@
 (function () {
   "use strict";
   const byId = id => document.getElementById(id);
-  let snapshot = null, selected = null, requestSequence = 0;
+  let snapshot = null, selected = null, requestSequence = 0, stateRequestSequence = 0;
   let state = null, stage = null, scanJob = null, scanReport = null, scanTimer = null;
+  const boundaryText = document.querySelector(".term-boundary p").textContent;
+
+  // Older services omit the separate submission/enrollment flags. Preserve
+  // their supported actions only after state loads; an explicit false always
+  // disables the action. The server remains the authority for every request.
+  function allowed(name, legacyDefault = false) {
+    const capabilities = state?.capabilities;
+    return Boolean(capabilities && (capabilities[name] === true
+      || (capabilities[name] === undefined && legacyDefault)));
+  }
+  function canPrepare() {return allowed("prepare", allowed("publication"));}
+  function canPublish() {return allowed("publish", allowed("publication"));}
 
   // Source sentences and term names are untrusted data, never HTML or links.
   function node(tag, text, className) {
@@ -91,7 +103,7 @@
     const valid = snapshot && selected && byId("term-decision").value
       && (manual ? immutable : hasCurrentContexts(selected) && included.length);
     byId("term-download").disabled = !valid;
-    byId("term-submit").disabled = !valid;
+    byId("term-submit").disabled = !valid || !allowed("submit", true);
   }
   function selectCandidate(candidate) {
     selected = candidate;
@@ -162,7 +174,11 @@
     // Refresh invalidates any draft selection before the request begins.
     snapshot = null; selected = null; state = null; stage = null;
     byId("term-stage").hidden = true; byId("term-new").hidden = true;
-    byId("term-submit").hidden = true; byId("term-scan-start").disabled = true;
+    byId("term-submit").hidden = true; byId("term-submit").disabled = true;
+    byId("term-enroll").hidden = true; byId("term-enroll").disabled = true;
+    byId("term-prepare").hidden = true; byId("term-prepare").disabled = true;
+    byId("term-scan-start").disabled = true;
+    document.querySelector(".term-boundary p").textContent = boundaryText;
     byId("term-download").type = "submit";
     byId("term-detail").hidden = true; byId("term-download").disabled = true;
     ["term-candidates", "term-entries", "term-decisions"].forEach(id => byId(id).replaceChildren());
@@ -188,9 +204,8 @@
       notice(data.candidates.length + " pending candidates · " + data.terms.length + " dictionary terms");
       renderCandidates(); renderCollections();
       if (data.browser_service) {
-        byId("term-new").hidden = false; byId("term-submit").hidden = false;
         byId("term-download").type = "button";
-        await loadState();
+        await loadState(sequence);
       }
     } catch (error) {
       if (sequence === requestSequence) {
@@ -244,15 +259,19 @@
       notice("Draft proposal downloaded. The candidate remains pending until a Human-maintained dictionary change is accepted.");
       return;
     }
+    if (!allowed("submit", true)) return;
     byId("term-submit").disabled = true;
+    const sequence = requestSequence;
     try {
       await api("proposals", {proposal});
-      await loadState();
+      if (sequence !== requestSequence || !await loadState(sequence)) return;
       notice("Proposal submitted. A Human maintainer can review and publish it in Contributions.");
-    } catch (error) {notice(error.message || "Proposal submission failed.", true);}
-    finally {classify();}
+    } catch (error) {
+      if (sequence === requestSequence) notice(error.message || "Proposal submission failed.", true);
+    } finally {if (sequence === requestSequence) classify();}
   });
   byId("term-new").addEventListener("click", () => {
+    if (!allowed("submit", true)) return;
     selected = {manual: true, id: null};
     byId("term-detail").hidden = false; byId("term-detail-title").textContent = "New technical term";
     byId("term-detail-scope").textContent = "Specify the exact repository and product scope.";
@@ -263,16 +282,39 @@
     classify(); byId("term-canonical").focus();
   });
 
-  async function loadState() {
-    state = await api("state");
-    if (!Array.isArray(state.proposals) || !Array.isArray(state.releases) || !state.capabilities)
+  async function loadState(sequence) {
+    // A refresh invalidates older snapshot/state pairs. Within one snapshot,
+    // a later state request also wins. Ignore both stale responses and stale
+    // failures before they can change capabilities, provenance or notices.
+    const stateSequence = ++stateRequestSequence;
+    const current = () => sequence === requestSequence && stateSequence === stateRequestSequence;
+    let nextState;
+    try {nextState = await api("state");}
+    catch (error) {if (!current()) return false; throw error;}
+    if (!current()) return false;
+    if (!nextState || !Array.isArray(nextState.proposals) || !Array.isArray(nextState.releases)
+        || !nextState.capabilities || typeof nextState.capabilities !== "object"
+        || Array.isArray(nextState.capabilities))
       throw new Error("The terminology service has an unsupported state format.");
-    byId("term-service-status").textContent = "Submitted proposals remain pending until a Human maintainer approves the complete publication.";
-    byId("term-scan-start").disabled = state.capabilities.scan === false;
-    byId("term-enroll").hidden = Boolean(state.capabilities.passkey_enrolled);
-    byId("term-enrollment-status").textContent = state.capabilities.passkey_enrolled
-      ? "This account has an enrolled publication passkey."
-      : "Publication requires a Human-held passkey. Set one up, then ask an operator to accept its enrollment.";
+    state = nextState;
+    const analysisOnly = state.mode === "analysis_only";
+    const previewDescription = "Scan and rewrite is available for previews. This deployment uses an unapproved seed dictionary. Proposal submission, passkey enrollment and dictionary publication are unavailable.";
+    document.querySelector(".term-boundary p").textContent = analysisOnly ? previewDescription : boundaryText;
+    byId("term-service-status").textContent = analysisOnly ? previewDescription
+      : "Submitted proposals remain pending until a Human maintainer approves the complete publication.";
+    byId("term-new").hidden = !allowed("submit", true);
+    byId("term-submit").hidden = !allowed("submit", true);
+    byId("term-scan-start").disabled = !allowed("scan", true);
+    byId("term-prepare").hidden = !canPrepare();
+    byId("term-enroll").hidden = !allowed("enrollment", true) || Boolean(state.capabilities.passkey_enrolled);
+    byId("term-enroll").disabled = !allowed("enrollment", true);
+    byId("term-enrollment-status").textContent = !allowed("enrollment", true)
+      ? "Passkey enrollment is unavailable in this deployment."
+      : state.capabilities.passkey_enrolled
+        ? "This account has an enrolled publication passkey."
+        : "Publication requires a Human-held passkey. Set one up, then ask an operator to accept its enrollment.";
+    if (!canPublish()) {stage = null; byId("term-stage").hidden = true;}
+    classify();
     const list = byId("term-proposals"); list.replaceChildren();
     state.proposals.slice(0, 100).forEach(item => {
       const content = item.proposal || item;
@@ -280,7 +322,7 @@
       const pending = ["pending", "submitted"].includes(item.state || item.status || "pending");
       const label = node("label", undefined, "term-check");
       const check = node("input"); check.type = "checkbox"; check.value = item.id;
-      check.dataset.proposalId = item.id; check.disabled = !pending;
+      check.dataset.proposalId = item.id; check.disabled = !pending || !canPrepare();
       check.addEventListener("change", updatePrepare);
       label.append(check, node("span", content.term + " · " + (item.state || item.status || "pending")));
       card.append(label, node("p", scopeText(content.scope)));
@@ -301,15 +343,18 @@
       history.append(card);
     });
     if (!state.releases.length) empty(history, "No signed browser publications yet.");
-    byId("term-publication-description").textContent = "The active runtime dictionary is separate from the repository seed document. Each browser publication records exact bytes and both approval signatures.";
+    byId("term-publication-description").textContent = analysisOnly
+      ? "This preview uses a seed dictionary with no signed publication. Its source digest identifies the configured bytes; it does not establish Human approval."
+      : "The active runtime dictionary is separate from the repository seed document. Each browser publication records exact bytes and both approval signatures.";
     updatePrepare();
     if (state.scan_job && !scanJob) {scanJob = state.scan_job; await poll();}
+    return current();
   }
   function selectedProposals() {
     return [...document.querySelectorAll("[data-proposal-id]:checked")].map(input => input.value);
   }
   function updatePrepare() {
-    byId("term-prepare").disabled = !state?.capabilities.publication || !selectedProposals().length;
+    byId("term-prepare").disabled = !canPrepare() || !selectedProposals().length;
   }
   async function sha256(text) {
     if (!globalThis.crypto?.subtle) throw new Error("A secure browser connection is required for publication.");
@@ -347,6 +392,7 @@
       throw new Error("Passkey approval does not match the displayed document and publication scope.");
   }
   byId("term-prepare").addEventListener("click", async () => {
+    if (!canPrepare()) return;
     byId("term-prepare").disabled = true;
     stage = null; byId("term-stage").hidden = true;
     try {
@@ -364,7 +410,7 @@
     finally {updatePrepare();}
   });
   byId("term-reviewed").addEventListener("change", () => {
-    byId("term-publish").disabled = !stage || !state?.capabilities.passkey_enrolled || !byId("term-reviewed").checked;
+    byId("term-publish").disabled = !stage || !canPublish() || !state?.capabilities.passkey_enrolled || !byId("term-reviewed").checked;
   });
 
   function unbase64(value) {
@@ -382,7 +428,7 @@
       clientExtensionResults: credential.getClientExtensionResults()};
   }
   byId("term-publish").addEventListener("click", async () => {
-    if (!stage || !byId("term-reviewed").checked || !state?.capabilities.passkey_enrolled) return;
+    if (!stage || !canPublish() || !byId("term-reviewed").checked || !state?.capabilities.passkey_enrolled) return;
     byId("term-publish").disabled = true;
     const frozen = stage;
     try {
@@ -403,6 +449,7 @@
     }
   });
   byId("term-enroll").addEventListener("click", async () => {
+    if (!allowed("enrollment", true)) return;
     byId("term-enroll").disabled = true;
     try {
       if (!navigator.credentials?.create) throw new Error("This browser does not support passkeys.");
@@ -420,7 +467,7 @@
         clientExtensionResults: credential.getClientExtensionResults()}});
       byId("term-enrollment-status").textContent = "Passkey enrollment " + (result.id || result.enrollment_id || "") + " is pending operator acceptance. It cannot publish yet.";
     } catch (error) {notice(error.message || "Passkey enrollment failed.", true);}
-    finally {byId("term-enroll").disabled = false;}
+    finally {byId("term-enroll").disabled = !allowed("enrollment", true);}
   });
 
   byId("term-scan-type").addEventListener("change", () => {

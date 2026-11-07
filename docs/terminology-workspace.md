@@ -3,9 +3,9 @@ doc_id: WIKI-TERMINOLOGY-WORKSPACE
 title: Terminology workspace manual and integration reference
 doc_type: implementation_reference
 status: draft
-version: 0.2.1
+version: 0.3.0
 created: 2026-11-04
-updated: 2026-11-05
+updated: 2026-11-07
 owner: Transpara
 steward: Codex
 project: wiki
@@ -24,6 +24,12 @@ approved with a Human-held passkey. Authors need no local scanner installation.
 A deployment with only a configured snapshot retains candidate review and
 draft download. Source acceptance does not activate services or enroll a
 production approval credential.
+
+An analysis-only service offers Scan and rewrite from a protected, digest-pinned
+dictionary seed without a publisher or signing trust. The page identifies this
+mode and hides submission, enrollment and publication controls. The backend also
+refuses those routes. The seed is `unverified_local_document`; its protected
+location and digest are provenance, not Human approval.
 
 ## Design and authority
 
@@ -88,9 +94,9 @@ recompute them from sentences whose protected literals were masked.
 3. Select a candidate and read its repository, product, and source sentences.
 4. Select a classification. For an immutable term, complete its definition and
    approved forms, including the canonical form.
-5. With the authority service connected, choose **Submit proposal** and inspect
+5. With submission enabled by the authority service, choose **Submit proposal** and inspect
    its pending entry in **Contributions**. **Download draft proposal** also
-   provides JSON for review. Snapshot-only deployments provide the download.
+   provides JSON for review. Snapshot-only and analysis-only deployments provide the download.
 6. After publication, select **Refresh**. An older candidate export is not
    automatically current: the operator must rescan against the active dictionary
    before new occurrence-bound decisions can use it.
@@ -107,6 +113,9 @@ append-only through this browser path; changes to existing decisions and
 deletion continue through reviewed repository work.
 
 ## Set up a Human publication passkey
+
+These controls are available only when the connected service enables enrollment
+and publication. Analysis-only previews need no publication passkey.
 
 In **Contributions**, choose **Set up a publication passkey** and complete the
 browser's authenticator prompt with the required PIN, biometric, or other user
@@ -378,6 +387,7 @@ deployment capacity.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.3.0 | 2026-11-07 | Honor analysis-only service capabilities and describe seed-based previews without signing trust. |
 | 0.2.1 | 2026-11-05 | Document the inactive-by-default host GitHub credential adapter, exact repository/cohort authorization, and credential confinement. |
 | 0.2.0 | 2026-11-05 | Document browser contributions, pending passkey enrollment, Human/workload publication, bounded repository/URL analysis and rewrite drafts, retention, and operator integration. |
 | 0.1.3 | 2026-11-04 | Limit regular-English draft hashes to the exact classified spelling and state the existing curator cohort's export-content boundary. |

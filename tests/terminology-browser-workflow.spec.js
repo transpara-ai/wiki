@@ -16,7 +16,7 @@ async function routes(page, f) {
     const body = request.method() === 'POST' ? request.postDataJSON() : null;
     f.calls.push({method:request.method(), path, body});
     if (path === 'snapshot') return route.fulfill({json:f.data});
-    if (path === 'state') return route.fulfill({json:f.state()});
+    if (path === 'state') return route.fulfill({json:await f.state()});
     if (path === 'proposals') {
       f.proposals.push({id:'proposal-one',state:'pending',proposal:body.proposal});
       return route.fulfill({json:{id:'proposal-one'}});
@@ -173,4 +173,79 @@ test('browser rejects a publication challenge for different hidden bytes before 
   await expect(page.getByRole('status')).toContainText('does not match the displayed document');
   expect(await page.evaluate(() => window.passkeyWasRequested)).toBeUndefined();
   expect(f.calls.filter(call => call.path === 'publish')).toEqual([]);
+});
+
+
+for (const viewport of [{width:1280,height:900}, {width:390,height:844}]) {
+  test(`scan-only preview hides unsupported controls and rewrites README at ${viewport.width}px`, async ({page}) => {
+    const f = fixture();
+    f.state = () => ({mode:'analysis_only', proposals:[], releases:[], capabilities:{
+      scan:true, submit:false, publication:false, prepare:false, publish:false,
+      enrollment:false, passkey_enrolled:false}});
+    const errors = [], failures = [];
+    page.on('pageerror', error => errors.push(error.message));
+    page.on('console', message => {if (message.type() === 'error') errors.push(message.text());});
+    page.on('requestfailed', request => failures.push(request.url()));
+    await routes(page, f);
+    await page.setViewportSize(viewport);
+    await page.goto('/terminology.html');
+    await expect(page.locator('.term-boundary')).toContainText('unapproved seed dictionary');
+    await expect(page.locator('#term-new')).toBeHidden();
+    await page.getByRole('button', {name:'flux adapter',exact:false}).click();
+    await page.getByLabel('Classification', {exact:true}).selectOption('immutable');
+    await page.getByLabel('Definition and meaning boundaries').fill('An example component.');
+    await expect(page.locator('#term-submit')).toBeHidden();
+    await expect(page.locator('#term-submit')).toBeDisabled();
+    await page.getByRole('button', {name:'Contributions',exact:true}).click();
+    await expect(page.locator('#term-enroll')).toBeHidden();
+    await expect(page.locator('#term-prepare')).toBeHidden();
+    await expect(page.locator('#term-service-status')).toContainText('publication are unavailable');
+    await page.getByRole('button', {name:'Source revision',exact:true}).click();
+    await expect(page.locator('#term-publication-description')).toContainText('no signed publication');
+    await page.getByRole('button', {name:'Scan and rewrite',exact:true}).click();
+    await page.getByLabel('Source', {exact:true}).selectOption('repo');
+    await page.getByLabel('URL', {exact:true}).fill('https://github.com/transpara-ai/example');
+    await page.getByLabel('Paths to include, one pattern per line (optional)').fill('README.md');
+    await page.getByLabel('Result', {exact:true}).selectOption('rewrite');
+    await page.getByRole('button', {name:'Run scanner',exact:true}).focus();
+    await expect(page.getByRole('button', {name:'Run scanner',exact:true})).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#term-scan-status')).toContainText('Scan complete');
+    expect(f.scan).toEqual({source:{type:'repo',url:'https://github.com/transpara-ai/example',paths:['README.md']},rewrite:true});
+    await expect(page.locator('#term-scan-report')).toContainText('Utilize the valve.');
+    await expect(page.locator('#term-scan-report')).toContainText('Use the valve.');
+    await expect(page.locator('#term-scan-report')).toContainText('Remaining findings');
+    const downloaded = page.waitForEvent('download');
+    await page.getByRole('button', {name:'Download report',exact:true}).click();
+    expect((await downloaded).suggestedFilename()).toBe('technical-english-report.json');
+    expect(f.calls.filter(call => call.method === 'POST').map(call => call.path)).toEqual(['scan']);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(errors).toEqual([]); expect(failures).toEqual([]);
+    await page.screenshot({path:test.info().outputPath(`terminology-scan-only-${viewport.width}.png`),fullPage:true});
+  });
+}
+
+
+test('refresh ignores delayed legacy state after the current scan-only state loads', async ({page}) => {
+  const f = fixture();
+  let releaseOld, requests = 0;
+  const old = new Promise(resolve => {releaseOld = resolve;});
+  f.state = () => ++requests === 1 ? old : {mode:'analysis_only', proposals:[], releases:[], capabilities:{
+    scan:true, submit:false, publication:false, prepare:false, publish:false,
+    enrollment:false, passkey_enrolled:false}};
+  await routes(page, f);
+  await page.goto('/terminology.html');
+  await expect.poll(() => requests).toBe(1);
+  await page.getByRole('button', {name:'Refresh',exact:true}).click();
+  await expect(page.locator('.term-boundary')).toContainText('unapproved seed dictionary');
+  const response = page.waitForResponse(item => item.url().endsWith('/api/terminology/state'));
+  releaseOld({proposals:[], releases:[], capabilities:{scan:true, publication:true, passkey_enrolled:false}});
+  await (await response).finished();
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await expect(page.locator('.term-boundary')).toContainText('unapproved seed dictionary');
+  await expect(page.locator('#term-new')).toBeHidden();
+  await expect(page.locator('#term-enroll')).toBeHidden();
+  await page.getByRole('button', {name:'Transpara Dictionary',exact:true}).click();
+  await expect(page.locator('#term-dictionary')).toContainText('configured dictionary source');
+  await expect(page.locator('#term-dictionary')).not.toContainText('canonical-document export');
 });

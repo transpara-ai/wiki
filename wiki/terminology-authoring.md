@@ -4,9 +4,9 @@ title: Contribute terminology and scan technical English
 entity: Contribute terminology and scan technical English
 doc_type: user_manual
 status: draft
-version: 0.1.0
+version: 0.2.0
 created: "2026-11-05"
-updated: "2026-11-05"
+updated: "2026-11-07"
 owner: Transpara
 steward: Codex
 project: wiki
@@ -32,8 +32,12 @@ sources:
 This guide describes the browser workflow proposed in Wiki v0.11.0. Find it
 under **DevOps → Runbooks**. Its stable address is
 `/terminology-authoring.html`. Source acceptance does not mean the service is
-installed or active. An operator connects the private terminology service and
-separately enrolls Human publication authority before these controls work.
+installed or active. An operator connects the private terminology service.
+Analysis-only deployments provide Scan and rewrite using a protected dictionary
+seed, with no publication passkey or signing trust. The page names this mode;
+submission, enrollment and publication controls are hidden. Its seed is
+unverified, and scans do not approve it. Full publication deployments separately
+enroll Human publication authority before publication controls work.
 
 Open **Terminology** from the authoring tools, or visit `/terminology.html`.
 Sign in and use your existing authoring enrollment. If your browser has no
@@ -59,9 +63,9 @@ term**. Supply its repository/product scope, definition, technical class and
 approved forms, then choose **Submit proposal**. This path proposes immutable
 terminology; regular-English decisions still require current occurrence evidence.
 
-If only **Download draft proposal** is available, this deployment has the older
-snapshot-only integration. Downloading a draft does not submit or publish it.
-The operator must connect the private service for the complete browser workflow.
+If only **Download draft proposal** is available, this deployment has either
+snapshot-only or analysis-only integration. Downloading a draft does not submit
+or publish it. An analysis-only deployment still provides **Scan and rewrite**.
 
 ## Review and publish
 
@@ -141,4 +145,5 @@ The external standard and its database are not included in downloads or prompts.
 
 | Version | Date | Change |
 | --- | --- | --- |
+| 0.2.0 | 2026-11-07 | Explain analysis-only previews and unavailable contribution/publication controls. |
 | 0.1.0 | 2026-11-05 | Document the proposed browser contribution, signed publication and repo/URL analysis workflow. |
